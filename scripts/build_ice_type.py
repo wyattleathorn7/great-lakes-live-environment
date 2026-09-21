@@ -20,9 +20,11 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              download, draw_category_legend, load_bounds,
+                       description_html, legend_block,
+                       refresh_kml_base_url)
+from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
+                              base_metadata, download,
+                              draw_category_legend, load_bounds,
                               promote_stage, rasterize_polygons, read_state,
                               save_png, stage_dir, utcnow_iso,
                               write_metadata, write_state)
@@ -129,6 +131,7 @@ def _build(info, zip_path, digest):
             rgba[m, 0:3] = color_of[code]
             avec = np.vectorize(lambda c: concentration_alpha(int(c)))(cts[m])
             rgba[m, 3] = avec.astype(np.uint8)
+    rgba = apply_shoreline_mask(rgba)  # one shared GSHHG shoreline for all
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     from nic_sigrid import STAGE_TABLE
@@ -160,18 +163,26 @@ def _build(info, zip_path, digest):
                                 "ice gets the explicit Unknown color, never a real "
                                 "type color."))
     meta["legend_size"] = [lw, lh]
-    meta["data_nature"] = CONFIG["data_nature"]
-    meta["methodology"] = (
-        "Per SIGRID-3 polygon: predominant stage = highest partial concentration "
-        "among SA/SB/SC (ties resolve to the thickest-listed stage); rendered in "
-        "that stage's fixed key color with pixel alpha scaled by total "
-        "concentration CT/10. The key lists every WMO stage the dataset supports.")
     meta["ice_type_categories"] = [
         {"code": c, "name": STAGE_TABLE[c]["name"],
          "range": STAGE_TABLE[c]["range"], "color": TYPE_COLORS[c]}
         for c in TYPE_ORDER
     ] + [{"code": "unknown", "name": "Unknown / Undetermined",
           "range": "codes 99, -9", "color": TYPE_COLORS["unknown"]}]
+    cat_rows = "".join(
+        f"<span style=\"background:{c['color']};\">&nbsp;&nbsp;&nbsp;</span> "
+        f"{c['code']} — {c['name']} ({c['range']})<br/>"
+        for c in meta["ice_type_categories"])
+    scale_html = (f"Ice type = predominant WMO stage of development per "
+                  f"analysis polygon:<br/>{cat_rows}"
+                  f"Open water is transparent; fainter = partial concentration.")
+    meta["legend_scale_html"] = scale_html
+    meta["data_nature"] = CONFIG["data_nature"]
+    meta["methodology"] = (
+        "Per SIGRID-3 polygon: predominant stage = highest partial concentration "
+        "among SA/SB/SC (ties resolve to the thickest-listed stage); rendered in "
+        "that stage's fixed key color with pixel alpha scaled by total "
+                  "concentration CT/10. The key lists every WMO stage the dataset supports.")
     meta["stats"] = {
         "analysis_date": analysis_date,
         "polygons": len(polys),
@@ -183,10 +194,11 @@ def _build(info, zip_path, digest):
     write_metadata(stage_prod, meta)
 
     token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     kml_text = build_kml(
         PRODUCT, KML_FILE, OVERLAY_NAME,
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
-        description_html(CONFIG["title"], meta, SKIP_NOTE),
+        description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=[os.path.join(stage, "kml", KML_FILE),
                   os.path.join(stage, "site", "kml", KML_FILE)])

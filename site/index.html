@@ -14,7 +14,7 @@ code{background:#eef;padding:0 .3em}
 </head>
 <body>
 <h1>Great Lakes Live Environmental Layers</h1>
-<p>Three independent raster overlays for Google Earth, refreshed automatically
+<p>Six independent raster overlays for Google Earth, refreshed automatically
 from official NOAA sources. Each layer can be toggled on/off by itself.</p>
 
 <div class="card" id="wave_height">
@@ -62,12 +62,21 @@ from official NOAA sources. Each layer can be toggled on/off by itself.</p>
 <a href="ice_type/metadata.json">metadata.json</a></p>
 </div>
 
+<div class="card" id="wind">
+<h2>💨 Live Wind — Beaufort Scale</h2>
+<p><small id="wind-meta">loading…</small></p>
+<img class="legend" src="wind/legend.png" alt="wind legend">
+<p><a href="kml/Great_Lakes_Live_Wind.kml">Open in Google Earth (KML)</a> ·
+<a href="wind/current.png">current.png</a> ·
+<a href="wind/metadata.json">metadata.json</a></p>
+</div>
+
 <p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU).
 This project is not endorsed by NOAA. Stable URLs — Google Earth layers never
 need re-pointing; images carry version query strings so updates appear on refresh.</small></p>
 
 <script>
-["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type"].forEach(p=>{
+["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind"].forEach(p=>{
   fetch(p+"/metadata.json").then(r=>r.json()).then(m=>{
     document.getElementById(p+"-meta").textContent =
       m.freshness+" | Data time: "+m.data_time_utc+" | Processed: "+m.processing_time_utc;

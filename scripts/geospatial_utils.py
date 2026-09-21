@@ -23,6 +23,43 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONFIG_DIR = os.path.join(REPO_ROOT, "config")
 SITE_DIR = os.path.join(REPO_ROOT, "site")
 KML_DIR = os.path.join(REPO_ROOT, "kml")
+WATERMASK_PATH = os.path.join(REPO_ROOT, "assets", "great_lakes_watermask.png")
+PROD_BASE_URL = "https://wyattleathorn7.github.io/great-lakes-live-environment"
+
+_WATERMASK = None
+
+
+def load_watermask():
+    """Shared GSHHG water mask (8-bit; 255 = water). Loaded once.
+
+    Raises if the committed asset is missing or the wrong size: shipping
+    unmasked rasters would silently regress the shoreline, so this is a
+    loud failure (product keeps its previous raster via exit codes).
+    """
+    global _WATERMASK
+    if _WATERMASK is None:
+        bounds = load_bounds()
+        if not os.path.exists(WATERMASK_PATH):
+            raise FileNotFoundError(
+                f"shared shoreline mask missing: {WATERMASK_PATH}")
+        m = np.array(Image.open(WATERMASK_PATH).convert("L"))
+        if m.shape != (bounds["canvas_height"], bounds["canvas_width"]):
+            raise ValueError(
+                f"shoreline mask shape {m.shape} != canvas "
+                f"({bounds['canvas_height']}, {bounds['canvas_width']})")
+        _WATERMASK = m.astype(np.float32) / 255.0
+    return _WATERMASK
+
+
+def apply_shoreline_mask(rgba):
+    """Multiply overlay alpha by the shared water mask (antialiased edges).
+
+    Same mask object for every product, so all layers share one shoreline.
+    """
+    mask = load_watermask()
+    out = rgba.copy()
+    out[:, :, 3] = np.round(out[:, :, 3].astype(np.float32) * mask).astype(np.uint8)
+    return out
 
 USER_AGENT = {"User-Agent": "great-lakes-live-environment/1.0 (NOAA data automation; contact: repo owner)"}
 
@@ -392,6 +429,11 @@ def base_metadata(product, title, freshness_label, source_name, source_url,
         "color_scale_max": color_max,
         "color_scale_units": color_units,
         "missing_data_treatment": missing_data_treatment,
+        "shoreline_mask": ("assets/great_lakes_watermask.png — shared GSHHG "
+                           "v2.3.7 water mask (L1 high-res land, L2 full-res lakes, "
+                           "L3 islands, L4 ponds; 3x supersampled, antialiased). "
+                           "Overlay alpha is multiplied by this mask, so every "
+                           "product shares one shoreline."),
         "attribution": ("Data: US NOAA. This project is not endorsed by NOAA. "
                         "See DATA_SOURCES.md for exact products and endpoints."),
     }
@@ -465,6 +507,8 @@ def fetch_buoy_obs(buoy_ids):
             out[bid] = {
                 "time_utc": (f"{row.get('#YY')}-{row.get('MM')}-{row.get('DD')} "
                              f"{row.get('hh')}:{row.get('mm')} UTC"),
+                "WDIR_deg": _f(row.get("WDIR")),
+                "WSPD_ms": _f(row.get("WSPD")),
                 "WVHT_m": _f(row.get("WVHT")),
                 "WTMP_C": _f(row.get("WTMP")),
             }

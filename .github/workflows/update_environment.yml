@@ -14,7 +14,7 @@ on:
         default: "all"
         type: choice
         options: ["all", "wave_height", "water_temperature", "ice_coverage",
-                  "ice_thickness", "ice_type"]
+                  "ice_thickness", "ice_type", "wind"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -179,8 +179,38 @@ jobs:
             kml/Great_Lakes_Live_Ice_Type.kml
           if-no-files-found: warn
 
+  wind:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'wind' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update wind
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_wind.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Wind source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-wind
+          path: |
+            site/wind
+            site/kml/Great_Lakes_Live_Wind.kml
+            kml/Great_Lakes_Live_Wind.kml
+          if-no-files-found: warn
+
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind]
     # Publish whatever succeeded; a single-product failure must not block
     # the other two layers from reaching GitHub Pages.
     if: always()
@@ -213,6 +243,8 @@ jobs:
         shell: bash
       - name: Validate outputs
         run: python scripts/validate_outputs.py
+      - name: Offline self-tests
+        run: python scripts/selftest.py
       - name: Commit updated layers back to repo
         uses: stefanzweifel/git-auto-commit-action@v7
         with:

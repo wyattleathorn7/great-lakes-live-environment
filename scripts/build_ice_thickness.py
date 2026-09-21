@@ -21,11 +21,12 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, refresh_kml_base_url)
+                       description_html, legend_block,
+                       refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, THICK_STOPS, _lut,
-                              base_metadata, download, draw_legend,
-                              load_bounds, promote_stage, read_state,
-                              save_png, stage_dir, utcnow_iso,
+                              apply_shoreline_mask, base_metadata, download,
+                              draw_legend, load_bounds, promote_stage,
+                              read_state, save_png, stage_dir, utcnow_iso,
                               write_metadata, write_state)
 from nic_sigrid import (analysis_date_from_name, concentration_alpha,
                         download_nic_shapefile, load_polygons,
@@ -124,6 +125,7 @@ def _build(info, zip_path, digest):
         rgba[ok, 0:3] = lut[(t * 255).astype(int)]
         avec = np.vectorize(lambda c: concentration_alpha(int(c)))(cts[ok])
         rgba[ok, 3] = avec.astype(np.uint8)
+    rgba = apply_shoreline_mask(rgba)  # one shared GSHHG shoreline for all
 
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     subtitle = (f"{CONFIG['freshness_label']}  |  NIC analysis: {analysis_date}")
@@ -148,6 +150,11 @@ def _build(info, zip_path, digest):
                                 "authoritative thickness (brash/unstaged/old/glacier/unknown) "
                                 "rendered fully transparent; NEVER zero-filled or guessed."))
     meta["legend_size"] = [lw, lh]
+    scale_html = (f"Ice thickness (inches, WMO stage-derived estimates): "
+                  f"thinner <b>0 in</b> (light blue) → blue → deep blue → "
+                  f"thicker <b>{vmax:g} in</b> (purple). No color is painted "
+                  f"where there is no ice; fainter = partial concentration.")
+    meta["legend_scale_html"] = scale_html
     meta["data_nature"] = CONFIG["data_nature"]
     meta["methodology"] = (
         "Per SIGRID-3 polygon: thickness = sum(partial_conc_i * WMO_stage_midpoint_i) "
@@ -167,10 +174,11 @@ def _build(info, zip_path, digest):
     write_metadata(stage_prod, meta)
 
     token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     kml_text = build_kml(
         PRODUCT, KML_FILE, OVERLAY_NAME,
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
-        description_html(CONFIG["title"], meta, SKIP_NOTE),
+        description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=[os.path.join(stage, "kml", KML_FILE),
                   os.path.join(stage, "site", "kml", KML_FILE)])

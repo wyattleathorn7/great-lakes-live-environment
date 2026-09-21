@@ -1,27 +1,31 @@
-"""Generate the three independent Google Earth KML overlays.
+"""Generate the independent Google Earth KML overlays.
 
 RASTER ONLY: each KML contains exactly one GroundOverlay (the current.png
-raster) + one ScreenOverlay (the legend PNG) + one self-refresh NetworkLink.
-ZERO LineString / Polygon / Placemark elements are emitted.
+raster) + one self-refresh NetworkLink. ZERO LineString / Polygon /
+Placemark elements are emitted.
+
+Legends: the Google Earth client used for testing rejects ScreenOverlay
+("Unsupported element"), so legends are delivered inside the Document
+description as HTML (legend PNG <img> + explicit scale text). The
+standalone legend.png files remain published for the web index and for
+pixel-exact validation. No ScreenOverlay element is ever emitted.
 Cache-busting: the PNG hrefs carry ?v=<processing-timestamp-token> which is
 regenerated on every successful product run. Filenames/URLs stay stable.
 """
 
 import json
 import os
-import shutil
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from geospatial_utils import KML_DIR, LEGEND_H, LEGEND_W, SITE_DIR, load_bounds
+from geospatial_utils import KML_DIR, PROD_BASE_URL, SITE_DIR, load_bounds
 
 KML_NS = "http://www.opengis.net/kml/2.2"
 ET.register_namespace("", KML_NS)
 
 
 def pages_base():
-    return os.environ.get(
-        "PAGES_BASE_URL", "https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO")
+    return os.environ.get("PAGES_BASE_URL", PROD_BASE_URL).rstrip("/")
 
 
 def _q(tag, text=None):
@@ -31,30 +35,31 @@ def _q(tag, text=None):
     return el
 
 
+def legend_block(legend_path, cache_token, scale_html):
+    """HTML legend for the Document description (GE-compatible)."""
+    base = pages_base()
+    return (
+        f"<p><b>Legend</b><br>"
+        f"<img src=\"{base}/{legend_path}?v={cache_token}\" width=\"600\" "
+        f"alt=\"legend\"><br>{scale_html}</p>"
+    )
+
+
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
               description_html, refresh_interval, cache_token, out_dirs=None):
-    """Write the KML to out_dirs (default: live kml/ + site/kml/).
-
-    Builders pass stage dirs so a crash can never leave a half-updated
-    product set behind; they promote the stage only on full success.
-    """
     bounds = load_bounds()
-    base = pages_base().rstrip("/")
+    base = pages_base()
     png_url = f"{base}/{png_path}?v={cache_token}"
-    legend_url = f"{base}/{legend_path}?v={cache_token}"
     self_url = f"{base}/kml/{kml_filename}"
 
     doc = _q("kml")
     document = _q("Document")
     doc.append(document)
 
-    name = _q("name", overlay_name)
-    document.append(name)
+    document.append(_q("name", overlay_name))
     desc = _q("description")
     desc.text = None
     document.append(desc)
-    # CDATA description (set after serialization to keep markup intact)
-    cdata_holder = desc
 
     ground = _q("GroundOverlay")
     ground.append(_q("name", overlay_name))
@@ -70,25 +75,6 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     box.append(_q("west", str(bounds["lon_min"])))
     ground.append(box)
     document.append(ground)
-
-    screen = _q("ScreenOverlay")
-    screen.append(_q("name", overlay_name + " — legend"))
-    sicon = _q("Icon")
-    sicon.append(_q("href", legend_url))
-    screen.append(sicon)
-    for tag, x, y, xunits, yunits in (
-            ("overlayXY", "0", "1", "fraction", "fraction"),
-            ("screenXY", "16", "16", "pixels", "pixels"),
-            # Explicit pixel size: a zero/fraction height can collapse the
-            # legend to nothing in some KML clients.
-            ("size", str(LEGEND_W), str(LEGEND_H), "pixels", "pixels")):
-        el = _q(tag)
-        el.set("x", x)
-        el.set("y", y)
-        el.set("xunits", xunits)
-        el.set("yunits", yunits)
-        screen.append(el)
-    document.append(screen)
 
     link = _q("NetworkLink")
     link.append(_q("name", overlay_name + " — auto-refresh"))
@@ -115,34 +101,14 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     return xml
 
 
-def refresh_kml_base_url(product, kml_filename, overlay_name, title,
-                         note, refresh_interval):
-    """Rewrite existing KMLs with the current PAGES_BASE_URL.
-
-    Used by builder skip-paths (source unchanged): the raster/legend are
-    kept, but the KML is regenerated so it always carries the deployment's
-    real base URL and current refresh settings. The imagery cache token is
-    preserved (derived from the existing metadata), so Google Earth sees
-    no spurious imagery change.
-    """
-    with open(os.path.join(SITE_DIR, product, "metadata.json")) as f:
-        meta = json.load(f)
-    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
-    kml_text = build_kml(
-        product, kml_filename, overlay_name,
-        f"{product}/current.png", f"{product}/legend.png",
-        description_html(title, meta, note), refresh_interval, token)
-    assert_no_vector_geometry(kml_text)
-    return kml_text
-
-
-def description_html(title, meta, kml_self_hint):
+def description_html(title, meta, kml_self_hint, legend_html=""):
     return (
         f"<h2>{title}</h2>"
         f"<p><b>Data time:</b> {meta.get('data_time_utc')}<br/>"
         f"<b>Source updated:</b> {meta.get('source_last_modified_utc')}<br/>"
         f"<b>Processed:</b> {meta.get('processing_time_utc')}<br/>"
         f"<b>Status:</b> {meta.get('freshness')}</p>"
+        f"{legend_html}"
         f"<p><b>Source:</b> {meta.get('noaa_source')}<br/>"
         f"<a href=\"{meta.get('source_url')}\">{meta.get('source_url')}</a></p>"
         f"<p>Transparent outside valid water data so existing project layers "
@@ -152,6 +118,27 @@ def description_html(title, meta, kml_self_hint):
     )
 
 
+def refresh_kml_base_url(product, kml_filename, overlay_name, title,
+                         note, refresh_interval):
+    """Rewrite existing KMLs with the current PAGES_BASE_URL.
+
+    Legend HTML is reproduced from metadata (legend_scale_html), so the
+    refresh path needs no source data.
+    """
+    with open(os.path.join(SITE_DIR, product, "metadata.json")) as f:
+        meta = json.load(f)
+    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    block = legend_block(f"{product}/legend.png", token,
+                         meta.get("legend_scale_html", ""))
+    kml_text = build_kml(product, kml_filename, overlay_name,
+                         f"{product}/current.png", f"{product}/legend.png",
+                         description_html(title, meta, note, block),
+                         refresh_interval, token)
+    assert_no_vector_geometry(kml_text)
+    return kml_text
+
+
 def assert_no_vector_geometry(kml_text):
-    for bad in ("<LineString", "<Polygon", "<Placemark", "<Point", "<Model"):
-        assert bad not in kml_text, f"forbidden KML geometry present: {bad}"
+    for bad in ("<LineString", "<Polygon", "<Placemark", "<Point",
+                "<ScreenOverlay"):
+        assert bad not in kml_text, f"forbidden KML element present: {bad}"

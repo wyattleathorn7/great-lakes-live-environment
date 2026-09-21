@@ -2,12 +2,12 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🌡️ LIVE WATER TEMPERATURE</name>
-    <description><![CDATA[<h2>GREAT LAKES SURFACE WATER TEMPERATURE</h2><p><b>Data time:</b> 2026-09-21 06:50 UTC<br/><b>Source updated:</b> Mon, 21 Sep 2026 06:50:54 GMT<br/><b>Processed:</b> 2026-09-21 17:08 UTC<br/><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href="https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and ice layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>GREAT LAKES SURFACE WATER TEMPERATURE</h2><p><b>Data time:</b> 2026-09-21 06:50 UTC<br/><b>Source updated:</b> Mon, 21 Sep 2026 06:50:54 GMT<br/><b>Processed:</b> 2026-09-21 19:58 UTC<br/><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=2026-09-21_1958_UTC" width="600" alt="legend"><br>Surface water temperature (°F): cold <b>52°F</b> (deep blue) → <b>63°F</b> → warm <b>74°F</b> (red). Lakewide mean this run: <b>64.3°F</b>.</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href="https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and ice layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <GroundOverlay>
       <name>🌡️ LIVE WATER TEMPERATURE</name>
       <drawOrder>10</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/current.png?v=2026-09-21_1708_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/current.png?v=2026-09-21_1958_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -17,15 +17,6 @@
         <west>-93.0</west>
       </LatLonBox>
     </GroundOverlay>
-    <ScreenOverlay>
-      <name>🌡️ LIVE WATER TEMPERATURE — legend</name>
-      <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=2026-09-21_1708_UTC</href>
-      </Icon>
-      <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
-      <screenXY x="16" y="16" xunits="pixels" yunits="pixels"/>
-      <size x="640" y="210" xunits="pixels" yunits="pixels"/>
-    </ScreenOverlay>
     <NetworkLink>
       <name>🌡️ LIVE WATER TEMPERATURE — auto-refresh</name>
       <Link>

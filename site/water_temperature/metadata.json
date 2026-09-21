@@ -8,7 +8,7 @@
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
   "data_time_utc": "2026-09-21 06:50 UTC",
   "source_last_modified_utc": "Mon, 21 Sep 2026 06:50:54 GMT",
-  "processing_time_utc": "2026-09-21 17:08 UTC",
+  "processing_time_utc": "2026-09-21 19:58 UTC",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -23,6 +23,7 @@
   "color_scale_max": 74,
   "color_scale_units": "\u00b0F",
   "missing_data_treatment": "land code 255.0 and -9999/no-data rendered fully transparent; never interpolated.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared GSHHG v2.3.7 water mask (L1 high-res land, L2 full-res lakes, L3 islands, L4 ponds; 3x supersampled, antialiased). Overlay alpha is multiplied by this mask, so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "stats": {
     "valid_cells": 148682,
@@ -30,42 +31,49 @@
     "min_F": 49.41,
     "max_F": 74.55
   },
-  "rendered_nontransparent_pixels": 316927,
+  "legend_size": [
+    640,
+    210
+  ],
+  "rendered_nontransparent_pixels": 316737,
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 55.4,
+      "obs_F": 55.58,
       "grid_F": 55.3325,
-      "absdiff_F": 0.07,
+      "absdiff_F": 0.25,
       "verdict": "OK",
-      "obs_time": "2026-09-21 16:30 UTC"
+      "obs_time": "2026-09-21 19:00 UTC"
     },
     "45002": {
       "obs_F": 64.4,
       "grid_F": 66.41149999999999,
       "absdiff_F": 2.01,
       "verdict": "OK",
-      "obs_time": "2026-09-21 16:30 UTC"
+      "obs_time": "2026-09-21 19:10 UTC"
     },
     "45132": {
-      "obs_F": 69.62,
+      "obs_F": 69.8,
       "grid_F": 73.337,
-      "absdiff_F": 3.72,
+      "absdiff_F": 3.54,
       "verdict": "OK",
-      "obs_time": "2026-09-21 16:00 UTC"
+      "obs_time": "2026-09-21 19:00 UTC"
     },
     "45012": {
       "obs_F": 67.46,
       "grid_F": 70.1105,
       "absdiff_F": 2.65,
       "verdict": "OK",
-      "obs_time": "2026-09-21 16:30 UTC"
+      "obs_time": "2026-09-21 19:00 UTC"
     },
     "45005": {
-      "time_utc": "2026-09-21 16:30 UTC",
+      "time_utc": "2026-09-21 19:10 UTC",
+      "WDIR_deg": 60.0,
+      "WSPD_ms": 13.0,
       "WVHT_m": null,
       "WTMP_C": null,
       "note": "no WTMP obs"
     }
-  }
+  },
+  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>52\u00b0F</b> (deep blue) \u2192 <b>63\u00b0F</b> \u2192 warm <b>74\u00b0F</b> (red). Lakewide mean this run: <b>64.3\u00b0F</b>."
 }

@@ -91,7 +91,9 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_ice_thickness.py`,
 `python scripts/build_ice_type.py`,
 `python scripts/build_wave_height.py`,
-`python scripts/validate_outputs.py`.
+`python scripts/build_wind.py`,
+`python scripts/validate_outputs.py`,
+`python scripts/selftest.py`.
 
 ## Future AIS layer
 

@@ -8,14 +8,26 @@ code was written. Only authoritative NOAA / NCEP / USNIC sources are used.
 | Item | Value |
 |---|---|
 | CRS | WGS84 (EPSG:4326), equirectangular canvas |
-| Render bounds (all 3 layers, identical) | lon −93.0 … −73.5, lat 40.5 … 49.5 |
+| Render bounds (all layers, identical) | lon −93.0 … −73.5, lat 40.5 … 49.5 |
 | Canvas | 1800 × 1175 px PNG (RGBA) |
+| Shoreline | ONE shared mask: `assets/great_lakes_watermask.png` (8-bit alpha), built from **GSHHG v2.3.7** (Wessel & Smith; WVS+WDBII amalgamation): L1-high land, L2-full lakes, L3-full islands, L4-full ponds; rule `water = L4 \| (~L3 & (L2 \| ~L1))`; rasterized at 3× then LANCZOS-downsampled for antialiased edges. Water ≈ 17.4 % of canvas. Every product multiplies overlay alpha by this file, so all layers share one shoreline. Regenerate: `python scripts/build_watermask.py` (see its header). |
 | Land/missing handling | alpha = 0 (fully transparent) outside valid water data |
-| Lake mask | NOAA-GLERL `1024_lake_ids.txt` (0=land, 1=Superior, 2=Michigan, 3=Huron, 4=Erie, 5=Ontario, 6=St Clair) from `coords.zip` (`https://www.glerl.noaa.gov/data/ice/glicd/grids/coords.zip`), plus per-cell WGS84 LUTs `1024_latgrid.txt` / `1024_longrid.txt` |
+| Lake mask (legacy cross-check) | NOAA-GLERL `1024_lake_ids.txt` (0=land, 1=Superior, 2=Michigan, 3=Huron, 4=Erie, 5=Ontario, 6=St Clair) from `coords.zip` (`https://www.glerl.noaa.gov/data/ice/glicd/grids/coords.zip`), plus per-cell WGS84 LUTs `1024_latgrid.txt` / `1024_longrid.txt` |
 
 Because every layer is nearest-neighbour binned onto the same canvas from
-its own WGS84-mapped source grid, the three overlays line up exactly in
-Google Earth while remaining technically independent.
+its own WGS84-mapped source grid AND cut by the same shoreline mask, the
+overlays line up exactly in Google Earth while remaining technically
+independent.
+
+## KML compatibility note (ScreenOverlay removed)
+
+The Google Earth client used for testing reports `Unsupported element:
+"ScreenOverlay"`, so no KML in this repository contains ScreenOverlay.
+Legends are delivered inside each KML Document description as HTML (the
+legend PNG via absolute URL plus an explicit scale/category text block);
+standalone `legend.png` files remain published for the web index and for
+automated pixel-exact validation. KMLs contain one GroundOverlay + one
+self-refresh NetworkLink and zero vector geometry.
 
 ---
 
@@ -140,6 +152,19 @@ Google Earth while remaining technically independent.
 - **Docs:** `https://polar.ncep.noaa.gov/waves/download2.shtml`,
   `https://www.glerl.noaa.gov/emf/waves/WW3` (experimental cousin, not used).
 
+## 4. Wind — NCEP GLWU UGRD/VGRD (same operational files as wave height)
+
+- **Product:** same `glwu.grlc_2p5km.tCCz.grib2` NOMADS files (§3), variables
+  `UGRD` + `VGRD`, surface, analysis step. Operational, 6-hourly.
+- **Method:** speed = √(U²+V²) m/s ×1.94384 → knots → unmodified WMO Beaufort
+  Force 0–12 (0:<1, 1:1–3, 2:4–6, 3:7–10, 4:11–16, 5:17–21, 6:22–27, 7:28–33,
+  8:34–40, 9:41–47, 10:48–55, 11:56–63, 12:≥64 kt). Colors blue→…→red→dark
+  purple, dark purple reserved for Force 12. Arrows follow the (U,V)
+  movement vector (GRIB components point where air moves TOWARD, so no
+  meteorological FROM→TOWARD reversal); calm (<0.5 m/s) gets no arrow;
+  arrows are rasterized into the PNG (no KML placemarks).
+- Freshness wording: **"LIVE / CURRENT MODEL (analysis)"**.
+
 ## Cache / refresh design (Google Earth)
 
 GitHub Pages cannot set custom cache headers, so cache-busting is done with
@@ -153,4 +178,4 @@ and discovers the new image URL without any user action.
 
 Per-product independence: a failed download/validation aborts **only that
 product's** update (exit status recorded, previous `site/` assets untouched);
-the other two products and the Pages publish proceed normally.
+the other products and the Pages publish proceed normally.

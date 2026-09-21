@@ -21,10 +21,12 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, refresh_kml_base_url)
+                       description_html, legend_block,
+                       refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
                               download, promote_stage, read_state,
-                              stage_dir, utcnow_iso, write_state)
+                              stage_dir, utcnow_iso, write_metadata,
+                              write_state)
 from render_gradient import render_field
 
 PRODUCT = "ice_coverage"
@@ -182,14 +184,23 @@ def _build(info, raw_path, digest):
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values)
+    maxc = round(float(data[is_water].max()), 1) if n_water else 0.0
+    scale_html = (f"Ice concentration (% of water area covered): open water "
+                  f"(transparent) → <b>0%</b> → <b>50%</b> → <b>100%</b> "
+                  f"total cover (near-white). Maximum this run: "
+                  f"<b>{maxc}%</b>. Ice-free water in summer is normal.")
+    meta["legend_scale_html"] = scale_html
+    write_metadata(stage_prod, meta)
 
     token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     kml_text = build_kml(
         PRODUCT, "Great_Lakes_Live_Ice_Coverage.kml",
         "\U0001F9CA LIVE ICE COVERAGE",
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta,
-                         "Turn on/off independently of wave and temperature layers."),
+                         "Turn on/off independently of wave and temperature layers.",
+                         block),
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=[os.path.join(stage, "kml", "Great_Lakes_Live_Ice_Coverage.kml"),
                   os.path.join(stage, "site", "kml", "Great_Lakes_Live_Ice_Coverage.kml")])

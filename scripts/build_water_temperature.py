@@ -18,7 +18,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, refresh_kml_base_url)
+                       description_html, legend_block,
+                       refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
                               download, fetch_buoy_obs, http_date_to_iso,
                               promote_stage, read_state, stage_dir,
@@ -230,15 +231,23 @@ def _build(info, raw_path):
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values_f)
-    write_metadata(stage_prod, meta)  # re-write incl. buoy QC
+    mid_f = round((vmin + vmax) / 2, 1)
+    scale_html = (f"Surface water temperature (°F): cold <b>{vmin:g}°F</b> "
+                  f"(deep blue) → <b>{mid_f:g}°F</b> → warm <b>{vmax:g}°F</b> "
+                  f"(red). Lakewide mean this run: "
+                  f"<b>{round(float(np.mean(f_vals)), 1)}°F</b>.")
+    meta["legend_scale_html"] = scale_html
+    write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text
 
     token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     kml_text = build_kml(
         PRODUCT, "Great_Lakes_Live_Water_Temperature.kml",
         "\U0001F321\uFE0F LIVE WATER TEMPERATURE",
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta,
-                         "Turn on/off independently of wave and ice layers."),
+                         "Turn on/off independently of wave and ice layers.",
+                         block),
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=[os.path.join(stage, "kml", "Great_Lakes_Live_Water_Temperature.kml"),
                   os.path.join(stage, "site", "kml", "Great_Lakes_Live_Water_Temperature.kml")])

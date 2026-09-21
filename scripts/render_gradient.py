@@ -16,9 +16,10 @@ import numpy as np
 
 from geospatial_utils import (ICE_STOPS, LEGEND_H, LEGEND_W, SITE_DIR,
                               TEMP_STOPS, WAVE_STOPS, apply_colormap,
-                              base_metadata, bin_to_canvas, canvas_indices,
-                              draw_legend, fmt_ticks, load_bounds, save_png,
-                              utcnow_iso, write_metadata)
+                              apply_shoreline_mask, base_metadata,
+                              bin_to_canvas, canvas_indices, draw_legend,
+                              fmt_ticks, load_bounds, save_png, utcnow_iso,
+                              write_metadata)
 
 RENDER_SPECS = {
     "wave_height": {"stops": WAVE_STOPS, "unit": "ft"},
@@ -39,6 +40,7 @@ def render_field(product, lats, lons, values_display, vmin, vmax, meta_extra,
     spec = RENDER_SPECS[product]
     rgba = apply_colormap(field, vmin, vmax, spec["stops"],
                           bounds["overlay_alpha"], transparent_value)
+    rgba = apply_shoreline_mask(rgba)  # one shared GSHHG shoreline for all
     if product_dir is None:
         product_dir = os.path.join(SITE_DIR, product)
     save_png(rgba, os.path.join(product_dir, "current.png"))

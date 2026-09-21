@@ -15,8 +15,9 @@
   "display_units": "ft",
   "color_scale": {
     "min": 0.0,
-    "max": "adaptive p99.5 rounded up to 0.5 ft, clamped to [2, 15]",
-    "units": "ft"
+    "max": 30.0,
+    "units": "ft",
+    "note": "fixed scientific scale covering credible Great Lakes extremes (~25-30 ft); model maximum each run reported in subtitle/metadata"
   },
   "refresh_interval_seconds": 21600,
   "buoys": [

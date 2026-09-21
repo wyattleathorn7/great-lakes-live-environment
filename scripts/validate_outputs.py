@@ -19,6 +19,7 @@ Exit 0 = all pass; 1 = any failure (message lists all failures).
 
 import json
 import os
+import re
 import sys
 import xml.etree.ElementTree as ET
 
@@ -38,18 +39,54 @@ PRODUCTS = {
                       "max_opaque_min": 0},  # off-season => transparent OK
     "ice_type": {"kml": "Great_Lakes_Live_Ice_Type.kml",
                  "max_opaque_min": 0},  # off-season => transparent OK
+    "wind": {"kml": "Great_Lakes_Live_Wind.kml",
+             "max_opaque_min": 10_000},
 }
 
 META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
                  "source_url", "data_time_utc", "processing_time_utc",
                  "units", "spatial_resolution_source",
                  "spatial_resolution_rendered", "color_scale_min",
-                 "color_scale_max", "missing_data_treatment"]
+                 "color_scale_max", "missing_data_treatment",
+                 "shoreline_mask"]
+
+
+def _site_file_for_href(href):
+    """Map a KML Icon href to a local site/ path. None if not resolvable.
+
+    Pages URLs look like https://<owner>.github.io/<repo>/wind/current.png
+    while site/ IS the repo root, so the leading repo-name segment is
+    stripped ( progressively, first hit wins).
+    """
+    import re
+    m = re.search(r"https?://[^/]+/(.+?\.png)(?:\?.*)?$", href)
+    if not m:
+        return None
+    parts = m.group(1).split("/")
+    for i in range(len(parts)):
+        cand = os.path.join(SITE_DIR, *parts[i:])
+        if os.path.isfile(cand):
+            return cand
+    return os.path.join(SITE_DIR, parts[-1]) if parts else None
 
 
 def main():
     bounds = load_bounds()
     failures = []
+    # ---- shared shoreline mask must exist with canvas dimensions ----
+    mask_path = os.path.join(REPO_ROOT, "assets", "great_lakes_watermask.png")
+    mask = None
+    if not os.path.exists(mask_path):
+        failures.append("shared shoreline mask missing: assets/great_lakes_watermask.png")
+    else:
+        try:
+            import numpy as np
+            mask = np.array(Image.open(mask_path).convert("L"))
+            if mask.shape != (bounds["canvas_height"], bounds["canvas_width"]):
+                failures.append(f"shoreline mask shape {mask.shape} != canvas")
+                mask = None
+        except Exception as e:
+            failures.append(f"shoreline mask unreadable: {e}")
     for product, spec in PRODUCTS.items():
         pdir = os.path.join(SITE_DIR, product)
         png = os.path.join(pdir, "current.png")
@@ -82,13 +119,21 @@ def main():
             except Exception as e:
                 failures.append(f"{product}: legend unreadable: {e}")
             import numpy as np
-            a = np.array(im)[:, :, 3]
-            n_opaque = int((a > 0).sum())
+            a = np.array(im)
+            n_opaque = int((a[:, :, 3] > 0).sum())
             if n_opaque < spec["max_opaque_min"]:
                 failures.append(
                     f"{product}: only {n_opaque} non-transparent pixels")
             else:
                 print(f"[{product}] raster OK: {n_opaque} water pixels, size {im.size}")
+            if mask is not None:
+                import numpy as np
+                bleed = int(((a[:, :, 3] > 0) & (mask == 0)).sum())
+                if bleed > 0:
+                    failures.append(f"{product}: {bleed} opaque pixels outside "
+                                    f"the shared shoreline mask")
+                else:
+                    print(f"[{product}] shoreline OK: no land bleed")
         except Exception as e:
             failures.append(f"{product}: PNG unreadable: {e}")
 
@@ -107,6 +152,21 @@ def main():
                 failures.append(f"{product}: temp scale out of bounds {lo}-{hi}")
             if product == "ice_thickness" and not (0 <= lo < hi <= 50):
                 failures.append(f"{product}: thickness scale out of bounds {lo}-{hi}")
+            if product == "wind" and (lo, hi) != (0, 12):
+                failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
+            if product == "wind":
+                bt = meta.get("beaufort_table", [])
+                if len(bt) != 13 or "64" not in bt[12].get("range_kt", ""):
+                    failures.append(f"{product}: beaufort table must have 13 forces "
+                                    f"with F12 >= 64 kt")
+                if bt and bt[12].get("color") != "#3B0A54":
+                    failures.append(f"{product}: Force 12 must be dark purple #3B0A54")
+                if meta.get("stats", {}).get("arrows_drawn", 0) < 50:
+                    failures.append(f"{product}: too few wind arrows rendered")
+            # placeholders must never reach production output
+            _md = json.dumps(meta)
+            if "REPLACE-GITHUB-USER" in _md or "REPLACE-REPO" in _md:
+                failures.append(f"{product}: metadata contains placeholder URL")
             if product == "ice_type":
                 cats = meta.get("ice_type_categories", [])
                 codes = {c.get("code") for c in cats}
@@ -128,15 +188,27 @@ def main():
             try:
                 text = open(kp, encoding="utf-8").read()
                 ET.fromstring(text)  # must parse
-                for bad in ("<LineString", "<Polygon", "<Placemark", "<Point"):
+                for bad in ("<LineString", "<Polygon", "<Placemark", "<Point",
+                            "<ScreenOverlay"):
                     if bad in text:
                         failures.append(f"{product}: forbidden {bad} in {kp}")
+                if len(text) > 100_000:
+                    failures.append(f"{product}: KML too large ({len(text)} chars) "
+                                    f"- geometry explosion?")
+                if "REPLACE-GITHUB-USER" in text or "REPLACE-REPO" in text:
+                    failures.append(f"{product}: KML contains placeholder URL")
                 if "<GroundOverlay>" not in text:
                     failures.append(f"{product}: no GroundOverlay in {kp}")
                 if "?v=" not in text:
                     failures.append(f"{product}: no cache-buster in {kp}")
                 if f"{product}/current.png" not in text:
                     failures.append(f"{product}: KML href wrong product path")
+                for _href in re.findall(r"<href>(https?://[^<]+\.png)(?:\?[^<]*)?</href>",
+                                        text):
+                    _local = _site_file_for_href(_href)
+                    if _local is None or not os.path.exists(_local):
+                        failures.append(f"{product}: KML references PNG not deployed: "
+                                        f"{_href}")
                 token = (meta.get("processing_time_utc", "")
                          .replace(" ", "_").replace(":", ""))
                 if token and token not in text:

@@ -19,7 +19,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, refresh_kml_base_url)
+                       description_html, legend_block,
+                       refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
                               download, fetch_buoy_obs, promote_stage,
                               read_state, stage_dir, utcnow_iso,
@@ -163,9 +164,14 @@ def _build(got, used_url, datestr, cycle, raw_path):
             print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
         return 0
 
+    # Fixed scientific scale 0-30 ft: Great Lakes storms can exceed 25 ft,
+    # so the legend always explains the full credible range. Today's
+    # maximum is reported in the subtitle and metadata instead.
     p995 = float(np.percentile(vals_ft[valid], 99.5))
-    vmax = min(15.0, max(2.0, math.ceil(p995 * 2) / 2))
-    print(f"[{PRODUCT}] p99.5={p995:.2f} ft -> color max={vmax} ft")
+    vmax, vmin = 30.0, 0.0
+    run_max = round(float(vals_ft[valid].max()), 1)
+    print(f"[{PRODUCT}] run max={run_max} ft p99.5={p995:.2f} ft "
+          f"-> fixed scale [{vmin},{vmax}] ft")
 
     values_ft = np.full(vals_m.shape, np.nan)
     values_ft[valid] = vals_ft[valid]
@@ -189,12 +195,13 @@ def _build(got, used_url, datestr, cycle, raw_path):
     }
 
     field, rgba, meta = render_field(
-        PRODUCT, lats, lons, values_ft, 0.0, vmax, meta,
+        PRODUCT, lats, lons, values_ft, vmin, vmax, meta,
         title=CONFIG["title"],
-        subtitle=(f"{CONFIG['freshness_label']}  |  Model time: {data_time_utc}"),
+        subtitle=(f"{CONFIG['freshness_label']}  |  Model time: {data_time_utc}  |  "
+                  f"Model max this run: {run_max} ft"),
         source_line=(f"Source: NCEP GLWU v2.1 (WAVEWATCH III) {datestr} t{cycle}z  |  "
                      f"Processed {utcnow_iso()}"),
-        unit_label="feet", transparent_value=None, fmt="{:.1f}",
+        unit_label="feet", transparent_value=None, fmt="{:.0f}",
         splat_radius=2, product_dir=stage_prod)
 
     if int((rgba[:, :, 3] > 0).sum()) < 10_000:
@@ -234,15 +241,22 @@ def _build(got, used_url, datestr, cycle, raw_path):
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values_ft)
-    write_metadata(stage_prod, meta)  # re-write incl. buoy QC
+    scale_html = (f"Wave height (feet): <b>0</b> calm (deep blue) → "
+                  f"<b>10</b> → <b>20</b> → <b>30</b> extreme (red). "
+                  f"Model maximum this run: <b>{run_max} ft</b>. "
+                  f"Significant height = average of highest third of waves.")
+    meta["legend_scale_html"] = scale_html
+    write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text
 
     token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     kml_text = build_kml(
         PRODUCT, "Great_Lakes_Live_Wave_Height.kml",
         "\U0001F30A LIVE WAVE HEIGHT",
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta,
-                         "Turn on/off independently of temperature and ice layers."),
+                         "Turn on/off independently of temperature and ice layers.",
+                         block),
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=[os.path.join(stage, "kml", "Great_Lakes_Live_Wave_Height.kml"),
                   os.path.join(stage, "site", "kml", "Great_Lakes_Live_Wave_Height.kml")])

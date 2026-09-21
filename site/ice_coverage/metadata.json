@@ -6,9 +6,9 @@
   "product_name": "U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, GRID 1800",
   "variable": "total ice concentration",
   "source_url": "https://usicecenter.gov/File/DownloadCurrent?pId=38",
-  "data_time_utc": "retrieved 2026-09-21 17:08 UTC (NIC daily analysis; NIC publishes no per-file timestamp)",
+  "data_time_utc": "retrieved 2026-09-21 19:58 UTC (NIC daily analysis; NIC publishes no per-file timestamp)",
   "source_last_modified_utc": "unknown",
-  "processing_time_utc": "2026-09-21 17:08 UTC",
+  "processing_time_utc": "2026-09-21 19:58 UTC",
   "units": "%",
   "spatial_resolution_source": "1.8 km NIC NAIS daily grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -23,6 +23,7 @@
   "color_scale_max": 100.0,
   "color_scale_units": "%",
   "missing_data_treatment": "land code -1 and any value < -1 (e.g. -9999) rendered fully transparent and NEVER treated as 0% ice; 0% open water is also transparent by design so base layers stay visible.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared GSHHG v2.3.7 water mask (L1 high-res land, L2 full-res lakes, L3 islands, L4 ponds; 3x supersampled, antialiased). Overlay alpha is multiplied by this mask, so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "stats": {
     "water_cells": 152657,
@@ -30,6 +31,11 @@
     "max_concentration_pct": 0.0,
     "note": "ice-free conditions are normal outside Dec-Apr; an all-zero grid is valid data, not corruption."
   },
+  "legend_size": [
+    640,
+    210
+  ],
   "rendered_nontransparent_pixels": 0,
-  "rendered_canvas_pixels": 2115000
+  "rendered_canvas_pixels": 2115000,
+  "legend_scale_html": "Ice concentration (% of water area covered): open water (transparent) \u2192 <b>0%</b> \u2192 <b>50%</b> \u2192 <b>100%</b> total cover (near-white). Maximum this run: <b>0.0%</b>. Ice-free water in summer is normal."
 }
