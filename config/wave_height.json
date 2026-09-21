@@ -17,7 +17,7 @@
     "min": 0.0,
     "max": 30.0,
     "units": "ft",
-    "note": "fixed scientific scale covering credible Great Lakes extremes (~25-30 ft); model maximum each run reported in subtitle/metadata"
+    "note": "one continuous anchor gradient 0 dark-blue .. 30+ dark-purple (anchors at 0/1/2/3/5/6/9/10/12/13/15/16/20/21/23/24/26/27/30 ft, compressed toward the top); values above 30 ft clamp to dark purple; legend ticks 0/2/5/9/12/15/20/23/26/30+ ft"
   },
   "refresh_interval_seconds": 21600,
   "buoys": [

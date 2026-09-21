@@ -204,11 +204,33 @@ def _lut(stops, n=256):
     return [_interp_stops(stops, i / (n - 1)) for i in range(n)]
 
 
-WAVE_STOPS = [  # calm deep blue -> cyan -> green -> yellow -> orange -> red
-    (0.00, (16, 52, 140)), (0.20, (20, 110, 200)), (0.40, (20, 170, 200)),
-    (0.60, (120, 200, 60)), (0.75, (250, 210, 40)), (0.88, (240, 120, 20)),
-    (1.00, (200, 20, 20)),
+WAVE_STOPS = [  # continuous anchor gradient, ft -> color (piecewise-linear).
+    # Anchors bunch toward low values, so each successive range gets
+    # progressively less color resolution (0-9 highest, 27-30+ compressed).
+    # Values above 30 ft clamp into the dark-purple extreme end.
+    (0.0 / 30, (13, 42, 120)),    # 0 dark blue
+    (1.0 / 30, (20, 100, 215)),   # 1 blue
+    (2.0 / 30, (20, 170, 225)),   # 2 blue -> cyan
+    (3.0 / 30, (20, 200, 200)),   # 3 cyan
+    (5.0 / 30, (80, 195, 120)),   # 5 cyan -> green
+    (6.0 / 30, (120, 200, 60)),   # 6 green
+    (9.0 / 30, (250, 220, 40)),   # 9 green -> yellow
+    (10.0 / 30, (250, 215, 40)),  # 10 yellow
+    (12.0 / 30, (250, 185, 30)),  # 12 yellow -> yellow-orange
+    (13.0 / 30, (250, 160, 30)),  # 13 yellow-orange -> orange
+    (15.0 / 30, (240, 120, 20)),  # 15 orange
+    (16.0 / 30, (240, 115, 25)),  # 16 orange
+    (20.0 / 30, (210, 30, 30)),   # 20 orange -> red
+    (21.0 / 30, (200, 25, 45)),   # 21 red
+    (23.0 / 30, (170, 20, 90)),   # 23 red -> red-violet
+    (24.0 / 30, (150, 20, 110)),  # 24 red-violet
+    (26.0 / 30, (120, 30, 150)),  # 26 red-violet -> violet
+    (27.0 / 30, (110, 25, 150)),  # 27 violet
+    (30.0 / 30, (60, 10, 90)),    # 30+ violet -> purple -> dark purple
 ]
+WAVE_TICKS = [(0, "0 ft"), (2, "2 ft"), (5, "5 ft"), (9, "9 ft"),
+              (12, "12 ft"), (15, "15 ft"), (20, "20 ft"), (23, "23 ft"),
+              (26, "26 ft"), (30, "30+ ft")]
 TEMP_STOPS = [  # cold blue -> cyan -> green -> yellow -> orange -> red
     (0.00, (30, 60, 180)), (0.25, (30, 150, 220)), (0.45, (60, 190, 150)),
     (0.60, (240, 220, 60)), (0.80, (240, 130, 30)), (1.00, (190, 30, 30)),
@@ -273,9 +295,11 @@ def _legend_font(size):
 
 
 def draw_legend(path, title, subtitle, unit_label, vmin, vmax, stops,
-                source_line, fmt="{:.0f}", transparent_note=None):
+                source_line, fmt="{:.0f}", transparent_note=None,
+                tick_labels=None):
     """Draw a standalone legend PNG (used by KML ScreenOverlay).
-    Returns (W, H)."""
+    Returns (W, H). tick_labels = optional [(value, label)] drawn at their
+    scale positions (used by the anchored wave gradient)."""
     W, H = LEGEND_W, LEGEND_H
     img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
     d = ImageDraw.Draw(img)
@@ -288,10 +312,19 @@ def draw_legend(path, title, subtitle, unit_label, vmin, vmax, stops,
     for i, c in enumerate(lut):
         d.line([(bx + i, by), (bx + i, by + bh)], fill=c + (255,))
     d.rectangle([bx, by, bx + bw - 1, by + bh], outline=(40, 40, 40))
-    for frac, val in ((0.0, vmin), (0.5, (vmin + vmax) / 2), (1.0, vmax)):
-        x = bx + int(frac * (bw - 1))
-        d.text((min(max(x - 18, 2), W - 70), by + bh + 4),
-               fmt.format(val), font=f_body, fill=(10, 10, 10))
+    if tick_labels:
+        span = (vmax - vmin) or 1.0
+        for val, label in tick_labels:
+            frac = min(max((val - vmin) / span, 0.0), 1.0)
+            x = bx + int(frac * (bw - 1))
+            tw = d.textlength(label, font=f_small)
+            d.text((min(max(x - tw / 2, 2), W - tw - 2), by + bh + 4),
+                   label, font=f_small, fill=(10, 10, 10))
+    else:
+        for frac, val in ((0.0, vmin), (0.5, (vmin + vmax) / 2), (1.0, vmax)):
+            x = bx + int(frac * (bw - 1))
+            d.text((min(max(x - 18, 2), W - 70), by + bh + 4),
+                   fmt.format(val), font=f_body, fill=(10, 10, 10))
     d.text((bx + bw - 66, by + bh + 26), unit_label, font=f_body, fill=(10, 10, 10))
     d.text((14, H - 40), source_line, font=f_small, fill=(60, 60, 60))
     if transparent_note:

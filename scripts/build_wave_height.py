@@ -21,10 +21,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
                        description_html, legend_block,
                        refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              download, fetch_buoy_obs, promote_stage,
-                              read_state, stage_dir, utcnow_iso,
-                              write_metadata, write_state)
+from geospatial_utils import (REPO_ROOT, SITE_DIR, WAVE_TICKS,
+                              base_metadata, download, fetch_buoy_obs,
+                              promote_stage, read_state, stage_dir,
+                              utcnow_iso, write_metadata, write_state)
 from render_gradient import render_field
 
 PRODUCT = "wave_height"
@@ -202,7 +202,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
         source_line=(f"Source: NCEP GLWU v2.1 (WAVEWATCH III) {datestr} t{cycle}z  |  "
                      f"Processed {utcnow_iso()}"),
         unit_label="feet", transparent_value=None, fmt="{:.0f}",
-        splat_radius=2, product_dir=stage_prod)
+        splat_radius=2, product_dir=stage_prod, tick_labels=WAVE_TICKS)
 
     if int((rgba[:, :, 3] > 0).sum()) < 10_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: raster has no water pixels.")
@@ -241,9 +241,12 @@ def _build(got, used_url, datestr, cycle, raw_path):
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values_ft)
-    scale_html = (f"Wave height (feet): <b>0</b> calm (deep blue) → "
-                  f"<b>10</b> → <b>20</b> → <b>30</b> extreme (red). "
-                  f"Model maximum this run: <b>{run_max} ft</b>. "
+    scale_html = (f"Wave height (feet, one continuous gradient): <b>0</b> dark "
+                  f"blue → <b>2</b> blue/cyan → <b>5</b> cyan/green → <b>9</b> "
+                  f"green/yellow → <b>12–15</b> yellow-orange → orange → "
+                  f"<b>20</b> red → <b>23–26</b> red-violet → violet → "
+                  f"<b>30+</b> dark purple extreme. Model maximum this run: "
+                  f"<b>{run_max} ft</b>. Values above 30 ft stay dark purple. "
                   f"Significant height = average of highest third of waves.")
     meta["legend_scale_html"] = scale_html
     write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text

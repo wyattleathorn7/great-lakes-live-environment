@@ -30,7 +30,7 @@ RENDER_SPECS = {
 
 def render_field(product, lats, lons, values_display, vmin, vmax, meta_extra,
                  title, subtitle, source_line, unit_label, transparent_value,
-                 fmt, splat_radius=1, product_dir=None):
+                 fmt, splat_radius=1, product_dir=None, tick_labels=None):
     bounds = load_bounds()
     rows, cols, valid = canvas_indices(lats, lons, bounds)
     field, counts = bin_to_canvas(
@@ -46,7 +46,7 @@ def render_field(product, lats, lons, values_display, vmin, vmax, meta_extra,
     save_png(rgba, os.path.join(product_dir, "current.png"))
     draw_legend(os.path.join(product_dir, "legend.png"), title, subtitle,
                 unit_label, vmin, vmax, spec["stops"], source_line,
-                fmt=fmt,
+                fmt=fmt, tick_labels=tick_labels,
                 transparent_note="Transparent outside valid water data.")
     meta = dict(meta_extra)
     meta["color_scale_min"] = vmin
@@ -75,7 +75,8 @@ def main():
                  m["vmin"], m["vmax"], m["meta_extra"], m["title"],
                  m["subtitle"], m["source_line"], m["unit_label"],
                  m.get("transparent_value"), m.get("fmt", "{:.0f}"),
-                 m.get("splat_radius", 1), product_dir=args.out_dir)
+                 m.get("splat_radius", 1), product_dir=args.out_dir,
+                 tick_labels=m.get("tick_labels"))
     print(f"re-rendered {args.product} from {args.from_cache}")
 
 
