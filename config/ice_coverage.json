@@ -1,0 +1,15 @@
+{
+  "product": "ice_coverage",
+  "title": "GREAT LAKES ICE COVERAGE",
+  "freshness_label": "LATEST AVAILABLE (daily analysis, seasonal product)",
+  "source_name": "U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, GRID 1800",
+  "source_url": "https://usicecenter.gov/File/DownloadCurrent?pId=38",
+  "variable": "total ice concentration",
+  "source_units": "percent",
+  "display_units": "%",
+  "land_code": -1.0,
+  "color_scale": {"min": 0.0, "max": 100.0, "units": "%"},
+  "zero_ice_rendering": "fully transparent (open water shows no overlay)",
+  "refresh_interval_seconds": 43200,
+  "note": "An all-zero (ice-free) grid in the warm season is VALID data, not corruption. Corruption is detected via file structure, grid dimensions, value domain, and water-cell fraction checks."
+}

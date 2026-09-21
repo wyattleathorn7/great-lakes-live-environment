@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Great Lakes Live Environment</title>
+<style>
+body{font-family:system-ui,sans-serif;max-width:960px;margin:2em auto;padding:0 1em;color:#123}
+.card{border:1px solid #9bb;display-radius:8px;border-radius:8px;padding:1em;margin:1em 0}
+img.legend{max-width:100%;height:auto}
+small{color:#456}
+code{background:#eef;padding:0 .3em}
+</style>
+</head>
+<body>
+<h1>Great Lakes Live Environmental Layers</h1>
+<p>Three independent raster overlays for Google Earth, refreshed automatically
+from official NOAA sources. Each layer can be toggled on/off by itself.</p>
+
+<div class="card" id="wave_height">
+<h2>🌊 Live Wave Height</h2>
+<p><small id="wave_height-meta">loading…</small></p>
+<img class="legend" src="wave_height/legend.png" alt="wave height legend">
+<p><a href="kml/Great_Lakes_Live_Wave_Height.kml">Open in Google Earth (KML)</a> ·
+<a href="wave_height/current.png">current.png</a> ·
+<a href="wave_height/metadata.json">metadata.json</a></p>
+</div>
+
+<div class="card" id="water_temperature">
+<h2>🌡️ Live Water Temperature</h2>
+<p><small id="water_temperature-meta">loading…</small></p>
+<img class="legend" src="water_temperature/legend.png" alt="water temperature legend">
+<p><a href="kml/Great_Lakes_Live_Water_Temperature.kml">Open in Google Earth (KML)</a> ·
+<a href="water_temperature/current.png">current.png</a> ·
+<a href="water_temperature/metadata.json">metadata.json</a></p>
+</div>
+
+<div class="card" id="ice_coverage">
+<h2>🧊 Live Ice Coverage</h2>
+<p><small id="ice_coverage-meta">loading…</small></p>
+<img class="legend" src="ice_coverage/legend.png" alt="ice coverage legend">
+<p><a href="kml/Great_Lakes_Live_Ice_Coverage.kml">Open in Google Earth (KML)</a> ·
+<a href="ice_coverage/current.png">current.png</a> ·
+<a href="ice_coverage/metadata.json">metadata.json</a></p>
+</div>
+
+<p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU).
+This project is not endorsed by NOAA. Stable URLs — Google Earth layers never
+need re-pointing; images carry version query strings so updates appear on refresh.</small></p>
+
+<script>
+["wave_height","water_temperature","ice_coverage"].forEach(p=>{
+  fetch(p+"/metadata.json").then(r=>r.json()).then(m=>{
+    document.getElementById(p+"-meta").textContent =
+      m.freshness+" | Data time: "+m.data_time_utc+" | Processed: "+m.processing_time_utc;
+  }).catch(()=>{document.getElementById(p+"-meta").textContent="metadata not yet published";});
+});
+</script>
+</body>
+</html>

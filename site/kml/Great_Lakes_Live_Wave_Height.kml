@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>🌊 LIVE WAVE HEIGHT</name>
+    <description><![CDATA[<h2>LIVE GREAT LAKES WAVE HEIGHT</h2><p><b>Data time:</b> 2026-09-21 13:00 UTC<br/><b>Source updated:</b> Mon, 21 Sep 2026 13:27:44 GMT<br/><b>Processed:</b> 2026-09-21 16:32 UTC<br/><b>Status:</b> LIVE / CURRENT MODEL (analysis)</p><p><b>Source:</b> NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III)<br/><a href="https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260921/glwu.grlc_2p5km.t13z.grib2">https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260921/glwu.grlc_2p5km.t13z.grib2</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of temperature and ice layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <GroundOverlay>
+      <name>🌊 LIVE WAVE HEIGHT</name>
+      <drawOrder>10</drawOrder>
+      <Icon>
+        <href>https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO/wave_height/current.png?v=2026-09-21_1632_UTC</href>
+        <refreshMode>onChange</refreshMode>
+      </Icon>
+      <LatLonBox>
+        <north>49.5</north>
+        <south>40.5</south>
+        <east>-73.5</east>
+        <west>-93.0</west>
+      </LatLonBox>
+    </GroundOverlay>
+    <ScreenOverlay>
+      <name>🌊 LIVE WAVE HEIGHT — legend</name>
+      <Icon>
+        <href>https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO/wave_height/legend.png?v=2026-09-21_1632_UTC</href>
+      </Icon>
+      <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.01" y="0.08" xunits="fraction" yunits="fraction"/>
+      <size x="0.32" y="0" xunits="fraction" yunits="fraction"/>
+    </ScreenOverlay>
+    <NetworkLink>
+      <name>🌊 LIVE WAVE HEIGHT — auto-refresh</name>
+      <Link>
+        <href>https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO/kml/Great_Lakes_Live_Wave_Height.kml</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>21600</refreshInterval>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>

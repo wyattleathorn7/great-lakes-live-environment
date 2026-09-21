@@ -1,0 +1,69 @@
+{
+  "product": "wave_height",
+  "title": "LIVE GREAT LAKES WAVE HEIGHT",
+  "freshness": "LIVE / CURRENT MODEL (analysis)",
+  "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III)",
+  "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III)",
+  "variable": "HTSGW (significant height of combined wind waves and swell, analysis step)",
+  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260921/glwu.grlc_2p5km.t13z.grib2",
+  "data_time_utc": "2026-09-21 13:00 UTC",
+  "source_last_modified_utc": "Mon, 21 Sep 2026 13:27:44 GMT",
+  "processing_time_utc": "2026-09-21 16:32 UTC",
+  "units": "ft (display); source m",
+  "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.0,
+  "color_scale_max": 8.5,
+  "color_scale_units": "ft",
+  "missing_data_treatment": "GRIB2 missing value 9999 and off-water grid points rendered fully transparent; never zero-filled.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "model_cycle": "20260921 t13z",
+  "stats": {
+    "valid_cells": 44863,
+    "max_ft": 8.73,
+    "mean_ft": 3.161,
+    "p99_5_ft": 8.46
+  },
+  "rendered_nontransparent_pixels": 332121,
+  "rendered_canvas_pixels": 2115000,
+  "buoy_qc": {
+    "45001": {
+      "time_utc": "2026-09-21 16:00 UTC",
+      "WVHT_m": null,
+      "WTMP_C": 13.0,
+      "note": "no WVHT obs"
+    },
+    "45002": {
+      "time_utc": "2026-09-21 16:00 UTC",
+      "WVHT_m": null,
+      "WTMP_C": 18.0,
+      "note": "no WVHT obs"
+    },
+    "45132": {
+      "obs_ft": 4.27,
+      "grid_ft": 5.4461944,
+      "absdiff_ft": 1.18,
+      "verdict": "OK",
+      "obs_time": "2026-09-21 16:00 UTC"
+    },
+    "45012": {
+      "time_utc": "2026-09-21 16:00 UTC",
+      "WVHT_m": null,
+      "WTMP_C": 19.8,
+      "note": "no WVHT obs"
+    },
+    "45005": {
+      "time_utc": "2026-09-21 16:00 UTC",
+      "WVHT_m": null,
+      "WTMP_C": null,
+      "note": "no WVHT obs"
+    }
+  }
+}

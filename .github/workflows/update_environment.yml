@@ -1,0 +1,149 @@
+name: Update Great Lakes live environment
+
+on:
+  schedule:
+    # Every 6 h matches the fastest source (NCEP GLWU cycles).
+    # Daily products (GLSEA, NIC ice) skip automatically when the source
+    # file is unchanged, so no unnecessary rebuilds or commits occur.
+    - cron: "15 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      product:
+        description: "Which product to update"
+        required: false
+        default: "all"
+        type: choice
+        options: ["all", "wave_height", "water_temperature", "ice_coverage"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: live-environment
+  cancel-in-progress: false
+
+jobs:
+  wave_height:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'wave_height' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy pillow eccodes
+      - name: Update wave height
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        # Exit 2 = source unavailable -> keep previous raster, stay green.
+        run: |
+          python scripts/build_wave_height.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Wave source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: site-wave_height
+          path: |
+            site/wave_height
+            site/kml/Great_Lakes_Live_Wave_Height.kml
+            kml/Great_Lakes_Live_Wave_Height.kml
+          if-no-files-found: warn
+
+  water_temperature:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'water_temperature' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy pillow
+      - name: Update water temperature
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_water_temperature.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Temperature source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: site-water_temperature
+          path: |
+            site/water_temperature
+            site/kml/Great_Lakes_Live_Water_Temperature.kml
+            kml/Great_Lakes_Live_Water_Temperature.kml
+          if-no-files-found: warn
+
+  ice_coverage:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'ice_coverage' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy pillow
+      - name: Update ice coverage
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_ice_coverage.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Ice source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: site-ice_coverage
+          path: |
+            site/ice_coverage
+            site/kml/Great_Lakes_Live_Ice_Coverage.kml
+            kml/Great_Lakes_Live_Ice_Coverage.kml
+          if-no-files-found: warn
+
+  publish:
+    needs: [wave_height, water_temperature, ice_coverage]
+    # Publish whatever succeeded; a single-product failure must not block
+    # the other two layers from reaching GitHub Pages.
+    if: always()
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install numpy pillow
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Merge product artifacts into site/
+        run: |
+          for a in artifacts/site-*/; do
+            [ -d "$a" ] || continue
+            cp -r "$a." ./ 2>/dev/null || true
+          done
+          ls -R site | head -30
+        shell: bash
+      - name: Validate outputs
+        run: python scripts/validate_outputs.py
+      - name: Commit updated layers back to repo
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-update live Great Lakes layers"
+          file_pattern: "site kml output/state"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5

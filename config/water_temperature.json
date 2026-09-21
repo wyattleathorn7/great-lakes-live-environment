@@ -1,0 +1,25 @@
+{
+  "product": "water_temperature",
+  "title": "GREAT LAKES SURFACE WATER TEMPERATURE",
+  "freshness_label": "CURRENT DAILY (satellite composite)",
+  "source_name": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
+  "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
+  "variable": "lake surface water temperature (satellite-derived AVHRR/VIIRS composite)",
+  "source_units": "degC",
+  "display_units": "degF",
+  "land_code": 255.0,
+  "color_scale": {
+    "min": "adaptive floor(p1), clamped >= 32",
+    "max": "adaptive ceil(p99), clamped <= 80",
+    "units": "degF"
+  },
+  "refresh_interval_seconds": 43200,
+  "buoys": [
+    "45001",
+    "45002",
+    "45132",
+    "45012",
+    "45005"
+  ],
+  "buoy_qc_tolerance_f": 4.0
+}

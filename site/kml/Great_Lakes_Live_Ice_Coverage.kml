@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>🧊 LIVE ICE COVERAGE</name>
+    <description><![CDATA[<h2>GREAT LAKES ICE COVERAGE</h2><p><b>Data time:</b> retrieved 2026-09-21 16:28 UTC (NIC daily analysis; NIC publishes no per-file timestamp)<br/><b>Source updated:</b> unknown<br/><b>Processed:</b> 2026-09-21 16:28 UTC<br/><b>Status:</b> LATEST AVAILABLE (daily analysis, seasonal product)</p><p><b>Source:</b> U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, GRID 1800<br/><a href="https://usicecenter.gov/File/DownloadCurrent?pId=38">https://usicecenter.gov/File/DownloadCurrent?pId=38</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and temperature layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <GroundOverlay>
+      <name>🧊 LIVE ICE COVERAGE</name>
+      <drawOrder>10</drawOrder>
+      <Icon>
+        <href>https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO/ice_coverage/current.png?v=2026-09-21_1628_UTC</href>
+        <refreshMode>onChange</refreshMode>
+      </Icon>
+      <LatLonBox>
+        <north>49.5</north>
+        <south>40.5</south>
+        <east>-73.5</east>
+        <west>-93.0</west>
+      </LatLonBox>
+    </GroundOverlay>
+    <ScreenOverlay>
+      <name>🧊 LIVE ICE COVERAGE — legend</name>
+      <Icon>
+        <href>https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO/ice_coverage/legend.png?v=2026-09-21_1628_UTC</href>
+      </Icon>
+      <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
+      <screenXY x="0.01" y="0.08" xunits="fraction" yunits="fraction"/>
+      <size x="0.32" y="0" xunits="fraction" yunits="fraction"/>
+    </ScreenOverlay>
+    <NetworkLink>
+      <name>🧊 LIVE ICE COVERAGE — auto-refresh</name>
+      <Link>
+        <href>https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO/kml/Great_Lakes_Live_Ice_Coverage.kml</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>43200</refreshInterval>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>

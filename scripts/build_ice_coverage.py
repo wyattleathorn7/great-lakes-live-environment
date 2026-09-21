@@ -1,0 +1,181 @@
+"""Pipeline C — LIVE ICE COVERAGE (independent).
+
+USNIC NAIS daily ASCII grid -> validate -> extract concentration (%) ->
+clip to Great Lakes -> ice gradient (0% open water = transparent) ->
+transparent PNG -> metadata -> KML.
+
+An all-zero grid in the warm season is VALID data. Corruption is caught by
+file-structure, dimension, value-domain, and water-fraction checks.
+
+Exit codes: 0 = updated (or skipped, source unchanged); 2 = source/validation
+failure (previous valid raster left untouched); 1 = unexpected error.
+"""
+
+import hashlib
+import json
+import os
+import sys
+import traceback
+
+import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build_kml import (assert_no_vector_geometry, build_kml,
+                       description_html)
+from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
+                              download, read_state, utcnow_iso,
+                              write_state)
+from render_gradient import render_field
+
+PRODUCT = "ice_coverage"
+CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+ICE_URL = CONFIG["source_url"]
+RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
+COORDS_DIR = os.path.join(RAW_DIR, "coords")
+
+
+def main():
+    try:
+        return run()
+    except SystemExit as e:
+        raise
+    except Exception:
+        traceback.print_exc()
+        return 1
+
+
+def run():
+    raw_path = os.path.join(RAW_DIR, "nic_ice_1800.asc")
+    try:
+        info = download(ICE_URL, raw_path)
+    except Exception as e:
+        print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
+        return 2
+    if info["size_bytes"] < 1_000_000:
+        print(f"[{PRODUCT}] VALIDATION FAILED: file too small "
+              f"({info['size_bytes']} bytes). Keeping previous.")
+        return 2
+
+    # NIC sends no Last-Modified header, so change detection uses a
+    # SHA-256 content hash (off-season grids are re-published identically
+    # for weeks; hashing avoids pointless rebuilds AND avoids a stuck
+    # None == None skip that would freeze updates forever).
+    with open(raw_path, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+
+    prev = read_state(PRODUCT)
+    if prev.get("content_sha256") == digest \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
+        print(f"[{PRODUCT}] source content unchanged (sha256 {digest[:12]}…); "
+              f"keeping current raster.")
+        return 0
+
+    with open(raw_path) as f:
+        header = [f.readline() for _ in range(6)]
+    try:
+        ncols = int(float(header[0].split()[-1]))
+        nrows = int(float(header[1].split()[-1]))
+    except (ValueError, IndexError):
+        print(f"[{PRODUCT}] VALIDATION FAILED: bad header {header}.")
+        return 2
+    if (ncols, nrows) != (1024, 1024):
+        print(f"[{PRODUCT}] VALIDATION FAILED: dims {ncols}x{nrows}.")
+        return 2
+    data = np.loadtxt(raw_path, skiprows=6)
+    if data.shape != (1024, 1024):
+        print(f"[{PRODUCT}] VALIDATION FAILED: shape {data.shape}.")
+        return 2
+
+    land = CONFIG["land_code"]
+    is_land = data == land
+    is_water = (data >= 0.0) & (data <= 100.0)
+    bad = ~(is_land | is_water) & np.isfinite(data)
+    n_bad = int((bad | ~np.isfinite(data)).sum())
+    n_water = int(is_water.sum())
+    print(f"[{PRODUCT}] land={int(is_land.sum())} water={n_water} "
+          f"out_of_domain={n_bad} max_ice={data[is_water].max() if n_water else 'n/a'}")
+    if n_bad > 100:
+        print(f"[{PRODUCT}] VALIDATION FAILED: {n_bad} out-of-domain values. "
+              f"Keeping previous.")
+        return 2
+    if n_water < 80_000:
+        print(f"[{PRODUCT}] VALIDATION FAILED: implausible water coverage. "
+              f"Keeping previous.")
+        return 2
+
+    # lake-mask cross-check (coords LUTs shared with the temperature layer)
+    try:
+        lake_ids = np.loadtxt(os.path.join(COORDS_DIR, "1024_lake_ids.txt"))
+        lats = np.loadtxt(os.path.join(COORDS_DIR, "1024_latgrid.txt"))
+        lons = np.loadtxt(os.path.join(COORDS_DIR, "1024_longrid.txt"))
+        n_mask = int(((lake_ids >= 1) & (lake_ids <= 6)).sum())
+        print(f"[{PRODUCT}] mask water cells={n_mask}")
+        if not (0.5 * n_mask < n_water < 1.6 * n_mask):
+            print(f"[{PRODUCT}] VALIDATION FAILED: water fraction disagrees "
+                  f"with lake mask. Keeping previous.")
+            return 2
+    except FileNotFoundError:
+        print(f"[{PRODUCT}] WARNING: lake-mask LUTs not present; skipping "
+              f"mask cross-check.")
+        lats = lons = None
+
+    values = np.full(data.shape, np.nan)
+    values[is_water] = data[is_water]
+    if lats is None:  # cannot georeference -> fail safe, keep previous
+        print(f"[{PRODUCT}] VALIDATION FAILED: no georeference LUTs.")
+        return 2
+
+    ice_frac = float((data[is_water] > 0).mean()) if n_water else 0.0
+    meta = base_metadata(
+        PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
+        CONFIG["source_name"], ICE_URL, CONFIG["variable"],
+        data_time_utc=(f"retrieved {utcnow_iso()} (NIC daily analysis; "
+                     "NIC publishes no per-file timestamp)"),
+        source_last_modified_utc=info["http_last_modified"] or "unknown",
+        units="%",
+        source_resolution="1.8 km NIC NAIS daily grid (1024x1024)",
+        color_min=0.0, color_max=100.0, color_units="%",
+        missing_data_treatment=("land code -1 and any value < -1 (e.g. -9999) "
+                                "rendered fully transparent and NEVER treated as "
+                                "0% ice; 0% open water is also transparent by "
+                                "design so base layers stay visible."))
+    meta["stats"] = {
+        "water_cells": n_water,
+        "ice_covered_fraction": round(ice_frac, 5),
+        "max_concentration_pct": round(float(data[is_water].max()), 2) if n_water else 0.0,
+        "note": ("ice-free conditions are normal outside Dec-Apr; "
+                 "an all-zero grid is valid data, not corruption."),
+    }
+
+    field, rgba, meta = render_field(
+        PRODUCT, lats, lons, values, 0.0, 100.0, meta,
+        title=CONFIG["title"],
+        subtitle=(f"{CONFIG['freshness_label']}  |  Data time: "
+                  f"{info['http_last_modified'] or 'see metadata'}"),
+        source_line=(f"Source: US National Ice Center daily Great Lakes analysis  |  "
+                     f"Processed {utcnow_iso()}"),
+        unit_label="%", transparent_value=0.0, fmt="{:.0f}",
+        splat_radius=1)
+
+    np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
+                        lats=lats, lons=lons, values=values)
+
+    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    kml_text = build_kml(
+        PRODUCT, "Great_Lakes_Live_Ice_Coverage.kml",
+        "\U0001F9CA LIVE ICE COVERAGE",
+        f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
+        description_html(CONFIG["title"], meta,
+                         "Turn on/off independently of wave and temperature layers."),
+        CONFIG["refresh_interval_seconds"], token)
+    assert_no_vector_geometry(kml_text)
+
+    write_state(PRODUCT, {"content_sha256": digest,
+                          "source_last_modified": info["http_last_modified"],
+                          "processing_time_utc": meta["processing_time_utc"]})
+    print(f"[{PRODUCT}] UPDATED OK (ice-covered fraction={ice_frac:.4f}).")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

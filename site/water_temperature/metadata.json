@@ -1,0 +1,71 @@
+{
+  "product": "water_temperature",
+  "title": "GREAT LAKES SURFACE WATER TEMPERATURE",
+  "freshness": "CURRENT DAILY (satellite composite)",
+  "noaa_source": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
+  "product_name": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
+  "variable": "lake surface water temperature (satellite-derived AVHRR/VIIRS composite)",
+  "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
+  "data_time_utc": "Mon, 21 Sep 2026 06:50:54 GMT",
+  "source_last_modified_utc": "Mon, 21 Sep 2026 06:50:54 GMT",
+  "processing_time_utc": "2026-09-21 16:32 UTC",
+  "units": "degF (display); source degC",
+  "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 52,
+  "color_scale_max": 74,
+  "color_scale_units": "\u00b0F",
+  "missing_data_treatment": "land code 255.0 and -9999/no-data rendered fully transparent; never interpolated.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "stats": {
+    "valid_cells": 148682,
+    "lakewide_mean_F": 64.29,
+    "min_F": 49.41,
+    "max_F": 74.55
+  },
+  "rendered_nontransparent_pixels": 316927,
+  "rendered_canvas_pixels": 2115000,
+  "buoy_qc": {
+    "45001": {
+      "obs_F": 55.4,
+      "grid_F": 55.3325,
+      "absdiff_F": 0.07,
+      "verdict": "OK",
+      "obs_time": "2026-09-21 16:00 UTC"
+    },
+    "45002": {
+      "obs_F": 64.4,
+      "grid_F": 66.41149999999999,
+      "absdiff_F": 2.01,
+      "verdict": "OK",
+      "obs_time": "2026-09-21 16:00 UTC"
+    },
+    "45132": {
+      "obs_F": 69.62,
+      "grid_F": 73.337,
+      "absdiff_F": 3.72,
+      "verdict": "OK",
+      "obs_time": "2026-09-21 16:00 UTC"
+    },
+    "45012": {
+      "obs_F": 67.64,
+      "grid_F": 70.1105,
+      "absdiff_F": 2.47,
+      "verdict": "OK",
+      "obs_time": "2026-09-21 16:00 UTC"
+    },
+    "45005": {
+      "time_utc": "2026-09-21 16:00 UTC",
+      "WVHT_m": null,
+      "WTMP_C": null,
+      "note": "no WTMP obs"
+    }
+  }
+}

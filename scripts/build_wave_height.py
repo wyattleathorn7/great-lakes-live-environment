@@ -1,0 +1,232 @@
+"""Pipeline A — LIVE WAVE HEIGHT (independent).
+
+NCEP GLWU GRIB2 analysis -> validate -> extract HTSGW -> clip to Great Lakes
+-> m->ft -> wave-height gradient -> transparent PNG -> metadata -> KML.
+NDBC buoys are QC reference only, never the rendering source.
+
+Exit codes: 0 = updated; 2 = source/validation failure (previous valid raster
+left untouched); 1 = unexpected error.
+"""
+
+import json
+import math
+import os
+import sys
+import traceback
+from datetime import datetime, timedelta, timezone
+
+import numpy as np
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from build_kml import (assert_no_vector_geometry, build_kml,
+                       description_html)
+from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
+                              download, fetch_buoy_obs, read_state,
+                              utcnow_iso, write_metadata, write_state)
+from render_gradient import render_field
+
+PRODUCT = "wave_height"
+CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
+M_TO_FT = 3.28084
+
+BUOY_POS = {
+    "45001": (-87.793, 48.061),
+    "45002": (-86.411, 45.344),
+    "45132": (-81.220, 42.460),
+    "45012": (-77.383, 43.619),
+    "45005": (-82.398, 41.677),
+}
+
+
+def ff(x):
+    try:
+        v = float(x)
+        return v if math.isfinite(v) else None
+    except (TypeError, ValueError):
+        return None
+
+
+def candidate_urls(now):
+    urls = []
+    for d in (now, now - timedelta(days=1)):
+        datestr = d.strftime("%Y%m%d")
+        for cycle in CONFIG["cycles_try_order"]:
+            urls.append((
+                CONFIG["file_pattern"].format(
+                    date_dir=f"glwu.{datestr}", cycle=cycle),
+                datestr, cycle))
+    return urls
+
+
+def extract_htsgw_analysis(grib_path):
+    """Return (values_m, lats, lons, dataDate, dataTime) for HTSGW step 0."""
+    from eccodes import (codes_get, codes_get_array, codes_get_values,
+                         codes_grib_new_from_file, codes_release)
+    with open(grib_path, "rb") as f:
+        while True:
+            h = codes_grib_new_from_file(f)
+            if h is None:
+                break
+            try:
+                if codes_get(h, "shortName") == "swh" \
+                        and str(codes_get(h, "step")) == "0":
+                    vals = codes_get_values(h).astype(float)
+                    lats = codes_get_array(h, "latitudes").astype(float)
+                    lons = codes_get_array(h, "longitudes").astype(float)
+                    lons = ((lons + 180) % 360) - 180
+                    date = str(codes_get(h, "dataDate"))
+                    time = str(codes_get(h, "dataTime")).zfill(4)
+                    return vals, lats, lons, date, time
+            finally:
+                codes_release(h)
+    raise ValueError("HTSGW analysis message (step=0) not found in GRIB2")
+
+
+def main():
+    try:
+        return run()
+    except SystemExit as e:
+        raise
+    except Exception:
+        traceback.print_exc()
+        return 1
+
+
+def run():
+    now = datetime.now(timezone.utc)
+    raw_path = os.path.join(RAW_DIR, "glwu_current.grib2")
+    got, used_url, datestr, cycle = None, None, None, None
+    for url, dd, cc in candidate_urls(now):
+        try:
+            info = download(url, raw_path, timeout=300)
+            if info["size_bytes"] < 100_000:
+                print(f"[{PRODUCT}] candidate {dd} t{cc}z too small; trying older.")
+                continue
+            got, used_url, datestr, cycle = info, url, dd, cc
+            break
+        except Exception as e:
+            print(f"[{PRODUCT}] candidate {dd} t{cc}z failed: {str(e)[:140]}")
+    if got is None:
+        print(f"[{PRODUCT}] DOWNLOAD FAILED for all candidates (keeping previous).")
+        return 2
+
+    try:
+        vals_m, lats, lons, data_date, data_time = extract_htsgw_analysis(raw_path)
+    except Exception as e:
+        print(f"[{PRODUCT}] VALIDATION FAILED: GRIB2 decode: {e}. Keeping previous.")
+        return 2
+
+    valid = np.isfinite(vals_m) & (vals_m < 9000) & (vals_m >= 0)
+    n_valid = int(valid.sum())
+    print(f"[{PRODUCT}] HTSGW analysis {data_date} {data_time}Z: "
+          f"valid={n_valid}/{vals_m.size}")
+    if n_valid < 5_000:
+        print(f"[{PRODUCT}] VALIDATION FAILED: too few valid cells. Keeping previous.")
+        return 2
+    vmax_m = float(vals_m[valid].max())
+    if vmax_m > 12:
+        print(f"[{PRODUCT}] VALIDATION FAILED: implausible max {vmax_m} m.")
+        return 2
+
+    vals_ft = vals_m * M_TO_FT
+    data_time_utc = (f"{data_date[0:4]}-{data_date[4:6]}-{data_date[6:8]} "
+                     f"{data_time[0:2]}:{data_time[2:4]} UTC")
+    prev = read_state(PRODUCT)
+    # waves update hourly/cyclically: always re-render on a fresh cycle
+    if prev.get("model_cycle") == f"{datestr} t{cycle}z" \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
+        print(f"[{PRODUCT}] model cycle unchanged ({datestr} t{cycle}z); skipping.")
+        return 0
+
+    p995 = float(np.percentile(vals_ft[valid], 99.5))
+    vmax = min(15.0, max(2.0, math.ceil(p995 * 2) / 2))
+    print(f"[{PRODUCT}] p99.5={p995:.2f} ft -> color max={vmax} ft")
+
+    values_ft = np.full(vals_m.shape, np.nan)
+    values_ft[valid] = vals_ft[valid]
+
+    meta = base_metadata(
+        PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
+        CONFIG["source_name"], used_url, CONFIG["variable"],
+        data_time_utc=data_time_utc,
+        source_last_modified_utc=got.get("http_last_modified") or "n/a (NOMADS)",
+        units="ft (display); source m",
+        source_resolution="~2.5 km NCEP GLWU Lambert grid (581x361)",
+        color_min=0.0, color_max=vmax, color_units="ft",
+        missing_data_treatment=("GRIB2 missing value 9999 and off-water grid "
+                                "points rendered fully transparent; never zero-filled."))
+    meta["model_cycle"] = f"{datestr} t{cycle}z"
+    meta["stats"] = {
+        "valid_cells": n_valid,
+        "max_ft": round(float(vals_ft[valid].max()), 2),
+        "mean_ft": round(float(vals_ft[valid].mean()), 3),
+        "p99_5_ft": round(p995, 2),
+    }
+
+    field, rgba, meta = render_field(
+        PRODUCT, lats, lons, values_ft, 0.0, vmax, meta,
+        title=CONFIG["title"],
+        subtitle=(f"{CONFIG['freshness_label']}  |  Model time: {data_time_utc}"),
+        source_line=(f"Source: NCEP GLWU v2.1 (WAVEWATCH III) {datestr} t{cycle}z  |  "
+                     f"Processed {utcnow_iso()}"),
+        unit_label="feet", transparent_value=None, fmt="{:.1f}",
+        splat_radius=2)
+
+    if int((rgba[:, :, 3] > 0).sum()) < 10_000:
+        print(f"[{PRODUCT}] VALIDATION FAILED: raster has no water pixels.")
+        return 2
+
+    # ---- buoy QC (reference only) ----
+    qc = fetch_buoy_obs(CONFIG["buoys"])
+    bounds = json.load(open(os.path.join(REPO_ROOT, "config", "great_lakes_bounds.json")))
+    H, W = rgba.shape[:2]
+    for bid, pos in BUOY_POS.items():
+        obs = qc.get(bid, {})
+        wv = ff(obs.get("WVHT_m"))
+        if wv is None:
+            print(f"[{PRODUCT}] buoy {bid}: no WVHT obs (skipped)")
+            meta.setdefault("buoy_qc", {})[bid] = {**obs, "note": "no WVHT obs"}
+            continue
+        wv_ft = wv * M_TO_FT
+        col = int((pos[0] - bounds["lon_min"]) / (bounds["lon_max"] - bounds["lon_min"]) * W)
+        row = int((bounds["lat_max"] - pos[1]) / (bounds["lat_max"] - bounds["lat_min"]) * H)
+        cell = None
+        for dr in range(-3, 4):
+            for dc in range(-3, 4):
+                rr, cc = row + dr, col + dc
+                if 0 <= rr < H and 0 <= cc < W and np.isfinite(field[rr, cc]):
+                    cell = float(field[rr, cc])
+                    break
+            if cell is not None:
+                break
+        diff = None if cell is None else round(abs(cell - wv_ft), 2)
+        flag = ("OK" if (diff is not None and diff <= CONFIG["buoy_qc_tolerance_ft"])
+                else "CHECK" if diff is not None else "NO_GRID_CELL")
+        print(f"[{PRODUCT}] buoy {bid}: obs {wv_ft:.1f}ft grid {cell} diff {diff} -> {flag}")
+        meta.setdefault("buoy_qc", {})[bid] = {
+            "obs_ft": round(wv_ft, 2), "grid_ft": cell, "absdiff_ft": diff,
+            "verdict": flag, "obs_time": obs.get("time_utc")}
+
+    np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
+                        lats=lats, lons=lons, values=values_ft)
+    write_metadata(os.path.join(SITE_DIR, PRODUCT), meta)  # re-write incl. buoy QC
+
+    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    kml_text = build_kml(
+        PRODUCT, "Great_Lakes_Live_Wave_Height.kml",
+        "\U0001F30A LIVE WAVE HEIGHT",
+        f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
+        description_html(CONFIG["title"], meta,
+                         "Turn on/off independently of temperature and ice layers."),
+        CONFIG["refresh_interval_seconds"], token)
+    assert_no_vector_geometry(kml_text)
+
+    write_state(PRODUCT, {"model_cycle": meta["model_cycle"],
+                          "processing_time_utc": meta["processing_time_utc"]})
+    print(f"[{PRODUCT}] UPDATED OK.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

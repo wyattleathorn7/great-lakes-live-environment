@@ -1,0 +1,30 @@
+{
+  "product": "wave_height",
+  "title": "LIVE GREAT LAKES WAVE HEIGHT",
+  "freshness_label": "LIVE / CURRENT MODEL (analysis)",
+  "source_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III)",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/{date_dir}/glwu.grlc_2p5km.t{cycle}z.grib2",
+  "cycles_try_order": [
+    "13",
+    "07",
+    "01"
+  ],
+  "variable": "HTSGW (significant height of combined wind waves and swell, analysis step)",
+  "source_units": "m",
+  "display_units": "ft",
+  "color_scale": {
+    "min": 0.0,
+    "max": "adaptive p99.5 rounded up to 0.5 ft, clamped to [2, 15]",
+    "units": "ft"
+  },
+  "refresh_interval_seconds": 21600,
+  "buoys": [
+    "45001",
+    "45002",
+    "45132",
+    "45012",
+    "45005"
+  ],
+  "buoy_qc_tolerance_ft": 1.5
+}
