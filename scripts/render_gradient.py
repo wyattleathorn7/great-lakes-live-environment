@@ -29,7 +29,7 @@ RENDER_SPECS = {
 
 def render_field(product, lats, lons, values_display, vmin, vmax, meta_extra,
                  title, subtitle, source_line, unit_label, transparent_value,
-                 fmt, splat_radius=1):
+                 fmt, splat_radius=1, product_dir=None):
     bounds = load_bounds()
     rows, cols, valid = canvas_indices(lats, lons, bounds)
     field, counts = bin_to_canvas(
@@ -39,7 +39,8 @@ def render_field(product, lats, lons, values_display, vmin, vmax, meta_extra,
     spec = RENDER_SPECS[product]
     rgba = apply_colormap(field, vmin, vmax, spec["stops"],
                           bounds["overlay_alpha"], transparent_value)
-    product_dir = os.path.join(SITE_DIR, product)
+    if product_dir is None:
+        product_dir = os.path.join(SITE_DIR, product)
     save_png(rgba, os.path.join(product_dir, "current.png"))
     draw_legend(os.path.join(product_dir, "legend.png"), title, subtitle,
                 unit_label, vmin, vmax, spec["stops"], source_line,
@@ -61,6 +62,8 @@ def main():
     ap.add_argument("--from-cache", required=True)
     ap.add_argument("--meta", required=True,
                     help="JSON file with title/subtitle/source_line/vmin/vmax/meta_extra")
+    ap.add_argument("--out-dir", default=None,
+                    help="product output dir (default: site/<product>)")
     args = ap.parse_args()
     z = np.load(args.from_cache)
     with open(args.meta) as f:
@@ -69,7 +72,7 @@ def main():
                  m["vmin"], m["vmax"], m["meta_extra"], m["title"],
                  m["subtitle"], m["source_line"], m["unit_label"],
                  m.get("transparent_value"), m.get("fmt", "{:.0f}"),
-                 m.get("splat_radius", 1))
+                 m.get("splat_radius", 1), product_dir=args.out_dir)
     print(f"re-rendered {args.product} from {args.from_cache}")
 
 

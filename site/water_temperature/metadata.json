@@ -6,9 +6,9 @@
   "product_name": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
   "variable": "lake surface water temperature (satellite-derived AVHRR/VIIRS composite)",
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
-  "data_time_utc": "Mon, 21 Sep 2026 06:50:54 GMT",
+  "data_time_utc": "2026-09-21 06:50 UTC",
   "source_last_modified_utc": "Mon, 21 Sep 2026 06:50:54 GMT",
-  "processing_time_utc": "2026-09-21 16:32 UTC",
+  "processing_time_utc": "2026-09-21 17:08 UTC",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -38,14 +38,14 @@
       "grid_F": 55.3325,
       "absdiff_F": 0.07,
       "verdict": "OK",
-      "obs_time": "2026-09-21 16:00 UTC"
+      "obs_time": "2026-09-21 16:30 UTC"
     },
     "45002": {
       "obs_F": 64.4,
       "grid_F": 66.41149999999999,
       "absdiff_F": 2.01,
       "verdict": "OK",
-      "obs_time": "2026-09-21 16:00 UTC"
+      "obs_time": "2026-09-21 16:30 UTC"
     },
     "45132": {
       "obs_F": 69.62,
@@ -55,14 +55,14 @@
       "obs_time": "2026-09-21 16:00 UTC"
     },
     "45012": {
-      "obs_F": 67.64,
+      "obs_F": 67.46,
       "grid_F": 70.1105,
-      "absdiff_F": 2.47,
+      "absdiff_F": 2.65,
       "verdict": "OK",
-      "obs_time": "2026-09-21 16:00 UTC"
+      "obs_time": "2026-09-21 16:30 UTC"
     },
     "45005": {
-      "time_utc": "2026-09-21 16:00 UTC",
+      "time_utc": "2026-09-21 16:30 UTC",
       "WVHT_m": null,
       "WTMP_C": null,
       "note": "no WTMP obs"

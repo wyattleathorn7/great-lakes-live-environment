@@ -23,8 +23,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
                        description_html)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              download, read_state, utcnow_iso,
-                              write_state)
+                              download, promote_stage, read_state,
+                              stage_dir, utcnow_iso, write_state)
 from render_gradient import render_field
 
 PRODUCT = "ice_coverage"
@@ -70,6 +70,20 @@ def run():
               f"keeping current raster.")
         return 0
 
+    # Render into a stage dir; promote to live site/ + kml/ only on full
+    # success. Any data-dependent failure returns 2 (keep previous).
+    try:
+        return _build(info, raw_path, digest)
+    except Exception as e:
+        traceback.print_exc()
+        print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
+              f"Keeping previous.")
+        return 2
+
+
+def _build(info, raw_path, digest):
+    stage = stage_dir(PRODUCT)
+    stage_prod = os.path.join(stage, "site", PRODUCT)
     with open(raw_path) as f:
         header = [f.readline() for _ in range(6)]
     try:
@@ -126,10 +140,11 @@ def run():
         return 2
 
     ice_frac = float((data[is_water] > 0).mean()) if n_water else 0.0
+    retrieved = utcnow_iso()
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], ICE_URL, CONFIG["variable"],
-        data_time_utc=(f"retrieved {utcnow_iso()} (NIC daily analysis; "
+        data_time_utc=(f"retrieved {retrieved} (NIC daily analysis; "
                      "NIC publishes no per-file timestamp)"),
         source_last_modified_utc=info["http_last_modified"] or "unknown",
         units="%",
@@ -150,12 +165,11 @@ def run():
     field, rgba, meta = render_field(
         PRODUCT, lats, lons, values, 0.0, 100.0, meta,
         title=CONFIG["title"],
-        subtitle=(f"{CONFIG['freshness_label']}  |  Data time: "
-                  f"{info['http_last_modified'] or 'see metadata'}"),
+        subtitle=(f"{CONFIG['freshness_label']}  |  retrieved {retrieved}"),
         source_line=(f"Source: US National Ice Center daily Great Lakes analysis  |  "
                      f"Processed {utcnow_iso()}"),
         unit_label="%", transparent_value=0.0, fmt="{:.0f}",
-        splat_radius=1)
+        splat_radius=1, product_dir=stage_prod)
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values)
@@ -167,13 +181,17 @@ def run():
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta,
                          "Turn on/off independently of wave and temperature layers."),
-        CONFIG["refresh_interval_seconds"], token)
+        CONFIG["refresh_interval_seconds"], token,
+        out_dirs=[os.path.join(stage, "kml", "Great_Lakes_Live_Ice_Coverage.kml"),
+                  os.path.join(stage, "site", "kml", "Great_Lakes_Live_Ice_Coverage.kml")])
     assert_no_vector_geometry(kml_text)
 
+    promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"content_sha256": digest,
                           "source_last_modified": info["http_last_modified"],
                           "processing_time_utc": meta["processing_time_utc"]})
-    print(f"[{PRODUCT}] UPDATED OK (ice-covered fraction={ice_frac:.4f}).")
+    print(f"[{PRODUCT}] UPDATED OK (ice-covered fraction={ice_frac:.4f}, "
+          f"{len(promoted)} files promoted).")
     return 0
 
 

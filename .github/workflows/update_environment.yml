@@ -15,11 +15,13 @@ on:
         type: choice
         options: ["all", "wave_height", "water_temperature", "ice_coverage"]
 
+# Least privilege: product jobs only read the repo; only `publish` writes
+# back results and deploys Pages.
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
 
+# Pinned to 24.04 for deterministic builds: GitHub migrates `ubuntu-latest`
+# to 26.04 beginning 2026-10-19, which must be validated before adopting.
 concurrency:
   group: live-environment
   cancel-in-progress: false
@@ -27,23 +29,26 @@ concurrency:
 jobs:
   wave_height:
     if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'wave_height' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+          cache: pip
       - name: Install dependencies
-        run: pip install numpy pillow eccodes
+        run: pip install -r requirements.txt
       - name: Update wave height
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-        # Exit 2 = source unavailable -> keep previous raster, stay green.
+        # Exit 2 = source unavailable/invalid -> keep previous raster, stay green.
         run: |
           python scripts/build_wave_height.py; rc=$?
           if [ $rc -eq 2 ]; then echo "Wave source unavailable; previous raster kept."; exit 0; fi
           exit $rc
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: site-wave_height
@@ -55,14 +60,17 @@ jobs:
 
   water_temperature:
     if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'water_temperature' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+          cache: pip
       - name: Install dependencies
-        run: pip install numpy pillow
+        run: pip install -r requirements.txt
       - name: Update water temperature
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
@@ -70,7 +78,7 @@ jobs:
           python scripts/build_water_temperature.py; rc=$?
           if [ $rc -eq 2 ]; then echo "Temperature source unavailable; previous raster kept."; exit 0; fi
           exit $rc
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: site-water_temperature
@@ -82,14 +90,17 @@ jobs:
 
   ice_coverage:
     if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'ice_coverage' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+          cache: pip
       - name: Install dependencies
-        run: pip install numpy pillow
+        run: pip install -r requirements.txt
       - name: Update ice coverage
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
@@ -97,7 +108,7 @@ jobs:
           python scripts/build_ice_coverage.py; rc=$?
           if [ $rc -eq 2 ]; then echo "Ice source unavailable; previous raster kept."; exit 0; fi
           exit $rc
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: site-ice_coverage
@@ -112,18 +123,23 @@ jobs:
     # Publish whatever succeeded; a single-product failure must not block
     # the other two layers from reaching GitHub Pages.
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+          cache: pip
       - name: Install dependencies
-        run: pip install numpy pillow
-      - uses: actions/download-artifact@v4
+        run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: Merge product artifacts into site/
@@ -137,12 +153,12 @@ jobs:
       - name: Validate outputs
         run: python scripts/validate_outputs.py
       - name: Commit updated layers back to repo
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "Auto-update live Great Lakes layers"
           file_pattern: "site kml output/state"
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
       - id: deployment

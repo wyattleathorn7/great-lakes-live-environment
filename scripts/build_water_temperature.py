@@ -20,7 +20,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
                        description_html)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              download, fetch_buoy_obs, read_state,
+                              download, fetch_buoy_obs, http_date_to_iso,
+                              promote_stage, read_state, stage_dir,
                               utcnow_iso, write_metadata, write_state)
 from render_gradient import render_field
 
@@ -89,6 +90,23 @@ def run():
               f"({info['http_last_modified']}); keeping current raster.")
         return 0
 
+    # Everything below renders into a stage dir first; the live site/ + kml/
+    # tree is touched only by promote_stage() on full success, so a crash
+    # can never publish a half-updated product set. Any data-dependent
+    # failure returns 2 (keep previous); only unexpected engine errors
+    # escape to exit 1 via main().
+    try:
+        return _build(info, raw_path)
+    except Exception as e:
+        traceback.print_exc()
+        print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
+              f"Keeping previous.")
+        return 2
+
+
+def _build(info, raw_path):
+    stage = stage_dir(PRODUCT)
+    stage_prod = os.path.join(stage, "site", PRODUCT)
     with open(raw_path) as f:
         header = [f.readline() for _ in range(6)]
     try:
@@ -115,6 +133,10 @@ def run():
         & (data > -3) & (data < 45)
     n_valid = int(water.sum())
     n_mask = int(mask_water.sum())
+    if n_valid == 0:
+        print(f"[{PRODUCT}] VALIDATION FAILED: no valid SST cells. "
+              f"Keeping previous.")
+        return 2
     print(f"[{PRODUCT}] valid SST cells={n_valid} mask water cells={n_mask} "
           f"range_C=[{data[water].min():.2f},{data[water].max():.2f}]")
     if n_valid < 80_000 or n_valid < 0.5 * n_mask or n_valid > 1.6 * n_mask:
@@ -134,10 +156,11 @@ def run():
     values_f = np.full(data.shape, np.nan)
     values_f[water] = data[water] * 9.0 / 5.0 + 32.0
 
+    data_time_iso = http_date_to_iso(info["http_last_modified"])
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], GLSEA_URL, CONFIG["variable"],
-        data_time_utc=info["http_last_modified"] or "unknown (see source_last_modified)",
+        data_time_utc=data_time_iso or "unknown (no source timestamp)",
         source_last_modified_utc=info["http_last_modified"] or "unknown",
         units="degF (display); source degC",
         source_resolution="~1.8 km GLSEA grid (1024x1024)",
@@ -155,11 +178,11 @@ def run():
         PRODUCT, lats, lons, values_f, vmin, vmax, meta,
         title=CONFIG["title"],
         subtitle=(f"{CONFIG['freshness_label']}  |  Data time: "
-                  f"{info['http_last_modified'] or 'see metadata'}"),
+                  f"{data_time_iso or 'see metadata'}"),
         source_line=(f"Source: NOAA/GLERL CoastWatch GLSEA  |  "
                      f"Processed {utcnow_iso()}"),
         unit_label="\u00b0F", transparent_value=None, fmt="{:.0f}",
-        splat_radius=1)
+        splat_radius=1, product_dir=stage_prod)
 
     if int((rgba[:, :, 3] > 0).sum()) < 10_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: raster has no water pixels.")
@@ -198,7 +221,7 @@ def run():
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values_f)
-    write_metadata(os.path.join(SITE_DIR, PRODUCT), meta)  # re-write incl. buoy QC
+    write_metadata(stage_prod, meta)  # re-write incl. buoy QC
 
     token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
     kml_text = build_kml(
@@ -207,12 +230,15 @@ def run():
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta,
                          "Turn on/off independently of wave and ice layers."),
-        CONFIG["refresh_interval_seconds"], token)
+        CONFIG["refresh_interval_seconds"], token,
+        out_dirs=[os.path.join(stage, "kml", "Great_Lakes_Live_Water_Temperature.kml"),
+                  os.path.join(stage, "site", "kml", "Great_Lakes_Live_Water_Temperature.kml")])
     assert_no_vector_geometry(kml_text)
 
+    promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"source_last_modified": info["http_last_modified"],
                           "processing_time_utc": meta["processing_time_utc"]})
-    print(f"[{PRODUCT}] UPDATED OK.")
+    print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0
 
 

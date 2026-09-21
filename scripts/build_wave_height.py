@@ -21,8 +21,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
                        description_html)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              download, fetch_buoy_obs, read_state,
-                              utcnow_iso, write_metadata, write_state)
+                              download, fetch_buoy_obs, promote_stage,
+                              read_state, stage_dir, utcnow_iso,
+                              write_metadata, write_state)
 from render_gradient import render_field
 
 PRODUCT = "wave_height"
@@ -111,6 +112,20 @@ def run():
         print(f"[{PRODUCT}] DOWNLOAD FAILED for all candidates (keeping previous).")
         return 2
 
+    # Render into a stage dir; promote to live site/ + kml/ only on full
+    # success. Any data-dependent failure returns 2 (keep previous).
+    try:
+        return _build(got, used_url, datestr, cycle, raw_path)
+    except Exception as e:
+        traceback.print_exc()
+        print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
+              f"Keeping previous.")
+        return 2
+
+
+def _build(got, used_url, datestr, cycle, raw_path):
+    stage = stage_dir(PRODUCT)
+    stage_prod = os.path.join(stage, "site", PRODUCT)
     try:
         vals_m, lats, lons, data_date, data_time = extract_htsgw_analysis(raw_path)
     except Exception as e:
@@ -171,7 +186,7 @@ def run():
         source_line=(f"Source: NCEP GLWU v2.1 (WAVEWATCH III) {datestr} t{cycle}z  |  "
                      f"Processed {utcnow_iso()}"),
         unit_label="feet", transparent_value=None, fmt="{:.1f}",
-        splat_radius=2)
+        splat_radius=2, product_dir=stage_prod)
 
     if int((rgba[:, :, 3] > 0).sum()) < 10_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: raster has no water pixels.")
@@ -210,7 +225,7 @@ def run():
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values_ft)
-    write_metadata(os.path.join(SITE_DIR, PRODUCT), meta)  # re-write incl. buoy QC
+    write_metadata(stage_prod, meta)  # re-write incl. buoy QC
 
     token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
     kml_text = build_kml(
@@ -219,12 +234,15 @@ def run():
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta,
                          "Turn on/off independently of temperature and ice layers."),
-        CONFIG["refresh_interval_seconds"], token)
+        CONFIG["refresh_interval_seconds"], token,
+        out_dirs=[os.path.join(stage, "kml", "Great_Lakes_Live_Wave_Height.kml"),
+                  os.path.join(stage, "site", "kml", "Great_Lakes_Live_Wave_Height.kml")])
     assert_no_vector_geometry(kml_text)
 
+    promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": meta["model_cycle"],
                           "processing_time_utc": meta["processing_time_utc"]})
-    print(f"[{PRODUCT}] UPDATED OK.")
+    print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0
 
 

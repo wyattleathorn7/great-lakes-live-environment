@@ -12,7 +12,7 @@ import shutil
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from geospatial_utils import KML_DIR, SITE_DIR, load_bounds
+from geospatial_utils import KML_DIR, LEGEND_H, LEGEND_W, SITE_DIR, load_bounds
 
 KML_NS = "http://www.opengis.net/kml/2.2"
 ET.register_namespace("", KML_NS)
@@ -31,7 +31,12 @@ def _q(tag, text=None):
 
 
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
-              description_html, refresh_interval, cache_token):
+              description_html, refresh_interval, cache_token, out_dirs=None):
+    """Write the KML to out_dirs (default: live kml/ + site/kml/).
+
+    Builders pass stage dirs so a crash can never leave a half-updated
+    product set behind; they promote the stage only on full success.
+    """
     bounds = load_bounds()
     base = pages_base().rstrip("/")
     png_url = f"{base}/{png_path}?v={cache_token}"
@@ -72,8 +77,10 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     screen.append(sicon)
     for tag, x, y, xunits, yunits in (
             ("overlayXY", "0", "1", "fraction", "fraction"),
-            ("screenXY", "0.01", "0.08", "fraction", "fraction"),
-            ("size", "0.32", "0", "fraction", "fraction")):
+            ("screenXY", "16", "16", "pixels", "pixels"),
+            # Explicit pixel size: a zero/fraction height can collapse the
+            # legend to nothing in some KML clients.
+            ("size", str(LEGEND_W), str(LEGEND_H), "pixels", "pixels")):
         el = _q(tag)
         el.set("x", x)
         el.set("y", y)
@@ -97,8 +104,10 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     cdata = f"<description><![CDATA[{description_html}]]></description>"
     xml = xml.replace("<description/>", cdata, 1)
 
-    for out in (os.path.join(KML_DIR, kml_filename),
-                os.path.join(SITE_DIR, "kml", kml_filename)):
+    if out_dirs is None:
+        out_dirs = [os.path.join(KML_DIR, kml_filename),
+                    os.path.join(SITE_DIR, "kml", kml_filename)]
+    for out in out_dirs:
         os.makedirs(os.path.dirname(out), exist_ok=True)
         with open(out, "w", encoding="utf-8") as f:
             f.write(xml)

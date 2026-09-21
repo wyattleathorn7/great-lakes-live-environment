@@ -10,8 +10,11 @@ never emits LineString / Polygon / Placemark geometry.
 import json
 import math
 import os
+import time
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 
 import numpy as np
 from PIL import Image, ImageDraw
@@ -33,21 +36,63 @@ def utcnow_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
 
-def download(url, dest, timeout=120):
-    """Download url -> dest. Returns dict with size + last_modified header."""
-    req = urllib.request.Request(url, headers=USER_AGENT)
-    with urllib.request.urlopen(req, timeout=timeout) as r, open(dest, "wb") as f:
-        total = 0
-        while True:
-            chunk = r.read(1024 * 256)
-            if not chunk:
-                break
-            f.write(chunk)
-            total += len(chunk)
-    return {
-        "size_bytes": total,
-        "http_last_modified": r.headers.get("Last-Modified"),
-    }
+def http_date_to_iso(s):
+    """Normalize an HTTP Last-Modified value to 'YYYY-MM-DD HH:MM UTC'.
+
+    Returns the original string when unparsable (never raises).
+    """
+    if not s:
+        return None
+    try:
+        dt = parsedate_to_datetime(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    except (TypeError, ValueError):
+        return s
+
+
+def download(url, dest, timeout=120, retries=3):
+    """Download url -> dest (atomic write). Returns size + last_modified.
+
+    Creates missing parent directories (fresh CI checkouts start empty).
+    Retries transient failures (timeouts, resets, HTTP 5xx/408/429) with
+    backoff; client errors such as HTTP 404 fail immediately. Partial
+    downloads never replace dest (written to .part, then renamed).
+    """
+    os.makedirs(os.path.dirname(os.path.abspath(dest)), exist_ok=True)
+    tmp = dest + ".part"
+    last_err = None
+    for attempt in range(1, retries + 1):
+        try:
+            req = urllib.request.Request(url, headers=USER_AGENT)
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                total = 0
+                with open(tmp, "wb") as f:
+                    while True:
+                        chunk = r.read(1024 * 256)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        total += len(chunk)
+                last_modified = r.headers.get("Last-Modified")
+            os.replace(tmp, dest)
+            return {"size_bytes": total, "http_last_modified": last_modified}
+        except urllib.error.HTTPError as e:
+            last_err = e
+            if e.code == 404 or (400 <= e.code < 500 and e.code not in (408, 429)):
+                raise  # permanent: retrying cannot help
+            # transient 5xx/408/429 -> fall through to retry
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
+            last_err = e
+        if os.path.exists(tmp):
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+        if attempt < retries:
+            time.sleep(2 * attempt)
+    raise last_err
 
 
 # ---------------------------------------------------------------- canvas map
@@ -162,16 +207,41 @@ def save_png(rgba, path):
 
 
 # ------------------------------------------------------------------- legend
+LEGEND_W, LEGEND_H = 640, 210
+
+
+def _legend_font(size):
+    """Legible TTF legend font with graceful fallback.
+
+    Tries bare name, then well-known system locations (Ubuntu GH runners
+    ship fonts-dejavu-core; macOS ships Helvetica), else PIL's bitmap font.
+    """
+    from PIL import ImageFont
+    candidates = [
+        "DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/System/Library/Fonts/Helvetica.ttc",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
+    ]
+    for path in candidates:
+        try:
+            return ImageFont.truetype(path, size)
+        except (OSError, IOError):
+            continue
+    return ImageFont.load_default()
+
+
 def draw_legend(path, title, subtitle, unit_label, vmin, vmax, stops,
                 source_line, fmt="{:.0f}", transparent_note=None):
     """Draw a standalone legend PNG (used by KML ScreenOverlay)."""
-    W, H = 640, 210
+    W, H = LEGEND_W, LEGEND_H
     img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
     d = ImageDraw.Draw(img)
+    f_title, f_body, f_small = _legend_font(22), _legend_font(15), _legend_font(13)
     d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
-    d.text((14, 10), title, fill=(10, 10, 10))
-    d.text((14, 28), subtitle, fill=(40, 40, 40))
-    bx, by, bw, bh = 14, 62, W - 28, 30
+    d.text((14, 8), title, font=f_title, fill=(10, 10, 10))
+    d.text((14, 36), subtitle, font=f_body, fill=(40, 40, 40))
+    bx, by, bw, bh = 14, 70, W - 28, 30
     lut = _lut(stops, bw)
     for i, c in enumerate(lut):
         d.line([(bx + i, by), (bx + i, by + bh)], fill=c + (255,))
@@ -179,11 +249,11 @@ def draw_legend(path, title, subtitle, unit_label, vmin, vmax, stops,
     for frac, val in ((0.0, vmin), (0.5, (vmin + vmax) / 2), (1.0, vmax)):
         x = bx + int(frac * (bw - 1))
         d.text((min(max(x - 18, 2), W - 70), by + bh + 4),
-               fmt.format(val), fill=(10, 10, 10))
-    d.text((bx + bw - 66, by + bh + 22), unit_label, fill=(10, 10, 10))
-    d.text((14, H - 44), source_line, fill=(60, 60, 60))
+               fmt.format(val), font=f_body, fill=(10, 10, 10))
+    d.text((bx + bw - 66, by + bh + 26), unit_label, font=f_body, fill=(10, 10, 10))
+    d.text((14, H - 40), source_line, font=f_small, fill=(60, 60, 60))
     if transparent_note:
-        d.text((14, H - 26), transparent_note, fill=(60, 60, 60))
+        d.text((14, H - 22), transparent_note, font=f_small, fill=(60, 60, 60))
     os.makedirs(os.path.dirname(path), exist_ok=True)
     img.save(path)
 
@@ -249,8 +319,11 @@ def state_path(product):
 def read_state(product):
     p = state_path(product)
     if os.path.exists(p):
-        with open(p) as f:
-            return json.load(f)
+        try:
+            with open(p) as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return {}  # corrupt state must trigger a rebuild, not a crash
     return {}
 
 
@@ -258,6 +331,34 @@ def write_state(product, state):
     os.makedirs(os.path.dirname(state_path(product)), exist_ok=True)
     with open(state_path(product), "w") as f:
         json.dump(state, f, indent=2)
+
+
+# ------------------------------------------------------- atomic staging
+def stage_dir(product):
+    """Scratch dir mirroring repo-relative output paths for one product."""
+    return os.path.join(REPO_ROOT, "output", "stage", product)
+
+
+def promote_stage(product):
+    """Move every staged file into its live repo location (makedirs as needed).
+
+    Builders render into the stage first so a mid-build crash can never
+    leave a half-updated product set behind for the artifact uploader.
+    Returns the list of promoted repo-relative paths.
+    """
+    import shutil
+    root = stage_dir(product)
+    promoted = []
+    for dirpath, _dirs, files in os.walk(root):
+        for name in files:
+            src = os.path.join(dirpath, name)
+            rel = os.path.relpath(src, root)
+            dest = os.path.join(REPO_ROOT, rel)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            shutil.move(src, dest)
+            promoted.append(rel)
+    shutil.rmtree(root, ignore_errors=True)
+    return promoted
 
 
 # ------------------------------------------------------------------ NDBC QC

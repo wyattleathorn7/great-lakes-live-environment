@@ -56,13 +56,34 @@ separate KML/KMZ products:
 
 1. Create a GitHub repo (suggested name `great-lakes-live-environment`) and
    push this directory as its root.
-2. Enable **GitHub Pages → Deploy from GitHub Actions** (the workflow
-   publishes `site/` via `deploy-pages`). The workflow derives the public
-   base URL automatically
+2. Enable **Settings → Pages → Build and deployment → Source: GitHub Actions**
+   (the workflow publishes `site/` via `deploy-pages`). The workflow derives
+   the public base URL automatically
    (`https://<owner>.github.io/<repo>`); KMLs are regenerated with it.
 3. Run the workflow manually once (**Run workflow → product: all**), then open
    `https://<owner>.github.io/<repo>/` and add the three
    `/kml/Great_Lakes_Live_*.kml` links to Google Earth independently.
+
+## Reliability notes (production)
+
+- Runners are pinned to `ubuntu-24.04` (GitHub migrates `ubuntu-latest` to
+  26.04 beginning 2026-10-19; validate before adopting). Actions track
+  current Node-24 majors (checkout v7, setup-python v7, artifacts v7/v8,
+  pages v5/v6, auto-commit v7).
+- Downloads retry transient failures (HTTP 5xx/408/429, timeouts, resets)
+  and never retry 404s; files are written atomically (`.part` + rename).
+- Each product renders into `output/stage/<product>/` and is promoted to
+  `site/` + `kml/` only on full success, so artifacts can never contain a
+  half-updated layer.
+- Any download/parse/validation failure exits 2: the previous valid raster
+  is kept, the failure is logged, the job stays green, and the other two
+  products update normally. Unexpected engine errors exit 1 (red job).
+- NIC sends no `Last-Modified` header, so ice change-detection uses a
+  SHA-256 content hash; GLSEA uses `Last-Modified`; GLWU uses the model
+  cycle stamp.
+- `python scripts/validate_outputs.py` also runs in CI (`CI=true`), where it
+  additionally requires KMLs to carry the real Pages base URL (no
+  `REPLACE-` placeholders) and legend PNGs to be 640×210.
 
 Local test: `pip install -r requirements.txt`, then
 `python scripts/build_water_temperature.py`,

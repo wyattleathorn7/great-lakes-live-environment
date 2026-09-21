@@ -1,3 +1,5 @@
-numpy
-pillow
-eccodes
+# Pinned floors keep fresh installs working; no upper bounds so routine
+# security/bugfix updates keep flowing. Verified with these versions.
+numpy>=1.26
+pillow>=10.1
+eccodes>=2.30

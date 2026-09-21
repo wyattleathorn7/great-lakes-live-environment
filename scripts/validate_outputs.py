@@ -63,6 +63,13 @@ def main():
                 failures.append(f"{product}: PNG mode {im.mode} != RGBA")
             if im.size != (bounds["canvas_width"], bounds["canvas_height"]):
                 failures.append(f"{product}: PNG size {im.size} != canvas")
+            try:
+                leg = Image.open(legend)
+                leg.load()
+                if leg.size != (640, 210):
+                    failures.append(f"{product}: legend size {leg.size} != (640, 210)")
+            except Exception as e:
+                failures.append(f"{product}: legend unreadable: {e}")
             import numpy as np
             a = np.array(im)[:, :, 3]
             n_opaque = int((a > 0).sum())
@@ -87,6 +94,14 @@ def main():
                 failures.append(f"{product}: wave scale out of bounds {lo}-{hi}")
             if product == "water_temperature" and not (20 <= lo < hi <= 95):
                 failures.append(f"{product}: temp scale out of bounds {lo}-{hi}")
+            try:
+                token = (meta.get("processing_time_utc", "")
+                         .replace(" ", "_").replace(":", ""))
+                if token and token not in text:
+                    failures.append(f"{product}: KML cache token does not match "
+                                    f"metadata processing_time (stale KML?)")
+            except Exception:
+                pass
             print(f"[{product}] metadata OK: data_time={meta.get('data_time_utc')}")
         except Exception as e:
             failures.append(f"{product}: metadata unreadable: {e}")
@@ -94,6 +109,7 @@ def main():
         for kdir in (os.path.join(REPO_ROOT, "kml"),
                      os.path.join(SITE_DIR, "kml")):
             kp = os.path.join(kdir, spec["kml"])
+            text = ""
             if not os.path.exists(kp):
                 failures.append(f"{product}: missing {kp}")
                 continue
@@ -109,6 +125,9 @@ def main():
                     failures.append(f"{product}: no cache-buster in {kp}")
                 if f"{product}/current.png" not in text:
                     failures.append(f"{product}: KML href wrong product path")
+                if os.environ.get("CI") == "true" and "REPLACE-" in text:
+                    failures.append(f"{product}: KML still has placeholder "
+                                    f"PAGES_BASE_URL (CI must set it)")
                 for edge, val in (("<north>", bounds["lat_max"]),
                                   ("<south>", bounds["lat_min"]),
                                   ("<east>", bounds["lon_max"]),
