@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260921/glwu.grlc_2p5km.t13z.grib2",
   "data_time_utc": "2026-09-21 13:00 UTC",
   "source_last_modified_utc": "Mon, 21 Sep 2026 13:27:44 GMT",
-  "processing_time_utc": "2026-09-21 21:58 UTC",
+  "processing_time_utc": "2026-09-21 22:07 UTC",
   "units": "ft (display); source m",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -40,16 +40,16 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "time_utc": "2026-09-21 21:30 UTC",
-      "WDIR_deg": 60.0,
+      "time_utc": "2026-09-21 21:40 UTC",
+      "WDIR_deg": 50.0,
       "WSPD_ms": 1.0,
       "WVHT_m": null,
       "WTMP_C": 13.2,
       "note": "no WVHT obs"
     },
     "45002": {
-      "time_utc": "2026-09-21 21:30 UTC",
-      "WDIR_deg": 50.0,
+      "time_utc": "2026-09-21 21:40 UTC",
+      "WDIR_deg": 60.0,
       "WSPD_ms": 9.0,
       "WVHT_m": null,
       "WTMP_C": 17.9,
@@ -63,16 +63,17 @@
       "obs_time": "2026-09-21 21:00 UTC"
     },
     "45012": {
-      "obs_ft": 2.62,
-      "grid_ft": 4.505686933333333,
-      "absdiff_ft": 1.88,
-      "verdict": "CHECK",
-      "obs_time": "2026-09-21 21:20 UTC"
+      "time_utc": "2026-09-21 21:30 UTC",
+      "WDIR_deg": 50.0,
+      "WSPD_ms": 8.0,
+      "WVHT_m": null,
+      "WTMP_C": 19.6,
+      "note": "no WVHT obs"
     },
     "45005": {
-      "time_utc": "2026-09-21 21:30 UTC",
+      "time_utc": "2026-09-21 21:40 UTC",
       "WDIR_deg": 40.0,
-      "WSPD_ms": 10.0,
+      "WSPD_ms": 11.0,
       "WVHT_m": null,
       "WTMP_C": null,
       "note": "no WVHT obs"

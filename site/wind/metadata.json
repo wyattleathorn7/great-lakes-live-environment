@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260921/glwu.grlc_2p5km.t13z.grib2",
   "data_time_utc": "2026-09-21 13:00 UTC",
   "source_last_modified_utc": "Mon, 21 Sep 2026 13:27:44 GMT",
-  "processing_time_utc": "2026-09-21 21:59 UTC",
+  "processing_time_utc": "2026-09-21 22:08 UTC",
   "units": "kt + Beaufort Force 0-12 (display); source m/s",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -124,14 +124,14 @@
       "grid_kt_approx": 8.5,
       "absdiff_kt": 6.6,
       "verdict": "CHECK",
-      "obs_time": "2026-09-21 21:30 UTC"
+      "obs_time": "2026-09-21 21:40 UTC"
     },
     "45002": {
       "obs_kt": 17.5,
       "grid_kt_approx": 13.5,
       "absdiff_kt": 4.0,
       "verdict": "OK",
-      "obs_time": "2026-09-21 21:30 UTC"
+      "obs_time": "2026-09-21 21:40 UTC"
     },
     "45132": {
       "obs_kt": 19.4,
@@ -148,11 +148,11 @@
       "obs_time": "2026-09-21 21:30 UTC"
     },
     "45005": {
-      "obs_kt": 19.4,
+      "obs_kt": 21.4,
       "grid_kt_approx": 24.5,
-      "absdiff_kt": 5.1,
-      "verdict": "CHECK",
-      "obs_time": "2026-09-21 21:30 UTC"
+      "absdiff_kt": 3.1,
+      "verdict": "OK",
+      "obs_time": "2026-09-21 21:40 UTC"
     }
   }
 }
