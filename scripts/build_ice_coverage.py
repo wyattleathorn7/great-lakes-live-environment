@@ -24,9 +24,9 @@ from build_kml import (assert_no_vector_geometry, build_kml,
                        description_html, legend_block,
                        refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              download, promote_stage, read_state,
-                              stage_dir, utcnow_iso, write_metadata,
-                              write_state)
+                              download, ensure_coords, promote_stage,
+                              read_state, stage_dir, utcnow_iso,
+                              write_metadata, write_state)
 from render_gradient import render_field
 
 PRODUCT = "ice_coverage"
@@ -128,11 +128,13 @@ def _build(info, raw_path, digest):
               f"Keeping previous.")
         return 2
 
-    # lake-mask cross-check (coords LUTs shared with the temperature layer)
+    # lake-mask cross-check (coords LUTs shared with the temperature layer;
+    # downloaded on demand so fresh checkouts work)
     try:
-        lake_ids = np.loadtxt(os.path.join(COORDS_DIR, "1024_lake_ids.txt"))
-        lats = np.loadtxt(os.path.join(COORDS_DIR, "1024_latgrid.txt"))
-        lons = np.loadtxt(os.path.join(COORDS_DIR, "1024_longrid.txt"))
+        _cdir = ensure_coords(RAW_DIR)
+        lake_ids = np.loadtxt(os.path.join(_cdir, "1024_lake_ids.txt"))
+        lats = np.loadtxt(os.path.join(_cdir, "1024_latgrid.txt"))
+        lons = np.loadtxt(os.path.join(_cdir, "1024_longrid.txt"))
         n_mask = int(((lake_ids >= 1) & (lake_ids <= 6)).sum())
         print(f"[{PRODUCT}] mask water cells={n_mask}")
         if not (0.5 * n_mask < n_water < 1.6 * n_mask):

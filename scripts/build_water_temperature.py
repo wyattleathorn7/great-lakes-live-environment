@@ -12,7 +12,6 @@ import math
 import os
 import sys
 import traceback
-import zipfile
 
 import numpy as np
 
@@ -21,15 +20,15 @@ from build_kml import (assert_no_vector_geometry, build_kml,
                        description_html, legend_block,
                        refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              download, fetch_buoy_obs, http_date_to_iso,
-                              promote_stage, read_state, stage_dir,
-                              utcnow_iso, write_metadata, write_state)
+                              download, ensure_coords, fetch_buoy_obs,
+                              http_date_to_iso, promote_stage, read_state,
+                              stage_dir, utcnow_iso, write_metadata,
+                              write_state)
 from render_gradient import render_field
 
 PRODUCT = "water_temperature"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
 GLSEA_URL = CONFIG["source_url"]
-COORDS_URL = "https://www.glerl.noaa.gov/data/ice/glicd/grids/coords.zip"
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 
 BUOY_POS = {  # NDBC (lon, lat) — QC reference only
@@ -39,19 +38,6 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
     "45012": (-77.383, 43.619),
     "45005": (-82.398, 41.677),
 }
-
-
-def ensure_coords():
-    dest = os.path.join(RAW_DIR, "coords")
-    need = ["1024_latgrid.txt", "1024_longrid.txt", "1024_lake_ids.txt"]
-    if all(os.path.exists(os.path.join(dest, n)) for n in need):
-        return dest
-    os.makedirs(dest, exist_ok=True)
-    zpath = os.path.join(RAW_DIR, "coords.zip")
-    download(COORDS_URL, zpath)
-    with zipfile.ZipFile(zpath) as z:
-        z.extractall(dest)
-    return dest
 
 
 def ff(x):
@@ -133,7 +119,7 @@ def _build(info, raw_path):
         print(f"[{PRODUCT}] VALIDATION FAILED: shape {data.shape}.")
         return 2
 
-    cdir = ensure_coords()
+    cdir = ensure_coords(RAW_DIR)
     lats = np.loadtxt(os.path.join(cdir, "1024_latgrid.txt"))
     lons = np.loadtxt(os.path.join(cdir, "1024_longrid.txt"))
     lake_ids = np.loadtxt(os.path.join(cdir, "1024_lake_ids.txt"))

@@ -555,6 +555,25 @@ def write_state(product, state):
         json.dump(state, f, indent=2)
 
 
+COORDS_URL = "https://www.glerl.noaa.gov/data/ice/glicd/grids/coords.zip"
+
+
+def ensure_coords(raw_dir):
+    """GLSEA-family WGS84 LUTs + lake mask (1024 grids). Downloads once per
+    runner (gitignored); shared by the temperature and coverage builders."""
+    import zipfile
+    dest = os.path.join(raw_dir, "coords")
+    need = ["1024_latgrid.txt", "1024_longrid.txt", "1024_lake_ids.txt"]
+    if all(os.path.exists(os.path.join(dest, n)) for n in need):
+        return dest
+    os.makedirs(dest, exist_ok=True)
+    zpath = os.path.join(raw_dir, "coords.zip")
+    download(COORDS_URL, zpath)
+    with zipfile.ZipFile(zpath) as z:
+        z.extractall(dest)
+    return dest
+
+
 # ------------------------------------------------------- atomic staging
 def stage_dir(product):
     """Scratch dir mirroring repo-relative output paths for one product."""
