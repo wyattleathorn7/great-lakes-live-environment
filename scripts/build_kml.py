@@ -7,6 +7,7 @@ Cache-busting: the PNG hrefs carry ?v=<processing-timestamp-token> which is
 regenerated on every successful product run. Filenames/URLs stay stable.
 """
 
+import json
 import os
 import shutil
 import xml.etree.ElementTree as ET
@@ -112,6 +113,27 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
         with open(out, "w", encoding="utf-8") as f:
             f.write(xml)
     return xml
+
+
+def refresh_kml_base_url(product, kml_filename, overlay_name, title,
+                         note, refresh_interval):
+    """Rewrite existing KMLs with the current PAGES_BASE_URL.
+
+    Used by builder skip-paths (source unchanged): the raster/legend are
+    kept, but the KML is regenerated so it always carries the deployment's
+    real base URL and current refresh settings. The imagery cache token is
+    preserved (derived from the existing metadata), so Google Earth sees
+    no spurious imagery change.
+    """
+    with open(os.path.join(SITE_DIR, product, "metadata.json")) as f:
+        meta = json.load(f)
+    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    kml_text = build_kml(
+        product, kml_filename, overlay_name,
+        f"{product}/current.png", f"{product}/legend.png",
+        description_html(title, meta, note), refresh_interval, token)
+    assert_no_vector_geometry(kml_text)
+    return kml_text
 
 
 def description_html(title, meta, kml_self_hint):

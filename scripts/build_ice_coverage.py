@@ -21,7 +21,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html)
+                       description_html, refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
                               download, promote_stage, read_state,
                               stage_dir, utcnow_iso, write_state)
@@ -68,6 +68,15 @@ def run():
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
         print(f"[{PRODUCT}] source content unchanged (sha256 {digest[:12]}…); "
               f"keeping current raster.")
+        try:
+            refresh_kml_base_url(
+                PRODUCT, "Great_Lakes_Live_Ice_Coverage.kml",
+                "\U0001F9CA LIVE ICE COVERAGE", CONFIG["title"],
+                "Turn on/off independently of wave and temperature layers.",
+                CONFIG["refresh_interval_seconds"])
+            print(f"[{PRODUCT}] KML base URLs refreshed.")
+        except Exception as e:
+            print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
         return 0
 
     # Render into a stage dir; promote to live site/ + kml/ only on full

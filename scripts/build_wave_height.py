@@ -19,7 +19,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html)
+                       description_html, refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
                               download, fetch_buoy_obs, promote_stage,
                               read_state, stage_dir, utcnow_iso,
@@ -152,6 +152,15 @@ def _build(got, used_url, datestr, cycle, raw_path):
     if prev.get("model_cycle") == f"{datestr} t{cycle}z" \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
         print(f"[{PRODUCT}] model cycle unchanged ({datestr} t{cycle}z); skipping.")
+        try:
+            refresh_kml_base_url(
+                PRODUCT, "Great_Lakes_Live_Wave_Height.kml",
+                "\U0001F30A LIVE WAVE HEIGHT", CONFIG["title"],
+                "Turn on/off independently of temperature and ice layers.",
+                CONFIG["refresh_interval_seconds"])
+            print(f"[{PRODUCT}] KML base URLs refreshed.")
+        except Exception as e:
+            print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
         return 0
 
     p995 = float(np.percentile(vals_ft[valid], 99.5))
