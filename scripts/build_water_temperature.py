@@ -70,21 +70,8 @@ def run():
               f"({info['size_bytes']} bytes). Keeping previous.")
         return 2
 
-    prev = read_state(PRODUCT)
-    if prev.get("source_last_modified") == info["http_last_modified"] \
-            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
-        print(f"[{PRODUCT}] source unchanged "
-              f"({info['http_last_modified']}); keeping current raster.")
-        try:
-            refresh_kml_base_url(
-                PRODUCT, "Great_Lakes_Live_Water_Temperature.kml",
-                "\U0001F321\uFE0F LIVE WATER TEMPERATURE", CONFIG["title"],
-                "Turn on/off independently of wave and ice layers.",
-                CONFIG["refresh_interval_seconds"])
-            print(f"[{PRODUCT}] KML base URLs refreshed.")
-        except Exception as e:
-            print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
-        return 0
+    # No skip: every run rebuilds (tiles must deploy); identical
+    # bytes simply produce no commit. Failures still keep previous.
 
     # Everything below renders into a stage dir first; the live site/ + kml/
     # tree is touched only by promote_stage() on full success, so a crash

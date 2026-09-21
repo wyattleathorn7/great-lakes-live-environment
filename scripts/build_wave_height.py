@@ -148,21 +148,6 @@ def _build(got, used_url, datestr, cycle, raw_path):
     vals_ft = vals_m * M_TO_FT
     data_time_utc = (f"{data_date[0:4]}-{data_date[4:6]}-{data_date[6:8]} "
                      f"{data_time[0:2]}:{data_time[2:4]} UTC")
-    prev = read_state(PRODUCT)
-    # waves update hourly/cyclically: always re-render on a fresh cycle
-    if prev.get("model_cycle") == f"{datestr} t{cycle}z" \
-            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
-        print(f"[{PRODUCT}] model cycle unchanged ({datestr} t{cycle}z); skipping.")
-        try:
-            refresh_kml_base_url(
-                PRODUCT, "Great_Lakes_Live_Wave_Height.kml",
-                "\U0001F30A LIVE WAVE HEIGHT", CONFIG["title"],
-                "Turn on/off independently of temperature and ice layers.",
-                CONFIG["refresh_interval_seconds"])
-            print(f"[{PRODUCT}] KML base URLs refreshed.")
-        except Exception as e:
-            print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
-        return 0
 
     # Fixed scientific scale 0-30 ft: Great Lakes storms can exceed 25 ft,
     # so the legend always explains the full credible range. Today's

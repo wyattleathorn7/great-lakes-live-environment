@@ -180,20 +180,8 @@ def run():
         print(f"[{PRODUCT}] DOWNLOAD FAILED for all candidates (keeping previous).")
         return 2
 
-    prev = read_state(PRODUCT)
-    # Waves and wind share GRIB2 files but track independent state, so one
-    # product's skip can never suppress the other.
-    if prev.get("model_cycle") == f"{datestr} t{cycle}z" \
-            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
-        print(f"[{PRODUCT}] model cycle unchanged ({datestr} t{cycle}z); skipping.")
-        try:
-            refresh_kml_base_url(PRODUCT, KML_FILE, OVERLAY_NAME,
-                                 CONFIG["title"], SKIP_NOTE,
-                                 CONFIG["refresh_interval_seconds"])
-            print(f"[{PRODUCT}] KML base URLs refreshed.")
-        except Exception as e:
-            print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
-        return 0
+    # No skip: every run rebuilds (tiles must deploy); identical
+    # bytes simply produce no commit. Failures still keep previous.
 
     try:
         return _build(got, used_url, datestr, cycle, raw_path)

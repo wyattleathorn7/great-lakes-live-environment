@@ -22,7 +22,7 @@ all zooms, each product additionally publishes an LOD tile pyramid
 from `assets/great_lakes_watermask_4x.png`), referenced from its KML with
 Region/Lod hints over a shared-color overview. Tiles are Pages-deployed,
 never committed; a KML references tiles only when they were generated in
-that run, so failed/unchanged runs stay overview-only and always resolve.
+that run, so failed runs stay overview-only and always resolve.
 KMLs use GroundOverlay + self-refresh NetworkLink only — no ScreenOverlay
 (rejected by some Google Earth clients); legends live in each KML
 description (PNG + scale text) and as standalone `legend.png` files.
@@ -102,6 +102,9 @@ separate KML/KMZ products:
 - Any download/parse/validation failure exits 2: the previous valid raster
   is kept, the failure is logged, the job stays green, and the other
   products update normally. Unexpected engine errors exit 1 (red job).
+- Every successful run rebuilds its product fully (tiles included), so the
+  deployed site always has matching KML tile references; byte-identical
+  outputs simply produce no commit.
 - NIC sends no `Last-Modified` header, so ice change-detection uses a
   SHA-256 content hash; GLSEA uses `Last-Modified`; GLWU uses the model
   cycle stamp.

@@ -3,8 +3,8 @@ name: Update Great Lakes live environment
 on:
   schedule:
     # Every 6 h matches the fastest source (NCEP GLWU cycles).
-    # Daily products (GLSEA, NIC ice) skip automatically when the source
-    # file is unchanged, so no unnecessary rebuilds or commits occur.
+    # Every run rebuilds fully so LOD tiles always deploy; byte-identical
+    # outputs simply produce no commit.
     - cron: "15 */6 * * *"
   workflow_dispatch:
     inputs:

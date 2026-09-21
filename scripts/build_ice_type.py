@@ -65,19 +65,8 @@ def run():
 
     with open(zip_path, "rb") as f:
         digest = hashlib.sha256(f.read()).hexdigest()
-    prev = read_state(PRODUCT)
-    if prev.get("content_sha256") == digest \
-            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
-        print(f"[{PRODUCT}] source content unchanged (sha256 {digest[:12]}…); "
-              f"keeping current raster.")
-        try:
-            refresh_kml_base_url(PRODUCT, KML_FILE, OVERLAY_NAME,
-                                 CONFIG["title"], SKIP_NOTE,
-                                 CONFIG["refresh_interval_seconds"])
-            print(f"[{PRODUCT}] KML base URLs refreshed.")
-        except Exception as e:
-            print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
-        return 0
+    # No skip: every run rebuilds (tiles must deploy); identical
+    # bytes simply produce no commit. Failures still keep previous.
 
     try:
         return _build(info, zip_path, digest)
