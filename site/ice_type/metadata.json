@@ -1,0 +1,151 @@
+{
+  "product": "ice_type",
+  "title": "LIVE ICE TYPE",
+  "freshness": "LATEST AVAILABLE (daily analysis, seasonal product)",
+  "noaa_source": "U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, SIGRID-3 shapefile",
+  "product_name": "U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, SIGRID-3 shapefile",
+  "variable": "predominant WMO stage of development (SA/SB/SC by partial concentration)",
+  "source_url": "https://usicecenter.gov/File/DownloadCurrent?pId=35",
+  "data_time_utc": "NIC analysis date 2026-05-16 (from NIC filename; retrieved 2026-09-21 19:00 UTC)",
+  "source_last_modified_utc": "unknown (NIC sends none)",
+  "processing_time_utc": "2026-09-21 19:00 UTC",
+  "units": "WMO SIGRID-3 stage code (categorical)",
+  "spatial_resolution_source": "NIC SIGRID-3 vector analysis (variable polygon size)",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": "categorical (see ice_type_categories)",
+  "color_scale_max": "categorical (see ice_type_categories)",
+  "color_scale_units": "category",
+  "missing_data_treatment": "open water (CT<1) fully transparent; unknown/unstaged ice gets the explicit Unknown color, never a real type color.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    594
+  ],
+  "data_nature": "analyzed (human ice analysis of satellite imagery)",
+  "methodology": "Per SIGRID-3 polygon: predominant stage = highest partial concentration among SA/SB/SC (ties resolve to the thickest-listed stage); rendered in that stage's fixed key color with pixel alpha scaled by total concentration CT/10. The key lists every WMO stage the dataset supports.",
+  "ice_type_categories": [
+    {
+      "code": 70,
+      "name": "Brash Ice",
+      "range": "thickness not coded in SIGRID-3",
+      "color": "#C9A227"
+    },
+    {
+      "code": 80,
+      "name": "No Stage of Development",
+      "range": "unstaged",
+      "color": "#6C757D"
+    },
+    {
+      "code": 81,
+      "name": "New Ice",
+      "range": "<10 cm",
+      "color": "#DFF6FF"
+    },
+    {
+      "code": 82,
+      "name": "Nilas, Ice Rind",
+      "range": "<10 cm",
+      "color": "#BDE0FE"
+    },
+    {
+      "code": 83,
+      "name": "Young Ice",
+      "range": "10-<30 cm",
+      "color": "#48CAE4"
+    },
+    {
+      "code": 84,
+      "name": "Grey Ice",
+      "range": "10-<15 cm",
+      "color": "#7D8597"
+    },
+    {
+      "code": 85,
+      "name": "Grey-White Ice",
+      "range": "15-<30 cm",
+      "color": "#E0EAF5"
+    },
+    {
+      "code": 86,
+      "name": "First-Year Ice",
+      "range": ">=30-200 cm",
+      "color": "#1D3557"
+    },
+    {
+      "code": 87,
+      "name": "Thin First-Year Ice",
+      "range": "30-<70 cm",
+      "color": "#3A0CA3"
+    },
+    {
+      "code": 88,
+      "name": "Thin First-Year Ice Stage 1",
+      "range": "30-<50 cm",
+      "color": "#7209B7"
+    },
+    {
+      "code": 89,
+      "name": "Thin First-Year Ice Stage 2",
+      "range": "50-<70 cm",
+      "color": "#B5179E"
+    },
+    {
+      "code": 91,
+      "name": "Medium First-Year Ice",
+      "range": "70-<120 cm",
+      "color": "#F72585"
+    },
+    {
+      "code": 93,
+      "name": "Thick First-Year Ice",
+      "range": ">=120 cm (open-ended; 150 cm assumed)",
+      "color": "#D00000"
+    },
+    {
+      "code": 95,
+      "name": "Old Ice",
+      "range": "WMO gives no thickness; no estimate made",
+      "color": "#370617"
+    },
+    {
+      "code": 96,
+      "name": "Second-Year Ice",
+      "range": "WMO gives no thickness; no estimate made",
+      "color": "#9D0208"
+    },
+    {
+      "code": 97,
+      "name": "Multi-Year Ice",
+      "range": "WMO gives no thickness; no estimate made",
+      "color": "#FFBA08"
+    },
+    {
+      "code": 98,
+      "name": "Glacier Ice",
+      "range": "not applicable (icebergs)",
+      "color": "#FFFFFF"
+    },
+    {
+      "code": "unknown",
+      "name": "Unknown / Undetermined",
+      "range": "codes 99, -9",
+      "color": "#2B2D42"
+    }
+  ],
+  "stats": {
+    "analysis_date": "2026-05-16",
+    "polygons": 1,
+    "polygon_overlaps": 0,
+    "ice_pixels": 0,
+    "observed_codes": [],
+    "unknown_pixels": 0
+  }
+}

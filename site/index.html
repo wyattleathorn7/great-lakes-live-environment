@@ -44,12 +44,30 @@ from official NOAA sources. Each layer can be toggled on/off by itself.</p>
 <a href="ice_coverage/metadata.json">metadata.json</a></p>
 </div>
 
+<div class="card" id="ice_thickness">
+<h2>🧊 Live Ice Thickness</h2>
+<p><small id="ice_thickness-meta">loading…</small></p>
+<img class="legend" src="ice_thickness/legend.png" alt="ice thickness legend">
+<p><a href="kml/Great_Lakes_Live_Ice_Thickness.kml">Open in Google Earth (KML)</a> ·
+<a href="ice_thickness/current.png">current.png</a> ·
+<a href="ice_thickness/metadata.json">metadata.json</a></p>
+</div>
+
+<div class="card" id="ice_type">
+<h2>🧊 Live Ice Type</h2>
+<p><small id="ice_type-meta">loading…</small></p>
+<img class="legend" src="ice_type/legend.png" alt="ice type legend">
+<p><a href="kml/Great_Lakes_Live_Ice_Type.kml">Open in Google Earth (KML)</a> ·
+<a href="ice_type/current.png">current.png</a> ·
+<a href="ice_type/metadata.json">metadata.json</a></p>
+</div>
+
 <p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU).
 This project is not endorsed by NOAA. Stable URLs — Google Earth layers never
 need re-pointing; images carry version query strings so updates appear on refresh.</small></p>
 
 <script>
-["wave_height","water_temperature","ice_coverage"].forEach(p=>{
+["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type"].forEach(p=>{
   fetch(p+"/metadata.json").then(r=>r.json()).then(m=>{
     document.getElementById(p+"-meta").textContent =
       m.freshness+" | Data time: "+m.data_time_utc+" | Processed: "+m.processing_time_utc;

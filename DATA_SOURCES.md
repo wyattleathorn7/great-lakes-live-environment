@@ -44,6 +44,45 @@ Google Earth while remaining technically independent.
 - **Restrictions:** none for public download; attribution required
   (no NOAA endorsement claimed).
 
+## 2b. Ice thickness & ice type — USNIC NAIS daily SIGRID-3 shapefile
+
+- **Product:** NAIS daily Great Lakes ice analysis, GIS shapefile
+  (`POLY_TYPE IN('W','I')`, WGS84 Lambert Conformal Conic, metres).
+- **Download (verified 200):**
+  `https://usicecenter.gov/File/DownloadCurrent?pId=35`
+  (sister files: `pId=45` KMZ, `pId=125` GRIB).
+- **Why this source:** it is the only machine-readable *authoritative*
+  Great Lakes product carrying per-polygon ice stage (type) from which
+  thickness can be honestly derived. Alternatives rejected: USCG District 9
+  thickness charts (raster PNGs, twice-weekly in season only — not
+  machine-readable); GLCFS modelled ice thickness (experimental, THREDDS
+  endpoints bot-walled); NIC ASCII grids (concentration only).
+- **Attributes used:** `CT` (total concentration, tenths), `CA/CB/CC`
+  (partial concentrations of 1st/2nd/3rd thickest ice), `SA/SB/SC`
+  (their WMO stages of development), `POLY_TYPE` (`W` water / `I` ice).
+  `SO/SD` extras ignored (documented). No `Last-Modified` header is sent;
+  the analysis date is parsed from the member filename (`GLYYMMDD`).
+- **Stage semantics:** WMO SIGRID-3 Table A-3 (via NSIDC G10013 user guide,
+  based on WMO 2010): 55 ice-free, 70 brash, 80 unstaged, 81 new <10 cm,
+  82 nilas <10 cm, 83 young 10–<30 cm, 84 grey 10–<15 cm, 85 grey-white
+  15–<30 cm, 86 first-year ≥30–200 cm, 87 thin FY 30–<70 cm, 88 S1 30–<50 cm,
+  89 S2 50–<70 cm, 91 medium FY 70–<120 cm, 93 thick FY ≥120 cm (open-ended),
+  95/96/97 old/second-year/multi-year (no WMO thickness), 98 glacier,
+  99/−9 unknown. All 17 ice-bearing stages appear in the Ice Type key.
+- **Ice Type product:** predominant stage = highest partial concentration
+  (ties → thickest-listed); 17 fixed key colors + Unknown (#2B2D42);
+  open water (CT<1) transparent; pixel alpha scaled by CT/10.
+- **Ice Thickness product (DERIVED, labelled as such):** per polygon,
+  `Σ(conc_i × stage_midpoint_i)/Σ(conc_i)` over stages with authoritative
+  ranges, cm→inches; stages 70/80/95/96/97/98/unknown excluded (no
+  authoritative thickness — never guessed); open water transparent; alpha
+  scaled by CT/10; continuous light-blue→purple gradient, adaptive max
+  `ceil(p99.5)` clamped to [6, 40] in.
+- **Off-season:** the current file is the last spring analysis (a single
+  ice-free `CT=00` polygon); transparent rasters with full legends and
+  explicit metadata notes are VALID output, not failure.
+- **Update interval:** daily in season. Freshness: **"LATEST AVAILABLE"**.
+
 ## 2. Ice coverage — U.S. National Ice Center (NAIS) daily Great Lakes analysis
 
 - **Product:** NAIS (USNIC + Canadian Ice Service) **daily Great Lakes ice

@@ -88,6 +88,8 @@ separate KML/KMZ products:
 Local test: `pip install -r requirements.txt`, then
 `python scripts/build_water_temperature.py`,
 `python scripts/build_ice_coverage.py`,
+`python scripts/build_ice_thickness.py`,
+`python scripts/build_ice_type.py`,
 `python scripts/build_wave_height.py`,
 `python scripts/validate_outputs.py`.
 
@@ -95,4 +97,4 @@ Local test: `pip install -r requirements.txt`, then
 
 Add `scripts/build_ais.py` + `config/ais.json` following the same
 download → validate → render → metadata → KML → publish contract; add one job
-to the workflow. No changes to the three existing products are needed.
+to the workflow. No changes to the five existing products are needed.

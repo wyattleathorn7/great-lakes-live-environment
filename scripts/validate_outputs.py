@@ -34,6 +34,10 @@ PRODUCTS = {
                           "max_opaque_min": 10_000},
     "ice_coverage": {"kml": "Great_Lakes_Live_Ice_Coverage.kml",
                      "max_opaque_min": 0},  # ice-free season => transparent OK
+    "ice_thickness": {"kml": "Great_Lakes_Live_Ice_Thickness.kml",
+                      "max_opaque_min": 0},  # off-season => transparent OK
+    "ice_type": {"kml": "Great_Lakes_Live_Ice_Type.kml",
+                 "max_opaque_min": 0},  # off-season => transparent OK
 }
 
 META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
@@ -66,8 +70,15 @@ def main():
             try:
                 leg = Image.open(legend)
                 leg.load()
-                if leg.size != (640, 210):
-                    failures.append(f"{product}: legend size {leg.size} != (640, 210)")
+                expect_legend = (640, 210)
+                try:
+                    with open(meta_p) as _mf:
+                        expect_legend = tuple(json.load(_mf).get(
+                            "legend_size", expect_legend))
+                except Exception:
+                    pass
+                if tuple(leg.size) != tuple(expect_legend):
+                    failures.append(f"{product}: legend size {leg.size} != {expect_legend}")
             except Exception as e:
                 failures.append(f"{product}: legend unreadable: {e}")
             import numpy as np
@@ -94,17 +105,18 @@ def main():
                 failures.append(f"{product}: wave scale out of bounds {lo}-{hi}")
             if product == "water_temperature" and not (20 <= lo < hi <= 95):
                 failures.append(f"{product}: temp scale out of bounds {lo}-{hi}")
-            try:
-                token = (meta.get("processing_time_utc", "")
-                         .replace(" ", "_").replace(":", ""))
-                if token and token not in text:
-                    failures.append(f"{product}: KML cache token does not match "
-                                    f"metadata processing_time (stale KML?)")
-            except Exception:
-                pass
+            if product == "ice_thickness" and not (0 <= lo < hi <= 50):
+                failures.append(f"{product}: thickness scale out of bounds {lo}-{hi}")
+            if product == "ice_type":
+                cats = meta.get("ice_type_categories", [])
+                codes = {c.get("code") for c in cats}
+                if len(cats) < 18 or "unknown" not in codes:
+                    failures.append(f"{product}: legend categories incomplete "
+                                    f"({len(cats)} entries, need 17 stages + unknown)")
             print(f"[{product}] metadata OK: data_time={meta.get('data_time_utc')}")
         except Exception as e:
             failures.append(f"{product}: metadata unreadable: {e}")
+            meta = {}
 
         for kdir in (os.path.join(REPO_ROOT, "kml"),
                      os.path.join(SITE_DIR, "kml")):
@@ -125,6 +137,11 @@ def main():
                     failures.append(f"{product}: no cache-buster in {kp}")
                 if f"{product}/current.png" not in text:
                     failures.append(f"{product}: KML href wrong product path")
+                token = (meta.get("processing_time_utc", "")
+                         .replace(" ", "_").replace(":", ""))
+                if token and token not in text:
+                    failures.append(f"{product}: KML cache token does not match "
+                                    f"metadata processing_time in {kp} (stale KML?)")
                 if os.environ.get("CI") == "true" and "REPLACE-" in text:
                     failures.append(f"{product}: KML still has placeholder "
                                     f"PAGES_BASE_URL (CI must set it)")

@@ -181,6 +181,10 @@ ICE_STOPS = [  # low ice pale cyan -> blue -> deep navy -> near-total white
     (0.45, (35, 100, 215)), (0.65, (20, 55, 150)), (0.85, (10, 25, 90)),
     (1.00, (245, 250, 255)),
 ]
+THICK_STOPS = [  # thinner light blue -> blue -> deeper blue -> purple thicker
+    (0.00, (190, 235, 255)), (0.20, (140, 210, 255)), (0.40, (70, 160, 240)),
+    (0.60, (90, 80, 200)), (0.80, (130, 50, 180)), (1.00, (90, 20, 140)),
+]
 
 
 def apply_colormap(field, vmin, vmax, stops, alpha, transparent_value=None):
@@ -233,7 +237,8 @@ def _legend_font(size):
 
 def draw_legend(path, title, subtitle, unit_label, vmin, vmax, stops,
                 source_line, fmt="{:.0f}", transparent_note=None):
-    """Draw a standalone legend PNG (used by KML ScreenOverlay)."""
+    """Draw a standalone legend PNG (used by KML ScreenOverlay).
+    Returns (W, H)."""
     W, H = LEGEND_W, LEGEND_H
     img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
     d = ImageDraw.Draw(img)
@@ -256,6 +261,7 @@ def draw_legend(path, title, subtitle, unit_label, vmin, vmax, stops,
         d.text((14, H - 22), transparent_note, font=f_small, fill=(60, 60, 60))
     os.makedirs(os.path.dirname(path), exist_ok=True)
     img.save(path)
+    return W, H
 
 
 def fmt_ticks(vmin, vmax):
@@ -263,6 +269,86 @@ def fmt_ticks(vmin, vmax):
     if span <= 12:
         return "{:.1f}"
     return "{:.0f}"
+
+
+def draw_category_legend(path, title, subtitle, rows, source_line, note=None):
+    """Categorical key: every row is (color, label); colors must equal the
+    exact raster colors (callers use the same color table). Returns (W, H)."""
+    row_h, sw, pad = 26, 30, 14
+    W = 640
+    H = 96 + row_h * len(rows) + (30 if note else 12)
+    img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
+    d = ImageDraw.Draw(img)
+    f_title, f_body, f_small = _legend_font(22), _legend_font(15), _legend_font(13)
+    d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
+    d.text((pad, 8), title, font=f_title, fill=(10, 10, 10))
+    d.text((pad, 36), subtitle, font=f_body, fill=(40, 40, 40))
+    y = 66
+    for color, label in rows:
+        if isinstance(color, str):
+            h = color.lstrip("#")
+            rgb = tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+        else:
+            rgb = tuple(color)
+        d.rectangle([pad, y, pad + sw, y + row_h - 6], fill=rgb + (255,),
+                    outline=(40, 40, 40))
+        d.text((pad + sw + 10, y - 1), label, font=f_body, fill=(10, 10, 10))
+        y += row_h
+    d.text((pad, y + 4), source_line, font=f_small, fill=(60, 60, 60))
+    if note:
+        d.text((pad, y + 22), note, font=f_small, fill=(60, 60, 60))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    return W, H
+
+
+def rasterize_polygons(polys, bounds, value_fn):
+    """Burn SIGRID-style polygons onto the common canvas.
+
+    value_fn(poly) -> (value, ct_tenths) or (None, ct). Pixels inside a
+    polygon take its value; overlapping polygons resolve last-wins and are
+    counted. Returns (value_grid, ct_grid, n_overlaps).
+    """
+    from shapely import contains_xy
+    W, H = bounds["canvas_width"], bounds["canvas_height"]
+    lon_min, lon_max = bounds["lon_min"], bounds["lon_max"]
+    lat_min, lat_max = bounds["lat_min"], bounds["lat_max"]
+    values = np.full((H, W), np.nan)
+    cts = np.zeros((H, W), dtype=np.int8)
+    filled = np.zeros((H, W), dtype=bool)
+    overlaps = 0
+    for poly in polys:
+        val, ct = value_fn(poly)
+        if val is None:
+            continue
+        geom = poly["geom"]
+        try:
+            minx, miny, maxx, maxy = geom.bounds
+        except Exception:
+            continue
+        c0 = int((minx - lon_min) / (lon_max - lon_min) * W)
+        c1 = int((maxx - lon_min) / (lon_max - lon_min) * W) + 1
+        r0 = int((lat_max - maxy) / (lat_max - lat_min) * H)
+        r1 = int((lat_max - miny) / (lat_max - lat_min) * H) + 1
+        c0, c1 = max(c0, 0), min(c1, W)
+        r0, r1 = max(r0, 0), min(r1, H)
+        if r0 >= r1 or c0 >= c1:
+            continue
+        xs = lon_min + (np.arange(c0, c1) + 0.5) / W * (lon_max - lon_min)
+        ys = lat_max - (np.arange(r0, r1) + 0.5) / H * (lat_max - lat_min)
+        xx, yy = np.meshgrid(xs, ys)
+        try:
+            mask = contains_xy(geom, xx, yy)
+        except Exception:
+            continue
+        if not np.any(mask):
+            continue
+        sub = filled[r0:r1, c0:c1]
+        overlaps += int((sub & mask).sum())
+        values[r0:r1, c0:c1][mask] = val
+        cts[r0:r1, c0:c1][mask] = ct if ct is not None else 0
+        sub |= mask
+    return values, cts, overlaps
 
 
 # ------------------------------------------------------------------ metadata

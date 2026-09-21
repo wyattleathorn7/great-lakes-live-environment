@@ -13,7 +13,8 @@ on:
         required: false
         default: "all"
         type: choice
-        options: ["all", "wave_height", "water_temperature", "ice_coverage"]
+        options: ["all", "wave_height", "water_temperature", "ice_coverage",
+                  "ice_thickness", "ice_type"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -118,8 +119,68 @@ jobs:
             kml/Great_Lakes_Live_Ice_Coverage.kml
           if-no-files-found: warn
 
+  ice_thickness:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'ice_thickness' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update ice thickness
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_ice_thickness.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Ice thickness source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-ice_thickness
+          path: |
+            site/ice_thickness
+            site/kml/Great_Lakes_Live_Ice_Thickness.kml
+            kml/Great_Lakes_Live_Ice_Thickness.kml
+          if-no-files-found: warn
+
+  ice_type:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'ice_type' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update ice type
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_ice_type.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Ice type source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-ice_type
+          path: |
+            site/ice_type
+            site/kml/Great_Lakes_Live_Ice_Type.kml
+            kml/Great_Lakes_Live_Ice_Type.kml
+          if-no-files-found: warn
+
   publish:
-    needs: [wave_height, water_temperature, ice_coverage]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type]
     # Publish whatever succeeded; a single-product failure must not block
     # the other two layers from reaching GitHub Pages.
     if: always()

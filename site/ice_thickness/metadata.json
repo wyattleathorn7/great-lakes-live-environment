@@ -1,0 +1,43 @@
+{
+  "product": "ice_thickness",
+  "title": "LIVE ICE THICKNESS",
+  "freshness": "LATEST AVAILABLE (daily analysis, seasonal product)",
+  "noaa_source": "U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, SIGRID-3 shapefile",
+  "product_name": "U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, SIGRID-3 shapefile",
+  "variable": "ice thickness derived from WMO stage-of-development (SA/SB/SC) range midpoints, concentration-weighted",
+  "source_url": "https://usicecenter.gov/File/DownloadCurrent?pId=35",
+  "data_time_utc": "NIC analysis date 2026-05-16 (from NIC filename; retrieved 2026-09-21 19:00 UTC)",
+  "source_last_modified_utc": "unknown (NIC sends none)",
+  "processing_time_utc": "2026-09-21 19:00 UTC",
+  "units": "in (display); derived from WMO stage ranges in cm",
+  "spatial_resolution_source": "NIC SIGRID-3 vector analysis (variable polygon size)",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.0,
+  "color_scale_max": 12.0,
+  "color_scale_units": "in",
+  "missing_data_treatment": "open water (CT<1) and stages without an authoritative thickness (brash/unstaged/old/glacier/unknown) rendered fully transparent; NEVER zero-filled or guessed.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    210
+  ],
+  "data_nature": "derived/estimated from analyzed ice stages; NOT a direct measurement",
+  "methodology": "Per SIGRID-3 polygon: thickness = sum(partial_conc_i * WMO_stage_midpoint_i) / sum(partial_conc_i) over SA/SB/SC stages with authoritative ranges (see nic_sigrid.STAGE_TABLE); cm/2.54 -> inches; pixel alpha scaled by total concentration CT/10. Off-season ice-free analyses are valid-empty.",
+  "stats": {
+    "analysis_date": "2026-05-16",
+    "polygons": 1,
+    "polygon_overlaps": 0,
+    "ice_pixels": 0,
+    "ice_covered_fraction": 0.0,
+    "max_in": 0.0,
+    "mean_in": 0.0,
+    "polys_without_thickness_estimate": 0
+  }
+}

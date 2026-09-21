@@ -1,0 +1,13 @@
+{
+  "product": "ice_type",
+  "title": "LIVE ICE TYPE",
+  "freshness_label": "LATEST AVAILABLE (daily analysis, seasonal product)",
+  "source_name": "U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, SIGRID-3 shapefile",
+  "source_url": "https://usicecenter.gov/File/DownloadCurrent?pId=35",
+  "variable": "predominant WMO stage of development (SA/SB/SC by partial concentration)",
+  "source_units": "WMO SIGRID-3 stage code",
+  "display_units": "category",
+  "data_nature": "analyzed (human ice analysis of satellite imagery)",
+  "alpha_rule": "alpha scaled by total concentration (CT/10); open water (CT<1) fully transparent",
+  "refresh_interval_seconds": 43200
+}

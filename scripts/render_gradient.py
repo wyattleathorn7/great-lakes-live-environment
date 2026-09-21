@@ -14,11 +14,11 @@ import os
 
 import numpy as np
 
-from geospatial_utils import (ICE_STOPS, SITE_DIR, TEMP_STOPS, WAVE_STOPS,
-                              apply_colormap, base_metadata, bin_to_canvas,
-                              canvas_indices, draw_legend, fmt_ticks,
-                              load_bounds, save_png, utcnow_iso,
-                              write_metadata)
+from geospatial_utils import (ICE_STOPS, LEGEND_H, LEGEND_W, SITE_DIR,
+                              TEMP_STOPS, WAVE_STOPS, apply_colormap,
+                              base_metadata, bin_to_canvas, canvas_indices,
+                              draw_legend, fmt_ticks, load_bounds, save_png,
+                              utcnow_iso, write_metadata)
 
 RENDER_SPECS = {
     "wave_height": {"stops": WAVE_STOPS, "unit": "ft"},
@@ -50,6 +50,7 @@ def render_field(product, lats, lons, values_display, vmin, vmax, meta_extra,
     meta["color_scale_min"] = vmin
     meta["color_scale_max"] = vmax
     meta["color_scale_units"] = spec["unit"]
+    meta["legend_size"] = [LEGEND_W, LEGEND_H]
     meta["rendered_nontransparent_pixels"] = int((rgba[:, :, 3] > 0).sum())
     meta["rendered_canvas_pixels"] = int(rgba.shape[0] * rgba.shape[1])
     write_metadata(product_dir, meta)
