@@ -128,6 +128,25 @@ def _build(info, zip_path, digest):
     rgba = apply_shoreline_mask(rgba)  # one shared GSHHG shoreline for all
 
     save_png(rgba, os.path.join(stage_prod, "current.png"))
+
+    def thick_tile(tb, level):
+        from geospatial_utils import mask_crop_for_tile
+        tv, tc, _ov = rasterize_thickness(polys, tb)
+        t = np.zeros((tb["canvas_height"], tb["canvas_width"], 4), dtype=np.uint8)
+        ook = np.isfinite(tv)
+        if not np.any(ook):
+            return t
+        tt = np.clip(tv[ook] / vmax, 0.0, 1.0)
+        t[ook, 0:3] = lut[(tt * 255).astype(int)]
+        avec = np.vectorize(lambda c: concentration_alpha(int(c)))(tc[ook])
+        t[ook, 3] = avec.astype(np.uint8)
+        t[:, :, 3] = np.round(
+            t[:, :, 3].astype(np.float32) * mask_crop_for_tile(tb)).astype(np.uint8)
+        return t if np.any(t[:, :, 3] > 0) else None
+
+    from render_gradient import build_tiles as _build_tiles
+    tiles = _build_tiles(PRODUCT, stage_prod, thick_tile) if n_ice else []
+    print(f"[{PRODUCT}] LOD tiles: {len(tiles)}")
     subtitle = (f"{CONFIG['freshness_label']}  |  NIC analysis: {analysis_date}")
     lw, lh = draw_legend(os.path.join(stage_prod, "legend.png"),
                          CONFIG["title"], subtitle, "inches",
@@ -180,6 +199,7 @@ def _build(info, zip_path, digest):
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
+        tiles=tiles,
         out_dirs=[os.path.join(stage, "kml", KML_FILE),
                   os.path.join(stage, "site", "kml", KML_FILE)])
     assert_no_vector_geometry(kml_text)

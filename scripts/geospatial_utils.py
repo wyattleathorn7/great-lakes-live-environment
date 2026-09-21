@@ -26,7 +26,68 @@ KML_DIR = os.path.join(REPO_ROOT, "kml")
 WATERMASK_PATH = os.path.join(REPO_ROOT, "assets", "great_lakes_watermask.png")
 PROD_BASE_URL = "https://wyattleathorn7.github.io/great-lakes-live-environment"
 
+WATERMASK_4X_PATH = os.path.join(REPO_ROOT, "assets", "great_lakes_watermask_4x.png")
+
 _WATERMASK = None
+_WATERMASK_4X = None
+
+
+def tile_layout():
+    """LOD pyramid: [(level, divisions_per_axis, min_lod_pixels)]."""
+    return [(1, 2, 256), (2, 4, 512)]
+
+
+def tile_bounds(level, ix, iy):
+    """Bounds dict (with 1800x1175 canvas) for one tile of the pyramid."""
+    base = load_bounds()
+    n = {1: 2, 2: 4}[level]
+    assert 0 <= ix < n and 0 <= iy < n
+    lon_min = base["lon_min"] + (base["lon_max"] - base["lon_min"]) * ix / n
+    lon_max = base["lon_min"] + (base["lon_max"] - base["lon_min"]) * (ix + 1) / n
+    # iy=0 is the NORTH row (row 0 of the image)
+    lat_max = base["lat_max"] - (base["lat_max"] - base["lat_min"]) * iy / n
+    lat_min = base["lat_max"] - (base["lat_max"] - base["lat_min"]) * (iy + 1) / n
+    return {"crs": base["crs"], "lon_min": lon_min, "lon_max": lon_max,
+            "lat_min": lat_min, "lat_max": lat_max,
+            "canvas_width": 1800, "canvas_height": 1175,
+            "overlay_alpha": base["overlay_alpha"]}
+
+
+def tile_rel_path(product, level, ix, iy):
+    return f"{product}/tiles/z{level}_{ix}_{iy}.png"
+
+
+def load_watermask_4x():
+    """7200x4700 tile-source mask (float 0..1). Committed asset, loaded once."""
+    global _WATERMASK_4X
+    if _WATERMASK_4X is None:
+        if not os.path.exists(WATERMASK_4X_PATH):
+            raise FileNotFoundError(
+                f"tile shoreline mask missing: {WATERMASK_4X_PATH}")
+        m = np.array(Image.open(WATERMASK_4X_PATH).convert("L"))
+        if m.shape != (4700, 7200):
+            raise ValueError(f"4x mask shape {m.shape} != (4700, 7200)")
+        _WATERMASK_4X = m.astype(np.float32) / 255.0
+    return _WATERMASK_4X
+
+
+def mask_crop_for_tile(tb):
+    """Crop of the 4x mask exactly covering one tile's lon/lat box."""
+    base = load_bounds()
+    m = load_watermask_4x()
+    H4, W4 = m.shape
+    x0 = int(round((tb["lon_min"] - base["lon_min"])
+                   / (base["lon_max"] - base["lon_min"]) * W4))
+    x1 = int(round((tb["lon_max"] - base["lon_min"])
+                   / (base["lon_max"] - base["lon_min"]) * W4))
+    y0 = int(round((base["lat_max"] - tb["lat_max"])
+                   / (base["lat_max"] - base["lat_min"]) * H4))
+    y1 = int(round((base["lat_max"] - tb["lat_min"])
+                   / (base["lat_max"] - base["lat_min"]) * H4))
+    crop = m[y0:y1, x0:x1]
+    return np.array(Image.fromarray((crop * 255).astype(np.uint8)).resize(
+        (tb["canvas_width"], tb["canvas_height"]), Image.LANCZOS)
+    ).astype(np.float32) / 255.0
 
 
 def load_watermask():

@@ -96,11 +96,34 @@ def main():
         v = mv(lon, lat)
         check(name, (v > 0.5) == bool(want), round(float(v), 3))
 
-    # ---- per-product files: KML hygiene + opaque-subset-of-mask ----
-    import numpy as np
-    from PIL import Image
+    # ---- LOD tile pyramid consistency ----
+    import re as _re
+    from geospatial_utils import mask_crop_for_tile, tile_bounds, tile_layout
+    from validate_outputs import _site_file_for_href
     prods = ["wave_height", "water_temperature", "ice_coverage",
              "ice_thickness", "ice_type", "wind"]
+    _lvs = tile_layout()
+    check("tiles-levels", [(l, n) for l, n, _m in _lvs] == [(1, 2), (2, 4)])
+    for _level, _n, _m in _lvs:
+        _xs = sorted({round(tile_bounds(_level, ix, iy)["lon_min"], 9)
+                      for ix in range(_n) for iy in range(_n)})
+        check(f"tiles-z{_level}-partition",
+              len(_xs) == _n + 1 or len(set(
+                  round(tile_bounds(_level, ix, 0)["lon_min"], 9)
+                  for ix in range(_n))) == _n)
+    _tb = tile_bounds(2, 1, 2)
+    _crop = mask_crop_for_tile(_tb)
+    check("tile-mask-crop-dims", _crop.shape == (1175, 1800), _crop.shape)
+    for p in prods:
+        for kf in (os.path.join(REPO_ROOT, "kml", f"Great_Lakes_Live_{_k(p)}.kml"),):
+            t = open(kf, encoding="utf-8").read()
+            check(f"{p}-tile-hrefs-resolve",
+                  all(_site_file_for_href(h) is not None
+                      and os.path.exists(_site_file_for_href(h)) for h in _re.findall(
+                      r"<href>(https?://[^<]+/tiles/[^<]+\.png)(?:\?[^<]*)?</href>", t)))
+            check(f"{p}-overlay-count", t.count("<GroundOverlay>") <= 25)
+    import numpy as np
+    from PIL import Image
     for p in prods:
         png = os.path.join(SITE_DIR, p, "current.png")
         a = np.array(Image.open(png).convert("RGBA"))

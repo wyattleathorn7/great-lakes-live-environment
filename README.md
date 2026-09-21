@@ -1,13 +1,29 @@
 # Great Lakes Live Environment
 
-One automated GitHub system publishing **three independent live raster layers**
+One automated GitHub system publishing **six independent live raster layers**
 for Google Earth, all from official NOAA sources:
 
 | Layer | Source | Refresh wording |
 |---|---|---|
 | 🌊 Live Wave Height | NCEP operational Great Lakes Wave Unstructured v2.1 (WAVEWATCH III), `HTSGW` analysis | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 | 🌡️ Live Water Temperature | NOAA/GLERL CoastWatch **GLSEA** daily (satellite AVHRR/VIIRS composite) | CURRENT DAILY |
-| 🧊 Live Ice Coverage | U.S. National Ice Center NAIS daily Great Lakes analysis (GRID 1800) | LATEST AVAILABLE (seasonal) |
+| 🧊 Live Ice Coverage | U.S. National Ice Center NAIS daily Great Lakes analysis (GRID 1800, %) | LATEST AVAILABLE (seasonal) |
+| 🧊 Live Ice Thickness | USNIC NAIS daily SIGRID-3 shapefile → WMO stage-range midpoints, concentration-weighted (**derived**, inches) | LATEST AVAILABLE (seasonal) |
+| 🧊 Live Ice Type | USNIC NAIS daily SIGRID-3 shapefile → predominant WMO stage (**analyzed**, 17 categories + unknown) | LATEST AVAILABLE (seasonal) |
+| 💨 Live Wind | NCEP GLWU `UGRD/VGRD` surface analysis → knots → **Beaufort Force 0–12** + direction arrows | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
+
+All water-based layers share one committed shoreline mask
+(`assets/great_lakes_watermask.png`, built from GSHHG v2.3.7), so every
+overlay cuts out at exactly the same coastline. For crisp shorelines at
+all zooms, each product additionally publishes an LOD tile pyramid
+(`site/<product>/tiles/`: 2×2 tiles at 2× plus 4×4 at 4× density, masked
+from `assets/great_lakes_watermask_4x.png`), referenced from its KML with
+Region/Lod hints over a shared-color overview. Tiles are Pages-deployed,
+never committed; a KML references tiles only when they were generated in
+that run, so failed/unchanged runs stay overview-only and always resolve.
+KMLs use GroundOverlay + self-refresh NetworkLink only — no ScreenOverlay
+(rejected by some Google Earth clients); legends live in each KML
+description (PNG + scale text) and as standalone `legend.png` files.
 
 See [DATA_SOURCES.md](DATA_SOURCES.md) for the verified endpoints, formats,
 resolutions, and update intervals (probed live 2026-09-21).
@@ -20,25 +36,31 @@ separate KML/KMZ products:
 ```text
 .
 ├── .github/workflows/update_environment.yml  # schedule + manual dispatch
-├── scripts/   # 3 independent pipelines + shared raster/KML/validation utils
+├── scripts/   # 6 independent pipelines + shared raster/KML/validation utils
 ├── config/    # ONE common bounds/CRS + per-product configs
 ├── output/    # raw downloads (git-ignored) + per-product state
+├── assets/    # shared GSHHG shoreline masks (committed, identical for all)
 ├── kml/       # canonical KMLs (copied to site/kml/ on each build)
 └── site/      # GitHub Pages root: stable URLs
-    ├── wave_height/{current.png,legend.png,metadata.json}
+    ├── wave_height/{current.png,legend.png,metadata.json,tiles/}
     ├── water_temperature/{...}
     ├── ice_coverage/{...}
+    ├── ice_thickness/{...}
+    ├── ice_type/{...}
+    ├── wind/{...}
     ├── kml/{Great_Lakes_Live_*.kml}
     └── index.html
 ```
 
 ## Design rules (enforced)
 
-- **Raster only.** Each KML has one `GroundOverlay` + one legend
-  `ScreenOverlay` + one self-refresh `NetworkLink`. Zero `LineString`,
-  `Polygon`, `Placemark`, or per-cell features (`validate_outputs.py` asserts this).
+- **Raster only.** Each KML has one overview `GroundOverlay` plus LOD detail
+  tiles with Regions (no legend `ScreenOverlay` — rejected by some Google
+  Earth clients; legends live in the KML description) + one self-refresh
+  `NetworkLink`. Zero `LineString`, `Polygon`, `Placemark`, or per-cell
+  features (`validate_outputs.py` asserts this).
 - **One common canvas** (`config/great_lakes_bounds.json`, WGS84
-  lon −93…−73.5, lat 40.5…49.5, 1800×1175): the three layers align exactly but
+  lon −93…−73.5, lat 40.5…49.5, 1800×1175): all six layers align exactly but
   share no data.
 - **Transparent outside valid water.** Land and missing data are alpha=0, so
   shipwrecks, lighthouses, harbors, and parks stay visible. Open water at 0 %
@@ -61,7 +83,7 @@ separate KML/KMZ products:
    the public base URL automatically
    (`https://<owner>.github.io/<repo>`); KMLs are regenerated with it.
 3. Run the workflow manually once (**Run workflow → product: all**), then open
-   `https://<owner>.github.io/<repo>/` and add the three
+   `https://<owner>.github.io/<repo>/` and add the six
    `/kml/Great_Lakes_Live_*.kml` links to Google Earth independently.
 
 ## Reliability notes (production)
@@ -76,7 +98,7 @@ separate KML/KMZ products:
   `site/` + `kml/` only on full success, so artifacts can never contain a
   half-updated layer.
 - Any download/parse/validation failure exits 2: the previous valid raster
-  is kept, the failure is logged, the job stays green, and the other two
+  is kept, the failure is logged, the job stays green, and the other
   products update normally. Unexpected engine errors exit 1 (red job).
 - NIC sends no `Last-Modified` header, so ice change-detection uses a
   SHA-256 content hash; GLSEA uses `Last-Modified`; GLWU uses the model
@@ -99,4 +121,4 @@ Local test: `pip install -r requirements.txt`, then
 
 Add `scripts/build_ais.py` + `config/ais.json` following the same
 download → validate → render → metadata → KML → publish contract; add one job
-to the workflow. No changes to the five existing products are needed.
+to the workflow. No changes to the six existing products are needed.

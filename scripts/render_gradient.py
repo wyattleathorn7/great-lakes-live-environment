@@ -59,6 +59,85 @@ def render_field(product, lats, lons, values_display, vmin, vmax, meta_extra,
     return field, rgba, meta
 
 
+TILE_HALO_DEG = 0.06  # source halo around tiles so splat windows match
+# across seams (edge pixels average the same source points as neighbors)
+
+
+def render_tile(product, lats, lons, values_display, vmin, vmax,
+                transparent_value, splat_radius, tile_bounds, mask_crop):
+    """Render one LOD tile (1800x1175) with the shared color table, masked by
+    the tile's crop of the 4x shoreline mask. Returns RGBA uint8."""
+    import math
+    import numpy as np
+    from geospatial_utils import (apply_colormap, bin_to_canvas,
+                                  canvas_indices)
+    spec = RENDER_SPECS[product]
+    W, H = tile_bounds["canvas_width"], tile_bounds["canvas_height"]
+    px = (tile_bounds["lon_max"] - tile_bounds["lon_min"]) / W
+    pad = max(2, int(math.ceil(TILE_HALO_DEG / px)))
+    eb = dict(tile_bounds,
+              lon_min=tile_bounds["lon_min"] - pad * px,
+              lon_max=tile_bounds["lon_max"] + pad * px,
+              lat_min=tile_bounds["lat_min"] - pad * px,
+              lat_max=tile_bounds["lat_max"] + pad * px,
+              canvas_width=W + 2 * pad, canvas_height=H + 2 * pad)
+    rows, cols, valid = canvas_indices(lats, lons, eb)
+    field, _ = bin_to_canvas(rows, cols, np.asarray(values_display, dtype=float),
+                             valid, (H + 2 * pad, W + 2 * pad),
+                             splat_radius=splat_radius)
+    field = field[pad:pad + H, pad:pad + W]
+    rgba = apply_colormap(field, vmin, vmax, spec["stops"],
+                          tile_bounds["overlay_alpha"], transparent_value)
+    rgba[:, :, 3] = np.round(
+        rgba[:, :, 3].astype(np.float32) * mask_crop).astype(np.uint8)
+    return rgba, field
+
+
+def build_tiles(product, stage_prod, render_one):
+    """Render the LOD pyramid for one product.
+
+    render_one(tile_bounds_dict, level) -> RGBA uint8 array, or None to skip
+    the tile (e.g. no ice in an off-season polygon product). Tile PNGs are
+    written under <stage_prod>/tiles/ (Pages-deployed, never committed).
+    Returns [(rel_path, tile_bounds, min_lod)] for the KML, or [] when no
+    tile was rendered (KML stays overview-only).
+    """
+    import os
+    from geospatial_utils import (save_png, tile_bounds, tile_layout,
+                                  tile_rel_path)
+    tiles = []
+    for level, n, min_lod in tile_layout():
+        for iy in range(n):
+            for ix in range(n):
+                tb = tile_bounds(level, ix, iy)
+                rgba = render_one(tb, level)
+                if rgba is None:
+                    continue
+                rel = tile_rel_path(product, level, ix, iy)
+                save_png(rgba, os.path.join(stage_prod, "tiles",
+                                            os.path.basename(rel)))
+                tiles.append((rel, tb, min_lod))
+    return tiles
+
+
+def build_grid_tiles(product, stage_prod, lats, lons, values, vmin, vmax,
+                     transparent_value, splat_overview, has_data):
+    """Tile pyramid for gridded (binned) products. Tile splat scales with
+    level so coarse source grids stay hole-free at 2x/4x density."""
+    from geospatial_utils import mask_crop_for_tile
+    if not has_data:
+        return []
+
+    def one(tb, level):
+        rgba, _ = render_tile(product, lats, lons, values, vmin, vmax,
+                              transparent_value,
+                              splat_overview * (2 ** level), tb,
+                              mask_crop_for_tile(tb))
+        return rgba
+
+    return build_tiles(product, stage_prod, one)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--product", required=True, choices=list(RENDER_SPECS))

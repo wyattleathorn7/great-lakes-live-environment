@@ -33,7 +33,10 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from geospatial_utils import REPO_ROOT, load_bounds  # noqa: E402
 
-SUPER = 3  # supersample factor for antialiased edges
+SUPER_W, SUPER_H = 5400, 3525  # default full-res GSHHG rasterization grid.
+# Outputs: assets/great_lakes_watermask.png (config canvas, for overview
+# overlays) and assets/great_lakes_watermask_4x.png (7200x4700, tile source).
+# CI never fetches GSHHG; every product uses these identical files.
 
 
 def read_polys(shp_base):
@@ -99,9 +102,18 @@ def main():
     ap.add_argument("--l2", required=True)
     ap.add_argument("--l3", required=True)
     ap.add_argument("--l4", required=True)
+    ap.add_argument("--out", default=None,
+                    help="output PNG (default: assets/great_lakes_watermask.png)")
+    ap.add_argument("--out-w", type=int, default=None)
+    ap.add_argument("--out-h", type=int, default=None)
+    ap.add_argument("--super", type=int, default=3,
+                    help="supersample factor over the larger of source grid "
+                    "and output (default 3)")
     args = ap.parse_args()
     bounds = load_bounds()
-    W, H = bounds["canvas_width"] * SUPER, bounds["canvas_height"] * SUPER
+    ow = args.out_w or bounds["canvas_width"]
+    oh = args.out_h or bounds["canvas_height"]
+    W, H = max(SUPER_W, ow * args.super), max(SUPER_H, oh * args.super)
 
     levels = {}
     for name, base in (("L1", args.l1), ("L2", args.l2),
@@ -115,9 +127,11 @@ def main():
     water = levels["L4"] | (~levels["L3"] & (levels["L2"] | ~levels["L1"]))
     print(f"water frac={water.mean():.4f}")
     img = Image.fromarray((water * 255).astype(np.uint8), mode="L")
-    img = img.resize((bounds["canvas_width"], bounds["canvas_height"]),
-                     Image.LANCZOS)
-    out = os.path.join(REPO_ROOT, "assets", "great_lakes_watermask.png")
+    ow = args.out_w or bounds["canvas_width"]
+    oh = args.out_h or bounds["canvas_height"]
+    if (ow, oh) != (W, H):
+        img = img.resize((ow, oh), Image.LANCZOS)
+    out = args.out or os.path.join(REPO_ROOT, "assets", "great_lakes_watermask.png")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     img.save(out)
     arr = np.array(img)

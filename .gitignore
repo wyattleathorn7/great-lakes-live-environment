@@ -1,5 +1,6 @@
 output/raw/
 output/stage/
 artifacts/
+site/*/tiles/
 __pycache__/
 *.pyc

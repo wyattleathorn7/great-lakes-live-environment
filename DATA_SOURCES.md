@@ -145,10 +145,17 @@ self-refresh NetworkLink and zero vector geometry.
   **"LIVE / CURRENT MODEL (analysis)"** with exact `dataDate/dataTime` stamp.
 - **Decoding:** `eccodes` (pip wheel, no system deps) reading only the
   `HTSGW/step=0` message; per-cell WGS84 via GRIB lat/lon arrays.
+- **Visualization:** fixed scientific scale 0–30 ft as ONE continuous
+  piecewise-linear anchor gradient (anchors at 0/1/2/3/5/6/9/10/12/13/15/16/
+  20/21/23/24/26/27/30 ft: dark blue → blue/cyan → green → yellow →
+  yellow-orange → orange → red → red-violet → violet → purple → dark purple,
+  compressed toward the top; legend ticks 0/2/5/9/12/15/20/23/26/30+ ft;
+  values above 30 ft clamp into dark purple, never transparent).
 - **Resolution documented:** source ~2.5 km; rendered on common canvas.
 - **Validation buoys (NDBC `realtime2`, verified live):**
-  `45001` (Superior), `45007` (S. Michigan), `45132` (Erie), `45012` (Ontario)
-  — `WVHT`/`WTMP` used as QC reference only, never as the rendering source.
+  `45001` (Superior), `45002` (N. Michigan), `45132` (Erie), `45012` (Ontario),
+  `45005` (W. Erie) — `WVHT`/`WTMP`/`WSPD` used as QC reference only, never
+  as the rendering source.
 - **Docs:** `https://polar.ncep.noaa.gov/waves/download2.shtml`,
   `https://www.glerl.noaa.gov/emf/waves/WW3` (experimental cousin, not used).
 
@@ -164,6 +171,17 @@ self-refresh NetworkLink and zero vector geometry.
   meteorological FROM→TOWARD reversal); calm (<0.5 m/s) gets no arrow;
   arrows are rasterized into the PNG (no KML placemarks).
 - Freshness wording: **"LIVE / CURRENT MODEL (analysis)"**.
+
+## LOD tile pyramid (crisp shoreline at all zooms)
+
+Each product publishes `site/<product>/tiles/`: 2×2 tiles at 2× density
+(z1) plus 4×4 at 4× (z2), every tile 1800×1175 with the product's own color
+table, masked from `assets/great_lakes_watermask_4x.png` (7200×4700),
+binned with a source halo so seams are discontinuity-free (verified:
+seam color jump ≤ interior jump). The KML references tiles with
+Region/Lod hints over the shared-color overview; clients without Region
+support simply overdraw the same colors. Tiles are Pages-deployed, never
+committed; a KML references tiles only when generated in that run.
 
 ## Cache / refresh design (Google Earth)
 

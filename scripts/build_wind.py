@@ -101,16 +101,9 @@ def extract_uv_analysis(grib_path):
     raise ValueError("UGRD/VGRD analysis messages (step=0) not found in GRIB2")
 
 
-def draw_arrows(rgba, uu, vv, valid_src, rows, cols, bounds, step):
-    """Draw tiny movement-direction arrows into the raster (in place).
-
-    uu/vv are source-grid movement components (east/north +). Arrows are
-    sampled every `step` source points and drawn at their canvas pixels.
-    """
-    H, W = rgba.shape[:2]
-    img = Image.fromarray(rgba, mode="RGBA")
-    d = ImageDraw.Draw(img)
-    n = 0
+def arrow_points(uu, vv, valid_src, rows, cols, step):
+    """Sample (row, col, u, v) movement vectors on a regular sub-grid."""
+    pts = []
     ny, nx = valid_src.shape
     for iy in range(0, ny, step):
         for ix in range(0, nx, step):
@@ -119,30 +112,44 @@ def draw_arrows(rgba, uu, vv, valid_src, rows, cols, bounds, step):
             u, v = float(uu[iy, ix]), float(vv[iy, ix])
             if not (math.isfinite(u) and math.isfinite(v)):
                 continue
-            sp = math.hypot(u, v)
-            if sp < 0.5:
+            if math.hypot(u, v) < 0.5:
                 continue  # calm: no arrow
-            r, c = int(rows[iy, ix]), int(cols[iy, ix])
-            if not (8 <= r < H - 8 and 8 <= c < W - 8):
-                continue
-            # movement direction on canvas: east+right, north+up(screen y down)
-            dx, dy = u / sp, -v / sp
-            L = 9.0
-            x0, y0 = c - dx * L / 2, r - dy * L / 2
-            x1, y1 = c + dx * L / 2, r + dy * L / 2
-            ang = math.atan2(dy, dx)
-            for ext, w, col in ((2, 3, (20, 20, 20, 230)),
-                                (0, 1, (255, 255, 255, 235))):
-                d.line([(x0, y0), (x1, y1)], fill=col, width=2 + ext)
-                for s in (1, -1):
-                    ha = ang + s * (math.pi - 0.5)
-                    d.line([(x1, y1),
-                            (x1 + math.cos(ha) * 5, y1 + math.sin(ha) * 5)],
-                           fill=col, width=2 + ext)
-            n += 1
+            pts.append((int(rows[iy, ix]), int(cols[iy, ix]), u, v))
+    return pts
+
+
+def paint_arrows(rgba, points):
+    """Paint tiny movement-direction arrows (in place -> (rgba, count))."""
+    H, W = rgba.shape[:2]
+    img = Image.fromarray(rgba, mode="RGBA")
+    d = ImageDraw.Draw(img)
+    n = 0
+    for r, c, u, v in points:
+        if not (8 <= r < H - 8 and 8 <= c < W - 8):
+            continue
+        sp = math.hypot(u, v)
+        # movement direction on canvas: east+right, north+up(screen y down)
+        dx, dy = u / sp, -v / sp
+        L = 9.0
+        x0, y0 = c - dx * L / 2, r - dy * L / 2
+        x1, y1 = c + dx * L / 2, r + dy * L / 2
+        ang = math.atan2(dy, dx)
+        for ext, w, col in ((2, 3, (20, 20, 20, 230)),
+                            (0, 1, (255, 255, 255, 235))):
+            d.line([(x0, y0), (x1, y1)], fill=col, width=2 + ext)
+            for s in (1, -1):
+                ha = ang + s * (math.pi - 0.5)
+                d.line([(x1, y1),
+                        (x1 + math.cos(ha) * 5, y1 + math.sin(ha) * 5)],
+                       fill=col, width=2 + ext)
+        n += 1
     del d
-    out = np.array(img)
-    return out, n
+    return np.array(img), n
+
+
+def draw_arrows(rgba, uu, vv, valid_src, rows, cols, bounds, step):
+    """Legacy wrapper (kept for selftest): sample + paint. `bounds` unused."""
+    return paint_arrows(rgba, arrow_points(uu, vv, valid_src, rows, cols, step))
 
 
 def main():
@@ -263,7 +270,9 @@ def _build(got, used_url, datestr, cycle, raw_path):
     rgba[ook, 0:3] = lut[fi]
     rgba[ook, 3] = bounds["overlay_alpha"]
 
-    rgba, n_arrows = draw_arrows(rgba, uu, vv, okg, rgrid, cgrid, bounds,
+    rgba, n_arrows = draw_arrows(rgba, uu, vv,
+                                 okg & inside.reshape(ny, nx),
+                                 rgrid, cgrid, bounds,
                                  CONFIG["arrow_subsample"])
     print(f"[{PRODUCT}] arrows drawn: {n_arrows}")
     if n_arrows < 50:
@@ -271,6 +280,50 @@ def _build(got, used_url, datestr, cycle, raw_path):
         return 2
     rgba = apply_shoreline_mask(rgba)  # one shared GSHHG shoreline for all
     save_png(rgba, os.path.join(stage_prod, "current.png"))
+
+    def wind_tile(tb, level):
+        from geospatial_utils import (bin_to_canvas, canvas_indices,
+                                      mask_crop_for_tile)
+        from render_gradient import TILE_HALO_DEG
+        px = (tb["lon_max"] - tb["lon_min"]) / tb["canvas_width"]
+        pad = max(2, int(math.ceil(TILE_HALO_DEG / px)))
+        eb = dict(tb,
+                  lon_min=tb["lon_min"] - pad * px,
+                  lon_max=tb["lon_max"] + pad * px,
+                  lat_min=tb["lat_min"] - pad * px,
+                  lat_max=tb["lat_max"] + pad * px,
+                  canvas_width=tb["canvas_width"] + 2 * pad,
+                  canvas_height=tb["canvas_height"] + 2 * pad)
+        r2, c2, ok2 = canvas_indices(np.asarray(lats).ravel(),
+                                     np.asarray(lons).ravel(), eb)
+        fld, _ = bin_to_canvas(r2, c2, forces.ravel(), ok2 & valid,
+                               (eb["canvas_height"], eb["canvas_width"]),
+                               splat_radius=2 * (2 ** level))
+        fld = fld[pad:pad + tb["canvas_height"], pad:pad + tb["canvas_width"]]
+        t = np.zeros((tb["canvas_height"], tb["canvas_width"], 4), dtype=np.uint8)
+        oo = np.isfinite(fld)
+        t = np.zeros((tb["canvas_height"], tb["canvas_width"], 4), dtype=np.uint8)
+        oo = np.isfinite(fld)
+        t[oo, 0:3] = lut[np.clip(np.round(fld[oo]).astype(int), 0, 12)]
+        t[oo, 3] = tb["overlay_alpha"]
+        rg = r2.reshape(ny, nx)
+        cg = c2.reshape(ny, nx)
+        t, _ = paint_arrows(
+            t, arrow_points(uu, vv, okg, rg, cg, CONFIG["arrow_subsample"]))
+        rt, ct, okt = canvas_indices(np.asarray(lats).ravel(),
+                                       np.asarray(lons).ravel(), tb)
+        rg = rt.reshape(ny, nx)
+        cg = ct.reshape(ny, nx)
+        t, _ = paint_arrows(
+            t, arrow_points(uu, vv, okg & okt.reshape(ny, nx), rg, cg,
+                            CONFIG["arrow_subsample"]))
+        t[:, :, 3] = np.round(
+            t[:, :, 3].astype(np.float32) * mask_crop_for_tile(tb)).astype(np.uint8)
+        return t
+
+    from render_gradient import build_tiles as _build_tiles
+    tiles = _build_tiles(PRODUCT, stage_prod, wind_tile)
+    print(f"[{PRODUCT}] LOD tiles: {len(tiles)}")
 
     beaufort_rows = "".join(
         f"<b>F{f}</b> — {name} ({rng})<br/>"
@@ -362,6 +415,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
+        tiles=tiles,
         out_dirs=[os.path.join(stage, "kml", KML_FILE),
                   os.path.join(stage, "site", "kml", KML_FILE)])
     assert_no_vector_geometry(kml_text)
