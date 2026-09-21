@@ -7,7 +7,7 @@
       <name>🧊 LIVE ICE THICKNESS</name>
       <drawOrder>10</drawOrder>
       <Icon>
-        <href>https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO/ice_thickness/current.png?v=2026-09-21_1900_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/ice_thickness/current.png?v=2026-09-21_1900_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -20,7 +20,7 @@
     <ScreenOverlay>
       <name>🧊 LIVE ICE THICKNESS — legend</name>
       <Icon>
-        <href>https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO/ice_thickness/legend.png?v=2026-09-21_1900_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/ice_thickness/legend.png?v=2026-09-21_1900_UTC</href>
       </Icon>
       <overlayXY x="0" y="1" xunits="fraction" yunits="fraction"/>
       <screenXY x="16" y="16" xunits="pixels" yunits="pixels"/>
@@ -29,7 +29,7 @@
     <NetworkLink>
       <name>🧊 LIVE ICE THICKNESS — auto-refresh</name>
       <Link>
-        <href>https://REPLACE-GITHUB-USER.github.io/REPLACE-REPO/kml/Great_Lakes_Live_Ice_Thickness.kml</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/Great_Lakes_Live_Ice_Thickness.kml</href>
         <refreshMode>onInterval</refreshMode>
         <refreshInterval>43200</refreshInterval>
       </Link>
