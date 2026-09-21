@@ -12,8 +12,10 @@ for Google Earth, all from official NOAA sources:
 | 🧊 Live Ice Type | USNIC NAIS daily SIGRID-3 shapefile → predominant WMO stage (**analyzed**, 17 categories + unknown) | LATEST AVAILABLE (seasonal) |
 | 💨 Live Wind | NCEP GLWU `UGRD/VGRD` surface analysis → knots → **Beaufort Force 0–12** + direction arrows | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 
-All water-based layers share one committed shoreline mask
-(`assets/great_lakes_watermask.png`, built from GSHHG v2.3.7), so every
+All water-based layers share one committed NOAA shoreline mask
+(`assets/great_lakes_watermask.png`, built from the NOAA Medium-Resolution
+Digital Vector Shoreline — nautical-chart compilation, mean-high-water
+datum — polygonized once at full vertex precision), so every
 overlay cuts out at exactly the same coastline. For crisp shorelines at
 all zooms, each product additionally publishes an LOD tile pyramid
 (`site/<product>/tiles/`: 2×2 tiles at 2× plus 4×4 at 4× density, masked
@@ -39,7 +41,7 @@ separate KML/KMZ products:
 ├── scripts/   # 6 independent pipelines + shared raster/KML/validation utils
 ├── config/    # ONE common bounds/CRS + per-product configs
 ├── output/    # raw downloads (git-ignored) + per-product state
-├── assets/    # shared GSHHG shoreline masks (committed, identical for all)
+├── assets/    # shared NOAA shoreline masks (committed, identical for all)
 ├── kml/       # canonical KMLs (copied to site/kml/ on each build)
 └── site/      # GitHub Pages root: stable URLs
     ├── wave_height/{current.png,legend.png,metadata.json,tiles/}

@@ -2,12 +2,12 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🌡️ LIVE WATER TEMPERATURE</name>
-    <description><![CDATA[<h2>GREAT LAKES SURFACE WATER TEMPERATURE</h2><p><b>Data time:</b> 2026-09-21 06:50 UTC<br/><b>Source updated:</b> Mon, 21 Sep 2026 06:50:54 GMT<br/><b>Processed:</b> 2026-09-21 21:29 UTC<br/><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=2026-09-21_2129_UTC" width="600" alt="legend"><br>Surface water temperature (°F): cold <b>52°F</b> (deep blue) → <b>63°F</b> → warm <b>74°F</b> (red). Lakewide mean this run: <b>64.3°F</b>.</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href="https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and ice layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>GREAT LAKES SURFACE WATER TEMPERATURE</h2><p><b>Data time:</b> 2026-09-21 06:50 UTC<br/><b>Source updated:</b> Mon, 21 Sep 2026 06:50:54 GMT<br/><b>Processed:</b> 2026-09-21 21:58 UTC<br/><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=2026-09-21_2158_UTC" width="600" alt="legend"><br>Surface water temperature (°F): cold <b>52°F</b> (deep blue) → <b>63°F</b> → warm <b>74°F</b> (red). Lakewide mean this run: <b>64.3°F</b>.</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href="https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and ice layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <GroundOverlay>
       <name>🌡️ LIVE WATER TEMPERATURE</name>
       <drawOrder>10</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/current.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/current.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -21,7 +21,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z1_0_0.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z1_0_0.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -47,7 +47,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z1_1_0.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z1_1_0.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -73,7 +73,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z1_0_1.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z1_0_1.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -99,7 +99,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z1_1_1.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z1_1_1.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -125,7 +125,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_0_0.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_0_0.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -151,7 +151,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_1_0.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_1_0.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -177,7 +177,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_2_0.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_2_0.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -203,7 +203,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_3_0.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_3_0.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -229,7 +229,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_0_1.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_0_1.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -255,7 +255,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_1_1.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_1_1.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -281,7 +281,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_2_1.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_2_1.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -307,7 +307,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_3_1.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_3_1.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -333,7 +333,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_0_2.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_0_2.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -359,7 +359,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_1_2.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_1_2.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -385,7 +385,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_2_2.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_2_2.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -411,7 +411,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_3_2.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_3_2.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -437,7 +437,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_0_3.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_0_3.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -463,7 +463,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_1_3.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_1_3.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -489,7 +489,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_2_3.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_2_3.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>
@@ -515,7 +515,7 @@
       <name>🌡️ LIVE WATER TEMPERATURE — detail tile</name>
       <drawOrder>20</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_3_3.png?v=2026-09-21_2129_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/tiles/z2_3_3.png?v=2026-09-21_2158_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>

@@ -113,14 +113,55 @@ def load_watermask():
 
 
 def apply_shoreline_mask(rgba):
-    """Multiply overlay alpha by the shared water mask (antialiased edges).
+    """Multiply overlay alpha by the shared water mask (antialiased edges)
+    and bleed water colors into transparent pixels.
 
     Same mask object for every product, so all layers share one shoreline.
+    The RGB bleed is critical for Google Earth: its bilinear magnification
+    interpolates transparent-black (0,0,0,0) edge pixels with water colors,
+    which renders as a dark fringe/shadow along the shore. Filling
+    near-edge transparent RGB with the adjacent water color removes the
+    fringe without changing any visible pixel (alpha stays 0 there).
     """
     mask = load_watermask()
     out = rgba.copy()
     out[:, :, 3] = np.round(out[:, :, 3].astype(np.float32) * mask).astype(np.uint8)
-    return out
+    return bleed_rgb_into_transparent(out)
+
+
+def bleed_rgb_into_transparent(rgba, iterations=10):
+    """Fill transparent pixels near water with neighboring water colors.
+
+    Only affects pixels with alpha == 0 (invisible); purely an
+    anti-fringe measure for bilinear-resampling clients. Fully transparent
+    images (e.g. off-season ice) are unaffected beyond a few edge pixels.
+    """
+    rgb = rgba[:, :, :3].astype(np.float32)
+    filled = rgba[:, :, 3] > 0
+    if filled.all():
+        return rgba
+    out = rgb.copy()
+    H, W = filled.shape
+    for _ in range(iterations):
+        if filled.all():
+            break
+        tot = np.zeros_like(out)
+        cnt = np.zeros((H, W), dtype=np.float32)
+        f = filled.astype(np.float32)
+        tot[1:, :, :] += out[:-1, :, :] * f[:-1, :, None]
+        cnt[1:] += f[:-1]
+        tot[:-1, :, :] += out[1:, :, :] * f[1:, :, None]
+        cnt[:-1] += f[1:]
+        tot[:, 1:, :] += out[:, :-1, :] * f[:, :-1, None]
+        cnt[:, 1:] += f[:, :-1]
+        tot[:, :-1, :] += out[:, 1:, :] * f[:, 1:, None]
+        cnt[:, :-1] += f[:, 1:]
+        grow = (~filled) & (cnt > 0)
+        out[grow] = tot[grow] / cnt[grow, None]
+        filled = filled | grow
+    res = rgba.copy()
+    res[:, :, :3] = np.round(out).astype(np.uint8)
+    return res
 
 USER_AGENT = {"User-Agent": "great-lakes-live-environment/1.0 (NOAA data automation; contact: repo owner)"}
 
@@ -523,11 +564,14 @@ def base_metadata(product, title, freshness_label, source_name, source_url,
         "color_scale_max": color_max,
         "color_scale_units": color_units,
         "missing_data_treatment": missing_data_treatment,
-        "shoreline_mask": ("assets/great_lakes_watermask.png — shared GSHHG "
-                           "v2.3.7 water mask (L1 high-res land, L2 full-res lakes, "
-                           "L3 islands, L4 ponds; 3x supersampled, antialiased). "
-                           "Overlay alpha is multiplied by this mask, so every "
-                           "product shares one shoreline."),
+        "shoreline_mask": ("assets/great_lakes_watermask.png — shared NOAA "
+                           "medium-resolution shoreline water mask (nautical-"
+                           "chart compilation, mean-high-water datum; snapped + "
+                           "polygonized once, full vertex precision, antialiased). "
+                           "Overlay alpha is multiplied by this mask and edge "
+                           "RGB is bled into transparent pixels (anti-fringe for "
+                           "bilinear clients), so every product shares one "
+                           "shoreline."),
         "attribution": ("Data: US NOAA. This project is not endorsed by NOAA. "
                         "See DATA_SOURCES.md for exact products and endpoints."),
     }
