@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles",
   "variable": "TMP 2 m above ground, analysis step",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-09-22 08:00 UTC",
+  "data_time_utc": "2026-09-22 11:00 UTC",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-22 09:24 UTC",
+  "processing_time_utc": "2026-09-22 12:34 UTC",
   "units": "degF (display); source K",
   "spatial_resolution_source": "~3 km HRRR Lambert grid (1799x1059)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -19,7 +19,7 @@
     "lat_min": 40.5,
     "lat_max": 49.5
   },
-  "color_scale_min": 27.862427978515665,
+  "color_scale_min": 26.15938232421879,
   "color_scale_max": 70.93339355468754,
   "color_scale_units": "degF",
   "missing_data_treatment": "only [-60,55] C admitted pre-conversion; missing analysis transparent; never interpolated.",
@@ -29,20 +29,20 @@
     640,
     230
   ],
-  "legend_scale_html": "2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 27.86</b> / <b>HIGHEST+ 70.93</b> marked on the scale. Freezing has no color break.",
-  "model_cycle": "hrrr.20260922 t08z",
+  "legend_scale_html": "2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 26.16</b> / <b>HIGHEST+ 70.93</b> marked on the scale. Freezing has no color break.",
+  "model_cycle": "hrrr.20260922 t11z",
   "historical": {
-    "low": 27.862427978515665,
+    "low": 26.15938232421879,
     "high": 70.93339355468754,
     "percentiles": {
-      "p5": 33.374927978515665,
-      "p25": 39.787427978515666,
-      "p50": 47.999927978515665,
-      "p75": 53.96034240722656,
-      "p95": 59.813188796997096,
-      "p99": 62.9228401184082
+      "p5": 31.50313232421879,
+      "p25": 37.603913574218794,
+      "p50": 46.53533935546875,
+      "p75": 53.10313232421879,
+      "p95": 58.434303283691406,
+      "p99": 62.415254058837874
     },
-    "n_obs": 445846,
+    "n_obs": 465846,
     "extends": [
       {
         "at": "2026-09-22 04:04 UTC",
@@ -51,54 +51,54 @@
       {
         "at": "2026-09-22 09:24 UTC",
         "kind": "low"
+      },
+      {
+        "at": "2026-09-22 12:34 UTC",
+        "kind": "low"
       }
     ]
   },
   "stats": {
     "valid_cells": 2114386,
-    "current_min": 27.524927978515667,
-    "current_max": 67.01242797851566
+    "current_min": 25.59688232421879,
+    "current_max": 65.87188232421879
   },
   "buoy_qc": {
     "45001": {
-      "time_utc": "2026-09-22 07:40 UTC",
-      "WDIR_deg": null,
-      "WSPD_ms": null,
-      "WVHT_m": 0.2,
-      "WTMP_C": null,
-      "ATMP_C": null,
-      "note": "no ATMP obs"
+      "obs_F": 53.78,
+      "grid_F": 52.03438232421879,
+      "absdiff_F": 1.75,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 11:50 UTC"
     },
     "45002": {
-      "time_utc": "2026-09-22 07:50 UTC",
-      "WDIR_deg": 90.0,
-      "WSPD_ms": 7.0,
-      "WVHT_m": 0.9,
-      "WTMP_C": null,
-      "ATMP_C": null,
-      "note": "no ATMP obs"
+      "obs_F": 55.4,
+      "grid_F": 56.47813232421879,
+      "absdiff_F": 1.08,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 12:00 UTC"
     },
     "45132": {
-      "obs_F": 58.46,
-      "grid_F": 58.79992797851567,
-      "absdiff_F": 0.34,
+      "obs_F": 58.1,
+      "grid_F": 57.65938232421879,
+      "absdiff_F": 0.44,
       "verdict": "OK",
-      "obs_time": "2026-09-22 09:00 UTC"
+      "obs_time": "2026-09-22 12:00 UTC"
     },
     "45012": {
-      "obs_F": 58.28,
-      "grid_F": 58.23742797851567,
-      "absdiff_F": 0.04,
+      "obs_F": 57.38,
+      "grid_F": 56.98438232421879,
+      "absdiff_F": 0.4,
       "verdict": "OK",
-      "obs_time": "2026-09-22 07:50 UTC"
+      "obs_time": "2026-09-22 12:00 UTC"
     },
     "45005": {
       "obs_F": 64.58,
-      "grid_F": 65.99992797851567,
-      "absdiff_F": 1.42,
+      "grid_F": 65.75938232421879,
+      "absdiff_F": 1.18,
       "verdict": "OK",
-      "obs_time": "2026-09-22 08:50 UTC"
+      "obs_time": "2026-09-22 12:00 UTC"
     }
   },
-  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=2026-09-22_0924_UTC\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 27.86</b> / <b>HIGHEST+ 70.93</b> marked on the scale. Freezing has no color break.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-22 08:00 UTC<br/><b>Processed:</b> 2026-09-22 09:24 UTC<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
+  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=2026-09-22_1234_UTC\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 26.16</b> / <b>HIGHEST+ 70.93</b> marked on the scale. Freezing has no color break.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-22 11:00 UTC<br/><b>Processed:</b> 2026-09-22 12:34 UTC<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
 }
