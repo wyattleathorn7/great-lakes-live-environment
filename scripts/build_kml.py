@@ -46,16 +46,10 @@ def legend_block(legend_path, cache_token, scale_html):
 
 
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
-              description_html, refresh_interval, cache_token, out_dirs=None,
-              tiles=None):
-    """tiles = [(rel_png_path, tile_bounds_dict, min_lod_pixels)] or None.
-
-    Tiles are LOD GroundOverlays with Regions: Google Earth fetches a tile
-    only when its region is in view and large enough on screen, giving a
-    crisp shoreline at every zoom while the overview stays the always-on
-    base. Builders include tiles ONLY when they were generated in that run
-    (skip/fail paths stay overview-only), so KML tile refs always resolve.
-    """
+              description_html, refresh_interval, cache_token, out_dirs=None):
+    """One overview GroundOverlay + self-refresh NetworkLink; never any
+    per-cell geometry (asserted). Filenames/URLs stay stable; ?v= token
+    busts caches on each successful product run."""
     bounds = load_bounds()
     base = pages_base()
     png_url = f"{base}/{png_path}?v={cache_token}"
@@ -84,34 +78,6 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     box.append(_q("west", str(bounds["lon_min"])))
     ground.append(box)
     document.append(ground)
-
-    for rel_path, tb, min_lod in tiles or []:
-        tile = _q("GroundOverlay")
-        tile.append(_q("name", f"{overlay_name} — detail tile"))
-        tile.append(_q("drawOrder", "20"))
-        ticon = _q("Icon")
-        ticon.append(_q("href", f"{base}/{rel_path}?v={cache_token}"))
-        ticon.append(_q("refreshMode", "onChange"))
-        tile.append(ticon)
-        tbox = _q("LatLonBox")
-        tbox.append(_q("north", str(tb["lat_max"])))
-        tbox.append(_q("south", str(tb["lat_min"])))
-        tbox.append(_q("east", str(tb["lon_max"])))
-        tbox.append(_q("west", str(tb["lon_min"])))
-        tile.append(tbox)
-        region = _q("Region")
-        llab = _q("LatLonAltBox")
-        llab.append(_q("north", str(tb["lat_max"])))
-        llab.append(_q("south", str(tb["lat_min"])))
-        llab.append(_q("east", str(tb["lon_max"])))
-        llab.append(_q("west", str(tb["lon_min"])))
-        region.append(llab)
-        lod = _q("Lod")
-        lod.append(_q("minLodPixels", str(min_lod)))
-        lod.append(_q("maxLodPixels", "-1"))
-        region.append(lod)
-        tile.append(region)
-        document.append(tile)
 
     link = _q("NetworkLink")
     link.append(_q("name", overlay_name + " — auto-refresh"))

@@ -269,49 +269,6 @@ def _build(got, used_url, datestr, cycle, raw_path):
     rgba = apply_shoreline_mask(rgba)  # one shared GSHHG shoreline for all
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
-    def wind_tile(tb, level):
-        from geospatial_utils import (bin_to_canvas, canvas_indices,
-                                      mask_crop_for_tile)
-        from render_gradient import TILE_HALO_DEG
-        px = (tb["lon_max"] - tb["lon_min"]) / tb["canvas_width"]
-        pad = max(2, int(math.ceil(TILE_HALO_DEG / px)))
-        eb = dict(tb,
-                  lon_min=tb["lon_min"] - pad * px,
-                  lon_max=tb["lon_max"] + pad * px,
-                  lat_min=tb["lat_min"] - pad * px,
-                  lat_max=tb["lat_max"] + pad * px,
-                  canvas_width=tb["canvas_width"] + 2 * pad,
-                  canvas_height=tb["canvas_height"] + 2 * pad)
-        r2, c2, ok2 = canvas_indices(np.asarray(lats).ravel(),
-                                     np.asarray(lons).ravel(), eb)
-        fld, _ = bin_to_canvas(r2, c2, forces.ravel(), ok2 & valid,
-                               (eb["canvas_height"], eb["canvas_width"]),
-                               splat_radius=2 * (2 ** level))
-        fld = fld[pad:pad + tb["canvas_height"], pad:pad + tb["canvas_width"]]
-        t = np.zeros((tb["canvas_height"], tb["canvas_width"], 4), dtype=np.uint8)
-        oo = np.isfinite(fld)
-        t = np.zeros((tb["canvas_height"], tb["canvas_width"], 4), dtype=np.uint8)
-        oo = np.isfinite(fld)
-        t[oo, 0:3] = lut[np.clip(np.round(fld[oo]).astype(int), 0, 12)]
-        t[oo, 3] = tb["overlay_alpha"]
-        rg = r2.reshape(ny, nx)
-        cg = c2.reshape(ny, nx)
-        t, _ = paint_arrows(
-            t, arrow_points(uu, vv, okg, rg, cg, CONFIG["arrow_subsample"]))
-        rt, ct, okt = canvas_indices(np.asarray(lats).ravel(),
-                                       np.asarray(lons).ravel(), tb)
-        rg = rt.reshape(ny, nx)
-        cg = ct.reshape(ny, nx)
-        t, _ = paint_arrows(
-            t, arrow_points(uu, vv, okg & okt.reshape(ny, nx), rg, cg,
-                            CONFIG["arrow_subsample"]))
-        t[:, :, 3] = np.round(
-            t[:, :, 3].astype(np.float32) * mask_crop_for_tile(tb)).astype(np.uint8)
-        return t
-
-    from render_gradient import build_tiles as _build_tiles
-    tiles = _build_tiles(PRODUCT, stage_prod, wind_tile)
-    print(f"[{PRODUCT}] LOD tiles: {len(tiles)}")
 
     beaufort_rows = "".join(
         f"<b>F{f}</b> — {name} ({rng})<br/>"
@@ -403,7 +360,6 @@ def _build(got, used_url, datestr, cycle, raw_path):
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
-        tiles=tiles,
         out_dirs=[os.path.join(stage, "kml", KML_FILE),
                   os.path.join(stage, "site", "kml", KML_FILE)])
     assert_no_vector_geometry(kml_text)

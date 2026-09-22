@@ -204,10 +204,6 @@ def _build(info, raw_path):
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values_f)
-    from render_gradient import build_grid_tiles
-    tiles = build_grid_tiles(PRODUCT, stage_prod, lats, lons, values_f,
-                             vmin, vmax, None, 1, True)
-    print(f"[{PRODUCT}] LOD tiles: {len(tiles)}")
     mid_f = round((vmin + vmax) / 2, 1)
     scale_html = (f"Surface water temperature (°F): cold <b>{vmin:g}°F</b> "
                   f"(deep blue) → <b>{mid_f:g}°F</b> → warm <b>{vmax:g}°F</b> "
@@ -226,7 +222,6 @@ def _build(info, raw_path):
                          "Turn on/off independently of wave and ice layers.",
                          block),
         CONFIG["refresh_interval_seconds"], token,
-        tiles=tiles,
         out_dirs=[os.path.join(stage, "kml", "Great_Lakes_Live_Water_Temperature.kml"),
                   os.path.join(stage, "site", "kml", "Great_Lakes_Live_Water_Temperature.kml")])
     assert_no_vector_geometry(kml_text)

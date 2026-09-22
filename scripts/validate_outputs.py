@@ -209,26 +209,12 @@ def main():
                     if _local is None or not os.path.exists(_local):
                         failures.append(f"{product}: KML references PNG not deployed: "
                                         f"{_href}")
-                # LOD tiles: every referenced tile resolves, is a valid RGBA
-                # tile, stays inside the domain, and carries the mask
-                tile_hrefs = re.findall(
-                    r"<href>(https?://[^<]+/tiles/[^<]+\.png)(?:\?[^<]*)?</href>", text)
+                # single-overlay architecture (GE Web image limit): no tiles
+                if "/tiles/" in text:
+                    failures.append(f"{product}: KML must not reference tiles")
                 n_overlays = text.count("<GroundOverlay>")
-                if n_overlays > 25:
-                    failures.append(f"{product}: {n_overlays} overlays (expected <= 25)")
-                for _th in tile_hrefs:
-                    _tl = _site_file_for_href(_th)
-                    if _tl is None or not os.path.exists(_tl):
-                        failures.append(f"{product}: tile not deployed: {_th}")
-                        continue
-                    try:
-                        _ti = Image.open(_tl)
-                        _ti.load()
-                        if _ti.mode != "RGBA" or _ti.size != (1800, 1175):
-                            failures.append(
-                                f"{product}: bad tile {_th}: {_ti.mode} {_ti.size}")
-                    except Exception as e:
-                        failures.append(f"{product}: tile unreadable {_th}: {e}")
+                if n_overlays != 1:
+                    failures.append(f"{product}: {n_overlays} overlays (expected exactly 1)")
                 token = (meta.get("processing_time_utc", "")
                          .replace(" ", "_").replace(":", ""))
                 if token and token not in text:

@@ -172,16 +172,13 @@ self-refresh NetworkLink and zero vector geometry.
   arrows are rasterized into the PNG (no KML placemarks).
 - Freshness wording: **"LIVE / CURRENT MODEL (analysis)"**.
 
-## LOD tile pyramid (crisp shoreline at all zooms)
+## Single-overlay delivery (Google Earth Web limits)
 
-Each product publishes `site/<product>/tiles/`: 2×2 tiles at 2× density
-(z1) plus 4×4 at 4× (z2), every tile 1800×1175 with the product's own color
-table, masked from `assets/great_lakes_watermask_4x.png` (7200×4700),
-binned with a source halo so seams are discontinuity-free (verified:
-seam color jump ≤ interior jump). The KML references tiles with
-Region/Lod hints over the shared-color overview; clients without Region
-support simply overdraw the same colors. Tiles are Pages-deployed, never
-committed; a KML references tiles only when generated in that run.
+Each product publishes exactly one overview PNG referenced by its KML.
+Google Earth Web enforces a max-external-image limit per document and does
+not support Region, so multi-image tile pyramids are deliberately avoided:
+they produce fetch failures, not sharper shores. Shoreline crispness comes
+from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
 
 ## Cache / refresh design (Google Earth)
 

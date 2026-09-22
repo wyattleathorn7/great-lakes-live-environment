@@ -16,13 +16,10 @@ All water-based layers share one committed NOAA shoreline mask
 (`assets/great_lakes_watermask.png`, built from the NOAA Medium-Resolution
 Digital Vector Shoreline — nautical-chart compilation, mean-high-water
 datum — polygonized once at full vertex precision), so every
-overlay cuts out at exactly the same coastline. For crisp shorelines at
-all zooms, each product additionally publishes an LOD tile pyramid
-(`site/<product>/tiles/`: 2×2 tiles at 2× plus 4×4 at 4× density, masked
-from `assets/great_lakes_watermask_4x.png`), referenced from its KML with
-Region/Lod hints over a shared-color overview. Tiles are Pages-deployed,
-never committed; a KML references tiles only when they were generated in
-that run, so failed runs stay overview-only and always resolve.
+overlay cuts out at exactly the same coastline. Each KML is a single
+overview GroundOverlay (Google Earth Web caps external images per document
+and does not support Region, so multi-image tile pyramids are deliberately
+avoided) with a self-refresh NetworkLink. Tiles are never generated.
 KMLs use GroundOverlay + self-refresh NetworkLink only — no ScreenOverlay
 (rejected by some Google Earth clients); legends live in each KML
 description (PNG + scale text) and as standalone `legend.png` files.
@@ -102,8 +99,7 @@ separate KML/KMZ products:
 - Any download/parse/validation failure exits 2: the previous valid raster
   is kept, the failure is logged, the job stays green, and the other
   products update normally. Unexpected engine errors exit 1 (red job).
-- Every successful run rebuilds its product fully (tiles included), so the
-  deployed site always has matching KML tile references; byte-identical
+- Every successful run rebuilds its product fully; byte-identical
   outputs simply produce no commit.
 - NIC sends no `Last-Modified` header, so ice change-detection uses a
   SHA-256 content hash; GLSEA uses `Last-Modified`; GLWU uses the model

@@ -3,8 +3,8 @@ name: Update Great Lakes live environment
 on:
   schedule:
     # Every 6 h matches the fastest source (NCEP GLWU cycles).
-    # Every run rebuilds fully so LOD tiles always deploy; byte-identical
-    # outputs simply produce no commit.
+    # Every run rebuilds fully; byte-identical outputs simply produce
+    # no commit.
     - cron: "15 */6 * * *"
   workflow_dispatch:
     inputs:
@@ -55,7 +55,6 @@ jobs:
           name: site-wave_height
           path: |
             site/wave_height
-            site/wave_height/tiles
             site/kml/Great_Lakes_Live_Wave_Height.kml
             kml/Great_Lakes_Live_Wave_Height.kml
           if-no-files-found: warn
@@ -86,7 +85,6 @@ jobs:
           name: site-water_temperature
           path: |
             site/water_temperature
-            site/water_temperature/tiles
             site/kml/Great_Lakes_Live_Water_Temperature.kml
             kml/Great_Lakes_Live_Water_Temperature.kml
           if-no-files-found: warn
@@ -117,7 +115,6 @@ jobs:
           name: site-ice_coverage
           path: |
             site/ice_coverage
-            site/ice_coverage/tiles
             site/kml/Great_Lakes_Live_Ice_Coverage.kml
             kml/Great_Lakes_Live_Ice_Coverage.kml
           if-no-files-found: warn
@@ -148,7 +145,6 @@ jobs:
           name: site-ice_thickness
           path: |
             site/ice_thickness
-            site/ice_thickness/tiles
             site/kml/Great_Lakes_Live_Ice_Thickness.kml
             kml/Great_Lakes_Live_Ice_Thickness.kml
           if-no-files-found: warn
@@ -179,7 +175,6 @@ jobs:
           name: site-ice_type
           path: |
             site/ice_type
-            site/ice_type/tiles
             site/kml/Great_Lakes_Live_Ice_Type.kml
             kml/Great_Lakes_Live_Ice_Type.kml
           if-no-files-found: warn
@@ -210,7 +205,6 @@ jobs:
           name: site-wind
           path: |
             site/wind
-            site/wind/tiles
             site/kml/Great_Lakes_Live_Wind.kml
             kml/Great_Lakes_Live_Wind.kml
           if-no-files-found: warn
