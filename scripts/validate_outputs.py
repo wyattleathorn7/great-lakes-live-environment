@@ -43,6 +43,14 @@ PRODUCTS = {
              "max_opaque_min": 10_000},
     "leaf_color": {"kml": "Great_Lakes_Live_Leaf_Color.kml",
                    "max_opaque_min": 10_000},
+    "chlorophyll": {"kml": "Great_Lakes_Live_Chlorophyll.kml",
+                    "max_opaque_min": 100},
+    "water_clarity": {"kml": "Great_Lakes_Live_Water_Clarity_Turbidity.kml",
+                      "max_opaque_min": 100},
+    "solar_radiation": {"kml": "Great_Lakes_Live_Solar_Radiation.kml",
+                        "max_opaque_min": 10_000},
+    "air_temperature": {"kml": "Great_Lakes_Live_Air_Temperature.kml",
+                        "max_opaque_min": 10_000},
 }
 
 META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
@@ -128,7 +136,8 @@ def main():
                     f"{product}: only {n_opaque} non-transparent pixels")
             else:
                 print(f"[{product}] raster OK: {n_opaque} water pixels, size {im.size}")
-            if mask is not None:
+            if mask is not None and product not in ("solar_radiation",
+                                                       "air_temperature"):
                 import numpy as np
                 if product == "leaf_color":
                     # leaf grows on LAND: opaque must avoid open-lake water
@@ -164,6 +173,15 @@ def main():
                 failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
             if product == "leaf_color" and (lo, hi) != (0.0, 1.0):
                 failures.append(f"{product}: leaf scale must be 0-1, got {lo}-{hi}")
+            if product in ("chlorophyll", "water_clarity", "solar_radiation",
+                           "air_temperature"):
+                _h = meta.get("historical", {})
+                for _k in ("low", "high", "percentiles"):
+                    if _k not in _h:
+                        failures.append(f"{product}: historical missing '{_k}'")
+                if not (isinstance(lo, (int, float)) and isinstance(hi, (int, float))
+                        and lo < hi):
+                    failures.append(f"{product}: bad color scale {lo}-{hi}")
             if product == "leaf_color":
                 import numpy as np
                 _leg = np.array(Image.open(legend).convert("RGB"))
@@ -283,6 +301,14 @@ def main():
                 n_overlays = text.count("<GroundOverlay>")
                 if n_overlays != 1:
                     failures.append(f"{product}: {n_overlays} overlays (expected exactly 1)")
+                if product in ("chlorophyll", "water_clarity",
+                               "solar_radiation", "air_temperature"):
+                    if "<Folder>" not in text:
+                        failures.append(f"{product}: no product Folder in KML")
+                    for _need in ("LOWEST", "HIGHEST+", "legend.png?v="):
+                        if _need not in text:
+                            failures.append(f"{product}: folder description "
+                                            f"missing '{_need}'")
                 token = (meta.get("processing_time_utc", "")
                          .replace(" ", "_").replace(":", ""))
                 if token and token not in text:
