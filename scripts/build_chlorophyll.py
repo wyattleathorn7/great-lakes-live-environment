@@ -58,12 +58,27 @@ def main():
 
 
 def recent_times(n):
-    """Newest n daily timestamps (ISO) from the dataset axis."""
+    """Newest n daily timestamps (ISO) from the dataset axis.
+
+    If the axis probe itself is throttled (observed: per-dataset 403s
+    from datacenter IPs while sibling datasets pass), fall back to
+    calendar-day candidates — the per-day fetches may still pass, and
+    misses are skipped day-by-day downstream.
+    """
     import datetime as dt
-    end = latest_time(DATASET)
-    base = dt.datetime.fromisoformat(end.replace("Z", "+00:00"))
-    return [((base - dt.timedelta(days=i)).strftime("%Y-%m-%dT12:00:00Z"))
-            for i in range(n)]
+    try:
+        end = latest_time(DATASET)
+        base = dt.datetime.fromisoformat(end.replace("Z", "+00:00"))
+        return [((base - dt.timedelta(days=i)).strftime("%Y-%m-%dT12:00:00Z"))
+                for i in range(n)]
+    except Exception as e:
+        print(f"[{PRODUCT}] axis probe throttled ({str(e)[:80]}); "
+              f"falling back to calendar-day candidates.")
+        now = dt.datetime.now(dt.timezone.utc).replace(
+            hour=12, minute=0, second=0, microsecond=0)
+        # Science Quality latency is ~10 d: center the window on it.
+        return [((now - dt.timedelta(days=i)).strftime("%Y-%m-%dT12:00:00Z"))
+                for i in range(7, 7 + n)]
 
 
 def run():
