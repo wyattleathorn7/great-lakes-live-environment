@@ -51,6 +51,8 @@ PRODUCTS = {
                         "max_opaque_min": 10_000},
     "air_temperature": {"kml": "Great_Lakes_Live_Air_Temperature.kml",
                         "max_opaque_min": 10_000},
+    "snow_coverage": {"kml": "Great_Lakes_Live_Snow_Coverage.kml",
+                      "max_opaque_min": 0},  # off-season => transparent OK
 }
 
 META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
@@ -173,6 +175,27 @@ def main():
                 failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
             if product == "leaf_color" and (lo, hi) != (0.0, 1.0):
                 failures.append(f"{product}: leaf scale must be 0-1, got {lo}-{hi}")
+            if product == "snow_coverage":
+                if not (isinstance(lo, (int, float)) and isinstance(hi, (int, float))
+                        and 0 <= lo < hi <= 200):
+                    failures.append(f"{product}: snow scale out of bounds {lo}-{hi}")
+                _h = meta.get("historical", {})
+                for _k in ("low", "high", "percentiles"):
+                    if _k not in _h:
+                        failures.append(f"{product}: historical missing '{_k}'")
+            if product in ("snow_coverage", "leaf_color"):
+                # Michigan-only: opaque must be inside the Michigan mask
+                import numpy as _np2
+                from PIL import Image as _Im2
+                import os as _os2
+                try:
+                    _mm = _np2.array(_Im2.open(_os2.path.join(
+                        REPO_ROOT, "assets", "michigan_mask.png")).convert("L")) > 0
+                    _aa = _np2.array(Image.open(png).convert("RGBA"))[:, :, 3] > 0
+                    if _mm.shape == _aa.shape and int((_aa & ~_mm).sum()) > 0:
+                        failures.append(f"{product}: data outside Michigan")
+                except Exception as _e:
+                    failures.append(f"{product}: Michigan check failed: {_e}")
             if product in ("chlorophyll", "water_clarity", "solar_radiation",
                            "air_temperature"):
                 _h = meta.get("historical", {})

@@ -180,7 +180,15 @@ not support Region, so multi-image tile pyramids are deliberately avoided:
 they produce fetch failures, not sharper shores. Shoreline crispness comes
 from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
 
-## 5. Leaf color — NASA MODIS Aqua via Planetary Computer (global, 500 m)
+## 5. Leaf color — NASA MODIS Aqua via Planetary Computer (Michigan-only)
+
+- **Products:** MYD13A1.061 (NDVI + pixel reliability, 16-day) and
+  MYD09A1.061 (surface reflectance red/green/blue/SWIR + state QA, 8-day),
+  queried per MODIS tile (h11/h12/h13v04) through the Planetary Computer
+  STAC API with anonymous SAS (`planetary-computer` SDK `sign()` flow —
+  verified working; hand-rolled token URLs 403, so the SDK flow is mandatory).
+  COGs are range-read (WarpedVRT to EPSG:4326, canvas window, nearest —
+  no bulk downloads).
 
 - **Products:** MYD13A1.061 (NDVI + pixel reliability, 16-day) and
   MYD09A1.061 (surface reflectance red/green/blue/SWIR + state QA, 8-day),
@@ -207,11 +215,11 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   harmonizes), mosaicked once to `assets/leaf_landcover.png`
   (deciduous/mixed/evergreen/shrub/grass/crop/urban/barren/water;
   wetlands→shrub behavior). `scripts/build_leaf_landcover.py` reproduces it.
-- **Footprint:** `assets/leaf_footprint.png` = Michigan ∪ 50-mi geodesic
-  buffer of the NOAA medium-res water polygons (EPSG:3175, dissolved,
-  smoothed). UP extension automatic (state line lies over water);
-  Bruce/Georgian Bay/Ontario zones merge; validated inside/outside probes.
-- **Phenology (leaf_phenology v1):** per-pixel NDVI trajectory (current +
+- **Footprint (Michigan-only):** `assets/michigan_mask.png` = authoritative
+  Michigan state boundary (Natural Earth 50m admin-1), both peninsulas,
+  hard clip; Great Lakes water cut by the shared shoreline mask. (The old
+  50-mi buffer asset is retired.)
+- **Phenology (leaf_phenology v2):** per-pixel NDVI trajectory (current +
   rolling quarter-res history for baseline max with class priors +
   median direction reference) → circular phase 0..1 → class modulation
   (deciduous full, mixed 0.55, evergreen clamped green, shrub/grass 0.45
@@ -254,6 +262,39 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
 - Freshness wording: **"LIVE / CURRENT MODEL (analysis)"** with cycle stamp.
 
 ## 10. Gradient scales — historical LOWEST / HIGHEST+ (products 8–11)
+
+`scripts/gradient_scale.py`: each product keeps `{hist_min, hist_max,
+percentiles, reservoir≤20k}` in `output/state/<product>/`, seeded from
+real observed distributions and extended only by validated in-bounds
+records. Percentile anchors [min,p5,p25,p50,p75,p95,p99,max] sit at fixed
+positions [0,.10,.28,.48,.66,.84,.93,1.0] of the master family
+(dark blue→…→deep purple), concentrating color resolution on common
+values; sub-zero air-temp anchors use a purple ramp into blue at 0 °F
+with no break. One mapping function paints raster + legend identically.
+
+## 11. Snow — HRRR SNOD/SNOWC analysis + VIIRS/MODIS access findings
+
+- **Snow product source:** NOAA/NCEP HRRR 3 km `SNOD` snow depth (m) gated
+  by `SNOWC` snow cover % (analysis step, hourly cycles, NOMADS ranged
+  GRIB2). Gate: SNOD > 0.002 m AND SNOWC > 0 AND within Michigan AND not
+  lake water; everything else transparent. Depth displayed in inches
+  (direct conversion). Assessed and rejected for operability: SNODAS
+  (all endpoints dead/retired: NOMADS paths 403/404, NSIDC mirror stale
+  at 2023, NOHRSC reorganized to overview pages); MOD10A1/MYD10A1 on
+  Planetary Computer (updates end June 2025); VIIRS VNP09GA/VJ109GA +
+  LANCE NRT (require Earthdata Bearer tokens — verified 401/404 patterns,
+  no anonymous bulk path; GIBS serves pictures, not data; PC has no
+  daily-reflectance collection); GlobSnow/CMC/ERA5 (coarse or account
+  walls); ECCC datamart CaLDAS path unverifiable. Because no
+  depth-in-inches satellite source is operable without credentials, the
+  product states this explicitly and uses HRRR analysis state (never
+  precipitation/forecast variables) with an upgrade path recorded.
+- **Leaf rebuild source decision:** same VIIRS finding → MODIS Aqua
+  8-day/16-day via Planetary Computer retained as the operational
+  daily-checked stream (architecture polls STAC daily; observation
+  cadence follows the 8-day composite cycle; VNP13A4N upgrade path
+  documented for a credentialed future).
+- Freshness wording: snow **"LIVE / CURRENT MODEL (analysis)"**.
 
 `scripts/gradient_scale.py`: each product keeps `{hist_min, hist_max,
 percentiles, reservoir≤20k}` in `output/state/<product>/`, seeded from

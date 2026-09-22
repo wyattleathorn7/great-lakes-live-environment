@@ -10,7 +10,8 @@ NASA MODIS Aqua global 500 m composites via Planetary Computer STAC
     autumn redness proxy + NDSI snow (no separate snow source needed).
 Land classes: committed US-NLCD + Canada-NALCMS mosaic
   (assets/leaf_landcover.png; static ancillary, documented).
-Footprint: committed assets/leaf_footprint.png. Water: shared mask.
+Michigan mask: committed assets/michigan_mask.png (authoritative state
+boundary, both peninsulas). Water: shared mask (lakes transparent).
 
 Per-pixel phenology phase (leaf_phenology.py) from NDVI trajectory +
 baseline + direction + class + spectral gating; circular continuous LUT;
@@ -302,10 +303,9 @@ def _build(bounds, W, H, vi, rf, sig):
     # ancillary grids
     lc = np.array(Image.open(os.path.join(REPO_ROOT, "assets",
                                           "leaf_landcover.png")).convert("L"))
-    fp = np.array(Image.open(os.path.join(REPO_ROOT, "assets",
-                                          "leaf_footprint.png")).convert("L")) > 0
-    from geospatial_utils import load_watermask
+    from geospatial_utils import load_michigan_mask, load_watermask
     land = load_watermask() < 0.5  # NOT lake water (mask is float 0..1)
+    mich = load_michigan_mask()  # Michigan-only hard clip
     if lc.shape != (H, W):
         raise ValueError(f"landcover shape {lc.shape} != canvas")
 
@@ -320,20 +320,22 @@ def _build(bounds, W, H, vi, rf, sig):
                                bad | cloudy, marginal, hist)
     lut = np.array(build_leaf_lut(), dtype=np.uint8)
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    ok = np.isfinite(phase) & fp & land & (lc != 0) & (lc != 7) & (lc != 8)
+    ok = np.isfinite(phase) & mich & land & (lc != 0) & (lc != 7) & (lc != 8)
     rgba[ok, 0:3] = lut[np.clip((phase[ok] * 255).astype(int), 0, 255)]
     rgba[ok, 3] = bounds["overlay_alpha"]
     from geospatial_utils import apply_shoreline_mask
     rgba = apply_shoreline_mask(rgba, invert=True)  # leaf grows on LAND
-    # footprint edge: hard clip outside footprint (its own natural boundary)
-    fpm = (fp > 0)
-    rgba[~fpm, 3] = 0
+    # Michigan edge: hard clip outside the state boundary
+    rgba[~mich, 3] = 0
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     n_opaque = int((rgba[:, :, 3] > 0).sum())
     print(f"[{PRODUCT}] opaque pixels={n_opaque}")
     if n_opaque < 50_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: too little vegetation. Keeping previous.")
         return 2
+    n_colors = len(np.unique(rgba[(rgba[:, :, 3] > 0)][..., :3].reshape(-1, 3),
+                                axis=0))
+    print(f"[{PRODUCT}] distinct raster colors={n_colors}")
 
     vstarts = [composite_start_day(i) for i in vi_ids.values()]
     vstarts = [d for d in vstarts if d]
@@ -365,10 +367,16 @@ def _build(bounds, W, H, vi, rf, sig):
                                 "nodata transparent; water transparent via shared mask."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = (
-        "Satellite-derived seasonal vegetation state, winter dormancy (deep "
-        "blue) through spring emergence, growth, autumn color, leaf drop and "
-        "back to dormancy. Color is phenological state, not literal tree color.")
+        "Satellite-derived seasonal vegetation state. The continuous color "
+        "scale represents the changing seasonal condition of vegetated land, "
+        "from winter dormancy through spring emergence, active growth, "
+        "autumn coloration, leaf drop, and return to dormancy. Color "
+        "represents a satellite-derived phenological state and should not "
+        "be interpreted as the exact color of every individual tree.")
     meta["data_nature"] = CONFIG["data_nature"]
+    meta["gradient"] = {"interpolation": "OKLab (perceptually uniform)",
+                        "anchors": 19, "distinct_raster_colors": n_colors,
+                        "wraparound": "first == last deep blue #123B73"}
     meta["provenance"] = {
         "provider": "NASA MODIS (Aqua) via Microsoft Planetary Computer STAC",
         "collections": ["modis-13A1-061", "modis-09A1-061"],
@@ -384,10 +392,10 @@ def _build(bounds, W, H, vi, rf, sig):
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
-        "footprint": "assets/leaf_footprint.png (Michigan + 50-mi NOAA "
-                     "shoreline buffer, UP extension automatic)",
-        "algorithm": "leaf_phenology v1 (trajectory + baseline + class + "
-                     "spectral gating, circular continuous LUT)",
+        "michigan_mask": "assets/michigan_mask.png (authoritative state "
+                          "boundary, both peninsulas; hard clip)", 
+        "algorithm": "leaf_phenology v2 (trajectory + baseline + class + "
+                     "spectral gating; 19-anchor OKLab circular gradient)",
     }
     meta["stats"] = {
         "good_pixels": n_good, "opaque_pixels": n_opaque,

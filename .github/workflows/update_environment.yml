@@ -16,7 +16,7 @@ on:
         options: ["all", "wave_height", "water_temperature", "ice_coverage",
                   "ice_thickness", "ice_type", "wind", "leaf_color",
                   "chlorophyll", "water_clarity", "solar_radiation",
-                  "air_temperature"]
+                  "air_temperature", "snow_coverage"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -245,6 +245,7 @@ jobs:
             site/leaf_color
             site/kml/Great_Lakes_Live_Leaf_Color.kml
             kml/Great_Lakes_Live_Leaf_Color.kml
+            output/state/leaf_color.json
             output/state/leaf_color
           if-no-files-found: warn
 
@@ -276,6 +277,7 @@ jobs:
             site/chlorophyll
             site/kml/Great_Lakes_Live_Chlorophyll.kml
             kml/Great_Lakes_Live_Chlorophyll.kml
+            output/state/chlorophyll.json
             output/state/chlorophyll
           if-no-files-found: warn
 
@@ -307,6 +309,7 @@ jobs:
             site/water_clarity
             site/kml/Great_Lakes_Live_Water_Clarity_Turbidity.kml
             kml/Great_Lakes_Live_Water_Clarity_Turbidity.kml
+            output/state/water_clarity.json
             output/state/water_clarity
           if-no-files-found: warn
 
@@ -338,6 +341,7 @@ jobs:
             site/solar_radiation
             site/kml/Great_Lakes_Live_Solar_Radiation.kml
             kml/Great_Lakes_Live_Solar_Radiation.kml
+            output/state/solar_radiation.json
             output/state/solar_radiation
           if-no-files-found: warn
 
@@ -369,11 +373,44 @@ jobs:
             site/air_temperature
             site/kml/Great_Lakes_Live_Air_Temperature.kml
             kml/Great_Lakes_Live_Air_Temperature.kml
+            output/state/air_temperature.json
             output/state/air_temperature
           if-no-files-found: warn
 
+  snow_coverage:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'snow_coverage' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update snow coverage
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_snow_coverage.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Snow source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-snow_coverage
+          path: |
+            site/snow_coverage
+            site/kml/Great_Lakes_Live_Snow_Coverage.kml
+            kml/Great_Lakes_Live_Snow_Coverage.kml
+            output/state/snow_coverage.json
+            output/state/snow_coverage
+          if-no-files-found: warn
+
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

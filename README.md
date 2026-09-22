@@ -1,6 +1,6 @@
 # Great Lakes Live Environment
 
-One automated GitHub system publishing **eleven independent live raster layers**
+One automated GitHub system publishing **twelve independent live raster layers**
 for Google Earth, all from official NOAA/NASA operational sources:
 
 | Layer | Source | Refresh wording |
@@ -16,6 +16,7 @@ for Google Earth, all from official NOAA/NASA operational sources:
 | 🌫️ Live Water Clarity | NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, NRT, Global 4 km, Daily (ERDDAP) | LATEST AVAILABLE (daily composite) |
 | ☀️ Live Solar Radiation | NOAA/NCEP HRRR 3 km DSWRF surface analysis, hourly cycles | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| ❄️ Live Snow Coverage | NOAA/NCEP HRRR 3 km SNOD/SNOWC snow analysis (ground snow gate), hourly cycles, Michigan-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
 
 All water-based layers share one committed NOAA shoreline mask
 (`assets/great_lakes_watermask.png`, built from the NOAA Medium-Resolution
@@ -125,6 +126,7 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_water_clarity.py`,
 `python scripts/build_solar_radiation.py`,
 `python scripts/build_air_temperature.py`,
+`python scripts/build_snow_coverage.py`,
 `python scripts/validate_outputs.py`,
 `python scripts/selftest.py`.
 

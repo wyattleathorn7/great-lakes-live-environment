@@ -180,13 +180,13 @@ def main():
     check("leaf-redness-summer", redness_index(0.2, 0.4, 0.2) < 0.3)
     check("leaf-redness-autumn", redness_index(0.55, 0.3, 0.15) > 0.5)
 
-    # ---- leaf assets: footprint + land cover ----
+    # ---- leaf assets: Michigan mask + land cover ----
     import numpy as _np2
     from PIL import Image as _Im
     _fp = _np2.array(_Im.open(os.path.join(REPO_ROOT, "assets",
-                                           "leaf_footprint.png")).convert("L"))
+                                           "michigan_mask.png")).convert("L"))
     check("leaf-footprint-dims", _fp.shape == (1175, 1800), _fp.shape)
-    check("leaf-footprint-frac", 0.3 < (_fp > 0).mean() < 0.75,
+    check("leaf-footprint-frac", 0.05 < (_fp > 0).mean() < 0.30,
           round(float((_fp > 0).mean()), 3))
     _lc = _np2.array(_Im.open(os.path.join(REPO_ROOT, "assets",
                                            "leaf_landcover.png")).convert("L"))
@@ -233,6 +233,46 @@ def main():
     check("grad-nonneg-no-purple-low", _pos[0][1] == (16, 52, 140))
     check("grad-family-endpoints", family_color(0.0) == (16, 52, 140)
           and family_color(1.0) == (70, 15, 100))
+
+    # ---- snow product ----
+    import numpy as _np4
+    from gradient_scale import SNOW_FAMILY, build_stops as _bs
+    _snow_stops = _bs([0.5, 1.0, 3.0, 6.0, 10.0, 16.0, 24.0, 36.0], False,
+                      family=SNOW_FAMILY)
+    check("snow-8-anchors", len(_snow_stops) == 8)
+    check("snow-trace-silver", _snow_stops[0][1] == (192, 200, 208))
+    check("snow-extreme-white", _snow_stops[-1][1] == (255, 255, 255))
+    from gradient_scale import render_rgba as _rr
+    _syn = _np4.full((60, 60), _np4.nan)
+    _syn[10:50, 10:50] = _np4.linspace(0.5, 36, 40)[:, None] * _np4.ones(40)
+    _rgba = _rr(_syn, _snow_stops, 205)
+    check("snow-transparent-outside",
+          bool(((_rgba[:, :, 3] == 0).sum()) == 60 * 60 - 40 * 40))
+    check("snow-opaque-inside", bool(((_rgba[10:50, 10:50, 3] > 0).all())))
+    _uc = len(_np4.unique(_rgba[10:50, 10:50, :3].reshape(-1, 3), axis=0))
+    check("snow-many-colors", _uc >= 40, _uc)  # 1:1 value->color, no banding
+    # white reserved for the extreme end: only top-decile pixels are ~white
+    _white = ((_rgba[:, :, 0] > 245) & (_rgba[:, :, 1] > 245) &
+              (_rgba[:, :, 2] > 245) & (_rgba[:, :, 3] > 0)).sum()
+    check("snow-white-rare", 0 < _white < 0.15 * 40 * 40, int(_white))
+
+    # ---- leaf Michigan-only + OKLab ----
+    from PIL import Image as _Im3
+    _lpng = _np4.array(_Im3.open(os.path.join(
+        SITE_DIR, "leaf_color", "current.png")).convert("RGBA"))
+    _mm2 = _np4.array(_Im3.open(os.path.join(
+        REPO_ROOT, "assets", "michigan_mask.png")).convert("L")) > 0
+    check("leaf-michigan-only",
+          bool(((_lpng[:, :, 3] > 0) & ~_mm2).sum() == 0))
+    from gradient_scale import oklab_lut
+    from leaf_phenology import PHASE_ANCHORS
+    _olut = oklab_lut(PHASE_ANCHORS)
+    check("leaf-oklab-19-anchors", len(PHASE_ANCHORS) == 19)
+    check("leaf-oklab-wrap", _olut[0] == _olut[-1] == (18, 59, 115))
+    check("leaf-oklab-many", len(set(_olut)) > 200, len(set(_olut)))
+    _jd = _np4.abs(_np4.diff(_np4.array(
+        oklab_lut(PHASE_ANCHORS, 4096), dtype=int), axis=0)).sum(axis=1)
+    check("leaf-oklab-continuous", _jd.max() < 25, int(_jd.max()))
 
     # ---- wind metadata specifics ----
     m = json.load(open(os.path.join(SITE_DIR, "wind", "metadata.json")))

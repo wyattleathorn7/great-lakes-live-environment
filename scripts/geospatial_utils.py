@@ -24,9 +24,11 @@ CONFIG_DIR = os.path.join(REPO_ROOT, "config")
 SITE_DIR = os.path.join(REPO_ROOT, "site")
 KML_DIR = os.path.join(REPO_ROOT, "kml")
 WATERMASK_PATH = os.path.join(REPO_ROOT, "assets", "great_lakes_watermask.png")
+MICHIGAN_PATH = os.path.join(REPO_ROOT, "assets", "michigan_mask.png")
 PROD_BASE_URL = "https://wyattleathorn7.github.io/great-lakes-live-environment"
 
 _WATERMASK = None
+_MICHIGAN = None
 
 
 def load_watermask():
@@ -49,6 +51,25 @@ def load_watermask():
                 f"({bounds['canvas_height']}, {bounds['canvas_width']})")
         _WATERMASK = m.astype(np.float32) / 255.0
     return _WATERMASK
+
+
+def load_michigan_mask():
+    """Authoritative Michigan state footprint (bool, True = inside Michigan,
+    both peninsulas). Committed asset shared by the Michigan-only products.
+    Raises if missing or wrong-sized (loud failure, previous kept)."""
+    global _MICHIGAN
+    if _MICHIGAN is None:
+        bounds = load_bounds()
+        if not os.path.exists(MICHIGAN_PATH):
+            raise FileNotFoundError(
+                f"Michigan mask missing: {MICHIGAN_PATH}")
+        m = np.array(Image.open(MICHIGAN_PATH).convert("L"))
+        if m.shape != (bounds["canvas_height"], bounds["canvas_width"]):
+            raise ValueError(
+                f"Michigan mask shape {m.shape} != canvas "
+                f"({bounds['canvas_height']}, {bounds['canvas_width']})")
+        _MICHIGAN = m > 127
+    return _MICHIGAN
 
 
 def apply_shoreline_mask(rgba, invert=False):

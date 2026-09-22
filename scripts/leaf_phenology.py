@@ -12,13 +12,14 @@ a mathematically continuous, wraparound-identical scale.
 
 import math
 
-# phase position -> (R, G, B); 0.0 and 1.0 are the identical deep blue.
+# Spec §7 anchors (phase position, hex). Beginning and end are the
+# identical deep blue so the annual cycle wraps with no seam.
 PHASE_ANCHORS = [
-    (0.00, "#123B73"), (0.06, "#1679A8"), (0.14, "#19C6D1"),
-    (0.22, "#4FD5C4"), (0.30, "#82DC9A"), (0.36, "#A9DF6B"),
-    (0.42, "#42B84A"), (0.48, "#218C3A"), (0.53, "#A9C84A"),
-    (0.58, "#E2DD62"), (0.63, "#F2C84B"), (0.68, "#E9A83A"),
-    (0.73, "#E77A2E"), (0.78, "#D94B35"), (0.82, "#C6283C"),
+    (0.00, "#123B73"), (0.08, "#1679A8"), (0.16, "#19C6D1"),
+    (0.24, "#4FD5C4"), (0.31, "#82DC9A"), (0.37, "#A9DF6B"),
+    (0.43, "#42B84A"), (0.49, "#218C3A"), (0.54, "#A9C84A"),
+    (0.59, "#E2DD62"), (0.64, "#F2C84B"), (0.69, "#E9A83A"),
+    (0.74, "#E77A2E"), (0.78, "#D94B35"), (0.82, "#C6283C"),
     (0.86, "#9F243B"), (0.90, "#671F46"), (0.95, "#432050"),
     (1.00, "#123B73"),
 ]
@@ -47,22 +48,12 @@ def _hex(h):
 
 
 def build_leaf_lut(n=LEAF_LUT_N):
-    """256-entry circular RGB LUT; index 0 == index 255 (wraparound)."""
-    anchors = sorted(((p, _hex(c)) for p, c in PHASE_ANCHORS))
-    lut = []
-    for i in range(n):
-        t = i / (n - 1)
-        if t <= anchors[0][0]:
-            lut.append(anchors[0][1])
-            continue
-        for (p0, c0), (p1, c1) in zip(anchors, anchors[1:]):
-            if t <= p1:
-                f = 0.0 if p1 == p0 else (t - p0) / (p1 - p0)
-                lut.append(tuple(int(round(a + (b - a) * f))
-                                 for a, b in zip(c0, c1)))
-                break
-    lut[0] = lut[-1] = anchors[0][1]
-    return lut
+    """256-entry circular RGB LUT interpolated in OKLab (perceptually
+    smooth, no muddy intermediates); index 0 == index 255 (wraparound)."""
+    from gradient_scale import oklab_lut
+    lut = oklab_lut(PHASE_ANCHORS, n)
+    lut[0] = lut[-1] = tuple(int(v) for v in lut[0])
+    return [tuple(int(v) for v in c) for c in lut]
 
 
 def _median(vals):

@@ -71,6 +71,42 @@ from official NOAA sources. Each layer can be toggled on/off by itself.</p>
 <a href="wind/metadata.json">metadata.json</a></p>
 </div>
 
+<div class="card" id="chlorophyll">
+<h2>🦠 Live Chlorophyll / Algal Activity</h2>
+<p><small id="chlorophyll-meta">loading…</small></p>
+<img class="legend" src="chlorophyll/legend.png" alt="chlorophyll legend">
+<p><a href="kml/Great_Lakes_Live_Chlorophyll.kml">Open in Google Earth (KML)</a> ·
+<a href="chlorophyll/current.png">current.png</a> ·
+<a href="chlorophyll/metadata.json">metadata.json</a></p>
+</div>
+
+<div class="card" id="water_clarity">
+<h2>🌫️ Live Water Clarity / Turbidity</h2>
+<p><small id="water_clarity-meta">loading…</small></p>
+<img class="legend" src="water_clarity/legend.png" alt="water clarity legend">
+<p><a href="kml/Great_Lakes_Live_Water_Clarity_Turbidity.kml">Open in Google Earth (KML)</a> ·
+<a href="water_clarity/current.png">current.png</a> ·
+<a href="water_clarity/metadata.json">metadata.json</a></p>
+</div>
+
+<div class="card" id="solar_radiation">
+<h2>☀️ Live Solar Radiation</h2>
+<p><small id="solar_radiation-meta">loading…</small></p>
+<img class="legend" src="solar_radiation/legend.png" alt="solar radiation legend">
+<p><a href="kml/Great_Lakes_Live_Solar_Radiation.kml">Open in Google Earth (KML)</a> ·
+<a href="solar_radiation/current.png">current.png</a> ·
+<a href="solar_radiation/metadata.json">metadata.json</a></p>
+</div>
+
+<div class="card" id="air_temperature">
+<h2>🌡️ Live Air Temperature</h2>
+<p><small id="air_temperature-meta">loading…</small></p>
+<img class="legend" src="air_temperature/legend.png" alt="air temperature legend">
+<p><a href="kml/Great_Lakes_Live_Air_Temperature.kml">Open in Google Earth (KML)</a> ·
+<a href="air_temperature/current.png">current.png</a> ·
+<a href="air_temperature/metadata.json">metadata.json</a></p>
+</div>
+
 <div class="card" id="leaf_color">
 <h2>🍂 Live Leaf Color</h2>
 <p><small id="leaf_color-meta">loading…</small></p>
@@ -80,12 +116,21 @@ from official NOAA sources. Each layer can be toggled on/off by itself.</p>
 <a href="leaf_color/metadata.json">metadata.json</a></p>
 </div>
 
+<div class="card" id="snow_coverage">
+<h2>❄️ Live Snow Coverage</h2>
+<p><small id="snow_coverage-meta">loading…</small></p>
+<img class="legend" src="snow_coverage/legend.png" alt="snow coverage legend">
+<p><a href="kml/Great_Lakes_Live_Snow_Coverage.kml">Open in Google Earth (KML)</a> ·
+<a href="snow_coverage/current.png">current.png</a> ·
+<a href="snow_coverage/metadata.json">metadata.json</a></p>
+</div>
+
 <p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU/HRRR, CoastWatch VIIRS, NASA MODIS via Planetary Computer).
 This project is not endorsed by NOAA. Stable URLs — Google Earth layers never
 need re-pointing; images carry version query strings so updates appear on refresh.</small></p>
 
 <script>
-["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind","leaf_color"].forEach(p=>{
+["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind","leaf_color","chlorophyll","water_clarity","solar_radiation","air_temperature","snow_coverage"].forEach(p=>{
   fetch(p+"/metadata.json").then(r=>r.json()).then(m=>{
     document.getElementById(p+"-meta").textContent =
       m.freshness+" | Data time: "+m.data_time_utc+" | Processed: "+m.processing_time_utc;

@@ -81,7 +81,8 @@ def read_messages(path, wanted):
     (2t, sdswrf), mapped here. Raises if any wanted message is missing."""
     from eccodes import (codes_get, codes_get_array, codes_get_values,
                          codes_grib_new_from_file, codes_release)
-    alias = {"TMP": "2t", "DSWRF": "sdswrf", "TCDC": "tcc"}
+    alias = {"TMP": "2t", "DSWRF": "sdswrf", "TCDC": "tcc",
+             "SNOD": "sde", "SNOWC": "snowc", "WEASD": "wased"}
     out = {}
     with open(path, "rb") as f:
         while True:
