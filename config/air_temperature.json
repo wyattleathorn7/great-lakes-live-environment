@@ -1,0 +1,19 @@
+{
+  "product": "air_temperature",
+  "title": "LIVE AIR TEMPERATURE",
+  "freshness_label": "LIVE / CURRENT MODEL (analysis)",
+  "source_name": "NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/{date_dir}/conus/hrrr.t{cycle}z.wrfsfcf00.grib2",
+  "variable": "TMP 2 m above ground, analysis step",
+  "source_units": "K",
+  "display_units": "degF",
+  "valid_min_c": -60.0,
+  "valid_max_c": 55.0,
+  "allow_negative": true,
+  "refresh_interval_seconds": 21600,
+  "buoys": ["45001", "45002", "45132", "45012", "45005"],
+  "buoy_qc_tolerance_f": 5.0,
+  "what": "Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).",
+  "why_extreme": "Record cold anchors deep purple; record heat anchors the red end; ordinary temperatures own most of the color resolution."
+}

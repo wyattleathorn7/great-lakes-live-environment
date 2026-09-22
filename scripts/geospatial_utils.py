@@ -610,6 +610,7 @@ def fetch_buoy_obs(buoy_ids):
                 "WSPD_ms": _f(row.get("WSPD")),
                 "WVHT_m": _f(row.get("WVHT")),
                 "WTMP_C": _f(row.get("WTMP")),
+                "ATMP_C": _f(row.get("ATMP")),
             }
         except Exception as e:  # buoy fetch must never break a pipeline
             out[bid] = {"error": str(e)[:160]}

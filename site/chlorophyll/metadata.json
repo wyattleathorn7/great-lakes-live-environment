@@ -1,0 +1,53 @@
+{
+  "product": "chlorophyll",
+  "title": "LIVE CHLOROPHYLL / ALGAL ACTIVITY",
+  "freshness": "LATEST AVAILABLE (daily composite)",
+  "noaa_source": "NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQchlaDaily)",
+  "product_name": "NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQchlaDaily)",
+  "variable": "chlor_a (Chlorophyll Concentration, OC3 Algorithm); mosaic 2026-09-12..2026-09-10",
+  "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNSQchlaDaily.html",
+  "data_time_utc": "2026-09-12T12:00:00Z (newest of 3-day mosaic)",
+  "source_last_modified_utc": "n/a (ERDDAP)",
+  "processing_time_utc": "2026-09-22 03:16 UTC",
+  "units": "mg/m^3 (display); source mg m^-3",
+  "spatial_resolution_source": "~4 km VIIRS L3 (0.0375 deg), binned to canvas (nearest)",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.15888305,
+  "color_scale_max": 99.92819,
+  "color_scale_units": "mg/m^3",
+  "missing_data_treatment": "cloud/land/fill (NaN) transparent; only [0.001,1000.0] values admitted; never interpolated.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    230
+  ],
+  "legend_scale_html": "Chlorophyll-a concentration (mg/m^3), continuous: <b>LOWEST 0.159</b> (dark blue) \u2192 common 1 (green/yellow) \u2192 <b>HIGHEST+ 99.93</b> (deep purple). High values compress into red/purple; they indicate biomass/activity, not toxins.",
+  "historical": {
+    "low": 0.15888305,
+    "high": 99.92819,
+    "percentiles": {
+      "p5": 0.41951957875,
+      "p25": 0.6358406958731461,
+      "p50": 1.0013915199999999,
+      "p75": 2.3845202,
+      "p95": 12.677259965277095,
+      "p99": 35.173078
+    },
+    "n_obs": 70487,
+    "extends": []
+  },
+  "stats": {
+    "valid_cells": 14818,
+    "current_min": 0.21739941000000002,
+    "current_max": 81.621285
+  },
+  "folder_html": "<h2>LIVE CHLOROPHYLL / ALGAL ACTIVITY</h2><p>Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/legend.png?v=2026-09-22_0316_UTC\" width=\"600\" alt=\"key\"></p><p>Chlorophyll-a concentration (mg/m^3), continuous: <b>LOWEST 0.159</b> (dark blue) \u2192 common 1 (green/yellow) \u2192 <b>HIGHEST+ 99.93</b> (deep purple). High values compress into red/purple; they indicate biomass/activity, not toxins.</p><p><b>Units:</b> mg/m^3<br/><b>Source:</b> NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQchlaDaily)<br/><b>Update:</b> daily composites<br/><b>Data time:</b> 2026-09-12T12:00:00Z (mosaic 2026-09-12..2026-09-10)<br/><b>Processed:</b> 2026-09-22 03:16 UTC<br/><b>Why high values turn red/purple:</b> Very high values (blooms, algal activity, turbid intrusions) compress into red-violet/deep-purple; common background concentrations own most of the color resolution.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNSQchlaDaily.html\">ERDDAP dataset</a></p>"
+}

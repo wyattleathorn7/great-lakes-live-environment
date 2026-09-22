@@ -1,0 +1,17 @@
+{
+  "product": "chlorophyll",
+  "title": "LIVE CHLOROPHYLL / ALGAL ACTIVITY",
+  "freshness_label": "LATEST AVAILABLE (daily composite)",
+  "source_name": "NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQchlaDaily)",
+  "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNSQchlaDaily.html",
+  "variable": "chlor_a (Chlorophyll Concentration, OC3 Algorithm)",
+  "source_units": "mg m^-3",
+  "display_units": "mg/m^3",
+  "valid_min": 0.001,
+  "valid_max": 1000.0,
+  "log_hint": "chlorophyll spans orders of magnitude; percentile anchors handle the skew without log-warping values",
+  "allow_negative": false,
+  "refresh_interval_seconds": 43200,
+  "what": "Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.",
+  "why_extreme": "Very high values (blooms, algal activity, turbid intrusions) compress into red-violet/deep-purple; common background concentrations own most of the color resolution."
+}

@@ -1,0 +1,18 @@
+{
+  "product": "solar_radiation",
+  "title": "LIVE SOLAR RADIATION",
+  "freshness_label": "LIVE / CURRENT MODEL (analysis)",
+  "source_name": "NOAA/NCEP HRRR 3 km surface analysis, DSWRF (downward short-wave radiation flux), hourly cycles",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/{date_dir}/conus/hrrr.t{cycle}z.wrfsfcf00.grib2",
+  "variable": "DSWRF surface analysis step (hourly-averaged downward shortwave flux for the analysis hour)",
+  "source_units": "W/m^2",
+  "display_units": "W/m^2",
+  "temporal": "hourly-averaged flux for the analysis hour (not instantaneous, not daily accumulation)",
+  "valid_min": 0.0,
+  "valid_max": 1400.0,
+  "allow_negative": false,
+  "refresh_interval_seconds": 21600,
+  "what": "Surface downward shortwave solar radiation flux: solar power arriving at the surface, hourly-averaged for the model analysis hour. Nighttime reads zero (valid data, deep blue) — not missing data. Clouds reduce values quantitatively versus clear sky.",
+  "why_extreme": "Rare peak midday clear-sky values compress into red-violet/deep-purple; ordinary day/night conditions own most of the color resolution."
+}

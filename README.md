@@ -1,7 +1,7 @@
 # Great Lakes Live Environment
 
-One automated GitHub system publishing **six independent live raster layers**
-for Google Earth, all from official NOAA sources:
+One automated GitHub system publishing **eleven independent live raster layers**
+for Google Earth, all from official NOAA/NASA operational sources:
 
 | Layer | Source | Refresh wording |
 |---|---|---|
@@ -12,6 +12,10 @@ for Google Earth, all from official NOAA sources:
 | 🧊 Live Ice Type | USNIC NAIS daily SIGRID-3 shapefile → predominant WMO stage (**analyzed**, 17 categories + unknown) | LATEST AVAILABLE (seasonal) |
 | 💨 Live Wind | NCEP GLWU `UGRD/VGRD` surface analysis → knots → **Beaufort Force 0–12** + direction arrows | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 | 🍂 Live Leaf Color | NASA MODIS Aqua MYD13A1/MYD09A1 global 500 m via Planetary Computer (NDVI trajectory + reflectance + NDSI snow) → circular phenology phase | LATEST AVAILABLE COMPOSITE |
+| 🦠 Live Chlorophyll | NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP) | LATEST AVAILABLE (daily composite) |
+| 🌫️ Live Water Clarity | NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, NRT, Global 4 km, Daily (ERDDAP) | LATEST AVAILABLE (daily composite) |
+| ☀️ Live Solar Radiation | NOAA/NCEP HRRR 3 km DSWRF surface analysis, hourly cycles | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles | LIVE / CURRENT MODEL (analysis), hourly cycles |
 
 All water-based layers share one committed NOAA shoreline mask
 (`assets/great_lakes_watermask.png`, built from the NOAA Medium-Resolution
@@ -117,6 +121,10 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_wave_height.py`,
 `python scripts/build_wind.py`,
 `python scripts/build_leaf_color.py`,
+`python scripts/build_chlorophyll.py`,
+`python scripts/build_water_clarity.py`,
+`python scripts/build_solar_radiation.py`,
+`python scripts/build_air_temperature.py`,
 `python scripts/validate_outputs.py`,
 `python scripts/selftest.py`.
 
@@ -124,4 +132,4 @@ Local test: `pip install -r requirements.txt`, then
 
 Add `scripts/build_ais.py` + `config/ais.json` following the same
 download → validate → render → metadata → KML → publish contract; add one job
-to the workflow. No changes to the six existing products are needed.
+to the workflow. No changes to the existing products are needed.

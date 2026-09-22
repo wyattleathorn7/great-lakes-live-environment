@@ -221,6 +221,49 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   Continuous 19-anchor circular LUT (wraparound-identical deep blue).
 - Freshness wording: **"LATEST AVAILABLE COMPOSITE"** (+ age, + STALE flag).
 
+## 6. Chlorophyll — NOAA CoastWatch S-NPP VIIRS (Science Quality, daily)
+
+- **Product:** `nesdisVHNSQchlaDaily` on CoastWatch West ERDDAP (pfeg, no
+  bot-wall): Chlorophyll-a, NOAA S-NPP VIIRS, Science Quality, Global 4 km,
+  Daily. Variable `chlor_a` (OC3 algorithm), mg m⁻³, valid 0.001–1000.
+  The NRT aggregation (`nesdisVHNchlaDaily_Lon0360`) is server-broken
+  ("underlying dataset not found"), so Science Quality is used and the
+  ~10-day latency is exposed, not hidden. Rendered as a newest-valid
+  mosaic of the latest 3 dailies (daily ocean color is cloud-sparse).
+- Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
+
+## 7. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (NRT, daily)
+
+- **Product:** `nesdisVHNkdparDaily`: KdPAR, NOAA S-NPP VIIRS, Near
+  Real-Time, Global 4 km, Daily. Variable `kd_par` = Diffuse Attenuation
+  Coefficient for PAR (NOAA MECB algorithm; product status Experimental —
+  stated in metadata), m⁻¹, valid 0.016–32. Larger values mean MORE turbid
+  water (no reversal of source values; clear water naturally sits blue).
+  The GLERL "Water Clarity-Turbidity Index" ERDDAP was assessed but is
+  bot-walled (HTTP 200 serving a bot check even for REST CSV), so KdPAR is
+  the operational alternative; the description names the exact variable.
+- Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
+
+## 8. Solar + 9. Air temperature — NOAA/NCEP HRRR 3 km analyses (hourly)
+
+- **Product:** HRRR CONUS `wrfsfcf00` analysis via NOMADS (direct HTTPS +
+  `.idx` byte ranges: TMP2m ~8 MB, DSWRF ~1 MB — never the ~150 MB file).
+  Variables: `TMP` 2 m above ground (K → °F) and `DSWRF` surface
+  (hourly-averaged downward shortwave flux, W/m²; nighttime zero is VALID
+  data). Lambert 1799×1059, per-cell WGS84 via ecCodes.
+- Freshness wording: **"LIVE / CURRENT MODEL (analysis)"** with cycle stamp.
+
+## 10. Gradient scales — historical LOWEST / HIGHEST+ (products 8–11)
+
+`scripts/gradient_scale.py`: each product keeps `{hist_min, hist_max,
+percentiles, reservoir≤20k}` in `output/state/<product>/`, seeded from
+real observed distributions and extended only by validated in-bounds
+records. Percentile anchors [min,p5,p25,p50,p75,p95,p99,max] sit at fixed
+positions [0,.10,.28,.48,.66,.84,.93,1.0] of the master family
+(dark blue→…→deep purple), concentrating color resolution on common
+values; sub-zero air-temp anchors use a purple ramp into blue at 0 °F
+with no break. One mapping function paints raster + legend identically.
+
 ## Cache / refresh design (Google Earth)
 
 GitHub Pages cannot set custom cache headers, so cache-busting is done with

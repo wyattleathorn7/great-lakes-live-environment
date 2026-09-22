@@ -46,7 +46,13 @@ def legend_block(legend_path, cache_token, scale_html):
 
 
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
-              description_html, refresh_interval, cache_token, out_dirs=None):
+              description_html, refresh_interval, cache_token, out_dirs=None,
+              folder=None):
+    """folder = (folder_name, folder_description_html) or None.
+
+    With a folder, layout is Document > Folder(description) > GroundOverlay
+    so the key image + explanation travel inside the layer itself (still no
+    ScreenOverlay, no vector geometry)."""
     """One overview GroundOverlay + self-refresh NetworkLink; never any
     per-cell geometry (asserted). Filenames/URLs stay stable; ?v= token
     busts caches on each successful product run."""
@@ -77,7 +83,19 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     box.append(_q("east", str(bounds["lon_max"])))
     box.append(_q("west", str(bounds["lon_min"])))
     ground.append(box)
-    document.append(ground)
+    if folder is not None:
+        folder_el = _q("Folder")
+        folder_el.append(_q("name", folder[0]))
+        _fdesc = _q("description")
+        _fdesc.text = None
+        folder_el.append(_fdesc)
+        folder_el.append(ground)
+        document.append(folder_el)
+        # CDATA folder description
+        _fcdata = (f"<description><![CDATA[{folder[1]}]]></description>")
+    else:
+        document.append(ground)
+        _fcdata = None
 
     link = _q("NetworkLink")
     link.append(_q("name", overlay_name + " — auto-refresh"))
@@ -90,9 +108,11 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
 
     xml = minidom.parseString(ET.tostring(doc)).toprettyxml(
         indent="  ", encoding="utf-8").decode("utf-8")
-    # inject CDATA description (ElementTree would escape the HTML)
+    # inject CDATA descriptions (ElementTree would escape the HTML)
     cdata = f"<description><![CDATA[{description_html}]]></description>"
     xml = xml.replace("<description/>", cdata, 1)
+    if _fcdata is not None:
+        xml = xml.replace("<description/>", _fcdata, 1)
 
     if out_dirs is None:
         out_dirs = [os.path.join(KML_DIR, kml_filename),

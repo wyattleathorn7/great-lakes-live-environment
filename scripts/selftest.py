@@ -198,6 +198,42 @@ def main():
         check(f"leaf-landcover-{_nm}",
               int((_lc == _code).sum()) > 50_000, int((_lc == _code).sum()))
 
+    # ---- gradient-scale engine (products 8-11) ----
+    import numpy as _np3
+    from gradient_scale import (anchor_values, build_stops, color_for,
+                                family_color, lut_from_stops)
+    _rec = {"hist_min": 0.15, "hist_max": 99.9,
+            "percentiles": {"p5": 0.44, "p25": 0.63, "p50": 1.1, "p75": 3.6,
+                            "p95": 16.0, "p99": 44.0}}
+    _st = build_stops(anchor_values(_rec), False)
+    check("grad-8-anchors", len(_st) == 8)
+    check("grad-ascending",
+          all(_st[i][0] < _st[i + 1][0] for i in range(7)))
+    check("grad-low-darkblue", _st[0][1] == (16, 52, 140))
+    check("grad-high-purple", _st[-1][1] == (70, 15, 100))
+    _lut256 = lut_from_stops(_st)
+    _dense = lut_from_stops(_st, 4096)
+    _jd = _np3.abs(_np3.diff(_np3.array(_dense, dtype=int), axis=0)).sum(axis=1)
+    check("grad-continuous", _jd.max() < 25, int(_jd.max()))
+    _j = _np3.abs(_np3.diff(_np3.array(_lut256, dtype=int), axis=0)).sum(axis=1)
+    check("grad-no-hard-band", _j.max() < 260, int(_j.max()))
+    check("grad-clamp-low", color_for(-5, _st) == _st[0][1])
+    check("grad-clamp-high", color_for(9999, _st) == _st[-1][1])
+    check("grad-mid-varying",
+          len({_lut256[i] for i in range(60, 140)}) > 40)
+    _neg = build_stops([-22.5, -15.0, -2.0, 18.0, 34.0, 55.0, 68.0, 78.5],
+                       True)
+    check("grad-neg-min-purple", _neg[0][1] == (40, 10, 70))
+    check("grad-neg-zero-blue",
+          any(v == 0.0 and c == (16, 52, 140) for v, c in _neg))
+    check("grad-neg-continuous",
+          _np3.abs(_np3.diff(_np3.array(lut_from_stops(_neg), dtype=int),
+                             axis=0)).sum(axis=1).max() < 30)
+    _pos = build_stops([0.02, 0.1, 0.15, 0.2, 0.3, 0.8, 1.8, 6.3], False)
+    check("grad-nonneg-no-purple-low", _pos[0][1] == (16, 52, 140))
+    check("grad-family-endpoints", family_color(0.0) == (16, 52, 140)
+          and family_color(1.0) == (70, 15, 100))
+
     # ---- wind metadata specifics ----
     m = json.load(open(os.path.join(SITE_DIR, "wind", "metadata.json")))
     check("wind-beaufort-13", len(m.get("beaufort_table", [])) == 13)

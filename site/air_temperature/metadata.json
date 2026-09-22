@@ -1,0 +1,91 @@
+{
+  "product": "air_temperature",
+  "title": "LIVE AIR TEMPERATURE",
+  "freshness": "LIVE / CURRENT MODEL (analysis)",
+  "noaa_source": "NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles",
+  "product_name": "NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles",
+  "variable": "TMP 2 m above ground, analysis step",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
+  "data_time_utc": "2026-09-22 02:00 UTC",
+  "source_last_modified_utc": "n/a (NOMADS)",
+  "processing_time_utc": "2026-09-22 03:17 UTC",
+  "units": "degF (display); source K",
+  "spatial_resolution_source": "~3 km HRRR Lambert grid (1799x1059)",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 34.51514404296879,
+  "color_scale_max": 70.93339355468754,
+  "color_scale_units": "degF",
+  "missing_data_treatment": "only [-60,55] C admitted pre-conversion; missing analysis transparent; never interpolated.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    230
+  ],
+  "legend_scale_html": "2 m air temperature (degF), continuous Apple-style spectrum: <b>LOWEST 34.52</b> (deep purple/violet extreme cold) \u2192 cold blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red <b>HIGHEST+ 70.93</b>. Freezing has no color break.",
+  "model_cycle": "hrrr.20260922 t02z",
+  "historical": {
+    "low": 34.51514404296879,
+    "high": 70.93339355468754,
+    "percentiles": {
+      "p5": 39.12764358520508,
+      "p25": 45.170894622802734,
+      "p50": 52.03339385986328,
+      "p75": 56.340145111083984,
+      "p95": 61.93339538574219,
+      "p99": 64.97089385986328
+    },
+    "n_obs": 365846,
+    "extends": []
+  },
+  "stats": {
+    "valid_cells": 2114386,
+    "current_min": 34.51514404296879,
+    "current_max": 70.1776440429688
+  },
+  "buoy_qc": {
+    "45001": {
+      "obs_F": 52.88,
+      "grid_F": 51.95264404296879,
+      "absdiff_F": 0.93,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 02:50 UTC"
+    },
+    "45002": {
+      "obs_F": 57.92,
+      "grid_F": 57.63389404296879,
+      "absdiff_F": 0.29,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 03:00 UTC"
+    },
+    "45132": {
+      "obs_F": 59.0,
+      "grid_F": 61.177644042968794,
+      "absdiff_F": 2.18,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 03:00 UTC"
+    },
+    "45012": {
+      "obs_F": 57.2,
+      "grid_F": 59.04014404296879,
+      "absdiff_F": 1.84,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 02:50 UTC"
+    },
+    "45005": {
+      "obs_F": 63.32,
+      "grid_F": 66.01514404296879,
+      "absdiff_F": 2.7,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 02:50 UTC"
+    }
+  },
+  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=2026-09-22_0317_UTC\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), continuous Apple-style spectrum: <b>LOWEST 34.52</b> (deep purple/violet extreme cold) \u2192 cold blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red <b>HIGHEST+ 70.93</b>. Freezing has no color break.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-22 02:00 UTC<br/><b>Processed:</b> 2026-09-22 03:17 UTC<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
+}
