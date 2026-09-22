@@ -14,7 +14,9 @@ on:
         default: "all"
         type: choice
         options: ["all", "wave_height", "water_temperature", "ice_coverage",
-                  "ice_thickness", "ice_type", "wind", "leaf_color"]
+                  "ice_thickness", "ice_type", "wind", "leaf_color",
+                  "chlorophyll", "water_clarity", "solar_radiation",
+                  "air_temperature"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -246,10 +248,134 @@ jobs:
             output/state/leaf_color
           if-no-files-found: warn
 
+  chlorophyll:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'chlorophyll' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update chlorophyll
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_chlorophyll.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Chlorophyll source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-chlorophyll
+          path: |
+            site/chlorophyll
+            site/kml/Great_Lakes_Live_Chlorophyll.kml
+            kml/Great_Lakes_Live_Chlorophyll.kml
+            output/state/chlorophyll
+          if-no-files-found: warn
+
+  water_clarity:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'water_clarity' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update water clarity
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_water_clarity.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Clarity source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-water_clarity
+          path: |
+            site/water_clarity
+            site/kml/Great_Lakes_Live_Water_Clarity_Turbidity.kml
+            kml/Great_Lakes_Live_Water_Clarity_Turbidity.kml
+            output/state/water_clarity
+          if-no-files-found: warn
+
+  solar_radiation:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'solar_radiation' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update solar radiation
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_solar_radiation.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Solar source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-solar_radiation
+          path: |
+            site/solar_radiation
+            site/kml/Great_Lakes_Live_Solar_Radiation.kml
+            kml/Great_Lakes_Live_Solar_Radiation.kml
+            output/state/solar_radiation
+          if-no-files-found: warn
+
+  air_temperature:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'air_temperature' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update air temperature
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_air_temperature.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Air temp source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-air_temperature
+          path: |
+            site/air_temperature
+            site/kml/Great_Lakes_Live_Air_Temperature.kml
+            kml/Great_Lakes_Live_Air_Temperature.kml
+            output/state/air_temperature
+          if-no-files-found: warn
+
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature]
     # Publish whatever succeeded; a single-product failure must not block
-    # the other two layers from reaching GitHub Pages.
+    # the other products from reaching GitHub Pages.
     if: always()
     runs-on: ubuntu-24.04
     permissions:
