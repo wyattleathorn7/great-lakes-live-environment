@@ -2,6 +2,8 @@
 
 Uses urllib (stdlib) with retries; no netCDF dependency. Parses the
 (time,altitude,latitude,longitude,value) CSV into 2D lat/lon grids.
+HTTP 403/429/5xx are retried (the front end rate-limits bursts);
+other 4xx fail immediately.
 """
 
 import math
@@ -11,6 +13,12 @@ import urllib.request
 
 BASE = "https://coastwatch.pfeg.noaa.gov/erddap/griddap"
 UA = {"User-Agent": "great-lakes-live-environment/1.0"}
+
+_RETRYABLE = {403, 408, 429, 500, 502, 503, 504}
+
+
+def _retriable(e):
+    return isinstance(e, urllib.error.HTTPError) and e.code in _RETRYABLE
 
 
 def fetch_csv(dataset, var, time_str, lat0, lat1, lon0, lon1, retries=3):
@@ -29,16 +37,12 @@ def fetch_csv(dataset, var, time_str, lat0, lat1, lon0, lon1, retries=3):
             with urllib.request.urlopen(req, timeout=300) as r:
                 text = r.read().decode("utf-8", errors="replace")
             return _parse(text, lat0, lat1, lon0, lon1)
-        except (urllib.error.URLError, TimeoutError, ConnectionError,
-                OSError) as e:
-            last = e
         except Exception as e:
-            # ERDDAP 4xx/5xx with bodies arrive as HTTPError: retry 5xx only
-            if isinstance(e, urllib.error.HTTPError) and e.code < 500:
+            if isinstance(e, urllib.error.HTTPError) and not _retriable(e):
                 raise
             last = e
         if attempt < retries:
-            time.sleep(4 * attempt)
+            time.sleep(6 * attempt)
     raise last
 
 
@@ -89,9 +93,10 @@ def latest_time(dataset, retries=3):
             if not times:
                 raise ValueError("empty time axis")
             return times[-1]
-        except (urllib.error.URLError, TimeoutError, ConnectionError,
-                OSError) as e:
+        except Exception as e:
+            if isinstance(e, urllib.error.HTTPError) and not _retriable(e):
+                raise
             last = e
         if attempt < retries:
-            time.sleep(4 * attempt)
+            time.sleep(6 * attempt)
     raise last
