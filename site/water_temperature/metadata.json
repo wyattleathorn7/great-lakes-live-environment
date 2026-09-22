@@ -8,7 +8,7 @@
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
   "data_time_utc": "2026-09-21 06:50 UTC",
   "source_last_modified_utc": "Mon, 21 Sep 2026 06:50:54 GMT",
-  "processing_time_utc": "2026-09-22 00:35 UTC",
+  "processing_time_utc": "2026-09-22 03:26 UTC",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -39,39 +39,40 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 55.4,
+      "obs_F": 55.22,
       "grid_F": 55.3325,
-      "absdiff_F": 0.07,
+      "absdiff_F": 0.11,
       "verdict": "OK",
-      "obs_time": "2026-09-22 00:00 UTC"
+      "obs_time": "2026-09-22 03:00 UTC"
     },
     "45002": {
-      "obs_F": 64.22,
+      "obs_F": 64.4,
       "grid_F": 66.41149999999999,
-      "absdiff_F": 2.19,
+      "absdiff_F": 2.01,
       "verdict": "OK",
-      "obs_time": "2026-09-22 00:00 UTC"
+      "obs_time": "2026-09-22 03:00 UTC"
     },
     "45132": {
-      "obs_F": 69.26,
+      "obs_F": 68.9,
       "grid_F": 73.337,
-      "absdiff_F": 4.08,
+      "absdiff_F": 4.44,
       "verdict": "CHECK",
-      "obs_time": "2026-09-22 00:00 UTC"
+      "obs_time": "2026-09-22 03:00 UTC"
     },
     "45012": {
-      "obs_F": 67.46,
+      "obs_F": 67.28,
       "grid_F": 70.1105,
-      "absdiff_F": 2.65,
+      "absdiff_F": 2.83,
       "verdict": "OK",
-      "obs_time": "2026-09-22 00:00 UTC"
+      "obs_time": "2026-09-22 03:00 UTC"
     },
     "45005": {
-      "time_utc": "2026-09-22 00:00 UTC",
+      "time_utc": "2026-09-22 03:00 UTC",
       "WDIR_deg": 40.0,
-      "WSPD_ms": 10.0,
+      "WSPD_ms": 11.0,
       "WVHT_m": null,
       "WTMP_C": null,
+      "ATMP_C": 17.5,
       "note": "no WTMP obs"
     }
   },
