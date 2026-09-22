@@ -241,6 +241,11 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   water pixels are empty on any single day, so each pixel shows its newest
   valid observation in the window; ERDDAP stride-2 fetch, canvas upscales).
   Balanced LINEAR color scale (equal color share per value interval).
+  Known upstream limit (2026-09-22, verified): CoastWatch WAF blocks the
+  `nesdisVHNSQchlaDaily` dataset for GitHub Actions IPs (403/404 on every
+  endpoint/UA variant; sibling kdpar passes on the same runners), so CI
+  keeps the last good raster (exit 2) until the block lifts; the NRT
+  sibling is server-broken (axis queries time out), so SQ stays canonical.
 - Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
 
 ## 7. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (NRT, daily)
