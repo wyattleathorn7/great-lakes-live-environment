@@ -51,11 +51,12 @@ def load_watermask():
     return _WATERMASK
 
 
-def apply_shoreline_mask(rgba):
+def apply_shoreline_mask(rgba, invert=False):
     """Multiply overlay alpha by the shared water mask (antialiased edges)
     and bleed water colors into transparent pixels.
 
     Same mask object for every product, so all layers share one shoreline.
+    invert=True keeps LAND instead (for leaf color: forests grow on land).
     The RGB bleed is critical for Google Earth: its bilinear magnification
     interpolates transparent-black (0,0,0,0) edge pixels with water colors,
     which renders as a dark fringe/shadow along the shore. Filling
@@ -63,6 +64,8 @@ def apply_shoreline_mask(rgba):
     fringe without changing any visible pixel (alpha stays 0 there).
     """
     mask = load_watermask()
+    if invert:
+        mask = 1.0 - mask
     out = rgba.copy()
     out[:, :, 3] = np.round(out[:, :, 3].astype(np.float32) * mask).astype(np.uint8)
     return bleed_rgb_into_transparent(out)

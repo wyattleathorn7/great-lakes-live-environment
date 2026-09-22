@@ -1,0 +1,15 @@
+{
+  "product": "leaf_color",
+  "title": "LIVE LEAF COLOR",
+  "subtitle": "SEASONAL VEGETATION CYCLE",
+  "freshness_label": "LATEST AVAILABLE COMPOSITE",
+  "source_name": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
+  "source_url": "https://planetarycomputer.microsoft.com/",
+  "variable": "NDVI trajectory + surface reflectance + NDSI snow + land class -> circular phenology phase 0..1",
+  "source_units": "NDVI/reflectance (unitless); phase 0..1",
+  "display_units": "phenology color scale (circular)",
+  "data_nature": "observed satellite composites + derived phenology state",
+  "stale_threshold_days": 75,
+  "refresh_interval_seconds": 43200,
+  "history_depth": 4
+}

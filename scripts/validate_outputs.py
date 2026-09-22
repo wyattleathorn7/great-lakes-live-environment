@@ -41,6 +41,8 @@ PRODUCTS = {
                  "max_opaque_min": 0},  # off-season => transparent OK
     "wind": {"kml": "Great_Lakes_Live_Wind.kml",
              "max_opaque_min": 10_000},
+    "leaf_color": {"kml": "Great_Lakes_Live_Leaf_Color.kml",
+                   "max_opaque_min": 10_000},
 }
 
 META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
@@ -128,10 +130,16 @@ def main():
                 print(f"[{product}] raster OK: {n_opaque} water pixels, size {im.size}")
             if mask is not None:
                 import numpy as np
-                bleed = int(((a[:, :, 3] > 0) & (mask == 0)).sum())
+                if product == "leaf_color":
+                    # leaf grows on LAND: opaque must avoid open-lake water
+                    bleed = int(((a[:, :, 3] > 0) & (mask > 250)).sum())
+                    what = "open-lake water"
+                else:
+                    bleed = int(((a[:, :, 3] > 0) & (mask == 0)).sum())
+                    what = "the shared shoreline mask"
                 if bleed > 0:
                     failures.append(f"{product}: {bleed} opaque pixels outside "
-                                    f"the shared shoreline mask")
+                                    f"{what}")
                 else:
                     print(f"[{product}] shoreline OK: no land bleed")
         except Exception as e:
@@ -154,6 +162,66 @@ def main():
                 failures.append(f"{product}: thickness scale out of bounds {lo}-{hi}")
             if product == "wind" and (lo, hi) != (0, 12):
                 failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
+            if product == "leaf_color" and (lo, hi) != (0.0, 1.0):
+                failures.append(f"{product}: leaf scale must be 0-1, got {lo}-{hi}")
+            if product == "leaf_color":
+                import numpy as np
+                _leg = np.array(Image.open(legend).convert("RGB"))
+                _nuniq = len(np.unique(_leg.reshape(-1, 3), axis=0))
+                if _nuniq < 200:
+                    failures.append(f"{product}: legend not continuous "
+                                    f"({_nuniq} colors)")
+                _ra = np.array(Image.open(png).convert("RGBA"))
+                _amask = _ra[:, :, 3] > 0
+                _rs = np.array(Image.open(png).convert("RGB"))
+                _runq = len(np.unique(_rs[_amask].reshape(-1, 3), axis=0)) \
+                    if _amask.any() else 0
+                if _amask.any() and _runq < 50:
+                    failures.append(f"{product}: raster looks quantized "
+                                    f"({_runq} colors)")
+                _prov = meta.get("provenance", {})
+                for _k in ("provider", "composite_date", "algorithm"):
+                    if _k not in _prov:
+                        failures.append(f"{product}: provenance missing '{_k}'")
+                if "native_resolution" not in _prov \
+                        and "native_resolution_m" not in _prov:
+                    failures.append(f"{product}: provenance missing "
+                                    f"'native_resolution'")
+                # water must be transparent at lake + Georgian Bay points
+                for _nm, _x, _y in (
+                        ("Superior", -88, 47.5), ("Michigan", -87, 44.2),
+                        ("Huron", -82.5, 44.8), ("Erie", -81.5, 42.2),
+                        ("Ontario", -77.8, 43.6), ("GeorgianBay", -81.0, 45.3)):
+                    _cc = int((_x - bounds["lon_min"])
+                              / (bounds["lon_max"] - bounds["lon_min"])
+                              * bounds["canvas_width"])
+                    _rr = int((bounds["lat_max"] - _y)
+                              / (bounds["lat_max"] - bounds["lat_min"])
+                              * bounds["canvas_height"])
+                    if _ra[_rr, _cc, 3] != 0:
+                        failures.append(f"{product}: water not transparent "
+                                        f"at {_nm}")
+                # no straight US/Canada seam: compare mean green in the
+                # 46N land band north vs south of the parallel
+                _lat = bounds["lat_max"] - (np.arange(
+                    bounds["canvas_height"]) + 0.5) / bounds["canvas_height"] \
+                    * (bounds["lat_max"] - bounds["lat_min"])
+                _lon = bounds["lon_min"] + (np.arange(
+                    bounds["canvas_width"]) + 0.5) / bounds["canvas_width"] \
+                    * (bounds["lon_max"] - bounds["lon_min"])
+                _rows = np.where((np.abs(_lat - 46.0) < 0.6))[0]
+                _cols = np.where((_lon > -84) & (_lon < -79))[0]
+                _s = _rows[_lat[_rows] < 46.0]
+                _n = _rows[_lat[_rows] >= 46.0]
+                _gs = _rs[np.ix_(_s, _cols)][_amask[np.ix_(_s, _cols)]]
+                _gn = _rs[np.ix_(_n, _cols)][_amask[np.ix_(_n, _cols)]]
+                if _gs.size > 500 and _gn.size > 500:
+                    _ms, _mn = float(_gs.reshape(-1, 3)[:, 1].mean()), \
+                        float(_gn.reshape(-1, 3)[:, 1].mean())
+                    print(f"[{product}] 46N band green S={_ms:.1f} N={_mn:.1f}")
+                    if abs(_ms - _mn) > 60:
+                        failures.append(f"{product}: possible US/Canada seam "
+                                        f"(S={_ms:.1f} N={_mn:.1f})")
             if product == "wind":
                 bt = meta.get("beaufort_table", [])
                 if len(bt) != 13 or "64" not in bt[12].get("range_kt", ""):

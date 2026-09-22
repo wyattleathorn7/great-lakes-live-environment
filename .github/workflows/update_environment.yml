@@ -14,7 +14,7 @@ on:
         default: "all"
         type: choice
         options: ["all", "wave_height", "water_temperature", "ice_coverage",
-                  "ice_thickness", "ice_type", "wind"]
+                  "ice_thickness", "ice_type", "wind", "leaf_color"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -55,6 +55,7 @@ jobs:
           name: site-wave_height
           path: |
             site/wave_height
+            output/state/wave_height.json
             site/kml/Great_Lakes_Live_Wave_Height.kml
             kml/Great_Lakes_Live_Wave_Height.kml
           if-no-files-found: warn
@@ -85,6 +86,7 @@ jobs:
           name: site-water_temperature
           path: |
             site/water_temperature
+            output/state/water_temperature.json
             site/kml/Great_Lakes_Live_Water_Temperature.kml
             kml/Great_Lakes_Live_Water_Temperature.kml
           if-no-files-found: warn
@@ -115,6 +117,7 @@ jobs:
           name: site-ice_coverage
           path: |
             site/ice_coverage
+            output/state/ice_coverage.json
             site/kml/Great_Lakes_Live_Ice_Coverage.kml
             kml/Great_Lakes_Live_Ice_Coverage.kml
           if-no-files-found: warn
@@ -145,6 +148,7 @@ jobs:
           name: site-ice_thickness
           path: |
             site/ice_thickness
+            output/state/ice_thickness.json
             site/kml/Great_Lakes_Live_Ice_Thickness.kml
             kml/Great_Lakes_Live_Ice_Thickness.kml
           if-no-files-found: warn
@@ -175,6 +179,7 @@ jobs:
           name: site-ice_type
           path: |
             site/ice_type
+            output/state/ice_type.json
             site/kml/Great_Lakes_Live_Ice_Type.kml
             kml/Great_Lakes_Live_Ice_Type.kml
           if-no-files-found: warn
@@ -205,12 +210,44 @@ jobs:
           name: site-wind
           path: |
             site/wind
+            output/state/wind.json
             site/kml/Great_Lakes_Live_Wind.kml
             kml/Great_Lakes_Live_Wind.kml
           if-no-files-found: warn
 
+  leaf_color:
+    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'leaf_color' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update leaf color
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_leaf_color.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Leaf source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-leaf_color
+          path: |
+            site/leaf_color
+            site/kml/Great_Lakes_Live_Leaf_Color.kml
+            kml/Great_Lakes_Live_Leaf_Color.kml
+            output/state/leaf_color
+          if-no-files-found: warn
+
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color]
     # Publish whatever succeeded; a single-product failure must not block
     # the other two layers from reaching GitHub Pages.
     if: always()

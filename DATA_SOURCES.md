@@ -180,6 +180,47 @@ not support Region, so multi-image tile pyramids are deliberately avoided:
 they produce fetch failures, not sharper shores. Shoreline crispness comes
 from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
 
+## 5. Leaf color — NASA MODIS Aqua via Planetary Computer (global, 500 m)
+
+- **Products:** MYD13A1.061 (NDVI + pixel reliability, 16-day) and
+  MYD09A1.061 (surface reflectance red/green/blue/SWIR + state QA, 8-day),
+  queried per MODIS tile (h11/h12/h13v04) through the Planetary Computer
+  STAC API with anonymous SAS (`planetary-computer` SDK `sign()` flow —
+  verified working; hand-rolled token URLs 403, so the SDK flow is mandatory).
+  COGs are range-read (WarpedVRT to EPSG:4326, canvas window, nearest —
+  no bulk downloads).
+- **Why not VNP13A4N:** the specified VIIRS NRT product requires NASA
+  Earthdata credentials, which cannot exist for unattended automation
+  without operator-supplied secrets. The substitute is the same
+  vegetation-index family (MODIS Aqua = same afternoon orbit class, same
+  500 m, same NDVI/EVI/QA science, global incl. Canada, QA'd composites)
+  with honest costs: 16-day cadence and PC processing lag (~4–6 weeks;
+  exposed as composite date + age in every legend/metadata/KML, with a
+  75-day STALE flag). The *current* spectral/autumn signal comes from the
+  8-day reflectance. Upgrade path: add Earthdata-auth VNP13A4N/VNP09
+  readers behind repo secrets without touching the phenology engine.
+  Rejected: GIBS (renders colormapped pictures, not data values —
+  verified), PC MODIS lag is documented not hidden, STAR VHP (4 km,
+  coarser than the 500 m target), USGS eVIIRS (CONUS-only).
+- **Land cover (static ancillary):** US side USGS NLCD 2021 + Canada side
+  NRCan 2020 Land Cover of Canada (the two national inputs NALCMS
+  harmonizes), mosaicked once to `assets/leaf_landcover.png`
+  (deciduous/mixed/evergreen/shrub/grass/crop/urban/barren/water;
+  wetlands→shrub behavior). `scripts/build_leaf_landcover.py` reproduces it.
+- **Footprint:** `assets/leaf_footprint.png` = Michigan ∪ 50-mi geodesic
+  buffer of the NOAA medium-res water polygons (EPSG:3175, dissolved,
+  smoothed). UP extension automatic (state line lies over water);
+  Bruce/Georgian Bay/Ontario zones merge; validated inside/outside probes.
+- **Phenology (leaf_phenology v1):** per-pixel NDVI trajectory (current +
+  rolling quarter-res history for baseline max with class priors +
+  median direction reference) → circular phase 0..1 → class modulation
+  (deciduous full, mixed 0.55, evergreen clamped green, shrub/grass 0.45
+  capped, crop 0.35 capped, urban/barren/nodata/water transparent) →
+  spectral gating (redness proxy only counts while declining; NDSI snow →
+  transparent; cloud/bad-QA → hold previous phase or transparent).
+  Continuous 19-anchor circular LUT (wraparound-identical deep blue).
+- Freshness wording: **"LATEST AVAILABLE COMPOSITE"** (+ age, + STALE flag).
+
 ## Cache / refresh design (Google Earth)
 
 GitHub Pages cannot set custom cache headers, so cache-busting is done with

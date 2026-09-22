@@ -1,0 +1,69 @@
+{
+  "product": "leaf_color",
+  "title": "LIVE LEAF COLOR",
+  "freshness": "LATEST AVAILABLE COMPOSITE",
+  "noaa_source": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
+  "product_name": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
+  "variable": "NDVI trajectory + surface reflectance + NDSI snow + land class -> circular phenology phase 0..1",
+  "source_url": "https://planetarycomputer.microsoft.com/",
+  "data_time_utc": "VI composite start 2026-08-05 (+16d window); reflectance 2026-08-13 (+8d); retrieved 2026-09-22 02:25 UTC",
+  "source_last_modified_utc": "composite sig 1ce56c63a4cc",
+  "processing_time_utc": "2026-09-22 02:25 UTC",
+  "units": "phenology phase 0..1 (display color); source NDVI/reflectance",
+  "spatial_resolution_source": "500 m MODIS sinusoidal, reprojected to canvas (nearest)",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.0,
+  "color_scale_max": 1.0,
+  "color_scale_units": "phenology phase (circular)",
+  "missing_data_treatment": "cloud/bad-QA pixels hold the previous phase or go transparent; snow transparent; urban/barren/nodata transparent; water transparent via shared mask.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    250
+  ],
+  "legend_scale_html": "Satellite-derived seasonal vegetation state, winter dormancy (deep blue) through spring emergence, growth, autumn color, leaf drop and back to dormancy. Color is phenological state, not literal tree color.",
+  "data_nature": "observed satellite composites + derived phenology state",
+  "provenance": {
+    "provider": "NASA MODIS (Aqua) via Microsoft Planetary Computer STAC",
+    "collections": [
+      "modis-13A1-061",
+      "modis-09A1-061"
+    ],
+    "vi_items": {
+      "h11v04": "MYD13A1.A2026217.h11v04.061.2026234002226",
+      "h12v04": "MYD13A1.A2026217.h12v04.061.2026234002023",
+      "h13v04": "MYD13A1.A2026217.h13v04.061.2026234000805"
+    },
+    "reflectance_items": {
+      "h11v04": "MYD09A1.A2026225.h11v04.061.2026234040730",
+      "h12v04": "MYD09A1.A2026225.h12v04.061.2026234041508",
+      "h13v04": "MYD09A1.A2026225.h13v04.061.2026234040504"
+    },
+    "composite_sig": "1ce56c63a4ccdc15269cf7ae4540fe2857e6dedbdb03c1eec2f41600a3f50c13",
+    "composite_date": "2026-08-05",
+    "source_age_days": 48,
+    "stale": false,
+    "retrieved": "2026-09-22 02:25 UTC",
+    "native_resolution_m": 500,
+    "native_crs": "MODIS sinusoidal",
+    "resampling": "nearest (no invented values)",
+    "qa_rules": "MYD13A1 pixel reliability 0=good/1=hold/2=snow/3=cloud; MYD09A1 state bit0 cloud; NDSI>0.4+snow test; brightness backup",
+    "landcover": "USGS NLCD 2021 + NRCan 2020 Land Cover of Canada (NALCMS inputs) mosaic -> assets/leaf_landcover.png",
+    "water_mask": "assets/great_lakes_watermask.png (shared)",
+    "footprint": "assets/leaf_footprint.png (Michigan + 50-mi NOAA shoreline buffer, UP extension automatic)",
+    "algorithm": "leaf_phenology v1 (trajectory + baseline + class + spectral gating, circular continuous LUT)"
+  },
+  "stats": {
+    "good_pixels": 965108,
+    "opaque_pixels": 541082,
+    "phase_mean": 0.5174
+  }
+}

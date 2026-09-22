@@ -11,6 +11,7 @@ for Google Earth, all from official NOAA sources:
 | 🧊 Live Ice Thickness | USNIC NAIS daily SIGRID-3 shapefile → WMO stage-range midpoints, concentration-weighted (**derived**, inches) | LATEST AVAILABLE (seasonal) |
 | 🧊 Live Ice Type | USNIC NAIS daily SIGRID-3 shapefile → predominant WMO stage (**analyzed**, 17 categories + unknown) | LATEST AVAILABLE (seasonal) |
 | 💨 Live Wind | NCEP GLWU `UGRD/VGRD` surface analysis → knots → **Beaufort Force 0–12** + direction arrows | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
+| 🍂 Live Leaf Color | NASA MODIS Aqua MYD13A1/MYD09A1 global 500 m via Planetary Computer (NDVI trajectory + reflectance + NDSI snow) → circular phenology phase | LATEST AVAILABLE COMPOSITE |
 
 All water-based layers share one committed NOAA shoreline mask
 (`assets/great_lakes_watermask.png`, built from the NOAA Medium-Resolution
@@ -115,6 +116,7 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_ice_type.py`,
 `python scripts/build_wave_height.py`,
 `python scripts/build_wind.py`,
+`python scripts/build_leaf_color.py`,
 `python scripts/validate_outputs.py`,
 `python scripts/selftest.py`.
 

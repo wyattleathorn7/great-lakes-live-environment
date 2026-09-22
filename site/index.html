@@ -71,12 +71,21 @@ from official NOAA sources. Each layer can be toggled on/off by itself.</p>
 <a href="wind/metadata.json">metadata.json</a></p>
 </div>
 
+<div class="card" id="leaf_color">
+<h2>🍂 Live Leaf Color</h2>
+<p><small id="leaf_color-meta">loading…</small></p>
+<img class="legend" src="leaf_color/legend.png" alt="leaf color legend">
+<p><a href="kml/Great_Lakes_Live_Leaf_Color.kml">Open in Google Earth (KML)</a> ·
+<a href="leaf_color/current.png">current.png</a> ·
+<a href="leaf_color/metadata.json">metadata.json</a></p>
+</div>
+
 <p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU).
 This project is not endorsed by NOAA. Stable URLs — Google Earth layers never
 need re-pointing; images carry version query strings so updates appear on refresh.</small></p>
 
 <script>
-["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind"].forEach(p=>{
+["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind","leaf_color"].forEach(p=>{
   fetch(p+"/metadata.json").then(r=>r.json()).then(m=>{
     document.getElementById(p+"-meta").textContent =
       m.freshness+" | Data time: "+m.data_time_utc+" | Processed: "+m.processing_time_utc;

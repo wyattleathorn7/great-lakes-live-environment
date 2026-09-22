@@ -99,7 +99,7 @@ def main():
     # ---- KML single-overlay hygiene (GE Web: 1 external image, no Region) ----
     import re as _re
     prods = ["wave_height", "water_temperature", "ice_coverage",
-             "ice_thickness", "ice_type", "wind"]
+             "ice_thickness", "ice_type", "wind", "leaf_color"]
     for p in prods:
         for kf in (os.path.join(REPO_ROOT, "kml", f"Great_Lakes_Live_{_k(p)}.kml"),):
             t = open(kf, encoding="utf-8").read()
@@ -111,8 +111,11 @@ def main():
     for p in prods:
         png = os.path.join(SITE_DIR, p, "current.png")
         a = np.array(Image.open(png).convert("RGBA"))
-        check(f"{p}-opaque-subset-of-mask",
-              bool((((a[:, :, 3] > 0) & (mask <= 0)).sum()) == 0))
+        if p == "leaf_color":
+            _bad = ((a[:, :, 3] > 0) & (mask > 250 / 255)).sum() == 0
+        else:
+            _bad = ((a[:, :, 3] > 0) & (mask <= 0)).sum() == 0
+        check(f"{p}-opaque-subset-of-mask", bool(_bad))
         for kf in (os.path.join(REPO_ROOT, "kml", f"Great_Lakes_Live_{_k(p)}.kml"),
                    os.path.join(SITE_DIR, "kml", f"Great_Lakes_Live_{_k(p)}.kml")):
             t = open(kf, encoding="utf-8").read()
@@ -121,6 +124,79 @@ def main():
                   "REPLACE-GITHUB-USER" not in t and "REPLACE-REPO" not in t)
             check(f"{p}-has-groundoverlay", "<GroundOverlay>" in t)
             check(f"{p}-kml-small", len(t) < 100_000, len(t))
+
+    # ---- leaf phenology engine (synthetic trajectory §43) ----
+    from leaf_phenology import (build_leaf_lut, phenology_phase,
+                                redness_index)
+    _lut = build_leaf_lut()
+    check("leaf-lut-256", len(_lut) == 256)
+    check("leaf-lut-wrap", _lut[0] == _lut[-1] == (18, 59, 115))
+    check("leaf-lut-many-colors", len(set(_lut)) > 200, len(set(_lut)))
+    # 15 synthetic states across the annual cycle (deciduous, cls=1)
+    _traj = [
+        # (ndvi, hist(newest-last), redness, snow, bad) -> expected phase band
+        ((0.12, [0.12, 0.13], 0.05, False, False), (0.0, 0.12)),    # 1 deep winter
+        ((0.22, [0.13, 0.12], 0.05, False, False), (0.12, 0.30)),   # 2 awakening
+        ((0.35, [0.22, 0.15], 0.05, False, False), (0.15, 0.35)),   # 3 budding
+        ((0.50, [0.35, 0.28], 0.05, False, False), (0.25, 0.45)),   # 4 first leaves
+        ((0.68, [0.55, 0.45], 0.05, False, False), (0.30, 0.50)),   # 5 development
+        ((0.82, [0.80, 0.81], 0.05, False, False), (0.45, 0.60)),   # 6 peak green
+        ((0.74, [0.82, 0.83], 0.15, False, False), (0.55, 0.70)),   # 7 first change
+        ((0.60, [0.74, 0.80], 0.45, False, False), (0.60, 0.78)),   # 8 yellow
+        ((0.48, [0.60, 0.70], 0.55, False, False), (0.65, 0.80)),   # 9 gold
+        ((0.38, [0.48, 0.58], 0.70, False, False), (0.70, 0.84)),   # 10 orange
+        ((0.28, [0.38, 0.48], 0.80, False, False), (0.74, 0.88)),   # 11 red
+        ((0.20, [0.28, 0.36], 0.60, False, False), (0.80, 0.95)),   # 12 late autumn
+        ((0.14, [0.20, 0.26], 0.30, False, False), (0.85, 1.00)),   # 13 leaf drop
+        # 14 dormant (circular: blue edge or purple edge both dormant)
+        ((0.11, [0.14, 0.17], 0.05, False, False), None),
+    ]
+    _mono = True
+    _prev = -1.0
+    for (_ndvi, _h, _r, _s, _b), _band in _traj:
+        _ph, _ = phenology_phase(_ndvi, _h, 1, _r, _s, _b)
+        if _band is None:  # wraparound-adjacent dormant
+            _ok = _ph is not None and (_ph < 0.12 or _ph > 0.85)
+        else:
+            _lo, _hi = _band
+            _ok = _ph is not None and _lo <= _ph < _hi
+        check(f"leaf-phase-{_band}", _ok, _ph)
+        _mono = _mono and (_ph is not None and _ph >= _prev - 0.05)
+        _prev = _ph if _ph is not None else _prev
+    check("leaf-cycle-monotonic", _mono)
+    _p0, _ = phenology_phase(0.85, [0.85, 0.85], 1, 0.0, False, False)
+    check("leaf-summer-green", 0.40 <= _p0 <= 0.60, _p0)
+    _pe, _ = phenology_phase(0.30, [0.45, 0.55], 3, 0.80, False, False)
+    check("leaf-evergreen-clamped", 0.38 <= _pe <= 0.58, _pe)
+    _ps, _ = phenology_phase(0.30, [0.30, 0.30], 1, 0.0, False, True)
+    check("leaf-snow-transparent", _ps is None)
+    _ph2, _held = phenology_phase(0.30, [0.30, 0.30], 1, 0.0, False, True,
+                                  prev_phase=0.5)
+    check("leaf-badobs-hold", _held and _ph2 == 0.5)
+    _pc, _ = phenology_phase(0.75, [0.75, 0.75], 6, 0.0, False, False)
+    check("leaf-crop-subdued", 0.40 <= _pc <= 0.60, _pc)
+    _pu, _ = phenology_phase(0.75, [0.75, 0.75], 7, 0.0, False, False)
+    check("leaf-urban-masked", _pu is None)
+    check("leaf-redness-summer", redness_index(0.2, 0.4, 0.2) < 0.3)
+    check("leaf-redness-autumn", redness_index(0.55, 0.3, 0.15) > 0.5)
+
+    # ---- leaf assets: footprint + land cover ----
+    import numpy as _np2
+    from PIL import Image as _Im
+    _fp = _np2.array(_Im.open(os.path.join(REPO_ROOT, "assets",
+                                           "leaf_footprint.png")).convert("L"))
+    check("leaf-footprint-dims", _fp.shape == (1175, 1800), _fp.shape)
+    check("leaf-footprint-frac", 0.3 < (_fp > 0).mean() < 0.75,
+          round(float((_fp > 0).mean()), 3))
+    _lc = _np2.array(_Im.open(os.path.join(REPO_ROOT, "assets",
+                                           "leaf_landcover.png")).convert("L"))
+    check("leaf-landcover-dims", _lc.shape == (1175, 1800), _lc.shape)
+    _lu, _lcnt = _np2.unique(_lc, return_counts=True)
+    check("leaf-landcover-codes", set(_lu.tolist()) <= set(range(10)),
+          sorted(_lu.tolist()))
+    for _code, _nm in ((1, "deciduous"), (2, "mixed"), (3, "evergreen")):
+        check(f"leaf-landcover-{_nm}",
+              int((_lc == _code).sum()) > 50_000, int((_lc == _code).sum()))
 
     # ---- wind metadata specifics ----
     m = json.load(open(os.path.join(SITE_DIR, "wind", "metadata.json")))
@@ -136,7 +212,8 @@ def main():
 def _k(p):
     return {"wave_height": "Wave_Height", "water_temperature": "Water_Temperature",
             "ice_coverage": "Ice_Coverage", "ice_thickness": "Ice_Thickness",
-            "ice_type": "Ice_Type", "wind": "Wind"}[p]
+            "ice_type": "Ice_Type", "wind": "Wind",
+            "leaf_color": "Leaf_Color"}[p]
 
 
 if __name__ == "__main__":
