@@ -30,9 +30,10 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               promote_stage, read_state, save_png,
                               stage_dir, utcnow_iso, write_metadata,
                               write_state, bleed_rgb_into_transparent)
-from gradient_scale import (SNOW_FAMILY, anchor_values, build_stops,
+from gradient_scale import (SNOW_FAMILY, build_linear_stops,
                             draw_scale_legend, fmt_val, load_record,
-                            render_rgba, save_record, update_record)
+                            record_tick_labels, render_rgba, save_record,
+                            update_record)
 from hrrr import fetch_messages, latest_cycle, read_messages
 
 PRODUCT = "snow_coverage"
@@ -137,8 +138,8 @@ def _build(base, datestr, cycle):
         print(f"[{PRODUCT}] no snow observed yet: provisional empty output.")
         return _build_empty(stage, stage_prod, bounds, W, H, data_time_utc,
                             datestr, cycle)
-    stops = build_stops(anchor_values(rec), CONFIG["allow_negative"],
-                        family=SNOW_FAMILY)
+    stops = build_linear_stops(rec["hist_min"], rec["hist_max"],
+                               family=SNOW_FAMILY)
     rgba = render_rgba(inches, stops, bounds["overlay_alpha"])
     rgba = apply_shoreline_mask(rgba)
     rgba[~mich, 3] = 0  # Michigan hard clip (state polygon covers lake water)
@@ -146,11 +147,7 @@ def _build(base, datestr, cycle):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = [(rec["hist_min"], f"LOWEST {fmt_val(rec['hist_min'])}"),
-              (p["p25"], fmt_val(p["p25"])),
-              (p["p50"], fmt_val(p["p50"])),
-              (p["p75"], fmt_val(p["p75"])),
-              (rec["hist_max"], f"HIGHEST+ {fmt_val(rec['hist_max'])}")]
+    labels = record_tick_labels(rec)
     subtitle = (f"Snow depth on the ground ({unit})  |  {data_time_utc}")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
@@ -167,8 +164,7 @@ def _build_empty(stage, stage_prod, bounds, W, H, data_time_utc, datestr,
                  cycle):
     """Valid-empty output (no snow anywhere): transparent raster, provisional
     legend clearly marked, honest metadata. NOT a failure."""
-    stops = build_stops([0.0, 1.0, 4.0, 8.0, 12.0, 16.0, 20.0, 24.0], False,
-                        family=SNOW_FAMILY)
+    stops = build_linear_stops(0.0, 24.0, family=SNOW_FAMILY)
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
     rgba = bleed_rgb_into_transparent(rgba)
     save_png(rgba, os.path.join(stage_prod, "current.png"))

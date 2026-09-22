@@ -234,11 +234,43 @@ def main():
     check("grad-family-endpoints", family_color(0.0) == (16, 52, 140)
           and family_color(1.0) == (70, 15, 100))
 
+    # ---- linear balanced mode (user directive: no percentile compression) ----
+    from gradient_scale import (APPLE_TEMP_STOPS, build_linear_stops,
+                                record_tick_labels)
+    _ls = build_linear_stops(0.15, 99.9)
+    check("lin-8-anchors", len(_ls) == 8)
+    _gaps = [_ls[i + 1][0] - _ls[i][0] for i in range(7)]
+    check("lin-even-values", max(_gaps) - min(_gaps) < 1e-9, _gaps[0])
+    check("lin-low-darkblue", _ls[0][1] == (16, 52, 140))
+    check("lin-high-purple", _ls[-1][1] == (70, 15, 100))
+    check("lin-colors-even",
+          all(_ls[i][1] == family_color(i / 7) for i in range(8)))
+    _lt = record_tick_labels(_rec)
+    check("lin-ticks-5", len(_lt) == 5)
+    check("lin-ticks-labels", _lt[0][1].startswith("LOWEST")
+          and _lt[-1][1].startswith("HIGHEST+"))
+    _ad = dict(APPLE_TEMP_STOPS)
+    check("apple-fixed-range",
+          APPLE_TEMP_STOPS[0][0] == -40.0
+          and APPLE_TEMP_STOPS[-1][0] == 130.0)
+    check("apple-cold-purple", APPLE_TEMP_STOPS[0][1] == (108, 55, 150))
+    check("apple-freeze-teal", _ad[32.0] == (45, 195, 178))
+    check("apple-ascending",
+          all(APPLE_TEMP_STOPS[i][0] < APPLE_TEMP_STOPS[i + 1][0]
+              for i in range(len(APPLE_TEMP_STOPS) - 1)))
+    import tempfile as _tf
+    from gradient_scale import draw_scale_legend as _dsl
+    _lp = os.path.join(_tf.mkdtemp(), "leg.png")
+    _lw, _lh = _dsl(_lp, "T", "S", "U", _ls,
+                    [(0.15, "LOWEST 0.15"), (0.63, "0.63"), (1.1, "1.1"),
+                     (3.6, "3.6"), (99.9, "HIGHEST+ 99.9")], "src")
+    check("legend-decollide-size", (_lw, _lh) == (640, 230)
+          and os.path.exists(_lp))
+
     # ---- snow product ----
     import numpy as _np4
-    from gradient_scale import SNOW_FAMILY, build_stops as _bs
-    _snow_stops = _bs([0.5, 1.0, 3.0, 6.0, 10.0, 16.0, 24.0, 36.0], False,
-                      family=SNOW_FAMILY)
+    from gradient_scale import SNOW_FAMILY, build_linear_stops as _bs
+    _snow_stops = _bs(0.5, 36.0, family=SNOW_FAMILY)
     check("snow-8-anchors", len(_snow_stops) == 8)
     check("snow-trace-silver", _snow_stops[0][1] == (192, 200, 208))
     check("snow-extreme-white", _snow_stops[-1][1] == (255, 255, 255))

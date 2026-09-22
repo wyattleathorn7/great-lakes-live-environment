@@ -2,10 +2,13 @@
 
 NOAA CoastWatch S-NPP VIIRS chlorophyll-a (Science Quality, Global 4 km,
 Daily; ERDDAP nesdisVHNSQchlaDaily; chlor_a, mg/m^3, OC3 algorithm) ->
-validate -> newest-valid mosaic of the latest 3 daily composites (daily
-ocean color is cloud-sparse) -> clip to Great Lakes -> continuous
-historical-range gradient -> transparent PNG (water only, shared shoreline
-mask) -> key image + metadata -> Folder KML.
+validate -> newest-valid mosaic of the latest 7 daily composites (daily
+ocean color is cloud-sparse: clouds and orbit gaps leave most water
+pixels empty on any single day, so each pixel shows its newest valid
+observation within the window) -> clip to Great Lakes -> balanced LINEAR
+historical-range gradient (every part of the value scale owns an equal
+share of the color resolution) -> transparent PNG (water only, shared
+shoreline mask) -> key image + metadata -> Folder KML.
 
 Chlorophyll-a is a phytoplankton biomass/activity proxy, NOT a toxin
 measurement and NOT a HAB diagnosis. Exit codes: 0 updated (or skipped);
@@ -28,9 +31,9 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, load_bounds, promote_stage,
                               read_state, save_png, stage_dir, utcnow_iso,
                               write_metadata, write_state)
-from gradient_scale import (anchor_values, build_stops, draw_scale_legend,
-                            fmt_val, load_record, render_rgba, save_record,
-                            update_record)
+from gradient_scale import (build_linear_stops, draw_scale_legend,
+                            fmt_val, load_record, record_tick_labels,
+                            render_rgba, save_record, update_record)
 
 PRODUCT = "chlorophyll"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -39,7 +42,9 @@ VAR = "chlor_a"
 KML_FILE = "Great_Lakes_Live_Chlorophyll.kml"
 OVERLAY_NAME = "\U0001F33F LIVE CHLOROPHYLL / ALGAL ACTIVITY"
 SKIP_NOTE = "Turn on/off independently of all other layers."
-MOSAIC_DAYS = 3
+MOSAIC_DAYS = 7
+STRIDE = 2  # ERDDAP grid stride: halves each axis (rate-limit friendly;
+            # canvas upscales, no visible change)
 
 
 def main():
@@ -115,8 +120,8 @@ def _build(bounds, times):
     for t in times:
         try:
             la, lo_n, g = fetch_csv(DATASET, VAR, t, bounds["lat_min"],
-                                    bounds["lat_max"], bounds["lon_min"],
-                                    bounds["lon_max"])
+                                     bounds["lat_max"], bounds["lon_min"],
+                                     bounds["lon_max"], stride=STRIDE)
         except Exception as e:
             print(f"[{PRODUCT}] WARNING: {t} unavailable: {str(e)[:120]}")
             continue
@@ -145,7 +150,7 @@ def _build(bounds, times):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    stops = build_stops(anchor_values(rec), CONFIG["allow_negative"])
+    stops = build_linear_stops(rec["hist_min"], rec["hist_max"])
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
     rgba = apply_shoreline_mask(rgba)  # water-only product
     save_png(rgba, os.path.join(stage_prod, "current.png"))
@@ -155,23 +160,19 @@ def _build(bounds, times):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = [(rec["hist_min"], f"LOWEST {fmt_val(rec['hist_min'])}"),
-              (p["p25"], fmt_val(p["p25"])),
-              (p["p50"], fmt_val(p["p50"])),
-              (p["p75"], fmt_val(p["p75"])),
-              (rec["hist_max"], f"HIGHEST+ {fmt_val(rec['hist_max'])}")]
+    labels = record_tick_labels(rec)
     subtitle = (f"Chlorophyll-a ({unit})  |  {times[0][:10]} (+{MOSAIC_DAYS - 1}d mosaic)")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
         f"Source: NOAA CoastWatch VIIRS chlorophyll  |  Processed {utcnow_iso()}",
         note="Transparent = land/cloud/missing. Not a toxin measurement.")
-    scale_html = (f"Chlorophyll-a concentration ({unit}), continuous: "
-                  f"<b>LOWEST {fmt_val(rec['hist_min'])}</b> (dark blue) → "
+    scale_html = (f"Chlorophyll-a concentration ({unit}), balanced linear "
+                  f"scale: <b>LOWEST {fmt_val(rec['hist_min'])}</b> (dark blue) → "
                   f"common {fmt_val(p['p50'])} (green/yellow) → "
                   f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b> (deep purple). "
-                  f"High values compress into red/purple; they indicate "
-                  f"biomass/activity, not toxins.")
+                  f"Every part of the scale owns an equal share of color; "
+                  f"high values indicate biomass/activity, not toxins.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"],

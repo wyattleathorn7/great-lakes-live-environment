@@ -3,8 +3,12 @@
 NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation (Near Real-Time,
 Global 4 km, Daily; ERDDAP nesdisVHNkdparDaily; kd_par, m^-1, NOAA MECB
 algorithm, product status Experimental) -> validate -> newest-valid mosaic
-of the latest 3 daily composites -> clip to Great Lakes -> continuous
-historical-range gradient -> transparent PNG (water only, shared shoreline
+of the latest 7 daily composites (daily ocean color is cloud-sparse:
+clouds and orbit gaps leave most water pixels empty on any single day,
+so each pixel shows its newest valid observation within the window) ->
+clip to Great Lakes -> balanced LINEAR historical-range gradient (every
+part of the value scale owns an equal share of the color resolution) ->
+transparent PNG (water only, shared shoreline
 mask) -> key image + metadata -> Folder KML.
 
 The source variable IS diffuse attenuation: larger values mean MORE turbid
@@ -29,9 +33,9 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, load_bounds, promote_stage,
                               read_state, save_png, stage_dir, utcnow_iso,
                               write_metadata, write_state)
-from gradient_scale import (anchor_values, build_stops, draw_scale_legend,
-                            fmt_val, load_record, render_rgba, save_record,
-                            update_record)
+from gradient_scale import (build_linear_stops, draw_scale_legend,
+                            fmt_val, load_record, record_tick_labels,
+                            render_rgba, save_record, update_record)
 
 PRODUCT = "water_clarity"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -40,7 +44,7 @@ VAR = "kd_par"
 KML_FILE = "Great_Lakes_Live_Water_Clarity_Turbidity.kml"
 OVERLAY_NAME = "\U0001F30A LIVE WATER CLARITY / TURBIDITY"
 SKIP_NOTE = "Turn on/off independently of all other layers."
-MOSAIC_DAYS = 3
+MOSAIC_DAYS = 7
 
 
 def main():
@@ -146,7 +150,7 @@ def _build(bounds, times):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    stops = build_stops(anchor_values(rec), CONFIG["allow_negative"])
+    stops = build_linear_stops(rec["hist_min"], rec["hist_max"])
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
     rgba = apply_shoreline_mask(rgba)  # water-only product
     save_png(rgba, os.path.join(stage_prod, "current.png"))
@@ -156,11 +160,7 @@ def _build(bounds, times):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = [(rec["hist_min"], f"LOWEST {fmt_val(rec['hist_min'])}"),
-              (p["p25"], fmt_val(p["p25"])),
-              (p["p50"], fmt_val(p["p50"])),
-              (p["p75"], fmt_val(p["p75"])),
-              (rec["hist_max"], f"HIGHEST+ {fmt_val(rec['hist_max'])}")]
+    labels = record_tick_labels(rec)
     subtitle = (f"Kd(PAR) ({unit}) — larger = more turbid  |  "
                 f"{times[0][:10]} (+{MOSAIC_DAYS - 1}d mosaic)")
     lw, lh = draw_scale_legend(
@@ -169,7 +169,7 @@ def _build(bounds, times):
         f"Source: NOAA CoastWatch VIIRS KdPAR  |  Processed {utcnow_iso()}",
         note="Transparent = land/cloud/missing.")
     scale_html = (f"Diffuse attenuation coefficient for PAR ({unit}), "
-                  f"continuous: <b>LOWEST {fmt_val(rec['hist_min'])}</b> "
+                  f"balanced linear scale: <b>LOWEST {fmt_val(rec['hist_min'])}</b> "
                   f"clearest (dark blue) → common {fmt_val(p['p50'])} → "
                   f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b> most turbid "
                   f"(deep purple). Larger values always mean murkier water; "

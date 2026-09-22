@@ -138,8 +138,7 @@ def main():
                     f"{product}: only {n_opaque} non-transparent pixels")
             else:
                 print(f"[{product}] raster OK: {n_opaque} water pixels, size {im.size}")
-            if mask is not None and product not in ("solar_radiation",
-                                                       "air_temperature"):
+            if mask is not None:
                 import numpy as np
                 if product == "leaf_color":
                     # leaf grows on LAND: opaque must avoid open-lake water

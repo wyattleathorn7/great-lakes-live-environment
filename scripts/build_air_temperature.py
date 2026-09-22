@@ -1,15 +1,15 @@
 """Pipeline K — LIVE AIR TEMPERATURE (independent).
 
 NOAA/NCEP HRRR 3 km 2 m temperature analysis (hourly cycles; Kelvin ->
-Fahrenheit; Apple-style spectrum with a purple negative extension that is
-continuous through freezing) -> validate -> clip to Great Lakes environment
--> continuous historical-range gradient -> transparent PNG (full domain;
-only missing data transparent) -> key image + metadata -> Folder KML.
+Fahrenheit; fixed Apple-Weather-like absolute spectrum -40..130 F with a
+purple extreme-cold end, continuous through freezing) -> validate -> clip
+to Great Lakes water via the shared NOAA shoreline mask (water only; land
+is transparent) -> transparent PNG -> key image + metadata -> Folder KML.
 
-Negative values use dark blue -> blue-violet -> violet -> deep purple at
-the record-cold end (spec negative rule); non-negative products never get
-purple lows. Exit codes: 0 updated (or skipped); 2 failure (previous kept);
-1 unexpected error.
+The color scale is FIXED (same colors for the same temperatures every
+day); the historical record still tracks LOWEST/HIGHEST+ and its ticks
+ride on the fixed axis. Exit codes: 0 updated (or skipped); 2 failure
+(previous kept); 1 unexpected error.
 """
 
 import json
@@ -23,15 +23,14 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_kml,
                        description_html, legend_block)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              bin_to_canvas, canvas_indices, fetch_buoy_obs,
-                              load_bounds, promote_stage, read_state,
-                              save_png, stage_dir, utcnow_iso,
-                              write_metadata, write_state,
-                              bleed_rgb_into_transparent)
-from gradient_scale import (anchor_values, build_stops, draw_scale_legend,
-                            fmt_val, load_record, render_rgba, save_record,
-                            update_record)
+from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
+                               base_metadata, bin_to_canvas, canvas_indices,
+                               fetch_buoy_obs, load_bounds, promote_stage,
+                               read_state, save_png, stage_dir, utcnow_iso,
+                               write_metadata, write_state)
+from gradient_scale import (APPLE_TEMP_STOPS, draw_scale_legend, fmt_val,
+                            load_record, record_tick_labels, render_rgba,
+                            save_record, update_record)
 from hrrr import fetch_messages, latest_cycle, read_messages
 
 PRODUCT = "air_temperature"
@@ -147,9 +146,9 @@ def _build(base, datestr, cycle):
         print(f"[{PRODUCT}] cold start: seeding history from this analysis.")
     sample = vals[::max(1, vals.size // 20000)][:20000]
     rec, res = update_record(rec, res, sample)
-    stops = build_stops(anchor_values(rec), CONFIG["allow_negative"])
+    stops = list(APPLE_TEMP_STOPS)  # fixed Apple-like absolute scale
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
-    rgba = bleed_rgb_into_transparent(rgba)  # full-domain product: no water mask
+    rgba = apply_shoreline_mask(rgba)  # water-only product
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     if int((rgba[:, :, 3] > 0).sum()) < 50_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: empty raster. Keeping previous.")
@@ -187,11 +186,7 @@ def _build(base, datestr, cycle):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = [(rec["hist_min"], f"LOWEST {fmt_val(rec['hist_min'])}"),
-              (p["p25"], fmt_val(p["p25"])),
-              (p["p50"], fmt_val(p["p50"])),
-              (p["p75"], fmt_val(p["p75"])),
-              (rec["hist_max"], f"HIGHEST+ {fmt_val(rec['hist_max'])}")]
+    labels = record_tick_labels(rec)  # record ticks ride the fixed axis
     subtitle = (f"2 m air temperature ({unit})  |  {data_time_utc}")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
@@ -199,12 +194,13 @@ def _build(base, datestr, cycle):
         f"Source: NOAA HRRR {datestr} t{cycle}z analysis  |  "
         f"Processed {utcnow_iso()}",
         note="Apple-style spectrum; extreme cold continues into violet.")
-    scale_html = (f"2 m air temperature ({unit}), continuous Apple-style "
-                  f"spectrum: <b>LOWEST {fmt_val(rec['hist_min'])}</b> "
-                  f"(deep purple/violet extreme cold) → cold blue → cyan → "
-                  f"green → yellow → orange → red "
-                  f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b>. Freezing has "
-                  f"no color break.")
+    scale_html = (f"2 m air temperature ({unit}), fixed Apple-style "
+                  f"absolute spectrum (-40..130 F): purple extreme cold → "
+                  f"blue → cyan → green → yellow → orange → red extreme "
+                  f"heat. Same temperature always shows the same color. "
+                  f"Record <b>LOWEST {fmt_val(rec['hist_min'])}</b> / "
+                  f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b> marked on "
+                  f"the scale. Freezing has no color break.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],

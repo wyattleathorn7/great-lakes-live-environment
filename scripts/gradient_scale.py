@@ -6,13 +6,20 @@ The color domain is [hist_min, hist_max] from ACTUAL recorded values
 (fill/invalid/impossible excluded by each builder before contributing).
 New validated records extend the endpoints automatically (labeled HIGHEST+).
 
-Color mapping (continuous, no bins): percentile anchors
-  [min, p5, p25, p50, p75, p95, p99, max]
-sit at fixed normalized positions [0, .10, .28, .48, .66, .84, .93, 1.0],
-so the common-value region owns most of the color resolution while rare
-extremes compress into red-violet/deep-purple. Piecewise-linear RGB
-interpolation => a small value change always yields a slightly different
-color; no hard boundaries exist by construction.
+Color mapping (continuous, no bins): LINEAR balanced mode —
+``build_linear_stops(vmin, vmax, family)`` spaces anchor colors evenly
+across the VALUE range, so every part of the scale owns an equal share
+of the color resolution and no value region is compressed or stretched.
+The historical record is still tracked (endpoints auto-extend, labeled
+HIGHEST+) and its percentiles are drawn as tick labels at their true
+linear positions, so the distribution stays visible without distorting
+the color mapping. Piecewise-linear RGB interpolation => a small value
+change always yields a slightly different color; no hard boundaries
+exist by construction.
+
+Air temperature uses a FIXED Apple-Weather-like absolute scale
+(APPLE_TEMP_STOPS, -40..130 F); the record still tracks LOWEST/HIGHEST+
+and its ticks ride on the fixed axis.
 
 Master family: dark blue -> blue -> cyan -> green -> yellow -> orange ->
 red -> red-violet -> deep purple. Where negative values are physically
@@ -115,6 +122,53 @@ def build_stops(values, allow_negative, family=None):
                 stops.insert(i, (0.0, (16, 52, 140)))
                 break
     return stops
+
+
+LINEAR_N = 8
+
+
+def build_linear_stops(vmin, vmax, family=None, n=LINEAR_N):
+    """Balanced (value, rgb) stops: anchor colors spread EVENLY across the
+    value range [vmin, vmax] (no percentile compression — every part of
+    the scale owns an equal share of the color resolution). Values stay
+    strictly increasing so the gradient is continuous and invertible."""
+    fam = family or MASTER
+    vmin, vmax = float(vmin), float(vmax)
+    if not (vmax > vmin):
+        vmax = vmin + 1.0
+    stops = []
+    for i in range(n):
+        f = i / (n - 1)
+        stops.append((vmin + f * (vmax - vmin), _interp_table(fam, f)))
+    return stops
+
+
+APPLE_TEMP_STOPS = [  # (degF, rgb) fixed Apple-Weather-like spectrum
+    (-40.0, (108, 55, 150)),   # purple extreme cold
+    (-20.0, (65, 85, 205)),
+    (0.0, (35, 120, 225)),     # blue
+    (20.0, (30, 165, 220)),
+    (32.0, (45, 195, 178)),    # teal at freezing (no break)
+    (45.0, (125, 205, 95)),
+    (55.0, (198, 215, 70)),    # yellow-green (50s)
+    (65.0, (240, 200, 45)),    # yellow (60s)
+    (75.0, (245, 155, 35)),    # warm amber (70s)
+    (85.0, (240, 110, 25)),    # orange
+    (100.0, (220, 50, 30)),
+    (115.0, (195, 25, 45)),
+    (130.0, (168, 18, 40)),    # deep red extreme heat
+]
+
+
+def record_tick_labels(rec):
+    """Legend tick (value, text) pairs: LOWEST min, p25/p50/p75, HIGHEST+
+    max. Drawn at true linear positions by draw_scale_legend."""
+    p = rec["percentiles"]
+    return [(rec["hist_min"], f"LOWEST {fmt_val(rec['hist_min'])}"),
+            (p["p25"], fmt_val(p["p25"])),
+            (p["p50"], fmt_val(p["p50"])),
+            (p["p75"], fmt_val(p["p75"])),
+            (rec["hist_max"], f"HIGHEST+ {fmt_val(rec['hist_max'])}")]
 
 
 def color_for(value, stops):
@@ -317,10 +371,26 @@ def draw_scale_legend(path, title, subtitle, unit_label, stops, labels,
     d.rectangle([bx, by, bx + bw - 1, by + bh], outline=(40, 40, 40))
     vmin, vmax = stops[0][0], stops[-1][0]
     span = vmax - vmin if vmax > vmin else 1.0
+    # de-collide tick labels: endpoints always kept, middle labels only
+    # when they clear their kept neighbors (percentiles can cluster on
+    # linear scales; full values remain in metadata/folder text)
+    placed = []
     for val, text in labels:
         frac = min(max((val - vmin) / span, 0.0), 1.0)
         x = bx + int(frac * (bw - 1))
         tw = d.textlength(text, font=f_small)
+        placed.append((x, tw, text))
+    def _clear(c, boxes):
+        return all(c[0] - c[1] / 2 > b[0] + b[1] / 2 + 2
+                   or c[0] + c[1] / 2 < b[0] - b[1] / 2 - 2 for b in boxes)
+    kept = [placed[0]] if placed else []
+    last = placed[-1] if len(placed) > 1 else None
+    for cand in placed[1:-1]:
+        if _clear(cand, kept) and (last is None or _clear(cand, [last])):
+            kept.append(cand)
+    if last is not None:
+        kept.append(last)
+    for x, tw, text in kept:
         d.text((min(max(x - tw / 2, 2), W - tw - 2), by + bh + 4),
                text, font=f_small, fill=(10, 10, 10))
     d.text((bx + bw - 70, by + bh + 24), unit_label, font=f_body, fill=(10, 10, 10))

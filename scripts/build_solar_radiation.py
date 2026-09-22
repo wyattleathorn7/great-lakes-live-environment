@@ -3,9 +3,13 @@
 NOAA/NCEP HRRR 3 km surface analysis, DSWRF (downward short-wave radiation
 flux, W/m^2, hourly-averaged for the analysis hour; nighttime reads zero,
 which is VALID data, deep blue — not missing) -> validate -> clip to Great
-Lakes environment -> continuous historical-range gradient -> transparent PNG
-(full domain: sun shines on land and water; only missing data transparent)
--> key image + metadata -> Folder KML.
+Lakes water via the shared NOAA shoreline mask (water only; land is
+transparent) -> balanced LINEAR historical-range gradient (every part of
+the value scale owns an equal share of the color resolution) ->
+transparent PNG -> key image + metadata -> Folder KML.
+
+This is BROADBAND surface shortwave flux (W/m^2), not the UV index; the
+scale shows measured flux exactly as observed.
 
 Exit codes: 0 updated (or skipped); 2 source/validation failure (previous
 kept); 1 unexpected error.
@@ -24,12 +28,11 @@ from build_kml import (assert_no_vector_geometry, build_kml,
 from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, bin_to_canvas, canvas_indices,
                               load_bounds, promote_stage, read_state,
-                              save_png, stage_dir, utcnow_iso,
-                              write_metadata, write_state,
-                              bleed_rgb_into_transparent)
-from gradient_scale import (anchor_values, build_stops, draw_scale_legend,
-                            fmt_val, load_record, render_rgba, save_record,
-                            update_record)
+                               save_png, stage_dir, utcnow_iso,
+                               write_metadata, write_state)
+from gradient_scale import (build_linear_stops, draw_scale_legend,
+                            fmt_val, load_record, record_tick_labels,
+                            render_rgba, save_record, update_record)
 from hrrr import fetch_messages, latest_cycle, read_messages
 
 PRODUCT = "solar_radiation"
@@ -129,9 +132,9 @@ def _build(base, datestr, cycle):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    stops = build_stops(anchor_values(rec), CONFIG["allow_negative"])
+    stops = build_linear_stops(rec["hist_min"], rec["hist_max"])
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
-    rgba = bleed_rgb_into_transparent(rgba)  # full-domain product: no water mask
+    rgba = apply_shoreline_mask(rgba)  # water-only product
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     if int((rgba[:, :, 3] > 0).sum()) < 50_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: empty raster. Keeping previous.")
@@ -139,11 +142,7 @@ def _build(base, datestr, cycle):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = [(rec["hist_min"], f"LOWEST {fmt_val(rec['hist_min'])}"),
-              (p["p25"], fmt_val(p["p25"])),
-              (p["p50"], fmt_val(p["p50"])),
-              (p["p75"], fmt_val(p["p75"])),
-              (rec["hist_max"], f"HIGHEST+ {fmt_val(rec['hist_max'])}")]
+    labels = record_tick_labels(rec)
     night = cur_max < 5.0
     subtitle = (f"Downward shortwave flux ({unit}, hourly avg)  |  "
                 f"{data_time_utc}" + ("  |  nighttime" if night else ""))
@@ -154,11 +153,13 @@ def _build(base, datestr, cycle):
         f"Processed {utcnow_iso()}",
         note="Zero is valid nighttime data (deep blue), not missing.")
     scale_html = (f"Surface downward shortwave solar radiation ({unit}, "
-                  f"hourly-averaged for the analysis hour), continuous: "
-                  f"<b>LOWEST {fmt_val(rec['hist_min'])}</b> (dark blue) → "
+                  f"hourly-averaged for the analysis hour), balanced linear "
+                  f"scale: <b>LOWEST {fmt_val(rec['hist_min'])}</b> (dark blue) → "
                   f"common {fmt_val(p['p50'])} → "
                   f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b> (deep purple). "
-                  f"Night reads zero; clouds reduce values quantitatively.")
+                  f"Values shown exactly as observed; night reads zero; "
+                  f"clouds reduce values quantitatively. Broadband flux, "
+                  f"not the UV index.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
@@ -167,7 +168,8 @@ def _build(base, datestr, cycle):
         units=f"{unit} (display); source W m^-2",
         source_resolution="~3 km HRRR Lambert grid (1799x1059)",
         color_min=rec["hist_min"], color_max=rec["hist_max"], color_units=unit,
-        missing_data_treatment=("only [0,1400] admitted; missing analysis "
+        missing_data_treatment=("only [0,1400] admitted; land outside the "
+                                "NOAA shoreline and missing analysis "
                                 "transparent; never interpolated."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html

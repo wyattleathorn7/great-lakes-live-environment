@@ -237,7 +237,10 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   The NRT aggregation (`nesdisVHNchlaDaily_Lon0360`) is server-broken
   ("underlying dataset not found"), so Science Quality is used and the
   ~10-day latency is exposed, not hidden. Rendered as a newest-valid
-  mosaic of the latest 3 dailies (daily ocean color is cloud-sparse).
+  mosaic of the latest 7 dailies (daily ocean color is cloud-sparse: most
+  water pixels are empty on any single day, so each pixel shows its newest
+  valid observation in the window; ERDDAP stride-2 fetch, canvas upscales).
+  Balanced LINEAR color scale (equal color share per value interval).
 - Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
 
 ## 7. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (NRT, daily)
@@ -258,19 +261,27 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   `.idx` byte ranges: TMP2m ~8 MB, DSWRF ~1 MB — never the ~150 MB file).
   Variables: `TMP` 2 m above ground (K → °F) and `DSWRF` surface
   (hourly-averaged downward shortwave flux, W/m²; nighttime zero is VALID
-  data). Lambert 1799×1059, per-cell WGS84 via ecCodes.
+  data). Lambert 1799×1059, per-cell WGS84 via ecCodes. Both are clipped
+  to lake water with the shared NOAA shoreline mask (land transparent).
+  Solar uses a balanced LINEAR scale over its historical range (broadband
+  flux shown exactly as observed — this is NOT the UV index). Air
+  temperature uses a FIXED Apple-style absolute spectrum (-40..130 °F);
+  the historical record still tracks LOWEST/HIGHEST+ as ticks on it.
 - Freshness wording: **"LIVE / CURRENT MODEL (analysis)"** with cycle stamp.
 
-## 10. Gradient scales — historical LOWEST / HIGHEST+ (products 8–11)
+## 10. Gradient scales — balanced LINEAR + LOWEST / HIGHEST+ (products 8–11)
 
 `scripts/gradient_scale.py`: each product keeps `{hist_min, hist_max,
 percentiles, reservoir≤20k}` in `output/state/<product>/`, seeded from
 real observed distributions and extended only by validated in-bounds
-records. Percentile anchors [min,p5,p25,p50,p75,p95,p99,max] sit at fixed
-positions [0,.10,.28,.48,.66,.84,.93,1.0] of the master family
-(dark blue→…→deep purple), concentrating color resolution on common
-values; sub-zero air-temp anchors use a purple ramp into blue at 0 °F
-with no break. One mapping function paints raster + legend identically.
+records. Color mapping is LINEAR and balanced: anchor colors are spread
+evenly across the value range so every part of the scale owns an equal
+share of color resolution (no compression of any value region). Record
+percentiles are drawn as tick labels at true linear positions. Air
+temperature instead uses a FIXED Apple-style absolute spectrum
+(-40..130 °F); its record ticks ride the fixed axis. One mapping
+function paints raster + legend identically; crowded middle ticks are
+de-collided (endpoints always kept).
 
 ## 11. Snow — HRRR SNOD/SNOWC analysis + VIIRS/MODIS access findings
 
@@ -296,14 +307,12 @@ with no break. One mapping function paints raster + legend identically.
   documented for a credentialed future).
 - Freshness wording: snow **"LIVE / CURRENT MODEL (analysis)"**.
 
-`scripts/gradient_scale.py`: each product keeps `{hist_min, hist_max,
-percentiles, reservoir≤20k}` in `output/state/<product>/`, seeded from
-real observed distributions and extended only by validated in-bounds
-records. Percentile anchors [min,p5,p25,p50,p75,p95,p99,max] sit at fixed
-positions [0,.10,.28,.48,.66,.84,.93,1.0] of the master family
-(dark blue→…→deep purple), concentrating color resolution on common
-values; sub-zero air-temp anchors use a purple ramp into blue at 0 °F
-with no break. One mapping function paints raster + legend identically.
+`scripts/gradient_scale.py`: snow uses the same balanced LINEAR mapping
+over its historical record (family: silver→blue→purple→magenta→pink→
+white at the extreme end only); the no-snow provisional legend is linear
+0..24 in. Leaf color is unaffected (uniform circular phenology phase —
+never value-compressed). One mapping function paints raster + legend
+identically.
 
 ## Cache / refresh design (Google Earth)
 

@@ -12,10 +12,10 @@ for Google Earth, all from official NOAA/NASA operational sources:
 | 🧊 Live Ice Type | USNIC NAIS daily SIGRID-3 shapefile → predominant WMO stage (**analyzed**, 17 categories + unknown) | LATEST AVAILABLE (seasonal) |
 | 💨 Live Wind | NCEP GLWU `UGRD/VGRD` surface analysis → knots → **Beaufort Force 0–12** + direction arrows | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 | 🍂 Live Leaf Color | NASA MODIS Aqua MYD13A1/MYD09A1 global 500 m via Planetary Computer (NDVI trajectory + reflectance + NDSI snow) → circular phenology phase | LATEST AVAILABLE COMPOSITE |
-| 🦠 Live Chlorophyll | NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP) | LATEST AVAILABLE (daily composite) |
-| 🌫️ Live Water Clarity | NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, NRT, Global 4 km, Daily (ERDDAP) | LATEST AVAILABLE (daily composite) |
-| ☀️ Live Solar Radiation | NOAA/NCEP HRRR 3 km DSWRF surface analysis, hourly cycles | LIVE / CURRENT MODEL (analysis), hourly cycles |
-| 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| 🦠 Live Chlorophyll | NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP); newest-valid 7-day mosaic; balanced linear scale, water-only | LATEST AVAILABLE (daily composite) |
+| 🌫️ Live Water Clarity | NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, NRT, Global 4 km, Daily (ERDDAP); newest-valid 7-day mosaic; balanced linear scale, water-only | LATEST AVAILABLE (daily composite) |
+| ☀️ Live Solar Radiation | NOAA/NCEP HRRR 3 km DSWRF surface analysis (broadband W/m², not UV index), hourly cycles; balanced linear scale, water-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles; FIXED Apple-style absolute spectrum (-40..130 °F), water-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ❄️ Live Snow Coverage | NOAA/NCEP HRRR 3 km SNOD/SNOWC snow analysis (ground snow gate), hourly cycles, Michigan-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
 
 All water-based layers share one committed NOAA shoreline mask
