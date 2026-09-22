@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260922/glwu.grlc_2p5km.t01z.grib2",
   "data_time_utc": "2026-09-22 01:00 UTC",
   "source_last_modified_utc": "Tue, 22 Sep 2026 01:27:34 GMT",
-  "processing_time_utc": "2026-09-22 03:32 UTC",
+  "processing_time_utc": "2026-09-22 04:05 UTC",
   "units": "ft (display); source m",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -40,21 +40,21 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "time_utc": "2026-09-22 03:00 UTC",
-      "WDIR_deg": 340.0,
-      "WSPD_ms": 2.0,
+      "time_utc": "2026-09-22 03:40 UTC",
+      "WDIR_deg": 360.0,
+      "WSPD_ms": 3.0,
       "WVHT_m": null,
       "WTMP_C": 12.9,
-      "ATMP_C": 11.7,
+      "ATMP_C": 11.8,
       "note": "no WVHT obs"
     },
     "45002": {
-      "time_utc": "2026-09-22 03:00 UTC",
-      "WDIR_deg": 70.0,
-      "WSPD_ms": 9.0,
+      "time_utc": "2026-09-22 03:40 UTC",
+      "WDIR_deg": 80.0,
+      "WSPD_ms": 8.0,
       "WVHT_m": null,
       "WTMP_C": 18.0,
-      "ATMP_C": 14.4,
+      "ATMP_C": 14.2,
       "note": "no WVHT obs"
     },
     "45132": {
@@ -65,21 +65,19 @@
       "obs_time": "2026-09-22 03:00 UTC"
     },
     "45012": {
-      "time_utc": "2026-09-22 03:00 UTC",
-      "WDIR_deg": 40.0,
-      "WSPD_ms": 10.0,
-      "WVHT_m": null,
-      "WTMP_C": 19.6,
-      "ATMP_C": 13.9,
-      "note": "no WVHT obs"
+      "obs_ft": 3.94,
+      "grid_ft": 3.696413066666667,
+      "absdiff_ft": 0.24,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 03:40 UTC"
     },
     "45005": {
-      "time_utc": "2026-09-22 03:00 UTC",
-      "WDIR_deg": 40.0,
+      "time_utc": "2026-09-22 03:40 UTC",
+      "WDIR_deg": 50.0,
       "WSPD_ms": 11.0,
       "WVHT_m": null,
       "WTMP_C": null,
-      "ATMP_C": 17.5,
+      "ATMP_C": 17.4,
       "note": "no WVHT obs"
     }
   },
