@@ -2,12 +2,12 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🧊 LIVE ICE COVERAGE</name>
-    <description><![CDATA[<h2>GREAT LAKES ICE COVERAGE</h2><p><b>Data time:</b> retrieved 2026-09-22 03:26 UTC (NIC daily analysis; NIC publishes no per-file timestamp)<br/><b>Source updated:</b> unknown<br/><b>Processed:</b> 2026-09-22 03:26 UTC<br/><b>Status:</b> LATEST AVAILABLE (daily analysis, seasonal product)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/ice_coverage/legend.png?v=2026-09-22_0326_UTC" width="600" alt="legend"><br>Ice concentration (% of water area covered): open water (transparent) → <b>0%</b> → <b>50%</b> → <b>100%</b> total cover (near-white). Maximum this run: <b>0.0%</b>. Ice-free water in summer is normal.</p><p><b>Source:</b> U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, GRID 1800<br/><a href="https://usicecenter.gov/File/DownloadCurrent?pId=38">https://usicecenter.gov/File/DownloadCurrent?pId=38</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and temperature layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>GREAT LAKES ICE COVERAGE</h2><p><b>Data time:</b> retrieved 2026-09-22 03:32 UTC (NIC daily analysis; NIC publishes no per-file timestamp)<br/><b>Source updated:</b> unknown<br/><b>Processed:</b> 2026-09-22 03:32 UTC<br/><b>Status:</b> LATEST AVAILABLE (daily analysis, seasonal product)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/ice_coverage/legend.png?v=2026-09-22_0332_UTC" width="600" alt="legend"><br>Ice concentration (% of water area covered): open water (transparent) → <b>0%</b> → <b>50%</b> → <b>100%</b> total cover (near-white). Maximum this run: <b>0.0%</b>. Ice-free water in summer is normal.</p><p><b>Source:</b> U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, GRID 1800<br/><a href="https://usicecenter.gov/File/DownloadCurrent?pId=38">https://usicecenter.gov/File/DownloadCurrent?pId=38</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and temperature layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <GroundOverlay>
       <name>🧊 LIVE ICE COVERAGE</name>
       <drawOrder>10</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/ice_coverage/current.png?v=2026-09-22_0326_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/ice_coverage/current.png?v=2026-09-22_0332_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>

@@ -2,12 +2,12 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🧊 LIVE ICE THICKNESS</name>
-    <description><![CDATA[<h2>LIVE ICE THICKNESS</h2><p><b>Data time:</b> NIC analysis date 2026-05-16 (from NIC filename; retrieved 2026-09-22 03:26 UTC)<br/><b>Source updated:</b> unknown (NIC sends none)<br/><b>Processed:</b> 2026-09-22 03:26 UTC<br/><b>Status:</b> LATEST AVAILABLE (daily analysis, seasonal product)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/ice_thickness/legend.png?v=2026-09-22_0326_UTC" width="600" alt="legend"><br>Ice thickness (inches, WMO stage-derived estimates): thinner <b>0 in</b> (light blue) → blue → deep blue → thicker <b>12 in</b> (purple). No color is painted where there is no ice; fainter = partial concentration.</p><p><b>Source:</b> U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, SIGRID-3 shapefile<br/><a href="https://usicecenter.gov/File/DownloadCurrent?pId=35">https://usicecenter.gov/File/DownloadCurrent?pId=35</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of the other ice, wave and temperature layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>LIVE ICE THICKNESS</h2><p><b>Data time:</b> NIC analysis date 2026-05-16 (from NIC filename; retrieved 2026-09-22 03:32 UTC)<br/><b>Source updated:</b> unknown (NIC sends none)<br/><b>Processed:</b> 2026-09-22 03:32 UTC<br/><b>Status:</b> LATEST AVAILABLE (daily analysis, seasonal product)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/ice_thickness/legend.png?v=2026-09-22_0332_UTC" width="600" alt="legend"><br>Ice thickness (inches, WMO stage-derived estimates): thinner <b>0 in</b> (light blue) → blue → deep blue → thicker <b>12 in</b> (purple). No color is painted where there is no ice; fainter = partial concentration.</p><p><b>Source:</b> U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, SIGRID-3 shapefile<br/><a href="https://usicecenter.gov/File/DownloadCurrent?pId=35">https://usicecenter.gov/File/DownloadCurrent?pId=35</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of the other ice, wave and temperature layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <GroundOverlay>
       <name>🧊 LIVE ICE THICKNESS</name>
       <drawOrder>10</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/ice_thickness/current.png?v=2026-09-22_0326_UTC</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/ice_thickness/current.png?v=2026-09-22_0332_UTC</href>
         <refreshMode>onChange</refreshMode>
       </Icon>
       <LatLonBox>

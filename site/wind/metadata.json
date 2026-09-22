@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260922/glwu.grlc_2p5km.t01z.grib2",
   "data_time_utc": "2026-09-22 01:00 UTC",
   "source_last_modified_utc": "Tue, 22 Sep 2026 01:27:34 GMT",
-  "processing_time_utc": "2026-09-22 03:26 UTC",
+  "processing_time_utc": "2026-09-22 03:32 UTC",
   "units": "kt + Beaufort Force 0-12 (display); source m/s",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
