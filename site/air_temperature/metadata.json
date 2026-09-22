@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles",
   "variable": "TMP 2 m above ground, analysis step",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-09-22 03:00 UTC",
+  "data_time_utc": "2026-09-22 05:00 UTC",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-22 04:04 UTC",
+  "processing_time_utc": "2026-09-22 06:34 UTC",
   "units": "degF (display); source K",
   "spatial_resolution_source": "~3 km HRRR Lambert grid (1799x1059)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -19,7 +19,7 @@
     "lat_min": 40.5,
     "lat_max": 49.5
   },
-  "color_scale_min": 34.38534057617191,
+  "color_scale_min": 31.661829833984417,
   "color_scale_max": 70.93339355468754,
   "color_scale_units": "degF",
   "missing_data_treatment": "only [-60,55] C admitted pre-conversion; missing analysis transparent; never interpolated.",
@@ -29,68 +29,72 @@
     640,
     230
   ],
-  "legend_scale_html": "2 m air temperature (degF), continuous Apple-style spectrum: <b>LOWEST 34.39</b> (deep purple/violet extreme cold) \u2192 cold blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red <b>HIGHEST+ 70.93</b>. Freezing has no color break.",
-  "model_cycle": "hrrr.20260922 t03z",
+  "legend_scale_html": "2 m air temperature (degF), continuous Apple-style spectrum: <b>LOWEST 31.66</b> (deep purple/violet extreme cold) \u2192 cold blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red <b>HIGHEST+ 70.93</b>. Freezing has no color break.",
+  "model_cycle": "hrrr.20260922 t05z",
   "historical": {
-    "low": 34.38534057617191,
+    "low": 31.661829833984417,
     "high": 70.93339355468754,
     "percentiles": {
-      "p5": 37.79784057617188,
-      "p25": 43.21659057617192,
-      "p50": 50.94014358520508,
-      "p75": 55.552642822265625,
-      "p95": 61.554090576171916,
-      "p99": 64.15889739990234
+      "p5": 35.824329833984415,
+      "p25": 41.3768151473999,
+      "p50": 49.474329833984385,
+      "p75": 54.80409240722656,
+      "p95": 60.695892333984375,
+      "p99": 63.386920466613795
     },
-    "n_obs": 385846,
+    "n_obs": 405846,
     "extends": [
       {
         "at": "2026-09-22 04:04 UTC",
+        "kind": "low"
+      },
+      {
+        "at": "2026-09-22 06:34 UTC",
         "kind": "low"
       }
     ]
   },
   "stats": {
     "valid_cells": 2114386,
-    "current_min": 33.485340576171915,
-    "current_max": 69.59784057617192
+    "current_min": 30.086829833984417,
+    "current_max": 67.88682983398442
   },
   "buoy_qc": {
     "45001": {
       "obs_F": 53.24,
-      "grid_F": 51.93534057617192,
-      "absdiff_F": 1.3,
-      "verdict": "OK",
-      "obs_time": "2026-09-22 03:40 UTC"
-    },
-    "45002": {
-      "obs_F": 57.56,
-      "grid_F": 57.50409057617192,
-      "absdiff_F": 0.06,
-      "verdict": "OK",
-      "obs_time": "2026-09-22 03:40 UTC"
-    },
-    "45132": {
-      "obs_F": 59.0,
-      "grid_F": 59.922840576171915,
-      "absdiff_F": 0.92,
-      "verdict": "OK",
-      "obs_time": "2026-09-22 03:00 UTC"
-    },
-    "45012": {
-      "obs_F": 57.02,
-      "grid_F": 57.897840576171916,
-      "absdiff_F": 0.88,
-      "verdict": "OK",
-      "obs_time": "2026-09-22 03:30 UTC"
-    },
-    "45005": {
-      "obs_F": 63.32,
-      "grid_F": 64.31034057617191,
+      "grid_F": 52.24932983398442,
       "absdiff_F": 0.99,
       "verdict": "OK",
-      "obs_time": "2026-09-22 03:40 UTC"
+      "obs_time": "2026-09-22 05:50 UTC"
+    },
+    "45002": {
+      "obs_F": 55.94,
+      "grid_F": 56.80557983398442,
+      "absdiff_F": 0.87,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 06:00 UTC"
+    },
+    "45132": {
+      "obs_F": 59.54,
+      "grid_F": 59.449329833984415,
+      "absdiff_F": 0.09,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 06:00 UTC"
+    },
+    "45012": {
+      "obs_F": 58.64,
+      "grid_F": 59.33682983398442,
+      "absdiff_F": 0.7,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 05:50 UTC"
+    },
+    "45005": {
+      "obs_F": 64.58,
+      "grid_F": 65.07432983398442,
+      "absdiff_F": 0.49,
+      "verdict": "OK",
+      "obs_time": "2026-09-22 05:50 UTC"
     }
   },
-  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=2026-09-22_0404_UTC\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), continuous Apple-style spectrum: <b>LOWEST 34.39</b> (deep purple/violet extreme cold) \u2192 cold blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red <b>HIGHEST+ 70.93</b>. Freezing has no color break.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-22 03:00 UTC<br/><b>Processed:</b> 2026-09-22 04:04 UTC<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
+  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=2026-09-22_0634_UTC\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), continuous Apple-style spectrum: <b>LOWEST 31.66</b> (deep purple/violet extreme cold) \u2192 cold blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red <b>HIGHEST+ 70.93</b>. Freezing has no color break.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-22 05:00 UTC<br/><b>Processed:</b> 2026-09-22 06:34 UTC<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
 }
