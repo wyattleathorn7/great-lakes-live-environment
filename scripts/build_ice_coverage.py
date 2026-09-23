@@ -79,7 +79,7 @@ def run():
                              "\U0001F9CA LIVE ICE COVERAGE", CONFIG["title"],
                              "Turn on/off independently of wave and temperature layers.",
                              CONFIG["refresh_interval_seconds"])
-        return 0.
+        return 0
 
     # Render into a stage dir; promote to live site/ + kml/ only on full
     # success. Any data-dependent failure returns 2 (keep previous).
