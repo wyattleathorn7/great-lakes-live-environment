@@ -6,9 +6,9 @@
   "product_name": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
   "variable": "NDVI trajectory + surface reflectance + NDSI snow + land class -> circular phenology phase 0..1",
   "source_url": "https://planetarycomputer.microsoft.com/",
-  "data_time_utc": "VI composite start 2026-08-05 (+16d window); reflectance 2026-08-13 (+8d); retrieved 2026-09-22 03:52 UTC",
+  "data_time_utc": "VI composite start 2026-08-05 (+16d window); reflectance 2026-08-13 (+8d); retrieved 2026-09-23 01:46 UTC",
   "source_last_modified_utc": "composite sig 1ce56c63a4cc",
-  "processing_time_utc": "2026-09-22 03:52 UTC",
+  "processing_time_utc": "2026-09-23 09:14 UTC",
   "units": "phenology phase 0..1 (display color); source NDVI/reflectance",
   "spatial_resolution_source": "500 m MODIS sinusoidal, reprojected to canvas (nearest)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -22,19 +22,19 @@
   "color_scale_min": 0.0,
   "color_scale_max": 1.0,
   "color_scale_units": "phenology phase (circular)",
-  "missing_data_treatment": "cloud/bad-QA pixels hold the previous phase or go transparent; snow transparent; urban/barren/nodata transparent; water transparent via shared mask.",
+  "missing_data_treatment": "Michigan land renders with full coverage: cloud/bad-QA hold the previous phase, then nearest-valid spatial fill; snow, urban/barren/nodata and inland-water classes are gap-filled from neighbors/history so no land holes remain. Great-Lakes water transparent via shared mask.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "legend_size": [
     640,
     250
   ],
-  "legend_scale_html": "Satellite-derived seasonal vegetation state. The continuous color scale represents the changing seasonal condition of vegetated land, from winter dormancy through spring emergence, active growth, autumn coloration, leaf drop, and return to dormancy. Color represents a satellite-derived phenological state and should not be interpreted as the exact color of every individual tree.",
+  "legend_scale_html": "Satellite-derived seasonal vegetation state. The continuous color scale represents the changing seasonal condition of vegetated land, from winter dormancy through spring emergence, active growth, autumn coloration, leaf drop, and return to dormancy. Color represents a satellite-derived phenological state and should not be interpreted as the exact color of every individual tree. Every Michigan land pixel is painted: clouds hold the previous phase, and snow, urban, barren, nodata or briefly missing pixels are filled from surrounding valid land and recent history. Only Great-Lakes water stays transparent.",
   "data_nature": "observed satellite composites + derived phenology state",
   "gradient": {
     "interpolation": "OKLab (perceptually uniform)",
     "anchors": 19,
-    "distinct_raster_colors": 138,
+    "distinct_raster_colors": 117,
     "wraparound": "first == last deep blue #123B73"
   },
   "provenance": {
@@ -55,9 +55,9 @@
     },
     "composite_sig": "1ce56c63a4ccdc15269cf7ae4540fe2857e6dedbdb03c1eec2f41600a3f50c13",
     "composite_date": "2026-08-05",
-    "source_age_days": 48,
+    "source_age_days": 49,
     "stale": false,
-    "retrieved": "2026-09-22 03:52 UTC",
+    "retrieved": "2026-09-23 01:46 UTC",
     "native_resolution_m": 500,
     "native_crs": "MODIS sinusoidal",
     "resampling": "nearest (no invented values)",
@@ -65,11 +65,13 @@
     "landcover": "USGS NLCD 2021 + NRCan 2020 Land Cover of Canada (NALCMS inputs) mosaic -> assets/leaf_landcover.png",
     "water_mask": "assets/great_lakes_watermask.png (shared)",
     "michigan_mask": "assets/michigan_mask.png (authoritative state boundary, both peninsulas; hard clip)",
-    "algorithm": "leaf_phenology v2 (trajectory + baseline + class + spectral gating; 19-anchor OKLab circular gradient)"
+    "algorithm": "leaf_phenology v3 (trajectory + baseline + class + spectral gating; 19-anchor OKLab circular gradient; full-coverage Michigan gap-fill)"
   },
   "stats": {
     "good_pixels": 965108,
-    "opaque_pixels": 132159,
-    "phase_mean": 0.5174
-  }
+    "opaque_pixels": 204148,
+    "phase_mean": 0.4886
+  },
+  "source_id": "leaf-v3-1ce56c63a4cc",
+  "source_version": "leaf-v3-1ce56c63a4cc"
 }
