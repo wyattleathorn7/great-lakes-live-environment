@@ -33,13 +33,13 @@ import traceback
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, legend_block,
-                       refresh_kml_base_url)
+from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
+                       description_html, entry_description_html, legend_block,
+                       live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
                               download, load_bounds, promote_stage,
-                              read_state, save_png, stage_dir, utcnow_iso,
-                              write_metadata, write_state)
+                              read_state, save_png, source_token, stage_dir,
+                              utcnow_iso, write_metadata, write_state)
 from leaf_phenology import (build_leaf_lut, draw_leaf_legend)
 
 PRODUCT = "leaf_color"
@@ -174,12 +174,26 @@ def run():
         print(f"[{PRODUCT}] VALIDATION FAILED: no STAC items "
               f"(vi={len(vi)} refl={len(rf)}). Keeping previous.")
         return 2
+    # Full-coverage mosaic rule: Michigan spans three MODIS tiles. A
+    # missing tile is a REGIONAL HOLE, never silently skipped -- fail the
+    # run and keep the previous valid raster instead.
+    missing_vi = [t for t in TILES if t not in vi]
+    missing_rf = [t for t in TILES if t not in rf]
+    if missing_vi or missing_rf:
+        print(f"[{PRODUCT}] VALIDATION FAILED: incomplete tile mosaic "
+              f"(missing VI {missing_vi} reflectance {missing_rf}). "
+              f"Keeping previous.")
+        return 2
     sig = hashlib.sha256(
         ("|".join(sorted(i.id for i in list(vi.values()) + list(rf.values())))
          ).encode()).hexdigest()
+    source_id_hint = f"leaf-v3-{sig[:12]}"
     prev = read_state(PRODUCT)
-    if prev.get("composite_sig") == sig \
-            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
+    if prev.get("source_id") == source_id_hint \
+            and prev.get("composite_sig") == sig \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
+            and os.path.exists(os.path.join(
+                SITE_DIR, "kml", "live", KML_FILE)):
         print(f"[{PRODUCT}] composites unchanged; keeping current raster.")
         try:
             refresh_kml_base_url(PRODUCT, KML_FILE, OVERLAY_NAME,
@@ -318,9 +332,23 @@ def _build(bounds, W, H, vi, rf, sig):
 
     phase = compute_phase_grid(ndvi, lc, redness, snow,
                                bad | cloudy, marginal, hist)
+    # FULL-COVERAGE RULE (v3): every Michigan land pixel (state mask minus
+    # Great-Lakes water) must render opaque. Clouds, snow, masked landcover
+    # classes (urban/barren/nodata/inland-water) and bad-QA pixels with no
+    # history previously went transparent, leaving speckled holes across
+    # the state. Gap-fill them: hold-forward history first, then
+    # nearest-valid spatial propagation, then global circular-median
+    # fallback -- never transparent on land.
+    phase = fill_phase_full_coverage(phase, mich, land, prev_phase_grid(hist))
     lut = np.array(build_leaf_lut(), dtype=np.uint8)
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    ok = np.isfinite(phase) & mich & land & (lc != 0) & (lc != 7) & (lc != 8)
+    target = mich & land
+    ok = np.isfinite(phase) & target
+    # Safety net: if any target pixel is still NaN (should be impossible
+    # after the fill), it is a bug -- fail loudly rather than ship holes.
+    n_holes = int((target & ~ok).sum())
+    if n_holes:
+        raise ValueError(f"full-coverage fill left {n_holes} holes")
     rgba[ok, 0:3] = lut[np.clip((phase[ok] * 255).astype(int), 0, 255)]
     rgba[ok, 3] = bounds["overlay_alpha"]
     from geospatial_utils import apply_shoreline_mask
@@ -362,9 +390,12 @@ def _build(bounds, W, H, vi, rf, sig):
         units="phenology phase 0..1 (display color); source NDVI/reflectance",
         source_resolution="500 m MODIS sinusoidal, reprojected to canvas (nearest)",
         color_min=0.0, color_max=1.0, color_units="phenology phase (circular)",
-        missing_data_treatment=("cloud/bad-QA pixels hold the previous phase or "
-                                "go transparent; snow transparent; urban/barren/"
-                                "nodata transparent; water transparent via shared mask."))
+        missing_data_treatment=("Michigan land renders with full coverage: "
+                                "cloud/bad-QA hold the previous phase, then "
+                                "nearest-valid spatial fill; snow, urban/barren/"
+                                "nodata and inland-water classes are gap-filled "
+                                "from neighbors/history so no land holes remain. "
+                                "Great-Lakes water transparent via shared mask."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = (
         "Satellite-derived seasonal vegetation state. The continuous color "
@@ -372,7 +403,11 @@ def _build(bounds, W, H, vi, rf, sig):
         "from winter dormancy through spring emergence, active growth, "
         "autumn coloration, leaf drop, and return to dormancy. Color "
         "represents a satellite-derived phenological state and should not "
-        "be interpreted as the exact color of every individual tree.")
+        "be interpreted as the exact color of every individual tree. "
+        "Every Michigan land pixel is painted: clouds hold the previous "
+        "phase, and snow, urban, barren, nodata or briefly missing pixels "
+        "are filled from surrounding valid land and recent history. Only "
+        "Great-Lakes water stays transparent.")
     meta["data_nature"] = CONFIG["data_nature"]
     meta["gradient"] = {"interpolation": "OKLab (perceptually uniform)",
                         "anchors": 19, "distinct_raster_colors": n_colors,
@@ -394,41 +429,77 @@ def _build(bounds, W, H, vi, rf, sig):
         "water_mask": "assets/great_lakes_watermask.png (shared)",
         "michigan_mask": "assets/michigan_mask.png (authoritative state "
                           "boundary, both peninsulas; hard clip)", 
-        "algorithm": "leaf_phenology v2 (trajectory + baseline + class + "
-                     "spectral gating; 19-anchor OKLab circular gradient)",
+        "algorithm": "leaf_phenology v3 (trajectory + baseline + class + "
+                     "spectral gating; 19-anchor OKLab circular gradient; "
+                     "full-coverage Michigan gap-fill)",
     }
+    # v3 = full-coverage Michigan gap-fill (no land holes) + full-coverage
+    # mosaic rule (all 3 tiles required) + NaN-aware history means.
+    # One-time version rotation to deploy the fixed rendering; afterwards
+    # the id tracks source composites only.
+    source_id = f"leaf-v3-{sig[:12]}"
+    meta["source_id"] = source_id
+    meta["source_version"] = source_token(source_id)
     meta["stats"] = {
         "good_pixels": n_good, "opaque_pixels": n_opaque,
         "phase_mean": round(float(np.nanmean(phase)), 4),
     }
     write_metadata(stage_prod, meta)
 
-    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    # v3 = full-coverage Michigan gap-fill (no land holes) + full-coverage
+    # mosaic rule (all 3 tiles required) + NaN-aware history means.
+    # One-time version rotation to deploy the fixed rendering; afterwards
+    # the id tracks source composites only.
+    token = meta["source_version"]
     scale_html = meta["legend_scale_html"]
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
+    outs = live_out_dirs(stage, KML_FILE)
     kml_text = build_kml(
         PRODUCT, KML_FILE, OVERLAY_NAME,
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
-        out_dirs=[os.path.join(stage, "kml", KML_FILE),
-                  os.path.join(stage, "site", "kml", KML_FILE)])
+        out_dirs=outs["live"])
     assert_no_vector_geometry(kml_text)
+    build_entry_kml(
+        PRODUCT, KML_FILE, OVERLAY_NAME,
+        entry_description_html(CONFIG["title"], meta, SKIP_NOTE),
+        CONFIG["refresh_interval_seconds"], out_dirs=outs["entry"])
 
     save_history(ndvi, phase, vi_ids, sig)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"composite_sig": sig,
+                          "source_id": source_id,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0
 
 
 def downsample_quarter(a):
+    """NaN-aware quarter-res block MEAN (not single-pixel sampling).
+
+    Single-pixel sampling aliased cloud/QA holes into the history, so a
+    cloudy 4x4 block poisoned hold-forward for the whole block on later
+    runs. The block mean represents valid observations wherever any
+    exist, which is what lets the rolling history legitimately fill
+    transient observational gaps.
+    """
     H, W = a.shape
     h2, w2 = HIST_SHAPE
     ys = (np.arange(h2) * H / h2).astype(int)
     xs = (np.arange(w2) * W / w2).astype(int)
-    return a[ys[:, None], xs]
+    ye = np.clip(((np.arange(h2) + 1) * H / h2).astype(int), 0, H)
+    xe = np.clip(((np.arange(w2) + 1) * W / w2).astype(int), 0, W)
+    filled = np.where(np.isfinite(a), a, 0.0)
+    mask = np.isfinite(a).astype(np.float64)
+    ii = np.pad(filled, 1).cumsum(0).cumsum(1)
+    im = np.pad(mask, 1).cumsum(0).cumsum(1)
+    y0, y1 = ys[:, None], ye[:, None]
+    x0, x1 = xs[None, :], xe[None, :]
+    sums = ii[y1, x1] - ii[y0, x1] - ii[y1, x0] + ii[y0, x0]
+    cnts = im[y1, x1] - im[y0, x1] - im[y1, x0] + im[y0, x0]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(cnts > 0, sums / np.maximum(cnts, 1e-9), np.nan)
 
 
 def load_history():
@@ -466,6 +537,81 @@ def save_history(ndvi, phase, vi_ids, sig):
                                ).astype(np.float32))
     json.dump({"dates": sorted(set(vi_ids.values())), "sig": sig},
               open(os.path.join(STATE_DIR, "hist_meta.json"), "w"))
+
+
+def prev_phase_grid(hist):
+    """Upsample quarter-res history phase to full canvas (nearest)."""
+    qh, qw = HIST_SHAPE
+    H, W = load_bounds()["canvas_height"], load_bounds()["canvas_width"]
+    ys = np.clip((np.arange(H) * qh / H).astype(int), 0, qh - 1)
+    xs = np.clip((np.arange(W) * qw / W).astype(int), 0, qw - 1)
+    return hist["phase"][ys[:, None], xs]
+
+
+def fill_phase_full_coverage(phase, mich, land, prev_phase=None):
+    """Gap-fill phenology phase so Michigan land has zero holes.
+
+    Target = mich & land (state mask minus Great-Lakes water; shoreline
+    antialiasing applied later). Fill order for missing target pixels:
+      1. hold-forward previous published phase (temporal continuity,
+         works for clouds/snow/urban alike);
+      2. nearest-valid spatial propagation (Voronoi fill; preserves local
+         gradient texture, avoids circular-mean seam artifacts);
+      3. global circular-median fallback (only if a component has no
+         valid neighbor at all).
+    Valid observed pixels are never altered.
+    """
+    target = np.asarray(mich, dtype=bool) & np.asarray(land, dtype=bool)
+    out = np.array(phase, dtype=float)
+    valid = np.isfinite(out) & target
+    if not np.any(valid):
+        return out
+    missing = target & ~np.isfinite(out)
+    if prev_phase is not None:
+        pp = np.asarray(prev_phase, dtype=float)
+        if pp.shape == out.shape:
+            use = missing & np.isfinite(pp)
+            out[use] = np.clip(pp[use], 0.0, 0.999)
+            missing = target & ~np.isfinite(out)
+    if np.any(missing):
+        # Nearest-valid propagation: iteratively dilate filled region.
+        filled = np.isfinite(out) & target
+        # Seed: also allow valid pixels just outside target to donate
+        # colors across the target edge (prevents edge darkening).
+        donor = np.where(np.isfinite(out), out, np.nan)
+        cur = np.where(filled, donor, np.nan)
+        it = 0
+        while np.any(target & ~np.isfinite(cur)) and it < 5000:
+            it += 1
+            nxt = cur.copy()
+            have = np.isfinite(cur)
+            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                shift_have = np.roll(np.roll(have, dy, axis=0), dx, axis=1)
+                shift_val = np.roll(np.roll(cur, dy, axis=0), dx, axis=1)
+                # np.roll wraps edges; mask wrapped rows/cols.
+                if dy == 1:
+                    shift_have[0, :] = False
+                elif dy == -1:
+                    shift_have[-1, :] = False
+                if dx == 1:
+                    shift_have[:, 0] = False
+                elif dx == -1:
+                    shift_have[:, -1] = False
+                take = (~np.isfinite(nxt)) & shift_have
+                nxt[take] = shift_val[take]
+            if np.array_equal(np.isfinite(nxt), np.isfinite(cur)):
+                break
+            cur = nxt
+        still = target & ~np.isfinite(cur)
+        if np.any(still):
+            # Global circular-median fallback (unit-circle median).
+            v = out[valid]
+            ang = v * 2.0 * math.pi
+            mx, my = float(np.median(np.cos(ang))), float(np.median(np.sin(ang)))
+            fb = (math.atan2(my, mx) / (2.0 * math.pi)) % 1.0
+            cur[still] = min(max(fb, 0.0), 0.999)
+        out = cur
+    return np.clip(out, 0.0, 0.999)
 
 
 def compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist):
