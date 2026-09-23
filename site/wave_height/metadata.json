@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260922/glwu.grlc_2p5km.t13z.grib2",
   "data_time_utc": "2026-09-22 13:00 UTC",
   "source_last_modified_utc": "Tue, 22 Sep 2026 13:27:23 GMT",
-  "processing_time_utc": "2026-09-22 18:32 UTC",
+  "processing_time_utc": "2026-09-23 00:33 UTC",
   "units": "ft (display); source m",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -40,40 +40,40 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_ft": 0.33,
+      "obs_ft": 0.98,
       "grid_ft": 0.3608924,
-      "absdiff_ft": 0.03,
+      "absdiff_ft": 0.62,
       "verdict": "OK",
-      "obs_time": "2026-09-22 17:50 UTC"
+      "obs_time": "2026-09-22 23:50 UTC"
     },
     "45002": {
-      "obs_ft": 2.62,
+      "obs_ft": 3.94,
       "grid_ft": 3.3628609999999997,
-      "absdiff_ft": 0.74,
+      "absdiff_ft": 0.57,
       "verdict": "OK",
-      "obs_time": "2026-09-22 17:50 UTC"
+      "obs_time": "2026-09-22 23:50 UTC"
     },
     "45132": {
-      "obs_ft": 4.92,
+      "obs_ft": 4.59,
       "grid_ft": 5.435258266666668,
-      "absdiff_ft": 0.51,
+      "absdiff_ft": 0.84,
       "verdict": "OK",
-      "obs_time": "2026-09-22 18:00 UTC"
+      "obs_time": "2026-09-23 00:00 UTC"
     },
     "45012": {
-      "obs_ft": 3.94,
+      "obs_ft": 3.61,
       "grid_ft": 4.768154133333333,
-      "absdiff_ft": 0.83,
+      "absdiff_ft": 1.16,
       "verdict": "OK",
-      "obs_time": "2026-09-22 17:50 UTC"
+      "obs_time": "2026-09-22 23:50 UTC"
     },
     "45005": {
-      "time_utc": "2026-09-22 17:50 UTC",
-      "WDIR_deg": 60.0,
-      "WSPD_ms": 11.0,
+      "time_utc": "2026-09-22 23:50 UTC",
+      "WDIR_deg": 70.0,
+      "WSPD_ms": 14.0,
       "WVHT_m": null,
       "WTMP_C": null,
-      "ATMP_C": 18.3,
+      "ATMP_C": 18.7,
       "note": "no WVHT obs"
     }
   },

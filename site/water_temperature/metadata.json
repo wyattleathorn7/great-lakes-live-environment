@@ -8,7 +8,7 @@
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
   "data_time_utc": "2026-09-22 06:50 UTC",
   "source_last_modified_utc": "Tue, 22 Sep 2026 06:50:35 GMT",
-  "processing_time_utc": "2026-09-22 18:32 UTC",
+  "processing_time_utc": "2026-09-23 00:33 UTC",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -39,40 +39,44 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 55.22,
-      "grid_F": 54.878,
-      "absdiff_F": 0.34,
-      "verdict": "OK",
-      "obs_time": "2026-09-22 17:50 UTC"
+      "time_utc": "2026-09-22 23:50 UTC",
+      "WDIR_deg": 70.0,
+      "WSPD_ms": 3.0,
+      "WVHT_m": 0.3,
+      "WTMP_C": null,
+      "ATMP_C": 12.3,
+      "note": "no WTMP obs"
     },
     "45002": {
-      "obs_F": 64.04,
+      "obs_F": 64.4,
       "grid_F": 66.54650000000001,
-      "absdiff_F": 2.51,
+      "absdiff_F": 2.15,
       "verdict": "OK",
-      "obs_time": "2026-09-22 17:50 UTC"
+      "obs_time": "2026-09-22 23:50 UTC"
     },
     "45132": {
-      "obs_F": 68.54,
+      "obs_F": 68.0,
       "grid_F": 71.68549999999999,
-      "absdiff_F": 3.15,
+      "absdiff_F": 3.69,
       "verdict": "OK",
-      "obs_time": "2026-09-22 18:00 UTC"
+      "obs_time": "2026-09-23 00:00 UTC"
     },
     "45012": {
-      "obs_F": 66.56,
-      "grid_F": 70.16,
-      "absdiff_F": 3.6,
-      "verdict": "OK",
-      "obs_time": "2026-09-22 17:50 UTC"
+      "time_utc": "2026-09-22 23:50 UTC",
+      "WDIR_deg": 50.0,
+      "WSPD_ms": 10.0,
+      "WVHT_m": 1.1,
+      "WTMP_C": null,
+      "ATMP_C": 16.8,
+      "note": "no WTMP obs"
     },
     "45005": {
-      "time_utc": "2026-09-22 17:50 UTC",
-      "WDIR_deg": 60.0,
-      "WSPD_ms": 11.0,
+      "time_utc": "2026-09-22 23:50 UTC",
+      "WDIR_deg": 70.0,
+      "WSPD_ms": 14.0,
       "WVHT_m": null,
       "WTMP_C": null,
-      "ATMP_C": 18.3,
+      "ATMP_C": 18.7,
       "note": "no WTMP obs"
     }
   },
