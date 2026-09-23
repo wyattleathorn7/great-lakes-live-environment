@@ -5,10 +5,10 @@
   "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III)",
   "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III)",
   "variable": "HTSGW (significant height of combined wind waves and swell, analysis step)",
-  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260922/glwu.grlc_2p5km.t13z.grib2",
-  "data_time_utc": "2026-09-22 13:00 UTC",
-  "source_last_modified_utc": "Tue, 22 Sep 2026 13:27:23 GMT",
-  "processing_time_utc": "2026-09-23 00:33 UTC",
+  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260923/glwu.grlc_2p5km.t01z.grib2",
+  "data_time_utc": "2026-09-23 01:00 UTC",
+  "source_last_modified_utc": "Wed, 23 Sep 2026 01:26:55 GMT",
+  "processing_time_utc": "2026-09-23 06:35 UTC",
   "units": "ft (display); source m",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,12 +25,12 @@
   "missing_data_treatment": "GRIB2 missing value 9999 and off-water grid points rendered fully transparent; never zero-filled.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "model_cycle": "20260922 t13z",
+  "model_cycle": "20260923 t01z",
   "stats": {
     "valid_cells": 44863,
-    "max_ft": 9.09,
-    "mean_ft": 2.505,
-    "p99_5_ft": 8.66
+    "max_ft": 9.55,
+    "mean_ft": 2.644,
+    "p99_5_ft": 9.12
   },
   "legend_size": [
     640,
@@ -41,41 +41,41 @@
   "buoy_qc": {
     "45001": {
       "obs_ft": 0.98,
-      "grid_ft": 0.3608924,
-      "absdiff_ft": 0.62,
+      "grid_ft": 0.9623797333333334,
+      "absdiff_ft": 0.02,
       "verdict": "OK",
-      "obs_time": "2026-09-22 23:50 UTC"
+      "obs_time": "2026-09-23 05:50 UTC"
     },
     "45002": {
-      "obs_ft": 3.94,
-      "grid_ft": 3.3628609999999997,
-      "absdiff_ft": 0.57,
+      "obs_ft": 3.28,
+      "grid_ft": 4.593176000000001,
+      "absdiff_ft": 1.31,
       "verdict": "OK",
-      "obs_time": "2026-09-22 23:50 UTC"
+      "obs_time": "2026-09-23 05:50 UTC"
     },
     "45132": {
-      "obs_ft": 4.59,
-      "grid_ft": 5.435258266666668,
-      "absdiff_ft": 0.84,
+      "obs_ft": 5.91,
+      "grid_ft": 6.244532133333333,
+      "absdiff_ft": 0.34,
       "verdict": "OK",
-      "obs_time": "2026-09-23 00:00 UTC"
+      "obs_time": "2026-09-23 06:00 UTC"
     },
     "45012": {
       "obs_ft": 3.61,
-      "grid_ft": 4.768154133333333,
-      "absdiff_ft": 1.16,
+      "grid_ft": 4.571303733333334,
+      "absdiff_ft": 0.96,
       "verdict": "OK",
-      "obs_time": "2026-09-22 23:50 UTC"
+      "obs_time": "2026-09-23 05:50 UTC"
     },
     "45005": {
-      "time_utc": "2026-09-22 23:50 UTC",
-      "WDIR_deg": 70.0,
-      "WSPD_ms": 14.0,
+      "time_utc": "2026-09-23 05:50 UTC",
+      "WDIR_deg": 90.0,
+      "WSPD_ms": 9.0,
       "WVHT_m": null,
       "WTMP_C": null,
-      "ATMP_C": 18.7,
+      "ATMP_C": 18.2,
       "note": "no WVHT obs"
     }
   },
-  "legend_scale_html": "Wave height (feet, one continuous gradient): <b>0</b> dark blue \u2192 <b>2</b> blue/cyan \u2192 <b>5</b> cyan/green \u2192 <b>9</b> green/yellow \u2192 <b>12\u201315</b> yellow-orange \u2192 orange \u2192 <b>20</b> red \u2192 <b>23\u201326</b> red-violet \u2192 violet \u2192 <b>30+</b> dark purple extreme. Model maximum this run: <b>9.1 ft</b>. Values above 30 ft stay dark purple. Significant height = average of highest third of waves."
+  "legend_scale_html": "Wave height (feet, one continuous gradient): <b>0</b> dark blue \u2192 <b>2</b> blue/cyan \u2192 <b>5</b> cyan/green \u2192 <b>9</b> green/yellow \u2192 <b>12\u201315</b> yellow-orange \u2192 orange \u2192 <b>20</b> red \u2192 <b>23\u201326</b> red-violet \u2192 violet \u2192 <b>30+</b> dark purple extreme. Model maximum this run: <b>9.5 ft</b>. Values above 30 ft stay dark purple. Significant height = average of highest third of waves."
 }

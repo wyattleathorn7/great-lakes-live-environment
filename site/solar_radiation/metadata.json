@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3 km surface analysis, DSWRF (downward short-wave radiation flux), hourly cycles",
   "variable": "DSWRF surface analysis step (hourly-averaged downward shortwave flux for the analysis hour)",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-09-22 23:00 UTC",
+  "data_time_utc": "2026-09-23 05:00 UTC",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-23 00:34 UTC",
+  "processing_time_utc": "2026-09-23 06:35 UTC",
   "units": "W/m^2 (display); source W m^-2",
   "spatial_resolution_source": "~3 km HRRR Lambert grid (1799x1059)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -29,27 +29,27 @@
     640,
     230
   ],
-  "legend_scale_html": "Surface downward shortwave solar radiation (W/m^2, hourly-averaged for the analysis hour), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 23.2 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.",
-  "model_cycle": "hrrr.20260922 t23z",
+  "legend_scale_html": "Surface downward shortwave solar radiation (W/m^2, hourly-averaged for the analysis hour), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 0 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.",
+  "model_cycle": "hrrr.20260923 t05z",
   "historical": {
     "low": 0.0,
     "high": 787.6,
     "percentiles": {
       "p5": 0.0,
       "p25": 0.0,
-      "p50": 23.200000000000003,
-      "p75": 125.80000305175781,
-      "p95": 723.0,
-      "p99": 749.4003576660156
+      "p50": 0.0,
+      "p75": 25.262499809265137,
+      "p95": 693.9025238037109,
+      "p99": 742.302987670898
     },
-    "n_obs": 505846,
+    "n_obs": 525846,
     "extends": []
   },
   "stats": {
     "valid_cells": 2114386,
     "current_min": 0.0,
-    "current_max": 139.1,
-    "nighttime": false
+    "current_max": 0.0,
+    "nighttime": true
   },
-  "folder_html": "<h2>LIVE SOLAR RADIATION</h2><p>Surface downward shortwave solar radiation flux: solar power arriving at the surface, hourly-averaged for the model analysis hour. Nighttime reads zero (valid data, deep blue) \u2014 not missing data. Clouds reduce values quantitatively versus clear sky.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/solar_radiation/legend.png?v=2026-09-23_0034_UTC\" width=\"600\" alt=\"key\"></p><p>Surface downward shortwave solar radiation (W/m^2, hourly-averaged for the analysis hour), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 23.2 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.</p><p><b>Variable:</b> DSWRF surface analysis step (hourly-averaged downward shortwave flux for the analysis hour)<br/><b>Units:</b> W/m^2 (hourly-averaged flux for the analysis hour (not instantaneous, not daily accumulation))<br/><b>Source:</b> NOAA/NCEP HRRR 3 km surface analysis, DSWRF (downward short-wave radiation flux), hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-22 23:00 UTC<br/><b>Processed:</b> 2026-09-23 00:34 UTC<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
+  "folder_html": "<h2>LIVE SOLAR RADIATION</h2><p>Surface downward shortwave solar radiation flux: solar power arriving at the surface, hourly-averaged for the model analysis hour. Nighttime reads zero (valid data, deep blue) \u2014 not missing data. Clouds reduce values quantitatively versus clear sky.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/solar_radiation/legend.png?v=2026-09-23_0635_UTC\" width=\"600\" alt=\"key\"></p><p>Surface downward shortwave solar radiation (W/m^2, hourly-averaged for the analysis hour), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 0 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.</p><p><b>Variable:</b> DSWRF surface analysis step (hourly-averaged downward shortwave flux for the analysis hour)<br/><b>Units:</b> W/m^2 (hourly-averaged flux for the analysis hour (not instantaneous, not daily accumulation))<br/><b>Source:</b> NOAA/NCEP HRRR 3 km surface analysis, DSWRF (downward short-wave radiation flux), hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-23 05:00 UTC<br/><b>Processed:</b> 2026-09-23 06:35 UTC<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
 }
