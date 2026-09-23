@@ -90,8 +90,13 @@ def run():
     except Exception as e:
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
+    # v2 marker forces one rebuild to deploy the resample fix.
+    ds = dataset if "dataset" in dir() else DATASET
+    # v2 marker forces one rebuild to deploy the resample fix.
+    source_id = f"{dataset}-v2-{times[0][:10]}"
     prev = read_state(PRODUCT)
-    if prev.get("data_times") == times \
+    if prev.get("source_id") == source_id \
+            and prev.get("data_times") == times \
             and prev.get("dataset") == dataset \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
@@ -191,7 +196,7 @@ def _build(bounds, times, dataset):
         data_time_utc=f"{times[0]} (newest of {MOSAIC_DAYS}-day mosaic)",
         source_last_modified_utc="n/a (ERDDAP)",
         units=f"{unit} (display); source m^-1",
-        source_resolution="~4 km VIIRS L3 (0.0375 deg), binned to canvas (nearest)",
+        source_resolution="~4 km VIIRS L3, bilinear-resampled to canvas",
         color_min=rec["hist_min"], color_max=rec["hist_max"], color_units=unit,
         missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
                                 f"[{lo},{hi}] values admitted; never interpolated."))
@@ -203,7 +208,9 @@ def _build(bounds, times, dataset):
     meta["stats"] = {"valid_cells": n_valid, "current_min": cur_min,
                      "current_max": cur_max}
     meta["dataset"] = dataset
-    source_id = f"{dataset}-{times[0][:10]}"
+    # v2 = bilinear canvas resample (same dashed-stripe fix as
+    # chlorophyll; shared _bin_grid). One-time rotation.
+    source_id = f"{dataset}-v2-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]

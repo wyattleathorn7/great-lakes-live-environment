@@ -93,8 +93,11 @@ def run():
     except Exception as e:
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
+    # v2 marker forces one rebuild to deploy the resample fix.
+    source_id = f"{dataset}-v2-{times[0][:10]}"
     prev = read_state(PRODUCT)
-    if prev.get("data_times") == times \
+    if prev.get("source_id") == source_id \
+            and prev.get("data_times") == times \
             and prev.get("dataset") == dataset \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
@@ -192,7 +195,7 @@ def _build(bounds, times, dataset):
         data_time_utc=f"{times[0]} (newest of {MOSAIC_DAYS}-day mosaic)",
         source_last_modified_utc="n/a (ERDDAP)",
         units=f"{unit} (display); source mg m^-3",
-        source_resolution="~4 km VIIRS L3 (0.0375 deg), binned to canvas (nearest)",
+        source_resolution="~4 km VIIRS L3 (0.0375 deg), bilinear-resampled to canvas",
         color_min=rec["hist_min"], color_max=rec["hist_max"], color_units=unit,
         missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
                                 f"[{lo},{hi}] values admitted; never interpolated."))
@@ -204,7 +207,10 @@ def _build(bounds, times, dataset):
     meta["stats"] = {"valid_cells": n_valid, "current_min": cur_min,
                      "current_max": cur_max}
     meta["dataset"] = dataset
-    source_id = f"{dataset}-{times[0][:10]}"
+    # v2 = bilinear canvas resample (replaces splat binning that left
+    # dashed stripe gaps). One-time rotation to deploy the fixed
+    # rendering; afterwards the id tracks source dataset+date only.
+    source_id = f"{dataset}-v2-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]
@@ -255,13 +261,23 @@ def legend_block_src(product, token=None):
 
 
 def _bin_grid(lats1d, lons1d, grid, bounds, W, H):
-    """Bin a regular ERDDAP grid onto the canvas (nearest + splat)."""
-    from geospatial_utils import bin_to_canvas, canvas_indices
-    yy, xx = np.meshgrid(lats1d, lons1d, indexing="ij")
-    rows, cols, valid = canvas_indices(yy.ravel(), xx.ravel(), bounds)
-    field, _c = bin_to_canvas(rows, cols, np.asarray(grid).ravel(), valid,
-                              (H, W), splat_radius=3)
-    return field
+    """Resample a regular ERDDAP grid onto the canvas (bilinear).
+
+    The old nearest-neighbour scatter + splat(radius=3) painted 7x7
+    blocks on ~9.8px source spacing, leaving the horizontal dashed
+    stripe gaps visible in Google Earth. Bilinear resampling of the
+    native grid is continuous by construction at any source spacing;
+    source NaNs (clouds/gaps) propagate as transparent, never filled.
+    """
+    from geospatial_utils import resample_gridded
+    la = np.asarray(lats1d, dtype=float)
+    lo = np.asarray(lons1d, dtype=float)
+    g = np.asarray(grid, dtype=float)
+    if g.shape != (la.size, lo.size):
+        raise ValueError(f"ERDDAP grid shape {g.shape} != "
+                         f"(lats {la.size}, lons {lo.size})")
+    LO, LA = np.meshgrid(lo, la)
+    return resample_gridded(g, LA, LO, bounds, (H, W))
 
 
 if __name__ == "__main__":
