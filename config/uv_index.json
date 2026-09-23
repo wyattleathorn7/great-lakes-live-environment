@@ -1,0 +1,18 @@
+{
+  "product": "uv_index",
+  "title": "LIVE UV INDEX",
+  "freshness_label": "LIVE / CURRENT FORECAST (12Z run)",
+  "source_name": "NOAA/NCEP CPC Global UV Index, operational GRIB2 (12 UTC GFS run, hourly steps to 120 h)",
+  "source_url": "https://www.cpc.ncep.noaa.gov/products/stratosphere/uv_index/uv_global.shtml",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/uvi/prod/uvi.{date_dir}/uv.t12z.grbf{hour:02d}.grib2",
+  "variable": "uvi (UV index field in GRIB2 carries erythemally weighted flux in W/m^2; UV Index = flux x 40, applied exactly once)",
+  "source_units": "W/m^2 (erythemal flux in file)",
+  "display_units": "UV Index",
+  "valid_min": 0.0,
+  "valid_max": 25.0,
+  "flux_to_index": 40.0,
+  "allow_negative": false,
+  "refresh_interval_seconds": 3600,
+  "what": "Erythemal (sunburning) UV Index at the lake surface from the newest 12 UTC NCEP run, forecast hour nearest the current time. A forecast field, not a satellite observation: the displayed hour advances as time passes.",
+  "why_extreme": "Extreme UV (11+) compresses into violet/deep-purple; ordinary low/moderate values own most of the color resolution."
+}

@@ -7,6 +7,7 @@ Exit codes: 0 = updated (or skipped, source unchanged); 2 = source/validation
 failure (previous valid raster is left untouched); 1 = unexpected error.
 """
 
+import hashlib
 import json
 import math
 import os
@@ -16,14 +17,14 @@ import traceback
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, legend_block,
-                       refresh_kml_base_url)
+from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
+                       description_html, entry_description_html, legend_block,
+                       live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
                               download, ensure_coords, fetch_buoy_obs,
                               http_date_to_iso, promote_stage, read_state,
-                              stage_dir, utcnow_iso, write_metadata,
-                              write_state)
+                              source_token, stage_dir, utcnow_iso,
+                              write_metadata, write_state)
 from render_gradient import render_field
 
 PRODUCT = "water_temperature"
@@ -70,8 +71,27 @@ def run():
               f"({info['size_bytes']} bytes). Keeping previous.")
         return 2
 
-    # No skip: every run rebuilds (tiles must deploy); identical
-    # bytes simply produce no commit. Failures still keep previous.
+    # Source-aware gate: GLSEA publishes one file per day (HTTP
+    # Last-Modified is the observation id; content hash is the fallback so
+    # a missing header can never freeze updates via a None == None skip).
+    # Same source -> keep the published raster, refresh KMLs only.
+    with open(raw_path, "rb") as f:
+        digest = hashlib.sha256(f.read()).hexdigest()
+    raw_id = info["http_last_modified"] or f"sha256:{digest[:16]}"
+    source_id = f"glsea-{raw_id}"
+    prev = read_state(PRODUCT)
+    if prev.get("source_id") == source_id \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
+            and os.path.exists(os.path.join(
+                SITE_DIR, "kml", "live",
+                "Great_Lakes_Live_Water_Temperature.kml")):
+        print(f"[{PRODUCT}] source unchanged ({source_id}); keeping raster.")
+        refresh_kml_base_url(PRODUCT, "Great_Lakes_Live_Water_Temperature.kml",
+                             "\U0001F321\uFE0F LIVE WATER TEMPERATURE",
+                             CONFIG["title"],
+                             "Turn on/off independently of wave and ice layers.",
+                             CONFIG["refresh_interval_seconds"])
+        return 0
 
     # Everything below renders into a stage dir first; the live site/ + kml/
     # tree is touched only by promote_stage() on full success, so a crash
@@ -79,7 +99,7 @@ def run():
     # failure returns 2 (keep previous); only unexpected engine errors
     # escape to exit 1 via main().
     try:
-        return _build(info, raw_path)
+        return _build(info, raw_path, source_id)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -87,7 +107,7 @@ def run():
         return 2
 
 
-def _build(info, raw_path):
+def _build(info, raw_path, source_id):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     with open(raw_path) as f:
@@ -150,6 +170,8 @@ def _build(info, raw_path):
         color_min=vmin, color_max=vmax, color_units="degF",
         missing_data_treatment=(f"land code {CONFIG['land_code']} and -9999/no-data "
                                 "rendered fully transparent; never interpolated."))
+    meta["source_id"] = source_id
+    meta["source_version"] = source_token(source_id)
     meta["stats"] = {
         "valid_cells": n_valid,
         "lakewide_mean_F": round(float(np.mean(f_vals)), 2),
@@ -212,8 +234,9 @@ def _build(info, raw_path):
     meta["legend_scale_html"] = scale_html
     write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text
 
-    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    token = meta["source_version"]
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
+    outs = live_out_dirs(stage, "Great_Lakes_Live_Water_Temperature.kml")
     kml_text = build_kml(
         PRODUCT, "Great_Lakes_Live_Water_Temperature.kml",
         "\U0001F321\uFE0F LIVE WATER TEMPERATURE",
@@ -222,12 +245,19 @@ def _build(info, raw_path):
                          "Turn on/off independently of wave and ice layers.",
                          block),
         CONFIG["refresh_interval_seconds"], token,
-        out_dirs=[os.path.join(stage, "kml", "Great_Lakes_Live_Water_Temperature.kml"),
-                  os.path.join(stage, "site", "kml", "Great_Lakes_Live_Water_Temperature.kml")])
+        out_dirs=outs["live"])
     assert_no_vector_geometry(kml_text)
+    build_entry_kml(
+        PRODUCT, "Great_Lakes_Live_Water_Temperature.kml",
+        "\U0001F321\uFE0F LIVE WATER TEMPERATURE",
+        entry_description_html(
+            CONFIG["title"], meta,
+            "Turn on/off independently of wave and ice layers."),
+        CONFIG["refresh_interval_seconds"], out_dirs=outs["entry"])
 
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"source_last_modified": info["http_last_modified"],
+                          "source_id": source_id,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

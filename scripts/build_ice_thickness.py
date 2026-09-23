@@ -20,14 +20,14 @@ import traceback
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, legend_block,
-                       refresh_kml_base_url)
+from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
+                       description_html, entry_description_html, legend_block,
+                       live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, THICK_STOPS, _lut,
                               apply_shoreline_mask, base_metadata, download,
                               draw_legend, load_bounds, promote_stage,
-                              read_state, save_png, stage_dir, utcnow_iso,
-                              write_metadata, write_state)
+                              read_state, save_png, source_token, stage_dir,
+                              utcnow_iso, write_metadata, write_state)
 from nic_sigrid import (analysis_date_from_name, concentration_alpha,
                         download_nic_shapefile, load_polygons,
                         polygon_thickness, shapefile_base)
@@ -63,8 +63,9 @@ def run():
 
     with open(zip_path, "rb") as f:
         digest = hashlib.sha256(f.read()).hexdigest()
-    # No skip: every run rebuilds (tiles must deploy); identical
-    # bytes simply produce no commit. Failures still keep previous.
+    # Source-aware gate: the NIC analysis date (from the shapefile
+    # name) plus the zip content hash is the observation id. Same source
+    # -> keep the published raster, refresh KMLs only.
 
     try:
         return _build(info, zip_path, digest)
@@ -87,6 +88,17 @@ def _build(info, zip_path, digest):
     if not polys:
         print(f"[{PRODUCT}] VALIDATION FAILED: no polygons parsed.")
         return 2
+    source_id = f"nic-{analysis_date}-{digest[:12]}"
+    prev = read_state(PRODUCT)
+    if prev.get("source_id") == source_id \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
+            and os.path.exists(os.path.join(
+                SITE_DIR, "kml", "live", KML_FILE)):
+        print(f"[{PRODUCT}] source unchanged ({source_id}); keeping raster.")
+        refresh_kml_base_url(PRODUCT, KML_FILE, OVERLAY_NAME,
+                             CONFIG["title"], SKIP_NOTE,
+                             CONFIG["refresh_interval_seconds"])
+        return 0
     print(f"[{PRODUCT}] NIC analysis date {analysis_date}: "
           f"{len(polys)} polygons")
 
@@ -151,6 +163,8 @@ def _build(info, zip_path, digest):
         "/ sum(partial_conc_i) over SA/SB/SC stages with authoritative ranges "
         "(see nic_sigrid.STAGE_TABLE); cm/2.54 -> inches; pixel alpha scaled by "
         "total concentration CT/10. Off-season ice-free analyses are valid-empty.")
+    meta["source_id"] = source_id
+    meta["source_version"] = source_token(source_id)
     meta["stats"] = {
         "analysis_date": analysis_date,
         "polygons": len(polys),
@@ -163,19 +177,24 @@ def _build(info, zip_path, digest):
     }
     write_metadata(stage_prod, meta)
 
-    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    token = meta["source_version"]
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     kml_text = build_kml(
         PRODUCT, KML_FILE, OVERLAY_NAME,
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
-        out_dirs=[os.path.join(stage, "kml", KML_FILE),
-                  os.path.join(stage, "site", "kml", KML_FILE)])
+        out_dirs=live_out_dirs(stage, KML_FILE)["live"])
     assert_no_vector_geometry(kml_text)
+    build_entry_kml(
+        PRODUCT, KML_FILE, OVERLAY_NAME,
+        entry_description_html(CONFIG["title"], meta, SKIP_NOTE),
+        CONFIG["refresh_interval_seconds"],
+        out_dirs=live_out_dirs(stage, KML_FILE)["entry"])
 
     promoted = promote_stage(PRODUCT)
-    write_state(PRODUCT, {"content_sha256": digest,
+    write_state(PRODUCT, {"source_id": source_id,
+                          "content_sha256": digest,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

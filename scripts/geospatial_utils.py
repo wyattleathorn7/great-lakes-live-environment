@@ -219,6 +219,69 @@ def canvas_indices(lats, lons, bounds):
     return rows, cols, valid
 
 
+def resample_gridded(values_2d, lats_2d, lons_2d, bounds, shape):
+    """Bilinear resample of a regular (lat-rows x lon-cols) source grid.
+
+    For coarse global models (GFS Gaussian, UVI regular lat/lon) where
+    nearest-neighbour splatting would leave polka-dot/stripe holes on the
+    fine canvas. Continuous output: every canvas pixel inside the source
+    coverage gets an interpolated value; outside coverage stays NaN.
+    Source NaNs propagate as NaN (never zero-filled).
+    """
+    H, W = shape
+    vals = np.asarray(values_2d, dtype=float)
+    la = np.asarray(lats_2d, dtype=float)
+    lo = np.asarray(lons_2d, dtype=float)
+    if vals.shape != la.shape or vals.shape != lo.shape:
+        raise ValueError("gridded arrays must share one (Ny, Nx) shape")
+    lat_ax = la[:, 0]
+    lon_ax = ((lo[0, :] + 180.0) % 360.0) - 180.0
+    order = np.argsort(lon_ax)
+    lon_ax = lon_ax[order]
+    vals = vals[:, order]
+    lat_asc = np.all(np.diff(lat_ax) > 0)
+    if not lat_asc and not np.all(np.diff(lat_ax) < 0):
+        raise ValueError("source latitudes must be monotonic")
+    lat_s = lat_ax if lat_asc else lat_ax[::-1]
+    vs = vals if lat_asc else vals[::-1, :]
+
+    lon_min, lon_max = bounds["lon_min"], bounds["lon_max"]
+    lat_min, lat_max = bounds["lat_min"], bounds["lat_max"]
+    j0 = max(int(np.searchsorted(lon_ax, lon_min, side="left")) - 1, 0)
+    j1 = min(int(np.searchsorted(lon_ax, lon_max, side="right")) + 1,
+             lon_ax.size - 1)
+    i0 = max(int(np.searchsorted(lat_s, lat_min, side="left")) - 1, 0)
+    i1 = min(int(np.searchsorted(lat_s, lat_max, side="right")) + 1,
+             lat_s.size - 1)
+    if j1 <= j0 or i1 <= i0:
+        return np.full((H, W), np.nan)
+    lon_w, lat_w = lon_ax[j0:j1 + 1], lat_s[i0:i1 + 1]
+    vw = vs[i0:i1 + 1, j0:j1 + 1]
+
+    xs = (np.arange(W) + 0.5) / W * (lon_max - lon_min) + lon_min
+    ys = lat_max - (np.arange(H) + 0.5) / H * (lat_max - lat_min)
+    ji = np.searchsorted(lon_w, xs, side="right")
+    ii = np.searchsorted(lat_w, ys, side="right")
+    outside = ((xs < lon_w[0]) | (xs > lon_w[-1]))[None, :] | \
+        ((ys < lat_w[0]) | (ys > lat_w[-1]))[:, None]
+    j0c = np.clip(ji - 1, 0, vw.shape[1] - 2)
+    i0c = np.clip(ii - 1, 0, vw.shape[0] - 2)
+    j1c, i1c = j0c + 1, i0c + 1
+    dx = lon_w[1] - lon_w[0] if lon_w.size > 1 else 1.0
+    dy = lat_w[1] - lat_w[0] if lat_w.size > 1 else 1.0
+    fx = np.clip((xs - lon_w[j0c]) / (dx or 1.0), 0.0, 1.0)[None, :]
+    fy = np.clip((ys - lat_w[i0c]) / (dy or 1.0), 0.0, 1.0)[:, None]
+    f00 = vw[i0c[:, None], j0c[None, :]]
+    f10 = vw[i0c[:, None], j1c[None, :]]
+    f01 = vw[i1c[:, None], j0c[None, :]]
+    f11 = vw[i1c[:, None], j1c[None, :]]
+    with np.errstate(invalid="ignore"):
+        field = (f00 * (1 - fx) * (1 - fy) + f10 * fx * (1 - fy)
+                 + f01 * (1 - fx) * fy + f11 * fx * fy)
+    field[outside] = np.nan
+    return field
+
+
 def bin_to_canvas(rows, cols, values, valid, shape, splat_radius=0):
     """Nearest-neighbour binning: mean of source values falling in each pixel.
 
@@ -538,6 +601,20 @@ def base_metadata(product, title, freshness_label, source_name, source_url,
         "attribution": ("Data: US NOAA. This project is not endorsed by NOAA. "
                         "See DATA_SOURCES.md for exact products and endpoints."),
     }
+
+
+# ------------------------------------------------- source-version tokens
+def source_token(raw):
+    """Deterministic cache-buster for raster/KML URLs.
+
+    Sanitized to [A-Za-z0-9._-]; everything else becomes '-'. The token
+    MUST change if and only if the underlying source observation/cycle
+    changes -- pass source ids (model cycle, observation date, content
+    hash), never processing timestamps or random values.
+    """
+    import re
+    return re.sub(r"[^A-Za-z0-9._-]+", "-", str(raw or "unknown")).strip("-") \
+        or "unknown"
 
 
 # ------------------------------------------------------------------ state

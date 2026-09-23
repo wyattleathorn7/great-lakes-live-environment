@@ -125,12 +125,21 @@ from official NOAA sources. Each layer can be toggled on/off by itself.</p>
 <a href="snow_coverage/metadata.json">metadata.json</a></p>
 </div>
 
-<p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU/HRRR, CoastWatch VIIRS, NASA MODIS via Planetary Computer).
+<div class="card" id="uv_index">
+<h2>☀️ Live UV Index</h2>
+<p><small id="uv_index-meta">loading…</small></p>
+<img class="legend" src="uv_index/legend.png" alt="uv index legend">
+<p><a href="kml/Great_Lakes_Live_UV_Index.kml">Open in Google Earth (KML)</a> ·
+<a href="uv_index/current.png">current.png</a> ·
+<a href="uv_index/metadata.json">metadata.json</a></p>
+</div>
+
+<p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU/HRRR/GFS/UVI, CoastWatch VIIRS, NASA MODIS via Planetary Computer).
 This project is not endorsed by NOAA. Stable URLs — Google Earth layers never
 need re-pointing; images carry version query strings so updates appear on refresh.</small></p>
 
 <script>
-["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind","leaf_color","chlorophyll","water_clarity","solar_radiation","air_temperature","snow_coverage"].forEach(p=>{
+["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind","leaf_color","chlorophyll","water_clarity","solar_radiation","air_temperature","snow_coverage","uv_index"].forEach(p=>{
   fetch(p+"/metadata.json").then(r=>r.json()).then(m=>{
     document.getElementById(p+"-meta").textContent =
       m.freshness+" | Data time: "+m.data_time_utc+" | Processed: "+m.processing_time_utc;

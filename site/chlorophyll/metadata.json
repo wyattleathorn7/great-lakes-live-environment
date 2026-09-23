@@ -2,13 +2,13 @@
   "product": "chlorophyll",
   "title": "LIVE CHLOROPHYLL / ALGAL ACTIVITY",
   "freshness": "LATEST AVAILABLE (daily composite)",
-  "noaa_source": "NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQchlaDaily)",
-  "product_name": "NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQchlaDaily)",
-  "variable": "chlor_a (Chlorophyll Concentration, OC3 Algorithm); mosaic 2026-09-12..2026-09-06",
-  "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNSQchlaDaily.html",
-  "data_time_utc": "2026-09-12T12:00:00Z (newest of 7-day mosaic)",
+  "noaa_source": "NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)",
+  "product_name": "NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)",
+  "variable": "chlor_a (Chlorophyll Concentration, OC3 Algorithm); mosaic 2026-09-20..2026-09-14",
+  "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html",
+  "data_time_utc": "2026-09-20T12:00:00Z (newest of 7-day mosaic)",
   "source_last_modified_utc": "n/a (ERDDAP)",
-  "processing_time_utc": "2026-09-22 04:20 UTC",
+  "processing_time_utc": "2026-09-23 01:33 UTC",
   "units": "mg/m^3 (display); source mg m^-3",
   "spatial_resolution_source": "~4 km VIIRS L3 (0.0375 deg), binned to canvas (nearest)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -19,7 +19,7 @@
     "lat_min": 40.5,
     "lat_max": 49.5
   },
-  "color_scale_min": 0.15550141,
+  "color_scale_min": 0.07920839,
   "color_scale_max": 99.92819,
   "color_scale_units": "mg/m^3",
   "missing_data_treatment": "cloud/land/fill (NaN) transparent; only [0.001,1000.0] values admitted; never interpolated.",
@@ -29,30 +29,37 @@
     640,
     230
   ],
-  "legend_scale_html": "Chlorophyll-a concentration (mg/m^3), balanced linear scale: <b>LOWEST 0.156</b> (dark blue) \u2192 common 1.07 (green/yellow) \u2192 <b>HIGHEST+ 99.93</b> (deep purple). Every part of the scale owns an equal share of color; high values indicate biomass/activity, not toxins.",
+  "legend_scale_html": "Chlorophyll-a concentration (mg/m^3), balanced linear scale: <b>LOWEST 0.079</b> (dark blue) \u2192 common 1.8 (green/yellow) \u2192 <b>HIGHEST+ 99.93</b> (deep purple). Every part of the scale owns an equal share of color; high values indicate biomass/activity, not toxins.",
   "historical": {
-    "low": 0.15550141,
+    "low": 0.07920839,
     "high": 99.92819,
     "percentiles": {
-      "p5": 0.4237526117905312,
-      "p25": 0.66224405169487,
-      "p50": 1.0673575388267516,
-      "p75": 2.8858699737586972,
-      "p95": 14.74366174999999,
-      "p99": 42.340253949999855
+      "p5": 0.45900233238935473,
+      "p25": 0.7857502102851868,
+      "p50": 1.7985070943832397,
+      "p75": 9.588967,
+      "p95": 33.06988,
+      "p99": 63.719242
     },
-    "n_obs": 90487,
+    "n_obs": 110487,
     "extends": [
       {
         "at": "2026-09-22 04:20 UTC",
+        "kind": "low"
+      },
+      {
+        "at": "2026-09-23 01:33 UTC",
         "kind": "low"
       }
     ]
   },
   "stats": {
-    "valid_cells": 5236,
-    "current_min": 0.15550141,
-    "current_max": 98.61559
+    "valid_cells": 2673,
+    "current_min": 0.07920839,
+    "current_max": 99.31222
   },
-  "folder_html": "<h2>LIVE CHLOROPHYLL / ALGAL ACTIVITY</h2><p>Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/legend.png?v=2026-09-22_0420_UTC\" width=\"600\" alt=\"key\"></p><p>Chlorophyll-a concentration (mg/m^3), balanced linear scale: <b>LOWEST 0.156</b> (dark blue) \u2192 common 1.07 (green/yellow) \u2192 <b>HIGHEST+ 99.93</b> (deep purple). Every part of the scale owns an equal share of color; high values indicate biomass/activity, not toxins.</p><p><b>Units:</b> mg/m^3<br/><b>Source:</b> NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQchlaDaily)<br/><b>Update:</b> daily composites<br/><b>Data time:</b> 2026-09-12T12:00:00Z (mosaic 2026-09-12..2026-09-06)<br/><b>Processed:</b> 2026-09-22 04:20 UTC<br/><b>Why high values turn red/purple:</b> Very high values (blooms, algal activity, turbid intrusions) compress into red-violet/deep-purple; common background concentrations own most of the color resolution.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNSQchlaDaily.html\">ERDDAP dataset</a></p>"
+  "dataset": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+  "source_id": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-2026-09-20",
+  "source_version": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-2026-09-20",
+  "folder_html": "<h2>LIVE CHLOROPHYLL / ALGAL ACTIVITY</h2><p>Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/legend.png?v=nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-2026-09-20\" width=\"600\" alt=\"key\"></p><p>Chlorophyll-a concentration (mg/m^3), balanced linear scale: <b>LOWEST 0.079</b> (dark blue) \u2192 common 1.8 (green/yellow) \u2192 <b>HIGHEST+ 99.93</b> (deep purple). Every part of the scale owns an equal share of color; high values indicate biomass/activity, not toxins.</p><p><b>Units:</b> mg/m^3<br/><b>Source:</b> NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)<br/><b>Update:</b> daily composites<br/><b>Data time:</b> 2026-09-20T12:00:00Z (mosaic 2026-09-20..2026-09-14)<br/><b>Processed:</b> 2026-09-23 01:33 UTC<br/><b>Why high values turn red/purple:</b> Very high values (blooms, algal activity, turbid intrusions) compress into red-violet/deep-purple; common background concentrations own most of the color resolution.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html\">ERDDAP dataset</a></p>"
 }

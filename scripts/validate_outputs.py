@@ -52,11 +52,14 @@ PRODUCTS = {
     "air_temperature": {"kml": "Great_Lakes_Live_Air_Temperature.kml",
                         "max_opaque_min": 10_000},
     "snow_coverage": {"kml": "Great_Lakes_Live_Snow_Coverage.kml",
-                      "max_opaque_min": 0},  # off-season => transparent OK
+                       "max_opaque_min": 0},  # off-season => transparent OK
+    "uv_index": {"kml": "Great_Lakes_Live_UV_Index.kml",
+                 "max_opaque_min": 10_000},
 }
 
 META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
                  "source_url", "data_time_utc", "processing_time_utc",
+                 "source_version",
                  "units", "spatial_resolution_source",
                  "spatial_resolution_rendered", "color_scale_min",
                  "color_scale_max", "missing_data_treatment",
@@ -172,6 +175,8 @@ def main():
                 failures.append(f"{product}: thickness scale out of bounds {lo}-{hi}")
             if product == "wind" and (lo, hi) != (0, 12):
                 failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
+            if product == "uv_index" and (lo, hi) != (0.0, 12.0):
+                failures.append(f"{product}: UV scale must be 0-12, got {lo}-{hi}")
             if product == "leaf_color" and (lo, hi) != (0.0, 1.0):
                 failures.append(f"{product}: leaf scale must be 0-1, got {lo}-{hi}")
             if product == "snow_coverage":
@@ -297,57 +302,100 @@ def main():
                 text = open(kp, encoding="utf-8").read()
                 ET.fromstring(text)  # must parse
                 for bad in ("<LineString", "<Polygon", "<Placemark", "<Point",
-                            "<ScreenOverlay"):
+                            "<ScreenOverlay", "<GroundOverlay"):
                     if bad in text:
-                        failures.append(f"{product}: forbidden {bad} in {kp}")
+                        failures.append(f"{product}: forbidden {bad} in entry {kp}")
+                if "REPLACE-GITHUB-USER" in text or "REPLACE-REPO" in text:
+                    failures.append(f"{product}: entry contains placeholder URL")
+                if text.count("<NetworkLink>") != 1:
+                    failures.append(f"{product}: entry must hold exactly 1 "
+                                    f"NetworkLink in {kp}")
+                if f"kml/live/{spec['kml']}" not in text:
+                    failures.append(f"{product}: entry must link the live file "
+                                    f"in {kp}")
+                if "<refreshMode>onInterval</refreshMode>" not in text \
+                        or "<refreshInterval>" not in text:
+                    failures.append(f"{product}: entry NetworkLink must refresh "
+                                    f"onInterval in {kp}")
+                if "?v=" in text:
+                    failures.append(f"{product}: entry must be version-free "
+                                    f"(stable) in {kp}")
+                if os.environ.get("CI") == "true" and "REPLACE-" in text:
+                    failures.append(f"{product}: entry still has placeholder "
+                                    f"PAGES_BASE_URL (CI must set it)")
+                print(f"[{product}] entry KML OK: {kp}")
+            except ET.ParseError as e:
+                failures.append(f"{product}: entry KML XML parse error in {kp}: {e}")
+
+        # ---- live overlay file: exactly one versioned GroundOverlay ----
+        kp = os.path.join(SITE_DIR, "kml", "live", spec["kml"])
+        text = ""
+        if not os.path.exists(kp):
+            failures.append(f"{product}: missing live {kp}")
+        else:
+            try:
+                text = open(kp, encoding="utf-8").read()
+                ET.fromstring(text)  # must parse
+                for bad in ("<LineString", "<Polygon", "<Placemark", "<Point",
+                            "<ScreenOverlay", "<NetworkLink"):
+                    if bad in text:
+                        failures.append(f"{product}: forbidden {bad} in live {kp}")
                 if len(text) > 100_000:
-                    failures.append(f"{product}: KML too large ({len(text)} chars) "
+                    failures.append(f"{product}: live KML too large ({len(text)} chars) "
                                     f"- geometry explosion?")
                 if "REPLACE-GITHUB-USER" in text or "REPLACE-REPO" in text:
-                    failures.append(f"{product}: KML contains placeholder URL")
+                    failures.append(f"{product}: live KML contains placeholder URL")
                 if "<GroundOverlay>" not in text:
-                    failures.append(f"{product}: no GroundOverlay in {kp}")
+                    failures.append(f"{product}: no GroundOverlay in live {kp}")
                 if "?v=" not in text:
-                    failures.append(f"{product}: no cache-buster in {kp}")
+                    failures.append(f"{product}: no cache-buster in live {kp}")
                 if f"{product}/current.png" not in text:
-                    failures.append(f"{product}: KML href wrong product path")
+                    failures.append(f"{product}: live href wrong product path")
                 for _href in re.findall(r"<href>(https?://[^<]+\.png)(?:\?[^<]*)?</href>",
                                         text):
                     _local = _site_file_for_href(_href)
                     if _local is None or not os.path.exists(_local):
-                        failures.append(f"{product}: KML references PNG not deployed: "
+                        failures.append(f"{product}: live KML references PNG not deployed: "
                                         f"{_href}")
                 # single-overlay architecture (GE Web image limit): no tiles
                 if "/tiles/" in text:
-                    failures.append(f"{product}: KML must not reference tiles")
+                    failures.append(f"{product}: live KML must not reference tiles")
                 n_overlays = text.count("<GroundOverlay>")
                 if n_overlays != 1:
                     failures.append(f"{product}: {n_overlays} overlays (expected exactly 1)")
+                if "<refreshMode>onInterval</refreshMode>" not in text \
+                        or "<refreshInterval>" not in text:
+                    failures.append(f"{product}: live Icon must refresh "
+                                    f"onInterval in {kp}")
                 if product in ("chlorophyll", "water_clarity",
-                               "solar_radiation", "air_temperature"):
+                               "solar_radiation", "air_temperature",
+                               "uv_index"):
                     if "<Folder>" not in text:
-                        failures.append(f"{product}: no product Folder in KML")
+                        failures.append(f"{product}: no product Folder in live KML")
                     for _need in ("LOWEST", "HIGHEST+", "legend.png?v="):
                         if _need not in text:
-                            failures.append(f"{product}: folder description "
+                            failures.append(f"{product}: live folder description "
                                             f"missing '{_need}'")
-                token = (meta.get("processing_time_utc", "")
-                         .replace(" ", "_").replace(":", ""))
-                if token and token not in text:
-                    failures.append(f"{product}: KML cache token does not match "
-                                    f"metadata processing_time in {kp} (stale KML?)")
+                # version token must be the deterministic source version
+                from geospatial_utils import source_token as _st
+                token = _st(meta.get("source_version", ""))
+                if not meta.get("source_version"):
+                    failures.append(f"{product}: metadata missing 'source_version'")
+                elif token not in text:
+                    failures.append(f"{product}: live KML ?v= does not match "
+                                    f"metadata source_version in {kp} (stale KML?)")
                 if os.environ.get("CI") == "true" and "REPLACE-" in text:
-                    failures.append(f"{product}: KML still has placeholder "
+                    failures.append(f"{product}: live KML still has placeholder "
                                     f"PAGES_BASE_URL (CI must set it)")
                 for edge, val in (("<north>", bounds["lat_max"]),
                                   ("<south>", bounds["lat_min"]),
                                   ("<east>", bounds["lon_max"]),
                                   ("<west>", bounds["lon_min"])):
                     if f"{edge}{val}" not in text and f"{edge}{float(val)}" not in text:
-                        failures.append(f"{product}: KML {edge} != {val}")
-                print(f"[{product}] KML OK: {kp}")
+                        failures.append(f"{product}: live KML {edge} != {val}")
+                print(f"[{product}] live KML OK: {kp}")
             except ET.ParseError as e:
-                failures.append(f"{product}: KML XML parse error in {kp}: {e}")
+                failures.append(f"{product}: live KML XML parse error in {kp}: {e}")
 
     if failures:
         print("\nVALIDATION FAILURES:")

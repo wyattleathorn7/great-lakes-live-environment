@@ -8,8 +8,12 @@
   "source_units": "percent",
   "display_units": "%",
   "land_code": -1.0,
-  "color_scale": {"min": 0.0, "max": 100.0, "units": "%"},
+  "color_scale": {
+    "min": 0.0,
+    "max": 100.0,
+    "units": "%"
+  },
   "zero_ice_rendering": "fully transparent (open water shows no overlay)",
-  "refresh_interval_seconds": 43200,
+  "refresh_interval_seconds": 21600,
   "note": "An all-zero (ice-free) grid in the warm season is VALID data, not corruption. Corruption is detected via file structure, grid dimensions, value domain, and water-cell fraction checks."
 }

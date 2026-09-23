@@ -2,10 +2,15 @@ name: Update Great Lakes live environment
 
 on:
   schedule:
-    # Every 6 h matches the fastest source (NCEP GLWU cycles).
-    # Every run rebuilds fully; byte-identical outputs simply produce
-    # no commit.
-    - cron: "15 */6 * * *"
+    # Per-product source cadence (each job runs only on its own cron;
+    # every builder is ALSO source-aware and skips when the source id
+    # is unchanged, so off-cadence wakeups never rebuild/republish):
+    # - hourly: sub-daily sources (HRRR hourly, GFS 6-hourly discovery,
+    #   UVI forecast-hour advance).
+    - cron: "15 * * * *"
+    # - 4x daily: 6-hourly GLWU cycles + daily/irregular sources
+    #   (GLSEA, NIC NAIS, VIIRS composites, ERDDAP dailies).
+    - cron: "35 2,8,14,20 * * *"
   workflow_dispatch:
     inputs:
       product:
@@ -16,7 +21,7 @@ on:
         options: ["all", "wave_height", "water_temperature", "ice_coverage",
                   "ice_thickness", "ice_type", "wind", "leaf_color",
                   "chlorophyll", "water_clarity", "solar_radiation",
-                  "air_temperature", "snow_coverage"]
+                  "air_temperature", "snow_coverage", "uv_index"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -31,7 +36,7 @@ concurrency:
 
 jobs:
   wave_height:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'wave_height' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'wave_height' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -59,11 +64,12 @@ jobs:
             site/wave_height
             output/state/wave_height.json
             site/kml/Great_Lakes_Live_Wave_Height.kml
+            site/kml/live/Great_Lakes_Live_Wave_Height.kml
             kml/Great_Lakes_Live_Wave_Height.kml
           if-no-files-found: warn
 
   water_temperature:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'water_temperature' }}
+    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'water_temperature' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -90,11 +96,12 @@ jobs:
             site/water_temperature
             output/state/water_temperature.json
             site/kml/Great_Lakes_Live_Water_Temperature.kml
+            site/kml/live/Great_Lakes_Live_Water_Temperature.kml
             kml/Great_Lakes_Live_Water_Temperature.kml
           if-no-files-found: warn
 
   ice_coverage:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'ice_coverage' }}
+    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'ice_coverage' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -121,11 +128,12 @@ jobs:
             site/ice_coverage
             output/state/ice_coverage.json
             site/kml/Great_Lakes_Live_Ice_Coverage.kml
+            site/kml/live/Great_Lakes_Live_Ice_Coverage.kml
             kml/Great_Lakes_Live_Ice_Coverage.kml
           if-no-files-found: warn
 
   ice_thickness:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'ice_thickness' }}
+    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'ice_thickness' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -152,11 +160,12 @@ jobs:
             site/ice_thickness
             output/state/ice_thickness.json
             site/kml/Great_Lakes_Live_Ice_Thickness.kml
+            site/kml/live/Great_Lakes_Live_Ice_Thickness.kml
             kml/Great_Lakes_Live_Ice_Thickness.kml
           if-no-files-found: warn
 
   ice_type:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'ice_type' }}
+    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'ice_type' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -183,11 +192,12 @@ jobs:
             site/ice_type
             output/state/ice_type.json
             site/kml/Great_Lakes_Live_Ice_Type.kml
+            site/kml/live/Great_Lakes_Live_Ice_Type.kml
             kml/Great_Lakes_Live_Ice_Type.kml
           if-no-files-found: warn
 
   wind:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'wind' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'wind' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -214,11 +224,12 @@ jobs:
             site/wind
             output/state/wind.json
             site/kml/Great_Lakes_Live_Wind.kml
+            site/kml/live/Great_Lakes_Live_Wind.kml
             kml/Great_Lakes_Live_Wind.kml
           if-no-files-found: warn
 
   leaf_color:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'leaf_color' }}
+    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'leaf_color' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -244,13 +255,14 @@ jobs:
           path: |
             site/leaf_color
             site/kml/Great_Lakes_Live_Leaf_Color.kml
+            site/kml/live/Great_Lakes_Live_Leaf_Color.kml
             kml/Great_Lakes_Live_Leaf_Color.kml
             output/state/leaf_color.json
             output/state/leaf_color
           if-no-files-found: warn
 
   chlorophyll:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'chlorophyll' }}
+    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'chlorophyll' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -276,13 +288,14 @@ jobs:
           path: |
             site/chlorophyll
             site/kml/Great_Lakes_Live_Chlorophyll.kml
+            site/kml/live/Great_Lakes_Live_Chlorophyll.kml
             kml/Great_Lakes_Live_Chlorophyll.kml
             output/state/chlorophyll.json
             output/state/chlorophyll
           if-no-files-found: warn
 
   water_clarity:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'water_clarity' }}
+    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'water_clarity' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -308,13 +321,14 @@ jobs:
           path: |
             site/water_clarity
             site/kml/Great_Lakes_Live_Water_Clarity_Turbidity.kml
+            site/kml/live/Great_Lakes_Live_Water_Clarity_Turbidity.kml
             kml/Great_Lakes_Live_Water_Clarity_Turbidity.kml
             output/state/water_clarity.json
             output/state/water_clarity
           if-no-files-found: warn
 
   solar_radiation:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'solar_radiation' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'solar_radiation' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -340,13 +354,14 @@ jobs:
           path: |
             site/solar_radiation
             site/kml/Great_Lakes_Live_Solar_Radiation.kml
+            site/kml/live/Great_Lakes_Live_Solar_Radiation.kml
             kml/Great_Lakes_Live_Solar_Radiation.kml
             output/state/solar_radiation.json
             output/state/solar_radiation
           if-no-files-found: warn
 
   air_temperature:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'air_temperature' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'air_temperature' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -372,13 +387,14 @@ jobs:
           path: |
             site/air_temperature
             site/kml/Great_Lakes_Live_Air_Temperature.kml
+            site/kml/live/Great_Lakes_Live_Air_Temperature.kml
             kml/Great_Lakes_Live_Air_Temperature.kml
             output/state/air_temperature.json
             output/state/air_temperature
           if-no-files-found: warn
 
   snow_coverage:
-    if: ${{ github.event_name == 'schedule' || inputs.product == 'all' || inputs.product == 'snow_coverage' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'snow_coverage' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -404,13 +420,47 @@ jobs:
           path: |
             site/snow_coverage
             site/kml/Great_Lakes_Live_Snow_Coverage.kml
+            site/kml/live/Great_Lakes_Live_Snow_Coverage.kml
             kml/Great_Lakes_Live_Snow_Coverage.kml
             output/state/snow_coverage.json
             output/state/snow_coverage
           if-no-files-found: warn
 
+  uv_index:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'uv_index' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update UV index
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_uv_index.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "UV source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-uv_index
+          path: |
+            site/uv_index
+            site/kml/Great_Lakes_Live_UV_Index.kml
+            site/kml/live/Great_Lakes_Live_UV_Index.kml
+            kml/Great_Lakes_Live_UV_Index.kml
+            output/state/uv_index.json
+            output/state/uv_index
+          if-no-files-found: warn
+
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

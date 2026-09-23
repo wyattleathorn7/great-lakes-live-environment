@@ -2,15 +2,15 @@
   "product": "solar_radiation",
   "title": "LIVE SOLAR RADIATION",
   "freshness": "LIVE / CURRENT MODEL (analysis)",
-  "noaa_source": "NOAA/NCEP HRRR 3 km surface analysis, DSWRF (downward short-wave radiation flux), hourly cycles",
-  "product_name": "NOAA/NCEP HRRR 3 km surface analysis, DSWRF (downward short-wave radiation flux), hourly cycles",
-  "variable": "DSWRF surface analysis step (hourly-averaged downward shortwave flux for the analysis hour)",
-  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-09-22 08:00 UTC",
+  "noaa_source": "NOAA/NCEP GFS operational surface analysis, DSWRF (downward short-wave radiation flux), 6-hourly cycles (00/06/12/18Z)",
+  "product_name": "NOAA/NCEP GFS operational surface analysis, DSWRF (downward short-wave radiation flux), 6-hourly cycles (00/06/12/18Z)",
+  "variable": "DSWRF surface f000 analysis step (newest available GFS cycle)",
+  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/",
+  "data_time_utc": "2026-09-23 00:00 UTC",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-22 09:24 UTC",
+  "processing_time_utc": "2026-09-23 08:51 UTC",
   "units": "W/m^2 (display); source W m^-2",
-  "spatial_resolution_source": "~3 km HRRR Lambert grid (1799x1059)",
+  "spatial_resolution_source": "~13 km GFS Gaussian grid (3072x1536), bilinear-resampled to canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
   "crs": "EPSG:4326",
   "render_bounds": {
@@ -22,15 +22,18 @@
   "color_scale_min": 0.0,
   "color_scale_max": 787.6,
   "color_scale_units": "W/m^2",
-  "missing_data_treatment": "only [0,1400] admitted; land outside the NOAA shoreline and missing analysis transparent; never interpolated.",
+  "missing_data_treatment": "only [0,1400] admitted; land outside the NOAA shoreline and missing analysis transparent; never interpolated across land/water.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "legend_size": [
     640,
     230
   ],
-  "legend_scale_html": "Surface downward shortwave solar radiation (W/m^2, hourly-averaged for the analysis hour), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 0 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.",
-  "model_cycle": "hrrr.20260922 t08z",
+  "legend_scale_html": "Surface downward shortwave solar radiation (W/m^2, GFS f000 analysis step), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 0 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.",
+  "model_cycle": "20260923 t00z",
+  "source_id": "gfs-20260923-t00z-f000",
+  "source_version": "gfs-20260923-t00z-f000",
+  "gfs_step_range": "0",
   "historical": {
     "low": 0.0,
     "high": 787.6,
@@ -38,18 +41,19 @@
       "p5": 0.0,
       "p25": 0.0,
       "p50": 0.0,
-      "p75": 0.0,
-      "p95": 0.0,
-      "p99": 406.80998779296715
+      "p75": 45.16779804229736,
+      "p95": 713.8488006591797,
+      "p99": 729.2927954101561
     },
-    "n_obs": 445846,
+    "n_obs": 485846,
     "extends": []
   },
   "stats": {
-    "valid_cells": 2114386,
+    "valid_cells": 2115000,
     "current_min": 0.0,
-    "current_max": 0.0,
-    "nighttime": true
+    "current_max": 11.289249729119764,
+    "nighttime": false,
+    "interior_holes": 0
   },
-  "folder_html": "<h2>LIVE SOLAR RADIATION</h2><p>Surface downward shortwave solar radiation flux: solar power arriving at the surface, hourly-averaged for the model analysis hour. Nighttime reads zero (valid data, deep blue) \u2014 not missing data. Clouds reduce values quantitatively versus clear sky.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/solar_radiation/legend.png?v=2026-09-22_0924_UTC\" width=\"600\" alt=\"key\"></p><p>Surface downward shortwave solar radiation (W/m^2, hourly-averaged for the analysis hour), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 0 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.</p><p><b>Variable:</b> DSWRF surface analysis step (hourly-averaged downward shortwave flux for the analysis hour)<br/><b>Units:</b> W/m^2 (hourly-averaged flux for the analysis hour (not instantaneous, not daily accumulation))<br/><b>Source:</b> NOAA/NCEP HRRR 3 km surface analysis, DSWRF (downward short-wave radiation flux), hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-22 08:00 UTC<br/><b>Processed:</b> 2026-09-22 09:24 UTC<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
+  "folder_html": "<h2>LIVE SOLAR RADIATION</h2><p>Surface downward shortwave solar radiation flux: solar power arriving at the surface, GFS f000 analysis step for the newest available cycle. Nighttime reads zero (valid data, deep blue) \u2014 not missing data. Clouds reduce values quantitatively versus clear sky.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/solar_radiation/legend.png?v=gfs-20260923-t00z-f000\" width=\"600\" alt=\"key\"></p><p>Surface downward shortwave solar radiation (W/m^2, GFS f000 analysis step), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 0 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.</p><p><b>Variable:</b> DSWRF surface f000 analysis step (newest available GFS cycle)<br/><b>Units:</b> W/m^2 (f000 analysis-step flux of the newest available GFS cycle (not instantaneous, not daily accumulation))<br/><b>Source:</b> NOAA/NCEP GFS operational surface analysis, DSWRF (downward short-wave radiation flux), 6-hourly cycles (00/06/12/18Z)<br/><b>Update:</b> GFS 6-hourly analysis cycles (00/06/12/18Z)<br/><b>Data time:</b> 2026-09-23 00:00 UTC<br/><b>Source version:</b> gfs-20260923-t00z-f000<br/><b>Processed:</b> 2026-09-23 08:51 UTC<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/\">NOMADS GFS</a></p>"
 }

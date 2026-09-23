@@ -8,7 +8,11 @@
   "source_units": "cm (WMO stage ranges)",
   "display_units": "in",
   "data_nature": "derived/estimated from analyzed ice stages; NOT a direct measurement",
-  "color_scale": {"min": 0.0, "max": "adaptive ceil(p99.5), clamped to [6, 40]", "units": "in"},
+  "color_scale": {
+    "min": 0.0,
+    "max": "adaptive ceil(p99.5), clamped to [6, 40]",
+    "units": "in"
+  },
   "alpha_rule": "alpha scaled by total concentration (CT/10); open water (CT<1) fully transparent",
-  "refresh_interval_seconds": 43200
+  "refresh_interval_seconds": 21600
 }

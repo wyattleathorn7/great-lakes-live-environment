@@ -2,8 +2,8 @@
   "product": "water_clarity",
   "title": "LIVE WATER CLARITY / TURBIDITY",
   "freshness_label": "LATEST AVAILABLE (daily composite)",
-  "source_name": "NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Near Real-Time, Global 4 km, Daily (ERDDAP nesdisVHNkdparDaily)",
-  "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNkdparDaily.html",
+  "source_name": "NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQkdparDaily), legacy NRT id as fallback",
+  "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNSQkdparDaily.html",
   "variable": "kd_par (Diffuse Attenuation Coefficient for PAR; NOAA MECB algorithm; product status Experimental)",
   "source_units": "m^-1",
   "display_units": "m^-1",
@@ -11,7 +11,7 @@
   "valid_max": 32.0,
   "direction": "larger values mean MORE turbid water (more attenuation); clear water sits at the blue/cyan end",
   "allow_negative": false,
-  "refresh_interval_seconds": 43200,
+  "refresh_interval_seconds": 21600,
   "what": "Diffuse attenuation coefficient for photosynthetically available radiation (KdPAR): how quickly sunlight fades with depth. Larger values mean more turbid water; smaller values mean clearer water. Source values are never altered for color convenience.",
   "why_extreme": "Rare very-turbid water (storm resuspension, river plumes, intense blooms) compresses into red-violet/deep-purple; ordinary clear conditions own most of the color resolution."
 }

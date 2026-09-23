@@ -11,8 +11,14 @@
   "valid_min_c": -60.0,
   "valid_max_c": 55.0,
   "allow_negative": true,
-  "refresh_interval_seconds": 21600,
-  "buoys": ["45001", "45002", "45132", "45012", "45005"],
+  "refresh_interval_seconds": 3600,
+  "buoys": [
+    "45001",
+    "45002",
+    "45132",
+    "45012",
+    "45005"
+  ],
   "buoy_qc_tolerance_f": 5.0,
   "what": "Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).",
   "why_extreme": "Record cold anchors deep purple; record heat anchors the red end; ordinary temperatures own most of the color resolution."

@@ -1,6 +1,6 @@
 {
   "product": "snow_coverage",
-  "title": "❄️ LIVE SNOW COVERAGE",
+  "title": "\u2744\ufe0f LIVE SNOW COVERAGE",
   "freshness_label": "LIVE / CURRENT MODEL (analysis)",
   "source_name": "NOAA/NCEP HRRR 3 km snow analysis (SNOD snow depth + SNOWC snow cover), hourly cycles",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
@@ -12,7 +12,7 @@
   "gate_cover_pct": 0.0,
   "valid_max_m": 5.0,
   "allow_negative": false,
-  "refresh_interval_seconds": 21600,
-  "what": "Snow physically present on the ground in Michigan. Falling snow, snowfall forecasts, precipitation, radar echoes, clouds, and uncertain detections are transparent. No snow means transparent — never a haze.",
+  "refresh_interval_seconds": 3600,
+  "what": "Snow physically present on the ground in Michigan. Falling snow, snowfall forecasts, precipitation, radar echoes, clouds, and uncertain detections are transparent. No snow means transparent \u2014 never a haze.",
   "why_extreme": "Rare deep accumulations compress into magenta/pink/white; ordinary depths own most of the color resolution. White is reserved for the extreme end."
 }

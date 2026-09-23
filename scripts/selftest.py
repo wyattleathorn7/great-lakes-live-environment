@@ -96,16 +96,33 @@ def main():
         v = mv(lon, lat)
         check(name, (v > 0.5) == bool(want), round(float(v), 3))
 
-    # ---- KML single-overlay hygiene (GE Web: 1 external image, no Region) ----
+    # ---- KML entry/live hygiene (GE Web: 1 external image, no Region) ----
+    # Entry files (what users add): exactly one self-refreshing
+    # NetworkLink, zero imagery. Live files: exactly one versioned
+    # GroundOverlay, zero NetworkLinks (no self-reference loops).
     import re as _re
     prods = ["wave_height", "water_temperature", "ice_coverage",
-             "ice_thickness", "ice_type", "wind", "leaf_color"]
+             "ice_thickness", "ice_type", "wind", "leaf_color",
+             "chlorophyll", "water_clarity", "solar_radiation",
+             "air_temperature", "snow_coverage", "uv_index"]
     for p in prods:
-        for kf in (os.path.join(REPO_ROOT, "kml", f"Great_Lakes_Live_{_k(p)}.kml"),):
+        for kf in (os.path.join(REPO_ROOT, "kml", f"Great_Lakes_Live_{_k(p)}.kml"),
+                   os.path.join(SITE_DIR, "kml", f"Great_Lakes_Live_{_k(p)}.kml")):
             t = open(kf, encoding="utf-8").read()
-            check(f"{p}-single-overlay", t.count("<GroundOverlay>") == 1,
-                  t.count("<GroundOverlay>"))
-            check(f"{p}-no-tiles-refs", "/tiles/" not in t)
+            check(f"{p}-entry-one-link", t.count("<NetworkLink>") == 1,
+                  t.count("<NetworkLink>"))
+            check(f"{p}-entry-no-overlay", "<GroundOverlay>" not in t)
+            check(f"{p}-entry-no-tiles-refs", "/tiles/" not in t)
+            check(f"{p}-entry-links-live",
+                  f"kml/live/Great_Lakes_Live_{_k(p)}.kml" in t)
+        kf = os.path.join(SITE_DIR, "kml", "live",
+                          f"Great_Lakes_Live_{_k(p)}.kml")
+        t = open(kf, encoding="utf-8").read()
+        check(f"{p}-single-overlay", t.count("<GroundOverlay>") == 1,
+              t.count("<GroundOverlay>"))
+        check(f"{p}-live-no-self-link", "<NetworkLink>" not in t)
+        check(f"{p}-no-tiles-refs", "/tiles/" not in t)
+        check(f"{p}-live-versioned", "?v=" in t)
     import numpy as np
     from PIL import Image
     for p in prods:
@@ -122,8 +139,15 @@ def main():
             check(f"{p}-no-screenoverlay", "<ScreenOverlay" not in t)
             check(f"{p}-no-placeholders",
                   "REPLACE-GITHUB-USER" not in t and "REPLACE-REPO" not in t)
-            check(f"{p}-has-groundoverlay", "<GroundOverlay>" in t)
+            check(f"{p}-entry-no-groundoverlay", "<GroundOverlay>" not in t)
+            check(f"{p}-entry-has-link", "<NetworkLink>" in t)
             check(f"{p}-kml-small", len(t) < 100_000, len(t))
+        kf = os.path.join(SITE_DIR, "kml", "live",
+                          f"Great_Lakes_Live_{_k(p)}.kml")
+        t = open(kf, encoding="utf-8").read()
+        check(f"{p}-has-groundoverlay", "<GroundOverlay>" in t)
+        check(f"{p}-live-no-screenoverlay", "<ScreenOverlay" not in t)
+        check(f"{p}-live-kml-small", len(t) < 100_000, len(t))
 
     # ---- leaf phenology engine (synthetic trajectory §43) ----
     from leaf_phenology import (build_leaf_lut, phenology_phase,
@@ -321,7 +345,12 @@ def _k(p):
     return {"wave_height": "Wave_Height", "water_temperature": "Water_Temperature",
             "ice_coverage": "Ice_Coverage", "ice_thickness": "Ice_Thickness",
             "ice_type": "Ice_Type", "wind": "Wind",
-            "leaf_color": "Leaf_Color"}[p]
+            "leaf_color": "Leaf_Color", "chlorophyll": "Chlorophyll",
+            "water_clarity": "Water_Clarity_Turbidity",
+            "solar_radiation": "Solar_Radiation",
+            "air_temperature": "Air_Temperature",
+            "snow_coverage": "Snow_Coverage",
+            "uv_index": "UV_Index"}[p]
 
 
 if __name__ == "__main__":

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>🌿 LIVE CHLOROPHYLL / ALGAL ACTIVITY</name>
+    <description><![CDATA[<h2>LIVE CHLOROPHYLL / ALGAL ACTIVITY</h2><p><b>Data time:</b> 2026-09-20T12:00:00Z (newest of 7-day mosaic)<br/><b>Source updated:</b> n/a (ERDDAP)<br/><b>Source version:</b> nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-2026-09-20<br/><b>Processed:</b> 2026-09-23 01:33 UTC<br/><b>Status:</b> LATEST AVAILABLE (daily composite)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/legend.png?v=nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-2026-09-20" width="600" alt="legend"><br>Chlorophyll-a concentration (mg/m^3), balanced linear scale: <b>LOWEST 0.079</b> (dark blue) → common 1.8 (green/yellow) → <b>HIGHEST+ 99.93</b> (deep purple). Every part of the scale owns an equal share of color; high values indicate biomass/activity, not toxins.</p><p><b>Source:</b> NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)<br/><a href="https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html">https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of all other layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <Folder>
+      <name>LIVE CHLOROPHYLL / ALGAL ACTIVITY</name>
+      <description><![CDATA[<h2>LIVE CHLOROPHYLL / ALGAL ACTIVITY</h2><p>Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.</p><p><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/legend.png?v=nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-2026-09-20" width="600" alt="key"></p><p>Chlorophyll-a concentration (mg/m^3), balanced linear scale: <b>LOWEST 0.079</b> (dark blue) → common 1.8 (green/yellow) → <b>HIGHEST+ 99.93</b> (deep purple). Every part of the scale owns an equal share of color; high values indicate biomass/activity, not toxins.</p><p><b>Units:</b> mg/m^3<br/><b>Source:</b> NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)<br/><b>Update:</b> daily composites<br/><b>Data time:</b> 2026-09-20T12:00:00Z (mosaic 2026-09-20..2026-09-14)<br/><b>Processed:</b> 2026-09-23 01:33 UTC<br/><b>Why high values turn red/purple:</b> Very high values (blooms, algal activity, turbid intrusions) compress into red-violet/deep-purple; common background concentrations own most of the color resolution.<br/><b>Provenance:</b> <a href="https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html">ERDDAP dataset</a></p>]]></description>
+      <GroundOverlay>
+        <name>🌿 LIVE CHLOROPHYLL / ALGAL ACTIVITY</name>
+        <drawOrder>10</drawOrder>
+        <Icon>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/current.png?v=nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-2026-09-20</href>
+          <refreshMode>onInterval</refreshMode>
+          <refreshInterval>21600</refreshInterval>
+        </Icon>
+        <LatLonBox>
+          <north>49.5</north>
+          <south>40.5</south>
+          <east>-73.5</east>
+          <west>-93.0</west>
+        </LatLonBox>
+      </GroundOverlay>
+    </Folder>
+  </Document>
+</kml>

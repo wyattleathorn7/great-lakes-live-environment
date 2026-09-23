@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>🍂 LIVE LEAF COLOR</name>
+    <description><![CDATA[<h2>LIVE LEAF COLOR</h2><p><b>Data time:</b> VI composite start 2026-08-05 (+16d window); reflectance 2026-08-13 (+8d); retrieved 2026-09-23 01:46 UTC<br/><b>Source updated:</b> composite sig 1ce56c63a4cc<br/><b>Source version:</b> leaf-v3-1ce56c63a4cc<br/><b>Processed:</b> 2026-09-23 09:14 UTC<br/><b>Status:</b> LATEST AVAILABLE COMPOSITE</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/leaf_color/legend.png?v=leaf-v3-1ce56c63a4cc" width="600" alt="legend"><br>Satellite-derived seasonal vegetation state. The continuous color scale represents the changing seasonal condition of vegetated land, from winter dormancy through spring emergence, active growth, autumn coloration, leaf drop, and return to dormancy. Color represents a satellite-derived phenological state and should not be interpreted as the exact color of every individual tree. Every Michigan land pixel is painted: clouds hold the previous phase, and snow, urban, barren, nodata or briefly missing pixels are filled from surrounding valid land and recent history. Only Great-Lakes water stays transparent.</p><p><b>Source:</b> NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)<br/><a href="https://planetarycomputer.microsoft.com/">https://planetarycomputer.microsoft.com/</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of all other layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <GroundOverlay>
+      <name>🍂 LIVE LEAF COLOR</name>
+      <drawOrder>10</drawOrder>
+      <Icon>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/leaf_color/current.png?v=leaf-v3-1ce56c63a4cc</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>21600</refreshInterval>
+      </Icon>
+      <LatLonBox>
+        <north>49.5</north>
+        <south>40.5</south>
+        <east>-73.5</east>
+        <west>-93.0</west>
+      </LatLonBox>
+    </GroundOverlay>
+  </Document>
+</kml>

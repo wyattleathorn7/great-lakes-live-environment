@@ -22,14 +22,16 @@ import traceback
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, legend_block)
+from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
+                       description_html, entry_description_html, legend_block,
+                       live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, bin_to_canvas, canvas_indices,
                               load_bounds, load_michigan_mask,
                               promote_stage, read_state, save_png,
-                              stage_dir, utcnow_iso, write_metadata,
-                              write_state, bleed_rgb_into_transparent)
+                              source_token, stage_dir, utcnow_iso,
+                              write_metadata, write_state,
+                              bleed_rgb_into_transparent)
 from gradient_scale import (SNOW_FAMILY, build_linear_stops,
                             draw_scale_legend, fmt_val, load_record,
                             record_tick_labels, render_rgba, save_record,
@@ -80,20 +82,9 @@ def run():
 
 def _refresh_kml():
     try:
-        with open(os.path.join(SITE_DIR, PRODUCT, "metadata.json")) as f:
-            meta = json.load(f)
-        token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
-        block = legend_block(f"{PRODUCT}/legend.png", token,
-                             meta.get("legend_scale_html", ""))
-        kml_text = build_kml(
-            PRODUCT, KML_FILE, OVERLAY_NAME,
-            f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
-            description_html(CONFIG["title"], meta, SKIP_NOTE, block),
-            CONFIG["refresh_interval_seconds"], token,
-            folder=(CONFIG["title"], meta.get("folder_html", block)),
-            out_dirs=[os.path.join(REPO_ROOT, "kml", KML_FILE),
-                      os.path.join(SITE_DIR, "kml", KML_FILE)])
-        assert_no_vector_geometry(kml_text)
+        refresh_kml_base_url(PRODUCT, KML_FILE, OVERLAY_NAME,
+                             CONFIG["title"], SKIP_NOTE,
+                             CONFIG["refresh_interval_seconds"])
         print(f"[{PRODUCT}] KML base URLs refreshed.")
     except Exception as e:
         print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
@@ -214,6 +205,9 @@ def _finish(stage, stage_prod, bounds, W, H, rec, res, stops, legend_wh,
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["model_cycle"] = f"{datestr} t{cycle}z"
+    source_id = f"hrrr-{datestr}-t{cycle}z"
+    meta["source_id"] = source_id
+    meta["source_version"] = source_token(source_id)
     meta["historical"] = {"low": rec["hist_min"], "high": vmax,
                           "percentiles": p, "n_obs": rec["n_obs"],
                           "provisional": rec.get("provisional", False),
@@ -223,7 +217,7 @@ def _finish(stage, stage_prod, bounds, W, H, rec, res, stops, legend_wh,
         mn = float(np.nanmin(inches)) if n_snow else 0.0
     meta["stats"] = {"snow_pixels": n_snow, "current_min": mn,
                      "current_max": mx}
-    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    token = meta["source_version"]
     folder_html = (
         f"<h2>{CONFIG['title']}</h2>"
         f"<p>{LEGEND_TEXT}</p>"
@@ -245,13 +239,18 @@ def _finish(stage, stage_prod, bounds, W, H, rec, res, stops, legend_wh,
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
         folder=(CONFIG["title"], folder_html),
-        out_dirs=[os.path.join(stage, "kml", KML_FILE),
-                  os.path.join(stage, "site", "kml", KML_FILE)])
+        out_dirs=live_out_dirs(stage, KML_FILE)["live"])
     assert_no_vector_geometry(kml_text)
+    build_entry_kml(
+        PRODUCT, KML_FILE, OVERLAY_NAME,
+        entry_description_html(CONFIG["title"], meta, SKIP_NOTE),
+        CONFIG["refresh_interval_seconds"],
+        out_dirs=live_out_dirs(stage, KML_FILE)["entry"])
 
     save_record(PRODUCT, rec, res)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": meta["model_cycle"],
+                          "source_id": source_id,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

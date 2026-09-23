@@ -1,16 +1,27 @@
 {
   "product": "wind",
-  "title": "LIVE WIND — BEAUFORT SCALE",
+  "title": "LIVE WIND \u2014 BEAUFORT SCALE",
   "freshness_label": "LIVE / CURRENT MODEL (analysis)",
-  "source_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) — UGRD/VGRD surface analysis",
+  "source_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 UGRD/VGRD surface analysis",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
   "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/{date_dir}/glwu.grlc_2p5km.t{cycle}z.grib2",
-  "cycles_try_order": ["13", "07", "01"],
+  "cycles_try_order": [
+    "19",
+    "13",
+    "07",
+    "01"
+  ],
   "variable": "UGRD/VGRD surface wind components, analysis step; speed = sqrt(U^2+V^2), visualized as Beaufort Force 0-12",
   "source_units": "m/s",
   "display_units": "kt (Beaufort Force 0-12)",
-  "refresh_interval_seconds": 21600,
-  "buoys": ["45001", "45002", "45132", "45012", "45005"],
+  "refresh_interval_seconds": 900,
+  "buoys": [
+    "45001",
+    "45002",
+    "45132",
+    "45012",
+    "45005"
+  ],
   "buoy_qc_tolerance_kt": 5.0,
   "arrow_subsample": 14
 }

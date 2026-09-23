@@ -9,5 +9,5 @@
   "display_units": "category",
   "data_nature": "analyzed (human ice analysis of satellite imagery)",
   "alpha_rule": "alpha scaled by total concentration (CT/10); open water (CT<1) fully transparent",
-  "refresh_interval_seconds": 43200
+  "refresh_interval_seconds": 21600
 }

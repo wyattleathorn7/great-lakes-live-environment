@@ -28,15 +28,15 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from beaufort import (BEAUFORT, FORCE_COLORS, MS_TO_KT, force_from_kt,
                       force_name, force_range_text)
-from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, legend_block,
-                       refresh_kml_base_url)
-from build_wave_height import candidate_urls
+from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
+                       description_html, entry_description_html, legend_block,
+                       live_out_dirs, refresh_kml_base_url)
+from build_wave_height import cycle_source_id, newest_available_cycle
 from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, download, draw_category_legend,
                               fetch_buoy_obs, load_bounds, promote_stage,
-                              read_state, save_png, stage_dir, utcnow_iso,
-                              write_metadata, write_state)
+                              read_state, save_png, source_token, stage_dir,
+                              utcnow_iso, write_metadata, write_state)
 
 PRODUCT = "wind"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -161,30 +161,43 @@ def main():
         traceback.print_exc()
         return 1
 
-
 def run():
     now = datetime.now(timezone.utc)
     raw_path = os.path.join(RAW_DIR, "glwu_wind_current.grib2")
-    got, used_url, datestr, cycle = None, None, None, None
-    for url, dd, cc in candidate_urls(now):
-        try:
-            info = download(url, raw_path, timeout=300)
-            if info["size_bytes"] < 100_000:
-                print(f"[{PRODUCT}] candidate {dd} t{cc}z too small; trying older.")
-                continue
-            got, used_url, datestr, cycle = info, url, dd, cc
-            break
-        except Exception as e:
-            print(f"[{PRODUCT}] candidate {dd} t{cc}z failed: {str(e)[:140]}")
-    if got is None:
-        print(f"[{PRODUCT}] DOWNLOAD FAILED for all candidates (keeping previous).")
+    # Same newest-available-cycle detection as wave height (UGRD line),
+    # so the wind raster tracks the actual posted cycle, never the
+    # assumed schedule -- and unchanged cycles skip without download.
+    pick = newest_available_cycle(now, "UGRD", label=PRODUCT)
+    if pick is None:
+        print(f"[{PRODUCT}] NO CYCLE AVAILABLE (keeping previous).")
+        return 2
+    url, datestr, cycle, stamp = pick
+    source_id = cycle_source_id(stamp)
+    prev = read_state(PRODUCT)
+    if prev.get("source_id") == source_id \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
+            and os.path.exists(os.path.join(SITE_DIR, "kml", "live", KML_FILE)):
+        print(f"[{PRODUCT}] source unchanged ({source_id}); keeping raster.")
+        refresh_kml_base_url(PRODUCT, KML_FILE, OVERLAY_NAME,
+                             CONFIG["title"], SKIP_NOTE,
+                             CONFIG["refresh_interval_seconds"])
+        return 0
+    try:
+        got = download(url, raw_path, timeout=300)
+    except Exception as e:
+        print(f"[{PRODUCT}] DOWNLOAD FAILED for {datestr} t{cycle}z "
+              f"(keeping previous): {str(e)[:140]}")
+        return 2
+    if got["size_bytes"] < 100_000:
+        print(f"[{PRODUCT}] candidate {datestr} t{cycle}z too small; "
+              f"keeping previous.")
         return 2
 
     # No skip: every run rebuilds (tiles must deploy); identical
     # bytes simply produce no commit. Failures still keep previous.
 
     try:
-        return _build(got, used_url, datestr, cycle, raw_path)
+        return _build(got, url, datestr, cycle, raw_path)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -199,6 +212,19 @@ def _build(got, used_url, datestr, cycle, raw_path):
 
     u_ms, v_ms, lats, lons, gnx, gny, data_date, data_time = \
         extract_uv_analysis(raw_path)
+    # Source-aware gate (same rule as wave height): the GRIB analysis stamp
+    # controls regeneration, never the workflow run time.
+    source_id = f"glwu-{data_date}-{data_time}Z"
+    prev = read_state(PRODUCT)
+    if prev.get("source_id") == source_id \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
+            and os.path.exists(os.path.join(
+                SITE_DIR, "kml", "live", KML_FILE)):
+        print(f"[{PRODUCT}] source unchanged ({source_id}); keeping raster.")
+        refresh_kml_base_url(PRODUCT, KML_FILE, OVERLAY_NAME,
+                             CONFIG["title"], SKIP_NOTE,
+                             CONFIG["refresh_interval_seconds"])
+        return 0
     valid = (np.isfinite(u_ms) & np.isfinite(v_ms)
              & (np.abs(u_ms) < 75) & (np.abs(v_ms) < 75))
     n_valid = int(valid.sum())
@@ -300,6 +326,8 @@ def _build(got, used_url, datestr, cycle, raw_path):
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["model_cycle"] = f"{datestr} t{cycle}z"
+    meta["source_id"] = source_id
+    meta["source_version"] = source_token(source_id)
     meta["beaufort_table"] = [
         {"force": f, "description": force_name(f), "range_kt": force_range_text(f),
          "color": FORCE_COLORS[f]} for f in range(13)]
@@ -353,19 +381,24 @@ def _build(got, used_url, datestr, cycle, raw_path):
             "absdiff_kt": diff, "verdict": flag, "obs_time": obs.get("time_utc")}
     write_metadata(stage_prod, meta)  # re-write incl. buoy QC
 
-    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    token = meta["source_version"]
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
+    outs = live_out_dirs(stage, KML_FILE)
     kml_text = build_kml(
         PRODUCT, KML_FILE, OVERLAY_NAME,
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
-        out_dirs=[os.path.join(stage, "kml", KML_FILE),
-                  os.path.join(stage, "site", "kml", KML_FILE)])
+        out_dirs=outs["live"])
     assert_no_vector_geometry(kml_text)
+    build_entry_kml(
+        PRODUCT, KML_FILE, OVERLAY_NAME,
+        entry_description_html(CONFIG["title"], meta, SKIP_NOTE),
+        CONFIG["refresh_interval_seconds"], out_dirs=outs["entry"])
 
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": meta["model_cycle"],
+                          "source_id": source_id,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

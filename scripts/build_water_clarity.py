@@ -26,20 +26,25 @@ import traceback
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, legend_block)
+from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
+                       description_html, entry_description_html, legend_block,
+                       live_out_dirs, refresh_kml_base_url)
 from erddap_coastwatch import fetch_csv, latest_time
 from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, load_bounds, promote_stage,
-                              read_state, save_png, stage_dir, utcnow_iso,
-                              write_metadata, write_state)
+                              read_state, save_png, source_token, stage_dir,
+                              utcnow_iso, write_metadata, write_state)
 from gradient_scale import (build_linear_stops, draw_scale_legend,
                             fmt_val, load_record, record_tick_labels,
                             render_rgba, save_record, update_record)
 
 PRODUCT = "water_clarity"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
-DATASET = "nesdisVHNkdparDaily"
+# Live source priority (verified 2026-09-23): the Science Quality
+# KdPAR daily is the operational stream (newest 2026-09-13, ~10 d
+# production latency); the legacy NRT id is kept as fallback but is
+# currently intermittent/gone (404 on its time axis).
+DATASETS = ["nesdisVHNSQkdparDaily", "nesdisVHNkdparDaily"]
 VAR = "kd_par"
 KML_FILE = "Great_Lakes_Live_Water_Clarity_Turbidity.kml"
 OVERLAY_NAME = "\U0001F30A LIVE WATER CLARITY / TURBIDITY"
@@ -58,28 +63,44 @@ def main():
 
 
 def recent_times(n):
-    """Newest n daily timestamps (ISO) from the dataset axis."""
+    """Newest n daily timestamps (ISO) from the freshest live dataset."""
     import datetime as dt
-    end = latest_time(DATASET)
+    end, dataset = None, None
+    last = None
+    for cand in DATASETS:
+        try:
+            end = latest_time(cand)
+            dataset = cand
+            break
+        except Exception as e:
+            print(f"[{PRODUCT}] dataset {cand} time-axis probe failed: "
+                  f"{str(e)[:100]}")
+            last = e
+    if end is None:
+        raise last or RuntimeError("no KdPAR dataset reachable")
     base = dt.datetime.fromisoformat(end.replace("Z", "+00:00"))
-    return [((base - dt.timedelta(days=i)).strftime("%Y-%m-%dT12:00:00Z"))
-            for i in range(n)]
+    return ([((base - dt.timedelta(days=i)).strftime("%Y-%m-%dT12:00:00Z"))
+             for i in range(n)], dataset)
 
 
 def run():
     bounds = load_bounds()
     try:
-        times = recent_times(MOSAIC_DAYS)
+        times, dataset = recent_times(MOSAIC_DAYS)
     except Exception as e:
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
     prev = read_state(PRODUCT)
     if prev.get("data_times") == times \
-            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
-        print(f"[{PRODUCT}] source unchanged ({times[0]}); keeping current raster.")
+            and prev.get("dataset") == dataset \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
+            and os.path.exists(os.path.join(
+                SITE_DIR, "kml", "live", KML_FILE)):
+        print(f"[{PRODUCT}] source unchanged ({dataset} {times[0]}); "
+              f"keeping current raster.")
         return _refresh_kml()
     try:
-        return _build(bounds, times)
+        return _build(bounds, times, dataset)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -89,27 +110,16 @@ def run():
 
 def _refresh_kml():
     try:
-        with open(os.path.join(SITE_DIR, PRODUCT, "metadata.json")) as f:
-            meta = json.load(f)
-        token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
-        block = legend_block(f"{PRODUCT}/legend.png", token,
-                             meta.get("legend_scale_html", ""))
-        kml_text = build_kml(
-            PRODUCT, KML_FILE, OVERLAY_NAME,
-            f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
-            description_html(CONFIG["title"], meta, SKIP_NOTE, block),
-            CONFIG["refresh_interval_seconds"], token,
-            folder=(CONFIG["title"], meta.get("folder_html", block)),
-            out_dirs=[os.path.join(REPO_ROOT, "kml", KML_FILE),
-                      os.path.join(SITE_DIR, "kml", KML_FILE)])
-        assert_no_vector_geometry(kml_text)
+        refresh_kml_base_url(PRODUCT, KML_FILE, OVERLAY_NAME,
+                             CONFIG["title"], SKIP_NOTE,
+                             CONFIG["refresh_interval_seconds"])
         print(f"[{PRODUCT}] KML base URLs refreshed.")
     except Exception as e:
         print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
     return 0
 
 
-def _build(bounds, times):
+def _build(bounds, times, dataset):
     from build_chlorophyll import _bin_grid
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
@@ -119,7 +129,7 @@ def _build(bounds, times):
     grids = {}
     for t in times:
         try:
-            la, lo_n, g = fetch_csv(DATASET, VAR, t, bounds["lat_min"],
+            la, lo_n, g = fetch_csv(dataset, VAR, t, bounds["lat_min"],
                                     bounds["lat_max"], bounds["lon_min"],
                                     bounds["lon_max"])
         except Exception as e:
@@ -192,7 +202,11 @@ def _build(bounds, times):
                           "extends": rec.get("extends", [])}
     meta["stats"] = {"valid_cells": n_valid, "current_min": cur_min,
                      "current_max": cur_max}
-    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    meta["dataset"] = dataset
+    source_id = f"{dataset}-{times[0][:10]}"
+    meta["source_id"] = source_id
+    meta["source_version"] = source_token(source_id)
+    token = meta["source_version"]
     folder_html = (
         f"<h2>{CONFIG['title']}</h2>"
         f"<p>{CONFIG['what']}</p>"
@@ -215,13 +229,19 @@ def _build(bounds, times):
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
         folder=(CONFIG["title"], folder_html),
-        out_dirs=[os.path.join(stage, "kml", KML_FILE),
-                  os.path.join(stage, "site", "kml", KML_FILE)])
+        out_dirs=live_out_dirs(stage, KML_FILE)["live"])
     assert_no_vector_geometry(kml_text)
+    build_entry_kml(
+        PRODUCT, KML_FILE, OVERLAY_NAME,
+        entry_description_html(CONFIG["title"], meta, SKIP_NOTE),
+        CONFIG["refresh_interval_seconds"],
+        out_dirs=live_out_dirs(stage, KML_FILE)["entry"])
 
     save_record(PRODUCT, rec, res)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"data_times": times,
+                          "dataset": dataset,
+                          "source_id": source_id,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

@@ -20,12 +20,12 @@ import traceback
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build_kml import (assert_no_vector_geometry, build_kml,
-                       description_html, legend_block,
-                       refresh_kml_base_url)
+from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
+                       description_html, entry_description_html, legend_block,
+                       live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
                               download, ensure_coords, promote_stage,
-                              read_state, stage_dir, utcnow_iso,
+                              read_state, source_token, stage_dir, utcnow_iso,
                               write_metadata, write_state)
 from render_gradient import render_field
 
@@ -65,13 +65,26 @@ def run():
     with open(raw_path, "rb") as f:
         digest = hashlib.sha256(f.read()).hexdigest()
 
-    # No skip: every run rebuilds (tiles must deploy); identical
-    # bytes simply produce no commit. Failures still keep previous.
+    # Source-aware gate: NIC sends no Last-Modified, so the content
+    # hash is the observation id (off-season grids repeat identically for
+    # weeks). Same hash -> keep the published raster, refresh KMLs only.
+    source_id = f"nic1800-{digest[:16]}"
+    prev = read_state(PRODUCT)
+    if prev.get("source_id") == source_id \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
+            and os.path.exists(os.path.join(
+                SITE_DIR, "kml", "live", "Great_Lakes_Live_Ice_Coverage.kml")):
+        print(f"[{PRODUCT}] source unchanged ({source_id}); keeping raster.")
+        refresh_kml_base_url(PRODUCT, "Great_Lakes_Live_Ice_Coverage.kml",
+                             "\U0001F9CA LIVE ICE COVERAGE", CONFIG["title"],
+                             "Turn on/off independently of wave and temperature layers.",
+                             CONFIG["refresh_interval_seconds"])
+        return 0.
 
     # Render into a stage dir; promote to live site/ + kml/ only on full
     # success. Any data-dependent failure returns 2 (keep previous).
     try:
-        return _build(info, raw_path, digest)
+        return _build(info, raw_path, digest, source_id)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -79,7 +92,7 @@ def run():
         return 2
 
 
-def _build(info, raw_path, digest):
+def _build(info, raw_path, digest, source_id=None):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     with open(raw_path) as f:
@@ -154,6 +167,10 @@ def _build(info, raw_path, digest):
                                 "rendered fully transparent and NEVER treated as "
                                 "0% ice; 0% open water is also transparent by "
                                 "design so base layers stay visible."))
+    if source_id is None:
+        source_id = f"nic1800-{digest[:16]}"
+    meta["source_id"] = source_id
+    meta["source_version"] = source_token(source_id)
     meta["stats"] = {
         "water_cells": n_water,
         "ice_covered_fraction": round(ice_frac, 5),
@@ -181,8 +198,9 @@ def _build(info, raw_path, digest):
     meta["legend_scale_html"] = scale_html
     write_metadata(stage_prod, meta)
 
-    token = meta["processing_time_utc"].replace(" ", "_").replace(":", "")
+    token = meta["source_version"]
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
+    outs = live_out_dirs(stage, "Great_Lakes_Live_Ice_Coverage.kml")
     kml_text = build_kml(
         PRODUCT, "Great_Lakes_Live_Ice_Coverage.kml",
         "\U0001F9CA LIVE ICE COVERAGE",
@@ -191,12 +209,19 @@ def _build(info, raw_path, digest):
                          "Turn on/off independently of wave and temperature layers.",
                          block),
         CONFIG["refresh_interval_seconds"], token,
-        out_dirs=[os.path.join(stage, "kml", "Great_Lakes_Live_Ice_Coverage.kml"),
-                  os.path.join(stage, "site", "kml", "Great_Lakes_Live_Ice_Coverage.kml")])
+        out_dirs=outs["live"])
     assert_no_vector_geometry(kml_text)
+    build_entry_kml(
+        PRODUCT, "Great_Lakes_Live_Ice_Coverage.kml",
+        "\U0001F9CA LIVE ICE COVERAGE",
+        entry_description_html(
+            CONFIG["title"], meta,
+            "Turn on/off independently of wave and temperature layers."),
+        CONFIG["refresh_interval_seconds"], out_dirs=outs["entry"])
 
     promoted = promote_stage(PRODUCT)
-    write_state(PRODUCT, {"content_sha256": digest,
+    write_state(PRODUCT, {"source_id": source_id,
+                          "content_sha256": digest,
                           "source_last_modified": info["http_last_modified"],
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK (ice-covered fraction={ice_frac:.4f}, "

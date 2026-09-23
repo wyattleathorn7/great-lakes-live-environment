@@ -131,10 +131,15 @@ self-refresh NetworkLink and zero vector geometry.
 - **Access (verified live):** NOMADS grib-filter index
   `https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl`
   → daily dirs (`glwu.YYYYMMDD`) → full-domain file
-  `glwu.grlc_2p5km.tCCz.grib2` (CC = 01/07/13 + hourly `_sr`/`500m` variants).
+  `glwu.grlc_2p5km.tCCz.grib2` (CC = 01/07/13/19 — t19z verified live
+  2026-09-23 as the 18Z-run file; hourly `_sr`/`500m` variants ignored).
   Direct HTTPS download works:
   `https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.YYYYMMDD/glwu.grlc_2p5km.tCCz.grib2`
   (directory listing is 403 but file + `.idx` fetches are 200).
+  Cycle detection (verified 2026-09-23): the `.idx` carries the analysis
+  stamp (`d=YYYYMMDDHH`) on `:anl:` lines, so the newest AVAILABLE cycle
+  is found with KB probes — no 66 MB download to discover staleness, no
+  assumption that the schedule equals a posted cycle.
 - **Grid (decoded live with ecCodes):** Lambert conformal 581×361
   (~2.5 km), lat 40.52…49.20, lon −92.64…−74.25 — covers all five lakes.
   (`_lc` suffix files are Lake Champlain sub-grids — **not** used.)
@@ -229,50 +234,81 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   Continuous 19-anchor circular LUT (wraparound-identical deep blue).
 - Freshness wording: **"LATEST AVAILABLE COMPOSITE"** (+ age, + STALE flag).
 
-## 6. Chlorophyll — NOAA CoastWatch S-NPP VIIRS (Science Quality, daily)
+## 6. Chlorophyll — NOAA CoastWatch S-NPP+NOAA-20 VIIRS (NRT gapfilled, daily)
 
-- **Product:** `nesdisVHNSQchlaDaily` on CoastWatch West ERDDAP (pfeg, no
-  bot-wall): Chlorophyll-a, NOAA S-NPP VIIRS, Science Quality, Global 4 km,
-  Daily. Variable `chlor_a` (OC3 algorithm), mg m⁻³, valid 0.001–1000.
-  The NRT aggregation (`nesdisVHNchlaDaily_Lon0360`) is server-broken
-  ("underlying dataset not found"), so Science Quality is used and the
-  ~10-day latency is exposed, not hidden. Rendered as a newest-valid
-  mosaic of the latest 7 dailies (daily ocean color is cloud-sparse: most
-  water pixels are empty on any single day, so each pixel shows its newest
-  valid observation in the window; ERDDAP stride-2 fetch, canvas upscales).
-  Balanced LINEAR color scale (equal color share per value interval).
-  Known upstream limit (2026-09-22, verified): CoastWatch WAF blocks the
-  `nesdisVHNSQchlaDaily` dataset for GitHub Actions IPs (403/404 on every
-  endpoint/UA variant; sibling kdpar passes on the same runners), so CI
-  keeps the last good raster (exit 2) until the block lifts; the NRT
-  sibling is server-broken (axis queries time out), so SQ stays canonical.
+- **Product (verified live 2026-09-23):**
+  `nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily` on CoastWatch ERDDAP
+  (newest 2026-09-20): Chlorophyll-a, S-NPP + NOAA-20 VIIRS, Near
+  Real-Time, gapfilled, Daily. Variable `chlor_a` (OC3), mg m⁻³, valid
+  0.001–1000. Fallback: `nesdisVHNSQchlaDaily` (Science Quality, newest
+  2026-09-13, ~10 d production latency). Dead ends confirmed live:
+  `erdVHNchla1day` (stale at 2026-06-14), `nesdisVHNchlaDaily` (stale at
+  2026-08-25), `nesdisVHNnoaa20chlaDaily` (stale at 2026-09-02). NOAA-21
+  is not yet in CoastWatch ERDDAP, so no NOAA-21 chlorophyll is
+  fabricated; the S-NPP+NOAA-20 NRT stream is the operational coverage.
+  Rendered as a newest-valid mosaic of the latest 7 dailies (daily ocean
+  color is cloud-sparse; ERDDAP stride-2 fetch, canvas upscales).
+  Balanced LINEAR color scale. The gapfilled NRT stream also removes the
+  scan-line gaps of the old SQ-only mosaic.
 - Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
 
-## 7. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (NRT, daily)
+## 7. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (SQ, daily)
 
-- **Product:** `nesdisVHNkdparDaily`: KdPAR, NOAA S-NPP VIIRS, Near
-  Real-Time, Global 4 km, Daily. Variable `kd_par` = Diffuse Attenuation
-  Coefficient for PAR (NOAA MECB algorithm; product status Experimental —
-  stated in metadata), m⁻¹, valid 0.016–32. Larger values mean MORE turbid
-  water (no reversal of source values; clear water naturally sits blue).
-  The GLERL "Water Clarity-Turbidity Index" ERDDAP was assessed but is
-  bot-walled (HTTP 200 serving a bot check even for REST CSV), so KdPAR is
-  the operational alternative; the description names the exact variable.
+- **Product (verified live 2026-09-23):** `nesdisVHNSQkdparDaily`:
+  KdPAR, S-NPP VIIRS, Science Quality, Global 4 km, Daily (newest
+  2026-09-13, ~10 d production latency). Variable `kd_par` = Diffuse
+  Attenuation Coefficient for PAR (NOAA MECB algorithm; product status
+  Experimental — stated in metadata), m⁻¹, valid 0.016–32. Larger values
+  mean MORE turbid water (clear water naturally sits blue). The legacy
+  `nesdisVHNkdparDaily` id is kept as fallback but returned 404 on its
+  time axis on 2026-09-23 (intermittent/gone). No NRT KdPAR dataset
+  exists on ERDDAP (searched 2026-09-23). The GLERL clarity-turbidity
+  ERDDAP was assessed but is bot-walled, so KdPAR stays the operational
+  source; the description names the exact variable.
 - Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
 
-## 8. Solar + 9. Air temperature — NOAA/NCEP HRRR 3 km analyses (hourly)
+## 8. Solar — NOAA/NCEP GFS DSWRF f000 analysis (6-hourly); Air temperature — HRRR (hourly)
 
-- **Product:** HRRR CONUS `wrfsfcf00` analysis via NOMADS (direct HTTPS +
-  `.idx` byte ranges: TMP2m ~8 MB, DSWRF ~1 MB — never the ~150 MB file).
-  Variables: `TMP` 2 m above ground (K → °F) and `DSWRF` surface
-  (hourly-averaged downward shortwave flux, W/m²; nighttime zero is VALID
-  data). Lambert 1799×1059, per-cell WGS84 via ecCodes. Both are clipped
-  to lake water with the shared NOAA shoreline mask (land transparent).
-  Solar uses a balanced LINEAR scale over its historical range (broadband
-  flux shown exactly as observed — this is NOT the UV index). Air
-  temperature uses a FIXED Apple-style absolute spectrum (-40..130 °F);
-  the historical record still tracks LOWEST/HIGHEST+ as ticks on it.
-- Freshness wording: **"LIVE / CURRENT MODEL (analysis)"** with cycle stamp.
+- **Solar product (verified live 2026-09-23):** GFS operational
+  `sfluxgrbf000` analysis via NOMADS
+  (`.../gfs/prod/gfs.YYYYMMDD/CC/atmos/gfs.tCCz.sfluxgrbf000.grib2`,
+  CC = 00/06/12/18, DSWRF byte-range only ~3 MB). Variable `sdswrf`
+  = Surface downward short-wave radiation flux, W m⁻², analysis step
+  (verified grid `regular_gg` 3072×1536, values 0–1052 W/m² on
+  2026-09-22 12Z). Newest available cycle is detected from `.idx`
+  probes across days/cycles (never assumed from the schedule). The
+  native Gaussian grid is BILINEARLY resampled onto the canvas — this
+  replaced the HRRR byte-range path whose splat binning left
+  stripe-shaped holes; a flood-fill interior-hole guard over watermask
+  water fails the run instead of shipping stripes (verified 0 holes,
+  2026-09-23). Nighttime zero is VALID data (deep blue), never NoData.
+  Balanced LINEAR scale over the observed record (broadband flux shown
+  exactly as observed — this is NOT the UV index).
+- **Air temperature product:** HRRR CONUS `wrfsfcf00` analysis via NOMADS
+  (direct HTTPS + `.idx` byte ranges, TMP2m only). Variable `TMP` 2 m
+  above ground (K → °F). Lambert 1799×1059, per-cell WGS84 via ecCodes.
+  FIXED Apple-style absolute spectrum (-40..130 °F); the historical
+  record still tracks LOWEST/HIGHEST+ as ticks on it.
+- Both clipped to lake water with the shared NOAA shoreline mask (land
+  transparent). Freshness wording: **"LIVE / CURRENT MODEL (analysis)"**
+  with cycle stamp.
+
+## 12. UV Index — NOAA/NCEP CPC Global UV (operational GRIB2, 12Z run)
+
+- **Product (verified live 2026-09-23):** daily dirs
+  `https://nomads.ncep.noaa.gov/pub/data/nccf/com/uvi/prod/uvi.YYYYMMDD/`
+  (note the `uvi.` prefix), files `uv.t12z.grbfHH.grib2` (HH = 01..120,
+  all present for 20260922). GRIB2 parameter verified by decoding:
+  `shortName=uvi`, `name=UV index`, grid `regular_ll` 1440×721
+  (~0.25°), values 0–0.366 = erythemally weighted flux in W/m², so
+  **UV Index = filed value × 40, applied exactly once** (guard: values
+  already > 2 are NOT scaled again). The displayed raster is the
+  forecast hour nearest the current time from the newest available 12Z
+  run (a FORECAST field, not hourly satellite observations); the hour
+  advances as time passes and a new raster publishes per (run, hour).
+  Fixed absolute EPA-style 0–11+ scale. Metadata records source run,
+  forecast hour, valid time, and processing time separately.
+- Freshness wording: **"LIVE / CURRENT FORECAST (12Z run)"**.
 
 ## 10. Gradient scales — balanced LINEAR + LOWEST / HIGHEST+ (products 8–11)
 
@@ -319,14 +355,34 @@ white at the extreme end only); the no-snow provisional legend is linear
 never value-compressed). One mapping function paints raster + legend
 identically.
 
-## Cache / refresh design (Google Earth)
+## Cache / refresh design (Google Earth) — source-aware entry/live split
 
-GitHub Pages cannot set custom cache headers, so cache-busting is done with
-**query-string versioning**: every successful product run regenerates its KML
-(same stable filename/URL) with `current.png?v=<processing-timestamp>` and
-`legend.png?v=<…>`. Each KML additionally contains a self-`NetworkLink`
-(`refreshMode=onInterval`) so Google Earth re-fetches the KML on a schedule
-and discovers the new image URL without any user action.
+GitHub Pages cannot set custom cache headers, so cache-busting is done
+with **deterministic source-version query strings**: the live overlay
+file `site/kml/live/<Name>.kml` points at
+`<product>/current.png?v=<SOURCE_VERSION>`, where the version changes
+if and only if the underlying source observation/cycle changes (model
+cycle, observation date, or content hash — never a processing timestamp
+or random value). Users add the stable entry file `kml/<Name>.kml`
+once: it contains exactly one `NetworkLink` (no imagery) with
+`refreshMode=onInterval` at the product's discovery interval (fastest
+practical: wind, wave height, solar at 900 s on the hourly workflow;
+other hourly sources at 3600 s; daily and slower sources at 21600 s), so Google Earth
+re-fetches the live KML on schedule and the new `?v=` forces the new
+PNG past CDN and client caches. The live file holds exactly one
+`GroundOverlay` (Icon `onInterval`), zero `NetworkLink`s (no
+self-reference loops), zero vector geometry, zero `ScreenOverlay`.
+Every builder detects its newest available source id first and skips
+the rebuild (exit 0, deterministic KML rewrite) when the source is
+unchanged — including cheap pre-checks (GLWU `.idx` stamp probes,
+ERDDAP time-axis probes) that avoid bulk downloads.
+
+Verified live 2026-09-23: Planetary Computer hosts NO VIIRS collections
+(MODIS only), so VJ209GA_NRT requires NASA Earthdata credentials that
+anonymous CI cannot provide — MODIS Aqua stays the documented
+operational stream. PC's `modis-13A1-061` newest tile composite was
+A2026217 (2026-08-05) on 2026-09-23 (upstream lag, correctly held with
+a STALE flag past 75 d, not fabricated).
 
 ## Failure semantics
 
