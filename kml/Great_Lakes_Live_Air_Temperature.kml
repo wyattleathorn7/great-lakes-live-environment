@@ -2,7 +2,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🌡️ LIVE AIR TEMPERATURE</name>
-    <description><![CDATA[<h2>LIVE AIR TEMPERATURE</h2><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles).<br/><b>Data time:</b> 2026-09-23 12:00 PM EDT<br/><b>Source version:</b> hrrr-hrrr.20260923-t16z<br/><b>Status:</b> LIVE / CURRENT MODEL (analysis)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>LIVE AIR TEMPERATURE</h2><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles).<br/><b>Data time:</b> 2026-09-23 01:00 PM EDT<br/><b>Source version:</b> hrrr-hrrr.20260923-t17z<br/><b>Status:</b> LIVE / CURRENT MODEL (analysis)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <NetworkLink>
       <name>🌡️ LIVE AIR TEMPERATURE — auto-refresh</name>
       <Link>
