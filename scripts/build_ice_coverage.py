@@ -23,8 +23,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              download, ensure_coords, promote_stage,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, base_metadata,
+                              download, ensure_coords, http_date_to_det,
+                              now_det_str, promote_stage,
                               read_state, source_token, stage_dir, utcnow_iso,
                               write_metadata, write_state)
 from render_gradient import render_field
@@ -71,6 +72,7 @@ def run():
     source_id = f"nic1800-{digest[:16]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
+            and prev.get("render_version") == RENDER_VERSION \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
                 SITE_DIR, "kml", "live", "Great_Lakes_Live_Ice_Coverage.kml")):
@@ -153,13 +155,14 @@ def _build(info, raw_path, digest, source_id=None):
         return 2
 
     ice_frac = float((data[is_water] > 0).mean()) if n_water else 0.0
-    retrieved = utcnow_iso()
+    retrieved = now_det_str()
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], ICE_URL, CONFIG["variable"],
         data_time_utc=(f"retrieved {retrieved} (NIC daily analysis; "
                      "NIC publishes no per-file timestamp)"),
-        source_last_modified_utc=info["http_last_modified"] or "unknown",
+        source_last_modified_utc=(http_date_to_det(info["http_last_modified"])
+        or "unknown"),
         units="%",
         source_resolution="1.8 km NIC NAIS daily grid (1024x1024)",
         color_min=0.0, color_max=100.0, color_units="%",
@@ -184,7 +187,7 @@ def _build(info, raw_path, digest, source_id=None):
         title=CONFIG["title"],
         subtitle=(f"{CONFIG['freshness_label']}  |  retrieved {retrieved}"),
         source_line=(f"Source: US National Ice Center daily Great Lakes analysis  |  "
-                     f"Processed {utcnow_iso()}"),
+                     f"Processed {now_det_str()}"),
         unit_label="%", transparent_value=0.0, fmt="{:.0f}",
         splat_radius=1, product_dir=stage_prod)
 
@@ -221,6 +224,7 @@ def _build(info, raw_path, digest, source_id=None):
 
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "content_sha256": digest,
                           "source_last_modified": info["http_last_modified"],
                           "processing_time_utc": meta["processing_time_utc"]})

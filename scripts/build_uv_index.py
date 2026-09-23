@@ -33,8 +33,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
-                              base_metadata, download, load_bounds,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, apply_shoreline_mask,
+                              base_metadata, download, fmt_det, load_bounds,
+                              now_det_str,
                               promote_stage, read_state, resample_gridded,
                               save_png, source_token, stage_dir, utcnow_iso,
                               write_metadata, write_state)
@@ -203,14 +204,15 @@ def _build(got, raw_path, now):
     field = resample_gridded(field_all, lats, lons, bounds, (H, W))
 
     valid_time = run_dt + dt.timedelta(hours=fh)
-    valid_str = valid_time.strftime("%Y-%m-%d %H:%M UTC")
-    run_str = run_dt.strftime("%Y-%m-%d %H:%M UTC")
+    valid_str = fmt_det(valid_time)
+    run_str = fmt_det(run_dt)
     # Source-aware gate: (run, forecast hour) is the observation id. The
     # selected hour advances ~hourly as time passes, so this product
     # legitimately rebuilds up to 24x/day; identical ids never rebuild.
     source_id = f"uvi-{datestr}-t12z-f{fh:02d}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
+            and prev.get("render_version") == RENDER_VERSION \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
                 SITE_DIR, "kml", "live", KML_FILE)):
@@ -245,7 +247,7 @@ def _build(got, raw_path, now):
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, UV_STOPS, UV_LABELS,
         f"Source: NOAA/NCEP CPC global UV (12Z GFS run)  |  "
-        f"Processed {utcnow_iso()}",
+        f"Processed {now_det_str()}",
         note="Forecast field, not a satellite observation. "
              "0-2 low, 3-5 moderate, 6-7 high, 8-10 very high, 11+ extreme.")
     scale_html = (f"UV Index ({unit}), fixed absolute scale: "
@@ -313,6 +315,7 @@ def _build(got, raw_path, now):
 
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

@@ -20,9 +20,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, base_metadata,
                               download, ensure_coords, fetch_buoy_obs,
-                              http_date_to_iso, promote_stage, read_state,
+                              http_date_to_det, now_det_str, promote_stage,
+                              read_state,
                               source_token, stage_dir, utcnow_iso,
                               write_metadata, write_state)
 from render_gradient import render_field
@@ -81,6 +82,7 @@ def run():
     source_id = f"glsea-{raw_id}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
+            and prev.get("render_version") == RENDER_VERSION \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
                 SITE_DIR, "kml", "live",
@@ -159,12 +161,13 @@ def _build(info, raw_path, source_id):
     values_f = np.full(data.shape, np.nan)
     values_f[water] = data[water] * 9.0 / 5.0 + 32.0
 
-    data_time_iso = http_date_to_iso(info["http_last_modified"])
+    data_time_iso = http_date_to_det(info["http_last_modified"])
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], GLSEA_URL, CONFIG["variable"],
         data_time_utc=data_time_iso or "unknown (no source timestamp)",
-        source_last_modified_utc=info["http_last_modified"] or "unknown",
+        source_last_modified_utc=(http_date_to_det(info["http_last_modified"])
+        or "unknown"),
         units="degF (display); source degC",
         source_resolution="~1.8 km GLSEA grid (1024x1024)",
         color_min=vmin, color_max=vmax, color_units="degF",
@@ -185,7 +188,7 @@ def _build(info, raw_path, source_id):
         subtitle=(f"{CONFIG['freshness_label']}  |  Data time: "
                   f"{data_time_iso or 'see metadata'}"),
         source_line=(f"Source: NOAA/GLERL CoastWatch GLSEA  |  "
-                     f"Processed {utcnow_iso()}"),
+                     f"Processed {now_det_str()}"),
         unit_label="\u00b0F", transparent_value=None, fmt="{:.0f}",
         splat_radius=1, product_dir=stage_prod)
 
@@ -258,6 +261,7 @@ def _build(info, raw_path, source_id):
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"source_last_modified": info["http_last_modified"],
                           "source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

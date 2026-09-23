@@ -22,9 +22,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
+                              apply_shoreline_mask,
                               base_metadata, download,
-                              draw_category_legend, load_bounds,
+                              draw_category_legend, http_date_to_det,
+                              load_bounds, now_det_str,
                               promote_stage, rasterize_polygons, read_state,
                               save_png, source_token, stage_dir, utcnow_iso,
                               write_metadata, write_state)
@@ -102,6 +104,7 @@ def _build(info, zip_path, digest):
     source_id = f"nic-{analysis_date}-{digest[:12]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
+            and prev.get("render_version") == RENDER_VERSION \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
                 SITE_DIR, "kml", "live", KML_FILE)):
@@ -147,15 +150,16 @@ def _build(info, zip_path, digest):
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         rows,
         "Source: USNIC NAIS daily Great Lakes analysis (SIGRID-3 stages)  |  "
-        f"Processed {utcnow_iso()}",
+        f"Processed {now_det_str()}",
         note="Transparent where no ice (alpha ~ concentration).")
 
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
         data_time_utc=(f"NIC analysis date {analysis_date} (from NIC filename; "
-                       f"retrieved {utcnow_iso()})"),
-        source_last_modified_utc=info["http_last_modified"] or "unknown (NIC sends none)",
+                       f"retrieved {now_det_str()})"),
+        source_last_modified_utc=(http_date_to_det(info["http_last_modified"])
+        or "unknown (NIC sends none)"),
         units="WMO SIGRID-3 stage code (categorical)",
         source_resolution="NIC SIGRID-3 vector analysis (variable polygon size)",
         color_min="categorical (see ice_type_categories)",
@@ -214,6 +218,7 @@ def _build(info, zip_path, digest):
 
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "content_sha256": digest,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")

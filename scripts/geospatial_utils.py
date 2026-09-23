@@ -13,7 +13,7 @@ import os
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 
 import numpy as np
@@ -136,6 +136,81 @@ def load_bounds():
 
 def utcnow_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+
+# Render generation: bump to force every product through one full rebuild
+# (legends/KMLs bake display text in at build time). Skip logic also keys
+# on the source id, so this only ever causes a single extra build.
+RENDER_VERSION = 2
+
+
+def detroit_tz():
+    """America/Detroit (EDT/EST with DST); UTC-4 fallback if tzdata missing."""
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo("America/Detroit")
+    except Exception:
+        return timezone(timedelta(hours=-4))
+
+
+def as_detroit(d):
+    """Aware UTC datetime (naive assumed UTC) -> Detroit local."""
+    if d.tzinfo is None:
+        d = d.replace(tzinfo=timezone.utc)
+    return d.astimezone(detroit_tz())
+
+
+def fmt_det(d):
+    """Detroit display time: '2026-09-23 09:00 PM EDT' (12-hour, AM/PM)."""
+    try:
+        l = as_detroit(d)
+        name = l.tzname() or "ET"
+        return f"{l.year:04d}-{l.month:02d}-{l.day:02d} " \
+            f"{int(l.strftime('%I')):02d}:{l.minute:02d} " \
+            f"{l.strftime('%p')} {name}"
+    except Exception:
+        return str(d)
+
+
+def now_det_str():
+    return fmt_det(datetime.now(timezone.utc))
+
+
+def iso_to_det(s):
+    """ISO UTC string ('...+Z') -> Detroit display string. Never raises."""
+    if not s:
+        return None
+    try:
+        t = str(s).strip()
+        if t.endswith("Z"):
+            t = t[:-1] + "+00:00"
+        return fmt_det(datetime.fromisoformat(t))
+    except (TypeError, ValueError):
+        return s
+
+
+def grib_stamp_to_det(data_date, data_time):
+    """GRIB dataDate ('YYYYMMDD') + dataTime ('HHMM') -> Detroit display."""
+    try:
+        d = datetime(int(str(data_date)[0:4]), int(str(data_date)[4:6]),
+                     int(str(data_date)[6:8]), int(str(data_time)[0:2]),
+                     int(str(data_time)[2:4]), tzinfo=timezone.utc)
+        return fmt_det(d)
+    except (TypeError, ValueError):
+        return f"{data_date} {data_time} UTC"
+
+
+def http_date_to_det(s):
+    """HTTP Last-Modified value -> Detroit display string. Never raises."""
+    if not s:
+        return None
+    try:
+        dt = parsedate_to_datetime(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return fmt_det(dt)
+    except (TypeError, ValueError):
+        return s
 
 
 def http_date_to_iso(s):
@@ -573,7 +648,8 @@ def base_metadata(product, title, freshness_label, source_name, source_url,
         "source_url": source_url,
         "data_time_utc": data_time_utc,
         "source_last_modified_utc": source_last_modified_utc,
-        "processing_time_utc": utcnow_iso(),
+        # Display times are Detroit local (AM/PM); field names are schema.
+        "processing_time_utc": now_det_str(),
         "units": units,
         "spatial_resolution_source": source_resolution,
         "spatial_resolution_rendered": (

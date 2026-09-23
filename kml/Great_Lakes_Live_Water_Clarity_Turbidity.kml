@@ -2,7 +2,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🌊 LIVE WATER CLARITY / TURBIDITY</name>
-    <description><![CDATA[<h2>LIVE WATER CLARITY / TURBIDITY</h2><p>This entry auto-refreshes from the live overlay (source: NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQkdparDaily), legacy NRT id as fallback).<br/><b>Data time:</b> 2026-09-13T12:00:00Z (newest of 7-day mosaic)<br/><b>Source version:</b> nesdisVHNSQkdparDaily-v2-2026-09-13<br/><b>Status:</b> LATEST AVAILABLE (daily composite)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>LIVE WATER CLARITY / TURBIDITY</h2><p>This entry auto-refreshes from the live overlay (source: NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQkdparDaily), legacy NRT id as fallback).<br/><b>Data time:</b> 2026-09-13 08:00 AM EDT (newest of 7-day mosaic)<br/><b>Source version:</b> nesdisVHNSQkdparDaily-v2-2026-09-13<br/><b>Status:</b> LATEST AVAILABLE (daily composite)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <NetworkLink>
       <name>🌊 LIVE WATER CLARITY / TURBIDITY — auto-refresh</name>
       <Link>

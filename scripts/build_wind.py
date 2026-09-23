@@ -32,9 +32,11 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
 from build_wave_height import cycle_source_id, newest_available_cycle
-from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
+                              apply_shoreline_mask,
                               base_metadata, download, draw_category_legend,
-                              fetch_buoy_obs, load_bounds, promote_stage,
+                              fetch_buoy_obs, load_bounds,
+                              grib_stamp_to_det, now_det_str, promote_stage,
                               read_state, save_png, source_token, stage_dir,
                               utcnow_iso, write_metadata, write_state)
 
@@ -175,6 +177,7 @@ def run():
     source_id = cycle_source_id(stamp)
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
+            and prev.get("render_version") == RENDER_VERSION \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(SITE_DIR, "kml", "live", KML_FILE)):
         print(f"[{PRODUCT}] source unchanged ({source_id}); keeping raster.")
@@ -217,6 +220,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
     source_id = f"glwu-{data_date}-{data_time}Z"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
+            and prev.get("render_version") == RENDER_VERSION \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
                 SITE_DIR, "kml", "live", KML_FILE)):
@@ -242,8 +246,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
     forces = np.full(spd_kt.shape, np.nan)
     fvec = np.vectorize(force_from_kt, otypes=[float])
     forces[valid] = fvec(spd_kt[valid])
-    data_time_utc = (f"{data_date[0:4]}-{data_date[4:6]}-{data_date[6:8]} "
-                     f"{data_time[0:2]}:{data_time[2:4]} UTC")
+    data_time_utc = grib_stamp_to_det(data_date, data_time)
     fmax = int(np.nanmax(forces))
     print(f"[{PRODUCT}] max {float(spd_kt[valid].max()):.1f} kt = Beaufort {fmax}")
 
@@ -310,7 +313,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
         [(FORCE_COLORS[f], f"F{f} — {force_name(f)} ({force_range_text(f)})")
          for f in range(13)],
         f"Source: NCEP GLWU v2.1 U/V analysis {datestr} t{cycle}z  |  "
-        f"Processed {utcnow_iso()}",
+        f"Processed {now_det_str()}",
         note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY.")
 
     meta = base_metadata(
@@ -399,6 +402,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": meta["model_cycle"],
                           "source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

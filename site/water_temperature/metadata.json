@@ -6,9 +6,9 @@
   "product_name": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
   "variable": "lake surface water temperature (satellite-derived AVHRR/VIIRS composite)",
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
-  "data_time_utc": "2026-09-23 06:50 UTC",
-  "source_last_modified_utc": "Wed, 23 Sep 2026 06:50:55 GMT",
-  "processing_time_utc": "2026-09-23 10:11 UTC",
+  "data_time_utc": "2026-09-23 02:50 AM EDT",
+  "source_last_modified_utc": "2026-09-23 02:50 AM EDT",
+  "processing_time_utc": "2026-09-23 11:20 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -41,40 +41,40 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 54.68,
+      "obs_F": 55.4,
       "grid_F": 55.274,
-      "absdiff_F": 0.59,
+      "absdiff_F": 0.13,
       "verdict": "OK",
-      "obs_time": "2026-09-23 08:50 UTC"
+      "obs_time": "2026-09-23 14:50 UTC"
     },
     "45002": {
-      "obs_F": 64.04,
+      "obs_F": 64.22,
       "grid_F": 65.14250000000001,
-      "absdiff_F": 1.1,
+      "absdiff_F": 0.92,
       "verdict": "OK",
-      "obs_time": "2026-09-23 08:50 UTC"
+      "obs_time": "2026-09-23 14:50 UTC"
     },
     "45132": {
-      "obs_F": 67.46,
+      "obs_F": 67.28,
       "grid_F": 71.753,
-      "absdiff_F": 4.29,
+      "absdiff_F": 4.47,
       "verdict": "CHECK",
-      "obs_time": "2026-09-23 09:00 UTC"
+      "obs_time": "2026-09-23 15:00 UTC"
     },
     "45012": {
-      "obs_F": 65.84,
+      "obs_F": 66.02,
       "grid_F": 68.135,
-      "absdiff_F": 2.3,
+      "absdiff_F": 2.12,
       "verdict": "OK",
-      "obs_time": "2026-09-23 08:50 UTC"
+      "obs_time": "2026-09-23 14:50 UTC"
     },
     "45005": {
-      "time_utc": "2026-09-23 08:50 UTC",
+      "time_utc": "2026-09-23 14:50 UTC",
       "WDIR_deg": 90.0,
       "WSPD_ms": 10.0,
       "WVHT_m": null,
       "WTMP_C": null,
-      "ATMP_C": 17.3,
+      "ATMP_C": 16.7,
       "note": "no WTMP obs"
     }
   },

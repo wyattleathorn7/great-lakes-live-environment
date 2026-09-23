@@ -24,11 +24,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
+                               apply_shoreline_mask,
                                base_metadata, bin_to_canvas, canvas_indices,
-                                fetch_buoy_obs, load_bounds, promote_stage,
-                                read_state, save_png, source_token, stage_dir,
-                                utcnow_iso, write_metadata, write_state)
+                               fetch_buoy_obs, grib_stamp_to_det, load_bounds,
+                               now_det_str, promote_stage,
+                               read_state, save_png, source_token, stage_dir,
+                               utcnow_iso, write_metadata, write_state)
 from gradient_scale import (APPLE_TEMP_STOPS, draw_scale_legend, fmt_val,
                             load_record, record_tick_labels, render_rgba,
                             save_record, update_record)
@@ -77,6 +79,7 @@ def run():
         return 2
     prev = read_state(PRODUCT)
     if prev.get("model_cycle") == f"{datestr} t{cycle}z" \
+            and prev.get("render_version") == RENDER_VERSION \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
         print(f"[{PRODUCT}] model cycle unchanged ({datestr} t{cycle}z); keeping.")
         return _refresh_kml()
@@ -111,8 +114,7 @@ def _build(base, datestr, cycle):
     fetch_messages(base, raw_path, [("TMP", "2 m above ground")])
     (vals, lats, lons, data_date, data_time) = read_messages(
         raw_path, {"TMP": 1})["TMP"]
-    data_time_utc = (f"{data_date[0:4]}-{data_date[4:6]}-{data_date[6:8]} "
-                     f"{data_time[0:2]}:{data_time[2:4]} UTC")
+    data_time_utc = grib_stamp_to_det(data_date, data_time)
     lf, lo_n = np.asarray(lats).ravel(), np.asarray(lons).ravel()
     inside = (np.isfinite(lf) & np.isfinite(lo_n)
               & (lf >= bounds["lat_min"]) & (lf <= bounds["lat_max"])
@@ -184,7 +186,7 @@ def _build(base, datestr, cycle):
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
         f"Source: NOAA HRRR {datestr} t{cycle}z analysis  |  "
-        f"Processed {utcnow_iso()}",
+        f"Processed {now_det_str()}",
         note="Apple-style spectrum; extreme cold continues into violet.")
     scale_html = (f"2 m air temperature ({unit}), fixed Apple-style "
                   f"absolute spectrum (-40..130 F): purple extreme cold → "
@@ -249,6 +251,7 @@ def _build(base, datestr, cycle):
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": meta["model_cycle"],
                           "source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

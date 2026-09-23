@@ -36,8 +36,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              download, load_bounds, promote_stage,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, base_metadata,
+                              download, load_bounds, now_det_str,
+                              promote_stage,
                               read_state, save_png, source_token, stage_dir,
                               utcnow_iso, write_metadata, write_state)
 from leaf_phenology import (build_leaf_lut, draw_leaf_legend)
@@ -190,6 +191,7 @@ def run():
     source_id_hint = f"leaf-v3-{sig[:12]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id_hint \
+            and prev.get("render_version") == RENDER_VERSION \
             and prev.get("composite_sig") == sig \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
@@ -378,14 +380,14 @@ def _build(bounds, W, H, vi, rf, sig):
     lw, lh = draw_leaf_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         f"Source: MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer  |  "
-        f"Processed {utcnow_iso()}", build_leaf_lut())
+        f"Processed {now_det_str()}", build_leaf_lut())
 
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
         data_time_utc=(f"VI composite start {comp_date} (+16d window); "
                        f"reflectance {max([composite_start_day(i) for i in rf_ids.values() if composite_start_day(i)] or ['unknown'])} (+8d); "
-                       f"retrieved {utcnow_iso()}"),
+                       f"retrieved {now_det_str()}"),
         source_last_modified_utc=f"composite sig {sig[:12]}",
         units="phenology phase 0..1 (display color); source NDVI/reflectance",
         source_resolution="500 m MODIS sinusoidal, reprojected to canvas (nearest)",
@@ -418,7 +420,7 @@ def _build(bounds, W, H, vi, rf, sig):
         "vi_items": vi_ids, "reflectance_items": rf_ids,
         "composite_sig": sig,
         "composite_date": str(comp_date), "source_age_days": age,
-        "stale": stale, "retrieved": utcnow_iso(),
+        "stale": stale, "retrieved": now_det_str(),
         "native_resolution_m": 500, "native_crs": "MODIS sinusoidal",
         "resampling": "nearest (no invented values)",
         "qa_rules": ("MYD13A1 pixel reliability 0=good/1=hold/2=snow/3=cloud; "
@@ -470,6 +472,7 @@ def _build(bounds, W, H, vi, rf, sig):
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"composite_sig": sig,
                           "source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

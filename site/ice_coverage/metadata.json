@@ -6,9 +6,9 @@
   "product_name": "U.S. National Ice Center (NAIS) daily Great Lakes ice analysis, GRID 1800",
   "variable": "total ice concentration",
   "source_url": "https://usicecenter.gov/File/DownloadCurrent?pId=38",
-  "data_time_utc": "retrieved 2026-09-23 01:30 UTC (NIC daily analysis; NIC publishes no per-file timestamp)",
+  "data_time_utc": "retrieved 2026-09-23 11:21 AM EDT (NIC daily analysis; NIC publishes no per-file timestamp)",
   "source_last_modified_utc": "unknown",
-  "processing_time_utc": "2026-09-23 01:30 UTC",
+  "processing_time_utc": "2026-09-23 11:21 AM EDT",
   "units": "%",
   "spatial_resolution_source": "1.8 km NIC NAIS daily grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,6 +25,8 @@
   "missing_data_treatment": "land code -1 and any value < -1 (e.g. -9999) rendered fully transparent and NEVER treated as 0% ice; 0% open water is also transparent by design so base layers stay visible.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "source_id": "nic1800-e47abcd64bd60a96",
+  "source_version": "nic1800-e47abcd64bd60a96",
   "stats": {
     "water_cells": 152657,
     "ice_covered_fraction": 0.0,
@@ -37,7 +39,5 @@
   ],
   "rendered_nontransparent_pixels": 0,
   "rendered_canvas_pixels": 2115000,
-  "legend_scale_html": "Ice concentration (% of water area covered): open water (transparent) \u2192 <b>0%</b> \u2192 <b>50%</b> \u2192 <b>100%</b> total cover (near-white). Maximum this run: <b>0.0%</b>. Ice-free water in summer is normal.",
-  "source_id": "nic1800-e47abcd64bd60a96",
-  "source_version": "nic1800-e47abcd64bd60a96"
+  "legend_scale_html": "Ice concentration (% of water area covered): open water (transparent) \u2192 <b>0%</b> \u2192 <b>50%</b> \u2192 <b>100%</b> total cover (near-white). Maximum this run: <b>0.0%</b>. Ice-free water in summer is normal."
 }

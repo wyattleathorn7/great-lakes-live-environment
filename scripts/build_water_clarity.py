@@ -32,8 +32,8 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
 from erddap_coastwatch import fetch_csv, latest_time
 from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, load_bounds, promote_stage,
-                              read_state, save_png, source_token, stage_dir,
-                              utcnow_iso, write_metadata, write_state)
+                              RENDER_VERSION, iso_to_det, read_state, save_png, source_token, stage_dir,
+                              now_det_str, utcnow_iso, write_metadata, write_state)
 from gradient_scale import (build_linear_stops, draw_scale_legend,
                             fmt_val, load_record, record_tick_labels,
                             render_rgba, save_record, update_record)
@@ -96,6 +96,7 @@ def run():
     source_id = f"{dataset}-v2-{times[0][:10]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
+            and prev.get("render_version") == RENDER_VERSION \
             and prev.get("data_times") == times \
             and prev.get("dataset") == dataset \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
@@ -181,7 +182,7 @@ def _build(bounds, times, dataset):
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
-        f"Source: NOAA CoastWatch VIIRS KdPAR  |  Processed {utcnow_iso()}",
+        f"Source: NOAA CoastWatch VIIRS KdPAR  |  Processed {now_det_str()}",
         note="Transparent = land/cloud/missing.")
     scale_html = (f"Diffuse attenuation coefficient for PAR ({unit}), "
                   f"balanced linear scale: <b>LOWEST {fmt_val(rec['hist_min'])}</b> "
@@ -193,7 +194,7 @@ def _build(bounds, times, dataset):
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"],
         CONFIG["variable"] + f"; mosaic {times[0][:10]}..{times[-1][:10]}",
-        data_time_utc=f"{times[0]} (newest of {MOSAIC_DAYS}-day mosaic)",
+        data_time_utc=f"{iso_to_det(times[0])} (newest of {MOSAIC_DAYS}-day mosaic)",
         source_last_modified_utc="n/a (ERDDAP)",
         units=f"{unit} (display); source m^-1",
         source_resolution="~4 km VIIRS L3, bilinear-resampled to canvas",
@@ -223,7 +224,7 @@ def _build(bounds, times, dataset):
         f"<p><b>Exact variable:</b> {CONFIG['variable']}<br/>"
         f"<b>Units:</b> {unit}<br/><b>Source:</b> {CONFIG['source_name']}<br/>"
         f"<b>Update:</b> daily composites<br/>"
-        f"<b>Data time:</b> {times[0]} (mosaic {times[0][:10]}..{times[-1][:10]})<br/>"
+        f"<b>Data time:</b> {iso_to_det(times[0])} (mosaic {times[0][:10]}..{times[-1][:10]})<br/>"
         f"<b>Processed:</b> {meta['processing_time_utc']}<br/>"
         f"<b>Why turbid water turns red/purple:</b> {CONFIG['why_extreme']}<br/>"
         f"<b>Provenance:</b> <a href=\"{CONFIG['source_url']}\">ERDDAP dataset</a></p>")
@@ -249,6 +250,7 @@ def _build(bounds, times, dataset):
     write_state(PRODUCT, {"data_times": times,
                           "dataset": dataset,
                           "source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

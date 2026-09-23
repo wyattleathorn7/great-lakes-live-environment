@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III)",
   "variable": "HTSGW (significant height of combined wind waves and swell, analysis step)",
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260923/glwu.grlc_2p5km.t13z.grib2",
-  "data_time_utc": "2026-09-23 13:00 UTC",
+  "data_time_utc": "2026-09-23 09:00 AM EDT",
   "source_last_modified_utc": "Wed, 23 Sep 2026 13:26:10 GMT",
-  "processing_time_utc": "2026-09-23 13:26 UTC",
+  "processing_time_utc": "2026-09-23 11:20 AM EDT",
   "units": "ft (display); source m",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -42,46 +42,42 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "time_utc": "2026-09-23 13:00 UTC",
+      "time_utc": "2026-09-23 14:40 UTC",
       "WDIR_deg": 120.0,
       "WSPD_ms": 3.0,
       "WVHT_m": null,
-      "WTMP_C": 12.8,
-      "ATMP_C": 13.0,
+      "WTMP_C": 13.0,
+      "ATMP_C": 13.2,
       "note": "no WVHT obs"
     },
     "45002": {
-      "time_utc": "2026-09-23 13:00 UTC",
-      "WDIR_deg": 100.0,
-      "WSPD_ms": 7.0,
-      "WVHT_m": null,
-      "WTMP_C": null,
-      "ATMP_C": 15.8,
-      "note": "no WVHT obs"
+      "obs_ft": 2.62,
+      "grid_ft": 2.4934384,
+      "absdiff_ft": 0.13,
+      "verdict": "OK",
+      "obs_time": "2026-09-23 14:50 UTC"
     },
     "45132": {
-      "obs_ft": 4.27,
+      "obs_ft": 4.92,
       "grid_ft": 4.549431466666667,
-      "absdiff_ft": 0.28,
+      "absdiff_ft": 0.37,
       "verdict": "OK",
-      "obs_time": "2026-09-23 13:00 UTC"
+      "obs_time": "2026-09-23 15:00 UTC"
     },
     "45012": {
-      "time_utc": "2026-09-23 13:00 UTC",
-      "WDIR_deg": 100.0,
-      "WSPD_ms": 7.0,
-      "WVHT_m": null,
-      "WTMP_C": null,
-      "ATMP_C": 15.4,
-      "note": "no WVHT obs"
+      "obs_ft": 1.97,
+      "grid_ft": 2.766841733333333,
+      "absdiff_ft": 0.8,
+      "verdict": "OK",
+      "obs_time": "2026-09-23 14:50 UTC"
     },
     "45005": {
-      "time_utc": "2026-09-23 13:00 UTC",
+      "time_utc": "2026-09-23 14:50 UTC",
       "WDIR_deg": 90.0,
       "WSPD_ms": 10.0,
       "WVHT_m": null,
       "WTMP_C": null,
-      "ATMP_C": 16.4,
+      "ATMP_C": 16.7,
       "note": "no WVHT obs"
     }
   },

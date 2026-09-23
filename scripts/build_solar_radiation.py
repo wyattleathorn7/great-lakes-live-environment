@@ -32,8 +32,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
-                              base_metadata, load_bounds, promote_stage,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
+                              apply_shoreline_mask,
+                              base_metadata, grib_stamp_to_det, load_bounds,
+                              now_det_str, promote_stage,
                               read_state, resample_gridded, save_png,
                               source_token, stage_dir, utcnow_iso,
                               write_metadata, write_state)
@@ -157,6 +159,7 @@ def run():
     source_id = f"gfs-{datestr}-t{cycle}z-f000"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
+            and prev.get("render_version") == RENDER_VERSION \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
                 SITE_DIR, "kml", "live", KML_FILE)):
@@ -191,8 +194,7 @@ def _build(base, datestr, cycle, source_id):
     raw_path = os.path.join(RAW_DIR, "gfs_solar_current.grib2")
     fetch_dswrf(base, raw_path)
     vals, lats, lons, data_date, data_time, step_range = read_dswrf(raw_path)
-    data_time_utc = (f"{data_date[0:4]}-{data_date[4:6]}-{data_date[6:8]} "
-                     f"{data_time[0:2]}:{data_time[2:4]} UTC")
+    data_time_utc = grib_stamp_to_det(data_date, data_time)
     # Bilinear resample of the native grid: continuous field by
     # construction (no nearest-neighbour splat gaps / stripe holes).
     field = resample_gridded(vals, lats, lons, bounds, (H, W))
@@ -242,7 +244,7 @@ def _build(base, datestr, cycle, source_id):
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
         f"Source: NOAA GFS {datestr} t{cycle}z analysis (f000)  |  "
-        f"Processed {utcnow_iso()}",
+        f"Processed {now_det_str()}",
         note="Zero is valid nighttime data (deep blue), not missing.")
     scale_html = (f"Surface downward shortwave solar radiation ({unit}, "
                   f"GFS f000 analysis step), balanced linear "
@@ -313,6 +315,7 @@ def _build(base, datestr, cycle, source_id):
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": meta["model_cycle"],
                           "source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0

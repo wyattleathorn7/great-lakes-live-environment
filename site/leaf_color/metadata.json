@@ -6,9 +6,9 @@
   "product_name": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
   "variable": "NDVI trajectory + surface reflectance + NDSI snow + land class -> circular phenology phase 0..1",
   "source_url": "https://planetarycomputer.microsoft.com/",
-  "data_time_utc": "VI composite start 2026-08-05 (+16d window); reflectance 2026-08-13 (+8d); retrieved 2026-09-23 09:36 UTC",
+  "data_time_utc": "VI composite start 2026-08-05 (+16d window); reflectance 2026-08-13 (+8d); retrieved 2026-09-23 11:21 AM EDT",
   "source_last_modified_utc": "composite sig 1ce56c63a4cc",
-  "processing_time_utc": "2026-09-23 09:36 UTC",
+  "processing_time_utc": "2026-09-23 11:21 AM EDT",
   "units": "phenology phase 0..1 (display color); source NDVI/reflectance",
   "spatial_resolution_source": "500 m MODIS sinusoidal, reprojected to canvas (nearest)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -34,7 +34,7 @@
   "gradient": {
     "interpolation": "OKLab (perceptually uniform)",
     "anchors": 19,
-    "distinct_raster_colors": 96,
+    "distinct_raster_colors": 118,
     "wraparound": "first == last deep blue #123B73"
   },
   "provenance": {
@@ -57,7 +57,7 @@
     "composite_date": "2026-08-05",
     "source_age_days": 49,
     "stale": false,
-    "retrieved": "2026-09-23 09:36 UTC",
+    "retrieved": "2026-09-23 11:21 AM EDT",
     "native_resolution_m": 500,
     "native_crs": "MODIS sinusoidal",
     "resampling": "nearest (no invented values)",
@@ -72,6 +72,6 @@
   "stats": {
     "good_pixels": 965108,
     "opaque_pixels": 204148,
-    "phase_mean": 0.4743
+    "phase_mean": 0.486
   }
 }

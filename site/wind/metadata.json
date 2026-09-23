@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 UGRD/VGRD surface analysis",
   "variable": "UGRD/VGRD surface wind components, analysis step; speed = sqrt(U^2+V^2), visualized as Beaufort Force 0-12",
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260923/glwu.grlc_2p5km.t13z.grib2",
-  "data_time_utc": "2026-09-23 13:00 UTC",
+  "data_time_utc": "2026-09-23 09:00 AM EDT",
   "source_last_modified_utc": "Wed, 23 Sep 2026 13:26:10 GMT",
-  "processing_time_utc": "2026-09-23 13:26 UTC",
+  "processing_time_utc": "2026-09-23 11:20 AM EDT",
   "units": "kt + Beaufort Force 0-12 (display); source m/s",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -126,35 +126,35 @@
       "grid_kt_approx": 5.0,
       "absdiff_kt": 0.8,
       "verdict": "OK",
-      "obs_time": "2026-09-23 13:00 UTC"
+      "obs_time": "2026-09-23 14:50 UTC"
     },
     "45002": {
-      "obs_kt": 13.6,
+      "obs_kt": 11.7,
       "grid_kt_approx": 13.5,
-      "absdiff_kt": 0.1,
+      "absdiff_kt": 1.8,
       "verdict": "OK",
-      "obs_time": "2026-09-23 13:00 UTC"
+      "obs_time": "2026-09-23 14:50 UTC"
     },
     "45132": {
-      "obs_kt": 19.4,
+      "obs_kt": 23.3,
       "grid_kt_approx": 19.0,
-      "absdiff_kt": 0.4,
+      "absdiff_kt": 4.3,
       "verdict": "OK",
-      "obs_time": "2026-09-23 13:00 UTC"
+      "obs_time": "2026-09-23 15:00 UTC"
     },
     "45012": {
       "obs_kt": 13.6,
       "grid_kt_approx": 13.5,
       "absdiff_kt": 0.1,
       "verdict": "OK",
-      "obs_time": "2026-09-23 13:00 UTC"
+      "obs_time": "2026-09-23 14:50 UTC"
     },
     "45005": {
       "obs_kt": 19.4,
       "grid_kt_approx": 19.0,
       "absdiff_kt": 0.4,
       "verdict": "OK",
-      "obs_time": "2026-09-23 13:00 UTC"
+      "obs_time": "2026-09-23 14:50 UTC"
     }
   }
 }

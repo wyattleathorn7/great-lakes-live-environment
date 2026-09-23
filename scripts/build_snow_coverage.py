@@ -25,9 +25,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
+                              apply_shoreline_mask,
                               base_metadata, bin_to_canvas, canvas_indices,
-                              load_bounds, load_michigan_mask,
+                              grib_stamp_to_det, load_bounds, load_michigan_mask,
+                              now_det_str,
                               promote_stage, read_state, save_png,
                               source_token, stage_dir, utcnow_iso,
                               write_metadata, write_state,
@@ -68,6 +70,7 @@ def run():
         return 2
     prev = read_state(PRODUCT)
     if prev.get("model_cycle") == f"{datestr} t{cycle}z" \
+            and prev.get("render_version") == RENDER_VERSION \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")):
         print(f"[{PRODUCT}] model cycle unchanged ({datestr} t{cycle}z); keeping.")
         return _refresh_kml()
@@ -101,8 +104,7 @@ def _build(base, datestr, cycle):
     msgs = read_messages(raw_path, {"SNOD": 1, "SNOWC": 1})
     (sd, lats, lons, data_date, data_time) = msgs["SNOD"]
     (sc, _l, _o, _d, _t) = msgs["SNOWC"]
-    data_time_utc = (f"{data_date[0:4]}-{data_date[4:6]}-{data_date[6:8]} "
-                     f"{data_time[0:2]}:{data_time[2:4]} UTC")
+    data_time_utc = grib_stamp_to_det(data_date, data_time)
     lf, lo_n = np.asarray(lats).ravel(), np.asarray(lons).ravel()
     inside = (np.isfinite(lf) & np.isfinite(lo_n)
               & (lf >= bounds["lat_min"]) & (lf <= bounds["lat_max"])
@@ -144,7 +146,7 @@ def _build(base, datestr, cycle):
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
         f"Source: NOAA HRRR {datestr} t{cycle}z snow analysis  |  "
-        f"Processed {utcnow_iso()}",
+        f"Processed {now_det_str()}",
         note="NO SNOW — TRANSPARENT. White = extreme end only.")
     return _finish(stage, stage_prod, bounds, W, H, rec, res, stops,
                    (lw, lh), subtitle, data_time_utc, datestr, cycle,
@@ -167,7 +169,7 @@ def _build_empty(stage, stage_prod, bounds, W, H, data_time_utc, datestr,
         unit, stops,
         [(0.0, "LOWEST 0"), (24.0, "HIGHEST+ 24 (provisional)")],
         f"Source: NOAA HRRR {datestr} t{cycle}z snow analysis  |  "
-        f"Processed {utcnow_iso()}",
+        f"Processed {now_det_str()}",
         note="NO SNOW — TRANSPARENT. Provisional scale until first snow.")
     rec = {"hist_min": 0.0, "hist_max": 24.0, "provisional": True,
            "percentiles": {"p5": 1.0, "p25": 4.0, "p50": 8.0, "p75": 12.0,
@@ -251,6 +253,7 @@ def _finish(stage, stage_prod, bounds, W, H, rec, res, stops, legend_wh,
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": meta["model_cycle"],
                           "source_id": source_id,
+                          "render_version": RENDER_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0
