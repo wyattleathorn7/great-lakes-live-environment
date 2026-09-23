@@ -93,8 +93,8 @@ def run():
     except Exception as e:
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
-    # v2 marker forces one rebuild to deploy the resample fix.
-    source_id = f"{dataset}-v2-{times[0][:10]}"
+    # v3 marker forces one rebuild to deploy the log-scale fix.
+    source_id = f"{dataset}-v3-{times[0][:10]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("data_times") == times \
@@ -165,8 +165,22 @@ def _build(bounds, times, dataset):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    stops = build_linear_stops(rec["hist_min"], rec["hist_max"])
-    rgba = render_rgba(field, stops, bounds["overlay_alpha"])
+    # Log-scale color mapping (ocean-color standard): chlorophyll spans
+    # orders of magnitude, so a linear scale would paint 99% of lake
+    # water one blue. Colors are linear in log10(concentration) -- equal
+    # color per decade -- while every displayed value stays the true
+    # measured concentration (no value is altered for color).
+    import math as _math
+    log_min = _math.log10(max(lo, rec["hist_min"]))
+    log_max = _math.log10(max(rec["hist_max"],
+                              10.0 * max(lo, rec["hist_min"])))
+    if not (log_max > log_min):
+        log_max = log_min + 1.0
+    stops = build_linear_stops(log_min, log_max)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        logfield = np.where(np.isfinite(field) & (field > 0),
+                            np.log10(np.maximum(field, lo)), np.nan)
+    rgba = render_rgba(logfield, stops, bounds["overlay_alpha"])
     rgba = apply_shoreline_mask(rgba)  # water-only product
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     if int((rgba[:, :, 3] > 0).sum()) < 100:
@@ -175,19 +189,23 @@ def _build(bounds, times, dataset):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = record_tick_labels(rec)
+    # Ticks show true concentrations, positioned at their log10 places.
+    labels = [(float(_math.log10(max(v, lo))), t)
+              for v, t in record_tick_labels(rec)]
     subtitle = (f"Chlorophyll-a ({unit})  |  {times[0][:10]} (+{MOSAIC_DAYS - 1}d mosaic)")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
         f"Source: NOAA CoastWatch VIIRS chlorophyll  |  Processed {utcnow_iso()}",
         note="Transparent = land/cloud/missing. Not a toxin measurement.")
-    scale_html = (f"Chlorophyll-a concentration ({unit}), balanced linear "
-                  f"scale: <b>LOWEST {fmt_val(rec['hist_min'])}</b> (dark blue) → "
-                  f"common {fmt_val(p['p50'])} (green/yellow) → "
+    scale_html = (f"Chlorophyll-a concentration ({unit}), logarithmic "
+                  f"(base-10) scale: <b>LOWEST {fmt_val(rec['hist_min'])}</b> "
+                  f"(dark blue) → common {fmt_val(p['p50'])} (green/yellow) → "
                   f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b> (deep purple). "
-                  f"Every part of the scale owns an equal share of color; "
-                  f"high values indicate biomass/activity, not toxins.")
+                  f"Equal color per decade of concentration (ocean-color "
+                  f"standard); displayed values are true concentrations, "
+                  f"never altered. High values indicate biomass/activity, "
+                  f"not toxins.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"],
@@ -198,7 +216,8 @@ def _build(bounds, times, dataset):
         source_resolution="~4 km VIIRS L3 (0.0375 deg), bilinear-resampled to canvas",
         color_min=rec["hist_min"], color_max=rec["hist_max"], color_units=unit,
         missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
-                                f"[{lo},{hi}] values admitted; never interpolated."))
+                                f"[{lo},{hi}] values admitted; never interpolated; "
+                                "colors follow log10(concentration), values shown raw."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["historical"] = {"low": rec["hist_min"], "high": rec["hist_max"],
@@ -207,10 +226,10 @@ def _build(bounds, times, dataset):
     meta["stats"] = {"valid_cells": n_valid, "current_min": cur_min,
                      "current_max": cur_max}
     meta["dataset"] = dataset
-    # v2 = bilinear canvas resample (replaces splat binning that left
-    # dashed stripe gaps). One-time rotation to deploy the fixed
-    # rendering; afterwards the id tracks source dataset+date only.
-    source_id = f"{dataset}-v2-{times[0][:10]}"
+    # v3 = log-scale color mapping (linear hid all background variation
+    # in one blue). One-time rotation to deploy the fixed rendering;
+    # afterwards the id tracks source dataset+date only.
+    source_id = f"{dataset}-v3-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]
