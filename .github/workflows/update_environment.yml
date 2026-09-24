@@ -473,7 +473,7 @@ jobs:
         species: [walleye, yellow_perch, lake_trout, steelhead, brown_trout,
                   smallmouth_bass, northern_pike, muskellunge, lake_sturgeon,
                   lake_whitefish, chinook_salmon, coho_salmon, largemouth_bass,
-                  burbot, channel_catfish, cisco, sauger, white_bass]
+                  burbot, cisco, sauger]
     steps:
       - uses: actions/checkout@v7
       - name: Checkout telemetry evidence (best-effort input)

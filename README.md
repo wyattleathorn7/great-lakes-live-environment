@@ -1,8 +1,8 @@
 # Great Lakes Live Environment
 
-One automated GitHub system publishing **thirty independent live raster layers**
+One automated GitHub system publishing **twenty-eight independent live raster layers**
 for Google Earth: twelve environmental layers from official NOAA/NASA operational
-sources, plus **eighteen live game-fish distribution gradients** (see below).
+sources, plus **sixteen live game-fish distribution gradients** (see below).
 
 | Layer | Source | Refresh wording |
 |---|---|---|
@@ -19,15 +19,15 @@ sources, plus **eighteen live game-fish distribution gradients** (see below).
 | 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles; FIXED Apple-style absolute spectrum (-40..130 °F), water-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ❄️ Live Snow Coverage | NOAA/NCEP HRRR 3 km SNOD/SNOWC snow analysis (ground snow gate), hourly cycles, Michigan-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
 
-Eighteen additional **live game-fish distribution gradients** (walleye, yellow perch,
+Sixteen additional **live game-fish distribution gradients** (walleye, yellow perch,
 lake trout, steelhead, brown trout, smallmouth bass, northern pike, muskellunge,
 lake sturgeon, lake whitefish, chinook salmon, coho salmon, largemouth bass,
-burbot, channel catfish, cisco, sauger, white bass) are produced by
+burbot, cisco, sauger) are produced by
 `scripts/build_gamefish.py` (matrix job, one species per run) from live GLSEA SST
 + acoustic-telemetry evidence via a six-component model (telemetry × seasonal ×
 thermal × diel × habitat × corridors, weighted mean, confidence-gated transparency).
-Telemetry support varies: whitefish/cisco have strong GLATOS programs; catfish/
-white bass rest on a USGS release file; chinook/coho/largemouth/burbot/sauger have
+Telemetry support varies: whitefish/cisco have strong GLATOS programs;
+chinook/coho/largemouth/burbot/sauger have
 no current telemetry and run suitability-only at low confidence (flagged in
 metadata). Each publishes `site/gamefish_<species>/{current.png,legend.png,
 metadata.json}` plus entry/live KMLs (`WALLEYE_LIVE.kml`, etc.). Modeled likelihood
@@ -145,9 +145,10 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_solar_radiation.py`,
 `python scripts/build_air_temperature.py`,
 `python scripts/build_snow_coverage.py`,
-`python scripts/build_gamefish.py --species walleye` (9 species: walleye,
+`python scripts/build_gamefish.py --species walleye` (16 species: walleye,
 yellow_perch, lake_trout, steelhead, brown_trout, smallmouth_bass,
-northern_pike, muskellunge, lake_sturgeon),
+northern_pike, muskellunge, lake_sturgeon, lake_whitefish, chinook_salmon,
+coho_salmon, largemouth_bass, burbot, cisco, sauger),
 `python scripts/validate_outputs.py`,
 `python scripts/selftest.py`.
 

@@ -83,14 +83,10 @@ PRODUCTS = {
                                  "max_opaque_min": 10_000},
     "gamefish_burbot": {"kml": "BURBOT_LIVE.kml",
                         "max_opaque_min": 10_000},
-    "gamefish_channel_catfish": {"kml": "CHANNEL_CATFISH_LIVE.kml",
-                                 "max_opaque_min": 10_000},
     "gamefish_cisco": {"kml": "CISCO_LIVE.kml",
                        "max_opaque_min": 10_000},
     "gamefish_sauger": {"kml": "SAUGER_LIVE.kml",
                         "max_opaque_min": 10_000},
-    "gamefish_white_bass": {"kml": "WHITE_BASS_LIVE.kml",
-                            "max_opaque_min": 10_000},
 }
 
 META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",

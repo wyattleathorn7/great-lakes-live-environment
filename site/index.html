@@ -250,14 +250,7 @@ distribution gradients. Each layer can be toggled on/off by itself.</p>
 <a href="gamefish_burbot/current.png">current.png</a> ·
 <a href="gamefish_burbot/metadata.json">metadata.json</a></p>
 </div>
-<div class="card" id="gamefish_channel_catfish">
-<h2>🐟 Live Channel Catfish Distribution</h2>
-<p><small id="gamefish_channel_catfish-meta">loading…</small></p>
-<img class="legend" src="gamefish_channel_catfish/legend.png" alt="Channel Catfish legend">
-<p><a href="kml/CHANNEL_CATFISH_LIVE.kml">Open in Google Earth (KML)</a> ·
-<a href="gamefish_channel_catfish/current.png">current.png</a> ·
-<a href="gamefish_channel_catfish/metadata.json">metadata.json</a></p>
-</div>
+
 <div class="card" id="gamefish_cisco">
 <h2>🐟 Live Cisco (Lake Herring) Distribution</h2>
 <p><small id="gamefish_cisco-meta">loading…</small></p>
@@ -274,21 +267,14 @@ distribution gradients. Each layer can be toggled on/off by itself.</p>
 <a href="gamefish_sauger/current.png">current.png</a> ·
 <a href="gamefish_sauger/metadata.json">metadata.json</a></p>
 </div>
-<div class="card" id="gamefish_white_bass">
-<h2>🐟 Live White Bass Distribution</h2>
-<p><small id="gamefish_white_bass-meta">loading…</small></p>
-<img class="legend" src="gamefish_white_bass/legend.png" alt="White Bass legend">
-<p><a href="kml/WHITE_BASS_LIVE.kml">Open in Google Earth (KML)</a> ·
-<a href="gamefish_white_bass/current.png">current.png</a> ·
-<a href="gamefish_white_bass/metadata.json">metadata.json</a></p>
-</div>
+
 
 <p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU/HRRR/GFS/UVI, CoastWatch VIIRS, NASA MODIS via Planetary Computer) + USGS/GLATOS acoustic-telemetry evidence for game-fish layers (behavioral evidence only, never fish counts).
 This project is not endorsed by NOAA. Stable URLs — Google Earth layers never
 need re-pointing; images carry version query strings so updates appear on refresh.</small></p>
 
 <script>
-["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind","leaf_color","chlorophyll","water_clarity","solar_radiation","air_temperature","snow_coverage","uv_index","gamefish_walleye","gamefish_yellow_perch","gamefish_lake_trout","gamefish_steelhead","gamefish_brown_trout","gamefish_smallmouth_bass","gamefish_northern_pike","gamefish_muskellunge","gamefish_lake_sturgeon","gamefish_lake_whitefish","gamefish_chinook_salmon","gamefish_coho_salmon","gamefish_largemouth_bass","gamefish_burbot","gamefish_channel_catfish","gamefish_cisco","gamefish_sauger","gamefish_white_bass"].forEach(p=>{
+["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind","leaf_color","chlorophyll","water_clarity","solar_radiation","air_temperature","snow_coverage","uv_index","gamefish_walleye","gamefish_yellow_perch","gamefish_lake_trout","gamefish_steelhead","gamefish_brown_trout","gamefish_smallmouth_bass","gamefish_northern_pike","gamefish_muskellunge","gamefish_lake_sturgeon","gamefish_lake_whitefish","gamefish_chinook_salmon","gamefish_coho_salmon","gamefish_largemouth_bass","gamefish_burbot","gamefish_cisco","gamefish_sauger"].forEach(p=>{
   fetch(p+"/metadata.json").then(r=>r.json()).then(m=>{
     document.getElementById(p+"-meta").textContent =
       m.freshness+" | Data time: "+m.data_time_utc+" | Processed: "+m.processing_time_utc;

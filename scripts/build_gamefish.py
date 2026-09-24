@@ -45,7 +45,7 @@ RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 SPECIES = ["walleye", "yellow_perch", "lake_trout", "steelhead", "brown_trout",
            "smallmouth_bass", "northern_pike", "muskellunge", "lake_sturgeon",
            "lake_whitefish", "chinook_salmon", "coho_salmon", "largemouth_bass",
-           "burbot", "channel_catfish", "cisco", "sauger", "white_bass"]
+           "burbot", "cisco", "sauger"]
 REGISTRY_NAMES = {"walleye": "Walleye", "yellow_perch": "Yellow Perch",
                   "lake_trout": "Lake Trout", "steelhead": "Steelhead",
                   "brown_trout": "Brown Trout",
@@ -56,8 +56,8 @@ REGISTRY_NAMES = {"walleye": "Walleye", "yellow_perch": "Yellow Perch",
                   "chinook_salmon": "Chinook Salmon",
                   "coho_salmon": "Coho Salmon",
                   "largemouth_bass": "Largemouth Bass", "burbot": "Burbot",
-                  "channel_catfish": "Channel Catfish", "cisco": "Cisco",
-                  "sauger": "Sauger", "white_bass": "White Bass"}
+                  "cisco": "Cisco",
+                  "sauger": "Sauger"}
 
 PRODUCT_OF = {s: f"gamefish_{s}" for s in SPECIES}
 
