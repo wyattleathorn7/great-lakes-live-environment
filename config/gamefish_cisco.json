@@ -1,0 +1,84 @@
+{
+ "product": "gamefish_cisco",
+ "kml_filename": "CISCO_LIVE.kml",
+ "label": "Cisco (Lake Herring)",
+ "scientific": "Coregonus artedi",
+ "title": "CISCO (LAKE HERRING) \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE CISCO (LAKE HERRING) DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 11.0,
+  "sigma_c": 3.0
+ },
+ "seasonal_windows": [
+  {
+   "name": "spawn",
+   "start": "11-01",
+   "end": "12-20",
+   "focus": "reefs_shoals",
+   "strength": 1.0
+  },
+  {
+   "name": "winter",
+   "start": "12-21",
+   "end": "04-30",
+   "focus": "basins",
+   "strength": 0.55
+  },
+  {
+   "name": "summer_pelagic",
+   "start": "05-01",
+   "end": "10-31",
+   "focus": "offshore",
+   "strength": 0.75
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.2,
+  "day_offshore_bias": 0.15,
+  "crepuscular_peak": false
+ },
+ "habitat": {
+  "nearshore_affinity": 0.3,
+  "offshore_affinity": 0.85,
+  "connecting_waters_affinity": 0.3,
+  "river_affinity_spring": 0.2
+ },
+ "corridors": [
+  {
+   "name": "saginaw_bay",
+   "weight": 0.7
+  },
+  {
+   "name": "huron_shoals",
+   "weight": 0.7
+  },
+  {
+   "name": "ontario_east",
+   "weight": 0.6
+  },
+  {
+   "name": "superior_shoals",
+   "weight": 0.6
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 240.0,
+  "sigma_deg": 0.16
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3 coregonids; 10 GLATOS projects (JCISC/LODWC/LECCI/GTCOR/...)",
+ "status": "sufficient"
+}

@@ -1,0 +1,87 @@
+{
+ "product": "gamefish_burbot",
+ "kml_filename": "BURBOT_LIVE.kml",
+ "label": "Burbot",
+ "scientific": "Lota lota",
+ "title": "BURBOT \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE BURBOT DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 10.0,
+  "sigma_c": 5.0
+ },
+ "seasonal_windows": [
+  {
+   "name": "spawn_ice",
+   "start": "12-15",
+   "end": "04-01",
+   "focus": "nearshore",
+   "strength": 1.0
+  },
+  {
+   "name": "spring",
+   "start": "04-02",
+   "end": "06-15",
+   "focus": "nearshore",
+   "strength": 0.55
+  },
+  {
+   "name": "summer_deep",
+   "start": "06-16",
+   "end": "10-15",
+   "focus": "offshore",
+   "strength": 0.7
+  },
+  {
+   "name": "fall",
+   "start": "10-16",
+   "end": "12-14",
+   "focus": "nearshore",
+   "strength": 0.6
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.4,
+  "day_offshore_bias": 0.2,
+  "crepuscular_peak": false
+ },
+ "habitat": {
+  "nearshore_affinity": 0.5,
+  "offshore_affinity": 0.8,
+  "connecting_waters_affinity": 0.4,
+  "river_affinity_spring": 0.4
+ },
+ "corridors": [
+  {
+   "name": "superior_shoals",
+   "weight": 0.7
+  },
+  {
+   "name": "michigan_reefs",
+   "weight": 0.6
+  },
+  {
+   "name": "huron_reefs",
+   "weight": 0.6
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 240.0,
+  "sigma_deg": 0.14
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "NYNHP spawn 0.6-1.7C winter night Dec-Apr; Aitchison feeding 12-14C; broad cold-water Gaussian is MODEL_ASSUMPTION; NO telemetry in corpus",
+ "status": "sufficient"
+}

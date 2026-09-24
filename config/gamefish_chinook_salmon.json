@@ -1,0 +1,80 @@
+{
+ "product": "gamefish_chinook_salmon",
+ "kml_filename": "CHINOOK_SALMON_LIVE.kml",
+ "label": "Chinook Salmon",
+ "scientific": "Oncorhynchus tshawytscha",
+ "title": "CHINOOK SALMON \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE CHINOOK SALMON DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 13.0,
+  "sigma_c": 3.5
+ },
+ "seasonal_windows": [
+  {
+   "name": "fall_run",
+   "start": "08-15",
+   "end": "10-31",
+   "focus": "river_mouths",
+   "strength": 1.0
+  },
+  {
+   "name": "summer",
+   "start": "05-01",
+   "end": "08-14",
+   "focus": "offshore",
+   "strength": 0.7
+  },
+  {
+   "name": "winter_spring",
+   "start": "11-01",
+   "end": "04-30",
+   "focus": "basins",
+   "strength": 0.4
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.15,
+  "day_offshore_bias": 0.15,
+  "crepuscular_peak": false
+ },
+ "habitat": {
+  "nearshore_affinity": 0.4,
+  "offshore_affinity": 0.8,
+  "connecting_waters_affinity": 0.3,
+  "river_affinity_spring": 0.3
+ },
+ "corridors": [
+  {
+   "name": "michigan_tribs",
+   "weight": 0.8
+  },
+  {
+   "name": "huron_tribs",
+   "weight": 0.6
+  },
+  {
+   "name": "ontario_tribs",
+   "weight": 0.6
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 96.0,
+  "sigma_deg": 0.14
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3 salmonines; NO telemetry in corpus (suitability-only, low confidence)",
+ "status": "sufficient"
+}

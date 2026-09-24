@@ -43,13 +43,21 @@ GLSEA_URL = json.load(open(os.path.join(
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 
 SPECIES = ["walleye", "yellow_perch", "lake_trout", "steelhead", "brown_trout",
-           "smallmouth_bass", "northern_pike", "muskellunge", "lake_sturgeon"]
+           "smallmouth_bass", "northern_pike", "muskellunge", "lake_sturgeon",
+           "lake_whitefish", "chinook_salmon", "coho_salmon", "largemouth_bass",
+           "burbot", "channel_catfish", "cisco", "sauger", "white_bass"]
 REGISTRY_NAMES = {"walleye": "Walleye", "yellow_perch": "Yellow Perch",
                   "lake_trout": "Lake Trout", "steelhead": "Steelhead",
                   "brown_trout": "Brown Trout",
                   "smallmouth_bass": "Smallmouth Bass",
                   "northern_pike": "Northern Pike", "muskellunge": "Muskellunge",
-                  "lake_sturgeon": "Lake Sturgeon"}
+                  "lake_sturgeon": "Lake Sturgeon",
+                  "lake_whitefish": "Lake Whitefish",
+                  "chinook_salmon": "Chinook Salmon",
+                  "coho_salmon": "Coho Salmon",
+                  "largemouth_bass": "Largemouth Bass", "burbot": "Burbot",
+                  "channel_catfish": "Channel Catfish", "cisco": "Cisco",
+                  "sauger": "Sauger", "white_bass": "White Bass"}
 
 PRODUCT_OF = {s: f"gamefish_{s}" for s in SPECIES}
 

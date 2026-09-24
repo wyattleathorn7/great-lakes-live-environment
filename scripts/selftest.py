@@ -158,7 +158,16 @@ def main():
              ("gamefish_smallmouth_bass", "SMALLMOUTH_BASS_LIVE.kml"),
              ("gamefish_northern_pike", "NORTHERN_PIKE_LIVE.kml"),
              ("gamefish_muskellunge", "MUSKELLUNGE_LIVE.kml"),
-             ("gamefish_lake_sturgeon", "LAKE_STURGEON_LIVE.kml")]
+             ("gamefish_lake_sturgeon", "LAKE_STURGEON_LIVE.kml"),
+             ("gamefish_lake_whitefish", "LAKE_WHITEFISH_LIVE.kml"),
+             ("gamefish_chinook_salmon", "CHINOOK_SALMON_LIVE.kml"),
+             ("gamefish_coho_salmon", "COHO_SALMON_LIVE.kml"),
+             ("gamefish_largemouth_bass", "LARGEMOUTH_BASS_LIVE.kml"),
+             ("gamefish_burbot", "BURBOT_LIVE.kml"),
+             ("gamefish_channel_catfish", "CHANNEL_CATFISH_LIVE.kml"),
+             ("gamefish_cisco", "CISCO_LIVE.kml"),
+             ("gamefish_sauger", "SAUGER_LIVE.kml"),
+             ("gamefish_white_bass", "WHITE_BASS_LIVE.kml")]
     for p, kf_name in gfish:
         for kf in (os.path.join(REPO_ROOT, "kml", kf_name),
                    os.path.join(SITE_DIR, "kml", kf_name)):

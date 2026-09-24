@@ -1,0 +1,69 @@
+{
+  "product": "gamefish_coho_salmon",
+  "title": "COHO SALMON \u2014 LIVE MODELED DISTRIBUTION",
+  "freshness": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+  "noaa_source": "NOAA/GLERL CoastWatch GLSEA SST + USGS/GLATOS acoustic-telemetry evidence",
+  "product_name": "NOAA/GLERL CoastWatch GLSEA SST + USGS/GLATOS acoustic-telemetry evidence",
+  "variable": "live modeled distribution / habitat likelihood index (0..1; NOT fish counts)",
+  "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
+  "data_time_utc": "2026-09-24 12:08 PM EDT",
+  "source_last_modified_utc": "2026-09-24 12:08 PM EDT",
+  "processing_time_utc": "2026-09-24 12:23 PM EDT",
+  "units": "modeled index 0..1",
+  "spatial_resolution_source": "~1.8 km GLSEA SST binned to shared canvas; telemetry evidence splatted",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.0,
+  "color_scale_max": 1.0,
+  "color_scale_units": "modeled distribution index",
+  "missing_data_treatment": "land and missing SST fully transparent; near-zero index suppressed to transparent (no fake coverage).",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "source_id": "gfish-2026-09-24-glsea-Thu, 24 Sep 2026 16:08:26 GMT-f508953e5a3c-m1.1.0-r2",
+  "source_version": "gfish-2026-09-24-glsea-Thu-24-Sep-2026-16-08-26-GMT-f508953e5a3c-m1.1.0-r2",
+  "legend_size": [
+    640,
+    300
+  ],
+  "telemetry": {
+    "evidence_events": 0,
+    "prior_receivers": 0,
+    "newest_evidence": null,
+    "n_foci": 0,
+    "repo_available": true
+  },
+  "seasonal": {
+    "active_windows": [
+      "fall_run"
+    ]
+  },
+  "diel": {
+    "phase": "day",
+    "solar_elev": 43.1,
+    "night_factor": 0.0
+  },
+  "confidence": 0.755,
+  "component_means": {
+    "T": 0.0,
+    "M": 0.5477,
+    "TH": 0.5061,
+    "D": 0.5274,
+    "H": 0.8463,
+    "C": 0.3406
+  },
+  "warnings": [
+    "no current resolved telemetry for this species; behavioral priors + environment carry the layer."
+  ],
+  "stats": {
+    "mean_index": 0.3829,
+    "p95_index": 0.5224,
+    "max_index": 0.5919
+  },
+  "legend_scale_html": "Modeled distribution / habitat index: LOW <b>0</b> (transparent) &rarr; HIGH <b>1</b>. Current mean: <b>0.3829</b>, p95: <b>0.5224</b>, confidence/support: <b>0.755</b>. Telemetry events: <b>0</b> (+0 behavioral-prior receivers). Transparency marks low confidence or water outside the modeled domain."
+}

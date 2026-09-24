@@ -1,0 +1,91 @@
+{
+ "product": "gamefish_sauger",
+ "kml_filename": "SAUGER_LIVE.kml",
+ "label": "Sauger",
+ "scientific": "Sander canadensis",
+ "title": "SAUGER \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE SAUGER DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 20.0,
+  "sigma_c": 4.0
+ },
+ "seasonal_windows": [
+  {
+   "name": "spawn",
+   "start": "04-01",
+   "end": "05-20",
+   "focus": "river_mouths",
+   "strength": 1.0
+  },
+  {
+   "name": "summer",
+   "start": "05-21",
+   "end": "09-30",
+   "focus": "nearshore",
+   "strength": 0.65
+  },
+  {
+   "name": "fall",
+   "start": "10-01",
+   "end": "11-30",
+   "focus": "nearshore",
+   "strength": 0.55
+  },
+  {
+   "name": "winter",
+   "start": "12-01",
+   "end": "03-31",
+   "focus": "nearshore",
+   "strength": 0.4
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.2,
+  "day_offshore_bias": 0.05,
+  "crepuscular_peak": true
+ },
+ "habitat": {
+  "nearshore_affinity": 0.8,
+  "offshore_affinity": 0.3,
+  "connecting_waters_affinity": 0.8,
+  "river_affinity_spring": 0.9
+ },
+ "corridors": [
+  {
+   "name": "saginaw_river",
+   "weight": 0.8
+  },
+  {
+   "name": "saginaw_bay",
+   "weight": 0.7
+  },
+  {
+   "name": "maumee_bay_reefs",
+   "weight": 0.6
+  },
+  {
+   "name": "st_clair_river",
+   "weight": 0.5
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 168.0,
+  "sigma_deg": 0.12
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "Nelson/MT-FWP spring river spawn ~6-10C; walleye-like coolwater (MODEL_ASSUMPTION); NO telemetry in corpus",
+ "status": "sufficient"
+}

@@ -390,12 +390,22 @@ Per-product independence: a failed download/validation aborts **only that
 product's** update (exit status recorded, previous `site/` assets untouched);
 the other products and the Pages publish proceed normally.
 
-## 13. Game-fish distribution gradients (9 species, `gamefish_<species>`)
+## 13. Game-fish distribution gradients (18 species, `gamefish_<species>`)
 
 - **What:** live modeled distribution / habitat-likelihood rasters (0..1 index,
   NOT fish counts) for walleye, yellow perch, lake trout, steelhead, brown
-  trout, smallmouth bass, northern pike, muskellunge, lake sturgeon.
-  Chinook/Coho excluded (no tag evidence in the telemetry corpus).
+  trout, smallmouth bass, northern pike, muskellunge, lake sturgeon, lake
+  whitefish, chinook salmon, coho salmon, largemouth bass, burbot, channel
+  catfish, cisco (lake herring), sauger, white bass — one shared blue(low) to
+  red(high) spectrum (model v1.1.0).
+- **Telemetry evidence tiers:** strong GLATOS programs (lake whitefish 13
+  projects, cisco 10, plus the original nine); USGS release-file basis only
+  (channel catfish, white bass); NO current telemetry — suitability-only at low
+  confidence, flagged in metadata `warnings` (chinook, coho, largemouth bass,
+  burbot, sauger). Thermal/migration parameters for all species rest on GLFC
+  Sp87-3, USGS/USFWS/agency literature (whitefish: USGS 2023 loggers + Ebener;
+  burbot: winter 0.6–1.7 °C spawn, feeding 12–14 °C; sauger: spring river spawn
+  ~6–10 °C); decay constants remain labeled MODEL_ASSUMPTIONs.
 - **Live inputs:** (1) GLSEA SST from §1 (same URL/cadence; a failed SST fetch
   keeps the previous raster, exit 2); (2) acoustic-telemetry evidence read from
   the `great-lakes-live-fish-telemetry` checkout when available (USGS real-time

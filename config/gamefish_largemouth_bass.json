@@ -1,0 +1,87 @@
+{
+ "product": "gamefish_largemouth_bass",
+ "kml_filename": "LARGEMOUTH_BASS_LIVE.kml",
+ "label": "Largemouth Bass",
+ "scientific": "Micropterus salmoides",
+ "title": "LARGEMOUTH BASS \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE LARGEMOUTH BASS DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 24.0,
+  "sigma_c": 4.0
+ },
+ "seasonal_windows": [
+  {
+   "name": "spawn",
+   "start": "05-20",
+   "end": "07-10",
+   "focus": "nearshore",
+   "strength": 1.0
+  },
+  {
+   "name": "summer",
+   "start": "07-11",
+   "end": "09-30",
+   "focus": "nearshore",
+   "strength": 0.7
+  },
+  {
+   "name": "fall",
+   "start": "10-01",
+   "end": "11-30",
+   "focus": "nearshore",
+   "strength": 0.5
+  },
+  {
+   "name": "winter",
+   "start": "12-01",
+   "end": "05-19",
+   "focus": "nearshore",
+   "strength": 0.3
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": -0.1,
+  "day_offshore_bias": 0.0,
+  "crepuscular_peak": true
+ },
+ "habitat": {
+  "nearshore_affinity": 0.95,
+  "offshore_affinity": 0.05,
+  "connecting_waters_affinity": 0.6,
+  "river_affinity_spring": 0.4
+ },
+ "corridors": [
+  {
+   "name": "lake_st_clair",
+   "weight": 0.7
+  },
+  {
+   "name": "erie_west_to_central",
+   "weight": 0.5
+  },
+  {
+   "name": "green_bay",
+   "weight": 0.5
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 240.0,
+  "sigma_deg": 0.1
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3 centrarchids; NO telemetry in corpus (suitability-only, low confidence)",
+ "status": "sufficient"
+}
