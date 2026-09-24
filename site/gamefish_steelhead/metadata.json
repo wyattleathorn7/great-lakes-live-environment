@@ -8,7 +8,7 @@
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
   "data_time_utc": "2026-09-23 02:50 AM EDT",
   "source_last_modified_utc": "2026-09-23 02:50 AM EDT",
-  "processing_time_utc": "2026-09-24 11:59 AM EDT",
+  "processing_time_utc": "2026-09-24 12:00 PM EDT",
   "units": "modeled index 0..1",
   "spatial_resolution_source": "~1.8 km GLSEA SST binned to shared canvas; telemetry evidence splatted",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,8 +25,8 @@
   "missing_data_treatment": "land and missing SST fully transparent; near-zero index suppressed to transparent (no fake coverage).",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "source_id": "gfish-2026-09-24-glsea-Wed, 23 Sep 2026 06:50:55 GMT-f508953e5a3c-m1.1.0-r2",
-  "source_version": "gfish-2026-09-24-glsea-Wed-23-Sep-2026-06-50-55-GMT-f508953e5a3c-m1.1.0-r2",
+  "source_id": "gfish-2026-09-24-glsea-Wed, 23 Sep 2026 06:50:55 GMT-3856be1c392b-m1.1.0-r2",
+  "source_version": "gfish-2026-09-24-glsea-Wed-23-Sep-2026-06-50-55-GMT-3856be1c392b-m1.1.0-r2",
   "legend_size": [
     640,
     300
@@ -45,7 +45,7 @@
   },
   "diel": {
     "phase": "day",
-    "solar_elev": 41.2,
+    "solar_elev": 41.3,
     "night_factor": 0.0
   },
   "confidence": 0.851,
