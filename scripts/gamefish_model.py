@@ -371,6 +371,52 @@ def render_species(final, conf, species_key, alpha=205):
 
 LEGEND_SIZE = (640, 300)
 
+COMBINED_KEY_ORDER = [
+    ("brown_trout", "Brown Trout"),
+    ("lake_sturgeon", "Lake Sturgeon"),
+    ("lake_trout", "Lake Trout"),
+    ("muskellunge", "Muskellunge"),
+    ("northern_pike", "Northern Pike"),
+    ("smallmouth_bass", "Smallmouth Bass"),
+    ("steelhead", "Steelhead"),
+    ("walleye", "Walleye"),
+    ("yellow_perch", "Yellow Perch"),
+]
+COMBINED_KEY_SIZE = (640, 46 + 62 * len(COMBINED_KEY_ORDER) + 34)
+
+
+def draw_combined_key(path):
+    """One raster key for all nine gradients, using each species' own
+    validated gradient colors (no new colors, no common scale). Deterministic:
+    byte-stable unless SPECIES_HUES changes (then bump MODEL_VERSION)."""
+    W, H = COMBINED_KEY_SIZE
+    img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
+    d = ImageDraw.Draw(img)
+    ft, fb, fs = _font(19), _font(13), _font(11)
+    d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
+    d.text((12, 6), "GAME-FISH DISTRIBUTION GRADIENTS \u2014 VISUAL KEY",
+           font=ft, fill=(10, 10, 10))
+    d.text((12, 30), "Per-species low \u2192 high modeled distribution / habitat index",
+           font=fs, fill=(40, 40, 40))
+    y = 46
+    for key, label in COMBINED_KEY_ORDER:
+        stops = SPECIES_HUES[key]
+        d.text((12, y), label, font=fb, fill=(10, 10, 10))
+        d.text((W - 52, y), "HIGH", font=fs, fill=(10, 10, 10))
+        bx, by, bw, bh = 12, y + 18, W - 24, 22
+        for i in range(bw):
+            d.line([(bx + i, by), (bx + i, by + bh)],
+                   fill=_interp(stops, i / (bw - 1)) + (255,))
+        d.rectangle([bx, by, bx + bw - 1, by + bh], outline=(40, 40, 40))
+        d.text((bx, by + bh + 2), "LOW (transparent)", font=fs, fill=(40, 40, 40))
+        y += 62
+    d.text((12, H - 20),
+           "NOT fish counts. Transparency = low confidence / outside modeled water.",
+           font=fs, fill=(60, 60, 60))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    return path
+
 
 def _font(size):
     from PIL import ImageFont

@@ -31,8 +31,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import gamefish_model as G
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
-                       description_html, entry_description_html, legend_block,
-                       live_out_dirs)
+                       legend_block, live_out_dirs)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, base_metadata,
                               bin_to_canvas, canvas_indices, download,
                               ensure_coords, http_date_to_det, now_det_str,
@@ -323,40 +322,78 @@ def _build(cfg, PRODUCT, species, shape, now, info, raw_path, source_id, tele):
     return 0
 
 
-def extra_html(cfg, meta):
-    t = meta["telemetry"]
+def live_description_html(cfg, meta, token, legend_img_html):
+    """Static folder description: no retrieval/update timestamps (they would
+    go stale inside Google Earth). Timestamps live in metadata.json and the
+    versioned legend image instead."""
+    base = pages_base_url()
     return (
+        f"<h2>{cfg['title']}</h2>"
+        f"<p>{G.DISCLAIMER}</p>"
+        f"{legend_img_html}"
+        f"<p><b>All nine species key:</b><br>"
+        f"<img src=\"{base}/gamefish/legend_key.png?v={G.MODEL_VERSION}\" "
+        f"width=\"600\" alt=\"combined nine-species gradient key\"><br>"
+        f"Each species keeps its own gradient colors and low-to-high meaning; "
+        f"this key maps species to colors to intensity.</p>"
         f"<p><b>Method:</b> telemetry evidence &times; seasonal migration &times; "
         f"thermal suitability &times; diel behavior &times; habitat &times; movement "
         f"corridors (weighted mean; confidence-gated transparency). Telemetry is "
-        f"behavioral evidence only &mdash; never abundance; decays spatially and "
-        f"temporally; unresolved tags stay unresolved.</p>"
-        f"<p><b>Uncertainty:</b> confidence/support <b>{meta['confidence']}</b>; "
-        f"current resolved telemetry events <b>{t['evidence_events']}</b>, "
-        f"behavioral-prior receivers <b>{t['prior_receivers']}</b>. "
-        f"High color with weak support fades toward transparent.</p>"
-        f"<p><b>{G.DISCLAIMER}</b></p>"
-        f"<p><b>Telemetry evidence source:</b> "
+        f"behavioral evidence only &mdash; never abundance; it decays spatially and "
+        f"temporally, and unresolved tags stay unresolved.</p>"
+        f"<p><b>Reading the gradient:</b> LOW (transparent) &rarr; HIGH (saturated) "
+        f"modeled distribution / habitat index. Transparency marks low confidence "
+        f"or water outside the modeled domain; a strong color with weak support "
+        f"fades toward transparent.</p>"
+        f"<p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA lake surface temperature "
+        f"(<a href=\"https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc\">"
+        f"GLSEA current analysis</a>) and acoustic-telemetry evidence from "
         f"<a href=\"https://github.com/wyattleathorn7/great-lakes-live-fish-telemetry\">"
-        f"great-lakes-live-fish-telemetry</a> (USGS real-time + GLATOS deployments; "
-        f"read as input, never modified). Limit v0.1: surface temperature only, "
-        f"shore-proxy habitat, no bathymetry.</p>")
+        f"great-lakes-live-fish-telemetry</a> (USGS real-time receivers and GLATOS "
+        f"deployments; read as input, never modified).</p>"
+        f"<p><b>Limitations:</b> surface temperature only (no depth resolution); "
+        f"shore-proximity habitat proxy with no bathymetry, substrate, or vegetation "
+        f"layers; telemetry decay constants are documented modeling assumptions.</p>"
+        f"<p>Transparent outside valid water data so existing project layers stay "
+        f"visible. Turn on/off independently of other layers.</p>"
+    )
+
+
+def entry_description_html_static(cfg):
+    """Static entry description: explains the product and the auto-refresh;
+    carries no timestamps or version tokens (entry files stay byte-stable)."""
+    base = pages_base_url()
+    return (
+        f"<h2>{cfg['title']}</h2>"
+        f"<p>{G.DISCLAIMER}</p>"
+        f"<p>This entry auto-refreshes from the live overlay "
+        f"(telemetry &times; seasonal &times; thermal &times; diel &times; habitat "
+        f"&times; corridors, weighted mean). "
+        f"Add this file once; new model cycles appear automatically.</p>"
+        f"<p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA and acoustic-telemetry "
+        f"evidence (USGS real-time + GLATOS deployments).</p>"
+        f"<p><b>All nine species key:</b><br>"
+        f"<img src=\"{base}/gamefish/legend_key.png\" "
+        f"width=\"600\" alt=\"combined nine-species gradient key\"></p>"
+    )
+
+
+def pages_base_url():
+    from build_kml import pages_base
+    return pages_base()
 
 
 def write_kmls(cfg, PRODUCT, meta, token, stage=None):
     from geospatial_utils import SITE_DIR, KML_DIR
     block = legend_block(f"{PRODUCT}/legend.png", token, meta["legend_scale_html"])
-    desc = description_html(cfg["title"], meta,
-                            "Turn on/off independently of other layers.",
-                            block + extra_html(cfg, meta))
+    desc = live_description_html(cfg, meta, token, block)
     live_name = cfg["kml_filename"]
     if stage is None:
         build_kml(PRODUCT, live_name, cfg["overlay_name"],
                   f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png", desc,
                   cfg["refresh_interval_seconds"], token)
         build_entry_kml(PRODUCT, live_name, cfg["overlay_name"],
-                        entry_description_html(cfg["title"], meta,
-                                               "Turn on/off independently of other layers."),
+                        entry_description_html_static(cfg),
                         cfg["refresh_interval_seconds"])
     else:
         outs = live_out_dirs(stage, live_name)
@@ -366,8 +403,7 @@ def write_kmls(cfg, PRODUCT, meta, token, stage=None):
                              out_dirs=outs["live"])
         assert_no_vector_geometry(kml_text)
         build_entry_kml(PRODUCT, live_name, cfg["overlay_name"],
-                        entry_description_html(cfg["title"], meta,
-                                               "Turn on/off independently of other layers."),
+                        entry_description_html_static(cfg),
                         cfg["refresh_interval_seconds"], out_dirs=outs["entry"])
 
 
