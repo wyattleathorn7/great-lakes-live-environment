@@ -2,7 +2,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🌣 LIVE UV INDEX</name>
-    <description><![CDATA[<h2>LIVE UV INDEX</h2><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP CPC Global UV Index, operational GRIB2 (12 UTC GFS run, hourly steps to 120 h)).<br/><b>Data time:</b> valid 2026-09-24 02:00 PM EDT (run 2026-09-24 08:00 AM EDT, forecast hour +6)<br/><b>Source version:</b> uvi-20260924-t12z-f06<br/><b>Status:</b> LIVE / CURRENT FORECAST (12Z run)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>LIVE UV INDEX</h2><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP CPC Global UV Index, operational GRIB2 (12 UTC GFS run, hourly steps to 120 h)).<br/><b>Data time:</b> valid 2026-09-24 03:00 PM EDT (run 2026-09-24 08:00 AM EDT, forecast hour +7)<br/><b>Source version:</b> uvi-20260924-t12z-f07<br/><b>Status:</b> LIVE / CURRENT FORECAST (12Z run)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <NetworkLink>
       <name>🌣 LIVE UV INDEX — auto-refresh</name>
       <Link>
