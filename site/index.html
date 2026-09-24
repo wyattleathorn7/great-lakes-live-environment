@@ -14,8 +14,9 @@ code{background:#eef;padding:0 .3em}
 </head>
 <body>
 <h1>Great Lakes Live Environmental Layers</h1>
-<p>Six independent raster overlays for Google Earth, refreshed automatically
-from official NOAA sources. Each layer can be toggled on/off by itself.</p>
+<p>Twelve independent environmental raster overlays for Google Earth, refreshed
+automatically from official NOAA/NASA sources, plus nine live game-fish
+distribution gradients. Each layer can be toggled on/off by itself.</p>
 
 <div class="card" id="wave_height">
 <h2>🌊 Live Wave Height</h2>
@@ -134,12 +135,86 @@ from official NOAA sources. Each layer can be toggled on/off by itself.</p>
 <a href="uv_index/metadata.json">metadata.json</a></p>
 </div>
 
-<p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU/HRRR/GFS/UVI, CoastWatch VIIRS, NASA MODIS via Planetary Computer).
+
+<div class="card" id="gamefish_walleye">
+<h2>🐟 Live Walleye Distribution</h2>
+<p><small id="gamefish_walleye-meta">loading…</small></p>
+<img class="legend" src="gamefish_walleye/legend.png" alt="Walleye legend">
+<p><a href="kml/WALLEYE_LIVE.kml">Open in Google Earth (KML)</a> ·
+<a href="gamefish_walleye/current.png">current.png</a> ·
+<a href="gamefish_walleye/metadata.json">metadata.json</a></p>
+</div>
+<div class="card" id="gamefish_yellow_perch">
+<h2>🐟 Live Yellow Perch Distribution</h2>
+<p><small id="gamefish_yellow_perch-meta">loading…</small></p>
+<img class="legend" src="gamefish_yellow_perch/legend.png" alt="Yellow Perch legend">
+<p><a href="kml/YELLOW_PERCH_LIVE.kml">Open in Google Earth (KML)</a> ·
+<a href="gamefish_yellow_perch/current.png">current.png</a> ·
+<a href="gamefish_yellow_perch/metadata.json">metadata.json</a></p>
+</div>
+<div class="card" id="gamefish_lake_trout">
+<h2>🐟 Live Lake Trout Distribution</h2>
+<p><small id="gamefish_lake_trout-meta">loading…</small></p>
+<img class="legend" src="gamefish_lake_trout/legend.png" alt="Lake Trout legend">
+<p><a href="kml/LAKE_TROUT_LIVE.kml">Open in Google Earth (KML)</a> ·
+<a href="gamefish_lake_trout/current.png">current.png</a> ·
+<a href="gamefish_lake_trout/metadata.json">metadata.json</a></p>
+</div>
+<div class="card" id="gamefish_steelhead">
+<h2>🐟 Live Steelhead Distribution</h2>
+<p><small id="gamefish_steelhead-meta">loading…</small></p>
+<img class="legend" src="gamefish_steelhead/legend.png" alt="Steelhead legend">
+<p><a href="kml/STEELHEAD_LIVE.kml">Open in Google Earth (KML)</a> ·
+<a href="gamefish_steelhead/current.png">current.png</a> ·
+<a href="gamefish_steelhead/metadata.json">metadata.json</a></p>
+</div>
+<div class="card" id="gamefish_brown_trout">
+<h2>🐟 Live Brown Trout Distribution</h2>
+<p><small id="gamefish_brown_trout-meta">loading…</small></p>
+<img class="legend" src="gamefish_brown_trout/legend.png" alt="Brown Trout legend">
+<p><a href="kml/BROWN_TROUT_LIVE.kml">Open in Google Earth (KML)</a> ·
+<a href="gamefish_brown_trout/current.png">current.png</a> ·
+<a href="gamefish_brown_trout/metadata.json">metadata.json</a></p>
+</div>
+<div class="card" id="gamefish_smallmouth_bass">
+<h2>🐟 Live Smallmouth Bass Distribution</h2>
+<p><small id="gamefish_smallmouth_bass-meta">loading…</small></p>
+<img class="legend" src="gamefish_smallmouth_bass/legend.png" alt="Smallmouth Bass legend">
+<p><a href="kml/SMALLMOUTH_BASS_LIVE.kml">Open in Google Earth (KML)</a> ·
+<a href="gamefish_smallmouth_bass/current.png">current.png</a> ·
+<a href="gamefish_smallmouth_bass/metadata.json">metadata.json</a></p>
+</div>
+<div class="card" id="gamefish_northern_pike">
+<h2>🐟 Live Northern Pike Distribution</h2>
+<p><small id="gamefish_northern_pike-meta">loading…</small></p>
+<img class="legend" src="gamefish_northern_pike/legend.png" alt="Northern Pike legend">
+<p><a href="kml/NORTHERN_PIKE_LIVE.kml">Open in Google Earth (KML)</a> ·
+<a href="gamefish_northern_pike/current.png">current.png</a> ·
+<a href="gamefish_northern_pike/metadata.json">metadata.json</a></p>
+</div>
+<div class="card" id="gamefish_muskellunge">
+<h2>🐟 Live Muskellunge Distribution</h2>
+<p><small id="gamefish_muskellunge-meta">loading…</small></p>
+<img class="legend" src="gamefish_muskellunge/legend.png" alt="Muskellunge legend">
+<p><a href="kml/MUSKELLUNGE_LIVE.kml">Open in Google Earth (KML)</a> ·
+<a href="gamefish_muskellunge/current.png">current.png</a> ·
+<a href="gamefish_muskellunge/metadata.json">metadata.json</a></p>
+</div>
+<div class="card" id="gamefish_lake_sturgeon">
+<h2>🐟 Live Lake Sturgeon Distribution</h2>
+<p><small id="gamefish_lake_sturgeon-meta">loading…</small></p>
+<img class="legend" src="gamefish_lake_sturgeon/legend.png" alt="Lake Sturgeon legend">
+<p><a href="kml/LAKE_STURGEON_LIVE.kml">Open in Google Earth (KML)</a> ·
+<a href="gamefish_lake_sturgeon/current.png">current.png</a> ·
+<a href="gamefish_lake_sturgeon/metadata.json">metadata.json</a></p>
+</div>
+
+<p><small>Data: NOAA (GLERL CoastWatch GLSEA, U.S. National Ice Center, NCEP GLWU/HRRR/GFS/UVI, CoastWatch VIIRS, NASA MODIS via Planetary Computer) + USGS/GLATOS acoustic-telemetry evidence for game-fish layers (behavioral evidence only, never fish counts).
 This project is not endorsed by NOAA. Stable URLs — Google Earth layers never
 need re-pointing; images carry version query strings so updates appear on refresh.</small></p>
 
 <script>
-["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind","leaf_color","chlorophyll","water_clarity","solar_radiation","air_temperature","snow_coverage","uv_index"].forEach(p=>{
+["wave_height","water_temperature","ice_coverage","ice_thickness","ice_type","wind","leaf_color","chlorophyll","water_clarity","solar_radiation","air_temperature","snow_coverage","uv_index","gamefish_walleye","gamefish_yellow_perch","gamefish_lake_trout","gamefish_steelhead","gamefish_brown_trout","gamefish_smallmouth_bass","gamefish_northern_pike","gamefish_muskellunge","gamefish_lake_sturgeon"].forEach(p=>{
   fetch(p+"/metadata.json").then(r=>r.json()).then(m=>{
     document.getElementById(p+"-meta").textContent =
       m.freshness+" | Data time: "+m.data_time_utc+" | Processed: "+m.processing_time_utc;

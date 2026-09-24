@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>🐟 LIVE SMALLMOUTH BASS DISTRIBUTION</name>
+    <description><![CDATA[<h2>SMALLMOUTH BASS — LIVE MODELED DISTRIBUTION</h2><p><b>Data time:</b> 2026-09-23 02:50 AM EDT<br/><b>Source updated:</b> 2026-09-23 02:50 AM EDT<br/><b>Source version:</b> gfish-2026-09-24-glsea-Wed-23-Sep-2026-06-50-55-GMT-f508953e5a3c-m1.0.0-r2<br/><b>Processed:</b> 2026-09-24 10:46 AM EDT<br/><b>Status:</b> LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/gamefish_smallmouth_bass/legend.png?v=gfish-2026-09-24-glsea-Wed-23-Sep-2026-06-50-55-GMT-f508953e5a3c-m1.0.0-r2" width="600" alt="legend"><br>Modeled distribution / habitat index: LOW <b>0</b> (transparent) &rarr; HIGH <b>1</b>. Current mean: <b>0.2592</b>, p95: <b>0.3754</b>, confidence/support: <b>0.459</b>. Telemetry events: <b>0</b> (+91 behavioral-prior receivers). Transparency marks low confidence or water outside the modeled domain.</p><p><b>Method:</b> telemetry evidence &times; seasonal migration &times; thermal suitability &times; diel behavior &times; habitat &times; movement corridors (weighted mean; confidence-gated transparency). Telemetry is behavioral evidence only &mdash; never abundance; decays spatially and temporally; unresolved tags stay unresolved.</p><p><b>Uncertainty:</b> confidence/support <b>0.459</b>; current resolved telemetry events <b>0</b>, behavioral-prior receivers <b>91</b>. High color with weak support fades toward transparent.</p><p><b>Live modeled distribution estimate based on current environmental conditions, known species behavior, movement knowledge, and available telemetry evidence. This layer does not represent a census or confirmed presence of individual fish.</b></p><p><b>Telemetry evidence source:</b> <a href="https://github.com/wyattleathorn7/great-lakes-live-fish-telemetry">great-lakes-live-fish-telemetry</a> (USGS real-time + GLATOS deployments; read as input, never modified). Limit v0.1: surface temperature only, shore-proxy habitat, no bathymetry.</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA SST + USGS/GLATOS acoustic-telemetry evidence<br/><a href="https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of other layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <GroundOverlay>
+      <name>🐟 LIVE SMALLMOUTH BASS DISTRIBUTION</name>
+      <drawOrder>10</drawOrder>
+      <Icon>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/gamefish_smallmouth_bass/current.png?v=gfish-2026-09-24-glsea-Wed-23-Sep-2026-06-50-55-GMT-f508953e5a3c-m1.0.0-r2</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>21600</refreshInterval>
+      </Icon>
+      <LatLonBox>
+        <north>49.5</north>
+        <south>40.5</south>
+        <east>-73.5</east>
+        <west>-93.0</west>
+      </LatLonBox>
+    </GroundOverlay>
+  </Document>
+</kml>

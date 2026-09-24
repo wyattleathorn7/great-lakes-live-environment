@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>🐟 LIVE STEELHEAD DISTRIBUTION</name>
+    <description><![CDATA[<h2>STEELHEAD — LIVE MODELED DISTRIBUTION</h2><p>This entry auto-refreshes from the live overlay (source: NOAA/GLERL CoastWatch GLSEA SST + USGS/GLATOS acoustic-telemetry evidence).<br/><b>Data time:</b> 2026-09-23 02:50 AM EDT<br/><b>Source version:</b> gfish-2026-09-24-glsea-Wed-23-Sep-2026-06-50-55-GMT-f508953e5a3c-m1.0.0-r2<br/><b>Status:</b> LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)</p><p>Turn on/off independently of other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <NetworkLink>
+      <name>🐟 LIVE STEELHEAD DISTRIBUTION — auto-refresh</name>
+      <Link>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/STEELHEAD_LIVE.kml</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>21600</refreshInterval>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>

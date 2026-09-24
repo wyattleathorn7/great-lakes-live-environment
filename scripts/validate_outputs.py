@@ -1,4 +1,4 @@
-"""Numerical + structural validation of all three live products.
+"""Numerical + structural validation of all live products (environment + gamefish).
 
 Checks per product:
 - current.png / legend.png / metadata.json exist, PNG opens as RGBA,
@@ -55,6 +55,24 @@ PRODUCTS = {
                        "max_opaque_min": 0},  # off-season => transparent OK
     "uv_index": {"kml": "Great_Lakes_Live_UV_Index.kml",
                  "max_opaque_min": 10_000},
+    "gamefish_walleye": {"kml": "WALLEYE_LIVE.kml",
+                         "max_opaque_min": 10_000},
+    "gamefish_yellow_perch": {"kml": "YELLOW_PERCH_LIVE.kml",
+                              "max_opaque_min": 10_000},
+    "gamefish_lake_trout": {"kml": "LAKE_TROUT_LIVE.kml",
+                            "max_opaque_min": 10_000},
+    "gamefish_steelhead": {"kml": "STEELHEAD_LIVE.kml",
+                           "max_opaque_min": 10_000},
+    "gamefish_brown_trout": {"kml": "BROWN_TROUT_LIVE.kml",
+                             "max_opaque_min": 10_000},
+    "gamefish_smallmouth_bass": {"kml": "SMALLMOUTH_BASS_LIVE.kml",
+                                 "max_opaque_min": 10_000},
+    "gamefish_northern_pike": {"kml": "NORTHERN_PIKE_LIVE.kml",
+                               "max_opaque_min": 10_000},
+    "gamefish_muskellunge": {"kml": "MUSKELLUNGE_LIVE.kml",
+                             "max_opaque_min": 10_000},
+    "gamefish_lake_sturgeon": {"kml": "LAKE_STURGEON_LIVE.kml",
+                               "max_opaque_min": 10_000},
 }
 
 META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
@@ -177,6 +195,9 @@ def main():
                 failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
             if product == "uv_index" and (lo, hi) != (0.0, 12.0):
                 failures.append(f"{product}: UV scale must be 0-12, got {lo}-{hi}")
+            if product.startswith("gamefish_") and not (
+                    (lo, hi) == (0.0, 1.0)):
+                failures.append(f"{product}: gamefish scale must be 0-1, got {lo}-{hi}")
             if product == "leaf_color" and (lo, hi) != (0.0, 1.0):
                 failures.append(f"{product}: leaf scale must be 0-1, got {lo}-{hi}")
             if product == "snow_coverage":

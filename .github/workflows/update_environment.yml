@@ -21,7 +21,7 @@ on:
         options: ["all", "wave_height", "water_temperature", "ice_coverage",
                   "ice_thickness", "ice_type", "wind", "leaf_color",
                   "chlorophyll", "water_clarity", "solar_radiation",
-                  "air_temperature", "snow_coverage", "uv_index"]
+                  "air_temperature", "snow_coverage", "uv_index", "gamefish"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -459,8 +459,57 @@ jobs:
             output/state/uv_index
           if-no-files-found: warn
 
+  gamefish:
+    # Nine species, one matrix leg each: independent products, independent
+    # failures (same failure isolation as the twelve environment products).
+    # Runs on the 4x-daily cadence (GLSEA daily + date-driven seasonal/diel).
+    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'gamefish' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        species: [walleye, yellow_perch, lake_trout, steelhead, brown_trout,
+                  smallmouth_bass, northern_pike, muskellunge, lake_sturgeon]
+    steps:
+      - uses: actions/checkout@v7
+      - name: Checkout telemetry evidence (best-effort input)
+        continue-on-error: true
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ github.repository_owner }}/great-lakes-live-fish-telemetry
+          path: telemetry_src
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update game-fish gradient (${{ matrix.species }})
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        # Exit 2 = source unavailable/invalid -> keep previous raster, stay green.
+        run: |
+          python scripts/build_gamefish.py --species ${{ matrix.species }}; rc=$?
+          if [ $rc -eq 2 ]; then echo "Gamefish ${{ matrix.species }} source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - name: Resolve KML filename
+        run: echo "KMLFILE=$(echo '${{ matrix.species }}' | tr 'a-z' 'A-Z')_LIVE.kml" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-gamefish-${{ matrix.species }}
+          path: |
+            site/gamefish_${{ matrix.species }}
+            output/state/gamefish_${{ matrix.species }}.json
+            site/kml/${{ env.KMLFILE }}
+            site/kml/live/${{ env.KMLFILE }}
+            kml/${{ env.KMLFILE }}
+          if-no-files-found: warn
+
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

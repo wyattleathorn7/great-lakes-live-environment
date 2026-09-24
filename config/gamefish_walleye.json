@@ -1,0 +1,114 @@
+{
+ "product": "gamefish_walleye",
+ "kml_filename": "WALLEYE_LIVE.kml",
+ "label": "Walleye",
+ "scientific": "Sander vitreus",
+ "title": "WALLEYE \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE WALLEYE DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 21.0,
+  "sigma_c": 4.5
+ },
+ "seasonal_windows": [
+  {
+   "name": "spawn_run",
+   "start": "03-15",
+   "end": "05-10",
+   "focus": "river_mouths",
+   "strength": 1.0
+  },
+  {
+   "name": "post_spawn",
+   "start": "05-11",
+   "end": "06-15",
+   "focus": "nearshore",
+   "strength": 0.7
+  },
+  {
+   "name": "summer_eastward",
+   "start": "06-16",
+   "end": "09-15",
+   "focus": "central_east",
+   "strength": 0.8
+  },
+  {
+   "name": "fall_return",
+   "start": "09-16",
+   "end": "11-30",
+   "focus": "nearshore",
+   "strength": 0.7
+  },
+  {
+   "name": "winter",
+   "start": "12-01",
+   "end": "03-14",
+   "focus": "basins",
+   "strength": 0.4
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.35,
+  "day_offshore_bias": 0.15,
+  "crepuscular_peak": true
+ },
+ "habitat": {
+  "nearshore_affinity": 0.75,
+  "offshore_affinity": 0.45,
+  "connecting_waters_affinity": 0.9,
+  "river_affinity_spring": 1.0
+ },
+ "corridors": [
+  {
+   "name": "maumee_bay_reefs",
+   "weight": 1.0
+  },
+  {
+   "name": "sandusky_river",
+   "weight": 0.9
+  },
+  {
+   "name": "detroit_river",
+   "weight": 0.9
+  },
+  {
+   "name": "st_clair_river",
+   "weight": 0.8
+  },
+  {
+   "name": "lake_st_clair",
+   "weight": 0.8
+  },
+  {
+   "name": "erie_west_to_central",
+   "weight": 0.9
+  },
+  {
+   "name": "saginaw_bay",
+   "weight": 0.6
+  },
+  {
+   "name": "st_marys_river",
+   "weight": 0.4
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 120.0,
+  "sigma_deg": 0.14
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3; USGS/USFWS/agency literature; GLATOS project timing (see research notes in builder docstring)",
+ "status": "sufficient"
+}

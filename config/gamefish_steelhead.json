@@ -1,0 +1,91 @@
+{
+ "product": "gamefish_steelhead",
+ "kml_filename": "STEELHEAD_LIVE.kml",
+ "label": "Steelhead",
+ "scientific": "Oncorhynchus mykiss",
+ "title": "STEELHEAD \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE STEELHEAD DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 15.0,
+  "sigma_c": 3.5
+ },
+ "seasonal_windows": [
+  {
+   "name": "spring_run",
+   "start": "03-15",
+   "end": "05-31",
+   "focus": "river_mouths",
+   "strength": 1.0
+  },
+  {
+   "name": "summer",
+   "start": "06-01",
+   "end": "09-30",
+   "focus": "offshore",
+   "strength": 0.7
+  },
+  {
+   "name": "fall_run",
+   "start": "10-01",
+   "end": "12-15",
+   "focus": "river_mouths",
+   "strength": 0.8
+  },
+  {
+   "name": "winter",
+   "start": "12-16",
+   "end": "03-14",
+   "focus": "basins",
+   "strength": 0.4
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.15,
+  "day_offshore_bias": 0.1,
+  "crepuscular_peak": true
+ },
+ "habitat": {
+  "nearshore_affinity": 0.5,
+  "offshore_affinity": 0.7,
+  "connecting_waters_affinity": 0.5,
+  "river_affinity_spring": 1.0
+ },
+ "corridors": [
+  {
+   "name": "michigan_tribs",
+   "weight": 0.9
+  },
+  {
+   "name": "huron_tribs",
+   "weight": 0.7
+  },
+  {
+   "name": "ontario_tribs",
+   "weight": 0.7
+  },
+  {
+   "name": "superior_tribs",
+   "weight": 0.6
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 96.0,
+  "sigma_deg": 0.14
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3; USGS/USFWS/agency literature; GLATOS project timing (see research notes in builder docstring)",
+ "status": "sufficient"
+}

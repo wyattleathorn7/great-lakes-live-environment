@@ -149,6 +149,44 @@ def main():
         check(f"{p}-live-no-screenoverlay", "<ScreenOverlay" not in t)
         check(f"{p}-live-kml-small", len(t) < 100_000, len(t))
 
+    # ---- game-fish KML/raster hygiene (same contract, species filenames) ----
+    gfish = [("gamefish_walleye", "WALLEYE_LIVE.kml"),
+             ("gamefish_yellow_perch", "YELLOW_PERCH_LIVE.kml"),
+             ("gamefish_lake_trout", "LAKE_TROUT_LIVE.kml"),
+             ("gamefish_steelhead", "STEELHEAD_LIVE.kml"),
+             ("gamefish_brown_trout", "BROWN_TROUT_LIVE.kml"),
+             ("gamefish_smallmouth_bass", "SMALLMOUTH_BASS_LIVE.kml"),
+             ("gamefish_northern_pike", "NORTHERN_PIKE_LIVE.kml"),
+             ("gamefish_muskellunge", "MUSKELLUNGE_LIVE.kml"),
+             ("gamefish_lake_sturgeon", "LAKE_STURGEON_LIVE.kml")]
+    for p, kf_name in gfish:
+        for kf in (os.path.join(REPO_ROOT, "kml", kf_name),
+                   os.path.join(SITE_DIR, "kml", kf_name)):
+            t = open(kf, encoding="utf-8").read()
+            check(f"{p}-entry-one-link", t.count("<NetworkLink>") == 1,
+                  t.count("<NetworkLink>"))
+            check(f"{p}-entry-no-overlay", "<GroundOverlay>" not in t)
+            check(f"{p}-entry-links-live", f"kml/live/{kf_name}" in t)
+            check(f"{p}-entry-no-groundoverlay", "<GroundOverlay>" not in t)
+            check(f"{p}-no-screenoverlay", "<ScreenOverlay" not in t)
+            check(f"{p}-no-placeholders",
+                  "REPLACE-GITHUB-USER" not in t and "REPLACE-REPO" not in t)
+            check(f"{p}-kml-small", len(t) < 100_000, len(t))
+        kf = os.path.join(SITE_DIR, "kml", "live", kf_name)
+        t = open(kf, encoding="utf-8").read()
+        check(f"{p}-single-overlay", t.count("<GroundOverlay>") == 1,
+              t.count("<GroundOverlay>"))
+        check(f"{p}-live-no-self-link", "<NetworkLink>" not in t)
+        check(f"{p}-live-versioned", "?v=" in t)
+        check(f"{p}-live-href-product", f"{p}/current.png" in t)
+        check(f"{p}-has-groundoverlay", "<GroundOverlay>" in t)
+        check(f"{p}-live-no-screenoverlay", "<ScreenOverlay" not in t)
+        check(f"{p}-live-kml-small", len(t) < 100_000, len(t))
+        png = os.path.join(SITE_DIR, p, "current.png")
+        a = np.array(Image.open(png).convert("RGBA"))
+        check(f"{p}-opaque-subset-of-mask",
+              bool(((a[:, :, 3] > 0) & (mask <= 0)).sum() == 0))
+
     # ---- leaf phenology engine (synthetic trajectory §43) ----
     from leaf_phenology import (build_leaf_lut, phenology_phase,
                                 redness_index)
@@ -336,6 +374,55 @@ def main():
     check("wind-f12-meta", "64" in m["beaufort_table"][12]["range_kt"])
     check("wind-arrows-meta", m.get("stats", {}).get("arrows_drawn", 0) >= 50)
     check("wind-f12-color-meta", m["beaufort_table"][12]["color"] == "#3B0A54")
+
+    # ---- game-fish model (offline, synthetic SST; no network) ----
+    import gamefish_model as _gf
+    from datetime import datetime as _dt, timezone as _tz
+    _gH, _gW = 200, 300
+    _cold = _np4.full((_gH, _gW), 4.0)
+    _warm = _np4.full((_gH, _gW), 26.0)
+    _lt_c = _gf.build_thermal(_cold, 10.0, 3.0)
+    _lt_w = _gf.build_thermal(_warm, 10.0, 3.0)
+    check("gfish-trout-cold-beats-warm", bool(_lt_c.mean() > _lt_w.mean()))
+    check("gfish-thermal-bounded",
+          bool(_lt_c.min() >= 0 and _lt_c.max() <= 1))
+    _cfg = json.load(open(os.path.join(REPO_ROOT, "config",
+                                       "gamefish_walleye.json")))
+    _shore = _np4.full((_gH, _gW), 0.6, dtype=_np4.float32)
+    _off = _np4.full((_gH, _gW), 0.4, dtype=_np4.float32)
+    _day = _dt(2026, 9, 24, 16, 0, tzinfo=_tz.utc)
+    _night = _dt(2026, 9, 24, 4, 0, tzinfo=_tz.utc)
+    _dd, _ = _gf.build_diel(_day, _cfg["diel"], _shore, _off)
+    _dn, _ = _gf.build_diel(_night, _cfg["diel"], _shore, _off)
+    check("gfish-diel-day-night-differ",
+          bool(abs(float(_dn.mean() - _dd.mean())) > 1e-4))
+    _ms, _ = _gf.build_seasonal(_dt(2026, 4, 15).date(),
+                                _cfg["seasonal_windows"],
+                                _np4.zeros((_gH, _gW), dtype=_np4.float32),
+                                _shore, _off)
+    _mm, _ = _gf.build_seasonal(_dt(2026, 8, 1).date(),
+                                _cfg["seasonal_windows"],
+                                _np4.zeros((_gH, _gW), dtype=_np4.float32),
+                                _shore, _off)
+    check("gfish-seasonal-spring-summer-differ",
+          bool(abs(float(_ms.mean() - _mm.mean())) > 1e-4))
+    _cc = _gf.build_corridors([("st_marys_river", 1.0)])
+    check("gfish-corridor-nonzero", bool(_cc.max() > 0.5))
+    _combo = _gf.combine(
+        {k: _np4.full((_gH, _gW), v, dtype=_np4.float32)
+         for k, v in (("T", 0.8), ("M", 0.6), ("TH", 0.7),
+                      ("D", 0.5), ("H", 0.6), ("C", 0.4))},
+        _cfg["combination_weights"])
+    check("gfish-combine-weighted-mean",
+          bool(abs(float(_combo.mean()) - 0.635) < 0.05), float(_combo.mean()))
+    _ph, _el, _nf = _gf.diel_phase(_night)
+    check("gfish-night-phase", _ph == "night" and _el < -12, (_ph, _el))
+    _mw = json.load(open(os.path.join(
+        SITE_DIR, "gamefish_walleye", "metadata.json")))
+    check("gfish-meta-confidence",
+          0.0 <= _mw.get("confidence", -1) <= 1.0)
+    check("gfish-meta-telemetry",
+          "evidence_events" in _mw.get("telemetry", {}))
 
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     return 1 if FAIL else 0

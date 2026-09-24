@@ -1,7 +1,8 @@
 # Great Lakes Live Environment
 
-One automated GitHub system publishing **twelve independent live raster layers**
-for Google Earth, all from official NOAA/NASA operational sources:
+One automated GitHub system publishing **twenty-one independent live raster layers**
+for Google Earth: twelve environmental layers from official NOAA/NASA operational
+sources, plus **nine live game-fish distribution gradients** (see below).
 
 | Layer | Source | Refresh wording |
 |---|---|---|
@@ -17,6 +18,17 @@ for Google Earth, all from official NOAA/NASA operational sources:
 | ☀️ Live Solar Radiation | NOAA/NCEP HRRR 3 km DSWRF surface analysis (broadband W/m², not UV index), hourly cycles; balanced linear scale, water-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles; FIXED Apple-style absolute spectrum (-40..130 °F), water-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ❄️ Live Snow Coverage | NOAA/NCEP HRRR 3 km SNOD/SNOWC snow analysis (ground snow gate), hourly cycles, Michigan-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
+
+Nine additional **live game-fish distribution gradients** (walleye, yellow perch,
+lake trout, steelhead, brown trout, smallmouth bass, northern pike, muskellunge,
+lake sturgeon) are produced by `scripts/build_gamefish.py` (matrix job, one
+species per run) from live GLSEA SST + acoustic-telemetry evidence via a
+six-component model (telemetry × seasonal × thermal × diel × habitat × corridors,
+weighted mean, confidence-gated transparency). Each publishes
+`site/gamefish_<species>/{current.png,legend.png,metadata.json}` plus entry/live
+KMLs (`WALLEYE_LIVE.kml`, etc.). Modeled likelihood only — never fish counts.
+Chinook/Coho are excluded (insufficient telemetry evidence). See DATA_SOURCES.md
+§13 and `scripts/gamefish_model.py`.
 
 All water-based layers share one committed NOAA shoreline mask
 (`assets/great_lakes_watermask.png`, built from the NOAA Medium-Resolution
@@ -41,7 +53,7 @@ separate KML/KMZ products:
 ```text
 .
 ├── .github/workflows/update_environment.yml  # schedule + manual dispatch
-├── scripts/   # 6 independent pipelines + shared raster/KML/validation utils
+├── scripts/   # per-product pipelines (environment + gamefish) + shared raster/KML/validation utils
 ├── config/    # ONE common bounds/CRS + per-product configs
 ├── output/    # raw downloads (git-ignored) + per-product state
 ├── assets/    # shared NOAA shoreline masks (committed, identical for all)
@@ -53,7 +65,9 @@ separate KML/KMZ products:
     ├── ice_thickness/{...}
     ├── ice_type/{...}
     ├── wind/{...}
-    ├── kml/{Great_Lakes_Live_*.kml}
+    ├── gamefish_walleye/{current.png,legend.png,metadata.json}
+    ├── gamefish_<8 more species>/{...}
+    ├── kml/{Great_Lakes_Live_*.kml,WALLEYE_LIVE.kml,...}
     └── index.html
 ```
 
@@ -65,7 +79,7 @@ separate KML/KMZ products:
   `NetworkLink`. Zero `LineString`, `Polygon`, `Placemark`, or per-cell
   features (`validate_outputs.py` asserts this).
 - **One common canvas** (`config/great_lakes_bounds.json`, WGS84
-  lon −93…−73.5, lat 40.5…49.5, 1800×1175): all six layers align exactly but
+  lon −93…−73.5, lat 40.5…49.5, 1800×1175): all layers align exactly but
   share no data.
 - **Transparent outside valid water.** Land and missing data are alpha=0, so
   shipwrecks, lighthouses, harbors, and parks stay visible. Open water at 0 %
@@ -112,7 +126,8 @@ separate KML/KMZ products:
   cycle stamp.
 - `python scripts/validate_outputs.py` also runs in CI (`CI=true`), where it
   additionally requires KMLs to carry the real Pages base URL (no
-  `REPLACE-` placeholders) and legend PNGs to be 640×210.
+  `REPLACE-` placeholders) and legend PNGs to match their metadata
+  `legend_size` (environment legends are 640×210; game-fish legends 640×300).
 
 Local test: `pip install -r requirements.txt`, then
 `python scripts/build_water_temperature.py`,
@@ -127,6 +142,9 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_solar_radiation.py`,
 `python scripts/build_air_temperature.py`,
 `python scripts/build_snow_coverage.py`,
+`python scripts/build_gamefish.py --species walleye` (9 species: walleye,
+yellow_perch, lake_trout, steelhead, brown_trout, smallmouth_bass,
+northern_pike, muskellunge, lake_sturgeon),
 `python scripts/validate_outputs.py`,
 `python scripts/selftest.py`.
 

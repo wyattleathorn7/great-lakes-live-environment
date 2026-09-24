@@ -389,3 +389,32 @@ a STALE flag past 75 d, not fabricated).
 Per-product independence: a failed download/validation aborts **only that
 product's** update (exit status recorded, previous `site/` assets untouched);
 the other products and the Pages publish proceed normally.
+
+## 13. Game-fish distribution gradients (9 species, `gamefish_<species>`)
+
+- **What:** live modeled distribution / habitat-likelihood rasters (0..1 index,
+  NOT fish counts) for walleye, yellow perch, lake trout, steelhead, brown
+  trout, smallmouth bass, northern pike, muskellunge, lake sturgeon.
+  Chinook/Coho excluded (no tag evidence in the telemetry corpus).
+- **Live inputs:** (1) GLSEA SST from §1 (same URL/cadence; a failed SST fetch
+  keeps the previous raster, exit 2); (2) acoustic-telemetry evidence read from
+  the `great-lakes-live-fish-telemetry` checkout when available (USGS real-time
+  detections + tag-species resolutions + GLATOS deployment priors), otherwise
+  the run degrades honestly to suitability-only (flagged in metadata
+  `warnings`). Telemetry is behavioral evidence only — unresolved tags stay
+  unresolved, historical priors are never presented as current counts.
+- **Model:** six separate 0..1 components (telemetry with spatial/temporal
+  decay; date-aware seasonal windows; Gaussian thermal suitability on live SST;
+  solar-elevation diel factor; shore-proximity habitat; named movement-corridor
+  boxes incl. St. Marys / St. Clair River / Lake St. Clair / Detroit River)
+  combined by per-species weighted mean (`config/gamefish_<species>.json`),
+  alpha gated by confidence/support. Thermal backbone GLFC Sp87-3 + USGS/USFWS/
+  agency literature (thermal/timing values in configs; decay constants are
+  labeled MODEL_ASSUMPTIONs). Known v0.1 limits: surface temperature only, no
+  bathymetry/substrate, connecting-channel boxes are coarse at this canvas.
+- **Outputs:** `site/gamefish_<species>/{current.png,legend.png,metadata.json}`
+  (legend 640×300, `legend_size` recorded), entry `kml/<SPECIES>_LIVE.kml` +
+  live `site/kml/live/<SPECIES>_LIVE.kml` (one GroundOverlay, versioned
+  `?v=<source_id>`), refreshed on the 4×-daily schedule (source id includes the
+  run date so seasonal/diel drift rebuilds). Same stage→promote, exit-2, and
+  validation contract as every other product.

@@ -1,0 +1,99 @@
+{
+ "product": "gamefish_lake_sturgeon",
+ "kml_filename": "LAKE_STURGEON_LIVE.kml",
+ "label": "Lake Sturgeon",
+ "scientific": "Acipenser fulvescens",
+ "title": "LAKE STURGEON \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE LAKE STURGEON DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 18.0,
+  "sigma_c": 4.5
+ },
+ "seasonal_windows": [
+  {
+   "name": "spawn_run",
+   "start": "04-15",
+   "end": "06-15",
+   "focus": "river_mouths",
+   "strength": 1.0
+  },
+  {
+   "name": "summer_lake",
+   "start": "06-16",
+   "end": "09-30",
+   "focus": "nearshore",
+   "strength": 0.6
+  },
+  {
+   "name": "fall",
+   "start": "10-01",
+   "end": "12-01",
+   "focus": "nearshore",
+   "strength": 0.5
+  },
+  {
+   "name": "winter",
+   "start": "12-02",
+   "end": "04-14",
+   "focus": "basins",
+   "strength": 0.4
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.2,
+  "day_offshore_bias": 0.05,
+  "crepuscular_peak": true
+ },
+ "habitat": {
+  "nearshore_affinity": 0.6,
+  "offshore_affinity": 0.4,
+  "connecting_waters_affinity": 1.0,
+  "river_affinity_spring": 1.0
+ },
+ "corridors": [
+  {
+   "name": "st_marys_river",
+   "weight": 1.0
+  },
+  {
+   "name": "st_clair_river",
+   "weight": 1.0
+  },
+  {
+   "name": "detroit_river",
+   "weight": 1.0
+  },
+  {
+   "name": "lake_st_clair",
+   "weight": 0.9
+  },
+  {
+   "name": "saginaw_river",
+   "weight": 0.8
+  },
+  {
+   "name": "maumee_bay_reefs",
+   "weight": 0.5
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 240.0,
+  "sigma_deg": 0.14
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3; USGS/USFWS/agency literature; GLATOS project timing (see research notes in builder docstring)",
+ "status": "sufficient"
+}

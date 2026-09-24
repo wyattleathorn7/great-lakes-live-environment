@@ -1,0 +1,91 @@
+{
+ "product": "gamefish_northern_pike",
+ "kml_filename": "NORTHERN_PIKE_LIVE.kml",
+ "label": "Northern Pike",
+ "scientific": "Esox lucius",
+ "title": "NORTHERN PIKE \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE NORTHERN PIKE DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 20.0,
+  "sigma_c": 4.0
+ },
+ "seasonal_windows": [
+  {
+   "name": "spawn",
+   "start": "03-20",
+   "end": "05-01",
+   "focus": "river_mouths",
+   "strength": 1.0
+  },
+  {
+   "name": "summer",
+   "start": "05-02",
+   "end": "09-30",
+   "focus": "nearshore",
+   "strength": 0.65
+  },
+  {
+   "name": "fall",
+   "start": "10-01",
+   "end": "11-30",
+   "focus": "nearshore",
+   "strength": 0.55
+  },
+  {
+   "name": "winter",
+   "start": "12-01",
+   "end": "03-19",
+   "focus": "nearshore",
+   "strength": 0.4
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.0,
+  "day_offshore_bias": 0.0,
+  "crepuscular_peak": true
+ },
+ "habitat": {
+  "nearshore_affinity": 0.95,
+  "offshore_affinity": 0.05,
+  "connecting_waters_affinity": 0.9,
+  "river_affinity_spring": 0.8
+ },
+ "corridors": [
+  {
+   "name": "lake_st_clair",
+   "weight": 0.9
+  },
+  {
+   "name": "st_clair_river",
+   "weight": 0.7
+  },
+  {
+   "name": "green_bay",
+   "weight": 0.7
+  },
+  {
+   "name": "st_marys_river",
+   "weight": 0.5
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 240.0,
+  "sigma_deg": 0.1
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3; USGS/USFWS/agency literature; GLATOS project timing (see research notes in builder docstring)",
+ "status": "sufficient"
+}

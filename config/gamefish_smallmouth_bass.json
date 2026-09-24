@@ -1,0 +1,87 @@
+{
+ "product": "gamefish_smallmouth_bass",
+ "kml_filename": "SMALLMOUTH_BASS_LIVE.kml",
+ "label": "Smallmouth Bass",
+ "scientific": "Micropterus dolomieu",
+ "title": "SMALLMOUTH BASS \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE SMALLMOUTH BASS DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 21.0,
+  "sigma_c": 3.5
+ },
+ "seasonal_windows": [
+  {
+   "name": "spawn",
+   "start": "05-15",
+   "end": "07-01",
+   "focus": "nearshore",
+   "strength": 1.0
+  },
+  {
+   "name": "summer",
+   "start": "07-02",
+   "end": "09-30",
+   "focus": "nearshore",
+   "strength": 0.7
+  },
+  {
+   "name": "fall",
+   "start": "10-01",
+   "end": "11-30",
+   "focus": "nearshore",
+   "strength": 0.5
+  },
+  {
+   "name": "winter",
+   "start": "12-01",
+   "end": "05-14",
+   "focus": "nearshore",
+   "strength": 0.35
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": -0.1,
+  "day_offshore_bias": 0.0,
+  "crepuscular_peak": true
+ },
+ "habitat": {
+  "nearshore_affinity": 0.95,
+  "offshore_affinity": 0.1,
+  "connecting_waters_affinity": 0.7,
+  "river_affinity_spring": 0.5
+ },
+ "corridors": [
+  {
+   "name": "lake_st_clair",
+   "weight": 0.6
+  },
+  {
+   "name": "erie_west_to_central",
+   "weight": 0.4
+  },
+  {
+   "name": "huron_shoals",
+   "weight": 0.5
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 240.0,
+  "sigma_deg": 0.1
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3; USGS/USFWS/agency literature; GLATOS project timing (see research notes in builder docstring)",
+ "status": "sufficient"
+}

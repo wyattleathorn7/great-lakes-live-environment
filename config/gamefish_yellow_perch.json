@@ -1,0 +1,91 @@
+{
+ "product": "gamefish_yellow_perch",
+ "kml_filename": "YELLOW_PERCH_LIVE.kml",
+ "label": "Yellow Perch",
+ "scientific": "Perca flavescens",
+ "title": "YELLOW PERCH \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE YELLOW PERCH DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 21.0,
+  "sigma_c": 4.0
+ },
+ "seasonal_windows": [
+  {
+   "name": "spawn",
+   "start": "04-01",
+   "end": "05-20",
+   "focus": "nearshore",
+   "strength": 1.0
+  },
+  {
+   "name": "summer",
+   "start": "05-21",
+   "end": "09-15",
+   "focus": "nearshore",
+   "strength": 0.7
+  },
+  {
+   "name": "fall",
+   "start": "09-16",
+   "end": "11-30",
+   "focus": "nearshore",
+   "strength": 0.6
+  },
+  {
+   "name": "winter",
+   "start": "12-01",
+   "end": "03-31",
+   "focus": "basins",
+   "strength": 0.4
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.15,
+  "day_offshore_bias": 0.0,
+  "crepuscular_peak": true
+ },
+ "habitat": {
+  "nearshore_affinity": 0.9,
+  "offshore_affinity": 0.2,
+  "connecting_waters_affinity": 0.8,
+  "river_affinity_spring": 0.7
+ },
+ "corridors": [
+  {
+   "name": "erie_west_to_central",
+   "weight": 0.5
+  },
+  {
+   "name": "lake_st_clair",
+   "weight": 0.7
+  },
+  {
+   "name": "saginaw_bay",
+   "weight": 0.6
+  },
+  {
+   "name": "detroit_river",
+   "weight": 0.5
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 168.0,
+  "sigma_deg": 0.12
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3; USGS/USFWS/agency literature; GLATOS project timing (see research notes in builder docstring)",
+ "status": "sufficient"
+}

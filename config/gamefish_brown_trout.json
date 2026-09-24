@@ -1,0 +1,76 @@
+{
+ "product": "gamefish_brown_trout",
+ "kml_filename": "BROWN_TROUT_LIVE.kml",
+ "label": "Brown Trout",
+ "scientific": "Salmo trutta",
+ "title": "BROWN TROUT \u2014 LIVE MODELED DISTRIBUTION",
+ "overlay_name": "\ud83d\udc1f LIVE BROWN TROUT DISTRIBUTION",
+ "freshness_label": "LIVE MODELED DISTRIBUTION ESTIMATE (4x daily)",
+ "refresh_interval_seconds": 21600,
+ "thermal": {
+  "preferred_c": 16.0,
+  "sigma_c": 3.5
+ },
+ "seasonal_windows": [
+  {
+   "name": "fall_spawn",
+   "start": "10-01",
+   "end": "12-01",
+   "focus": "nearshore",
+   "strength": 1.0
+  },
+  {
+   "name": "winter_spring",
+   "start": "12-02",
+   "end": "05-31",
+   "focus": "nearshore",
+   "strength": 0.6
+  },
+  {
+   "name": "summer",
+   "start": "06-01",
+   "end": "09-30",
+   "focus": "nearshore",
+   "strength": 0.6
+  }
+ ],
+ "diel": {
+  "night_nearshore_boost": 0.25,
+  "day_offshore_bias": 0.1,
+  "crepuscular_peak": true
+ },
+ "habitat": {
+  "nearshore_affinity": 0.85,
+  "offshore_affinity": 0.25,
+  "connecting_waters_affinity": 0.5,
+  "river_affinity_spring": 0.5
+ },
+ "corridors": [
+  {
+   "name": "saginaw_bay",
+   "weight": 0.7
+  },
+  {
+   "name": "michigan_tribs",
+   "weight": 0.6
+  }
+ ],
+ "telemetry": {
+  "tau_hours": 168.0,
+  "sigma_deg": 0.12
+ },
+ "combination_weights": {
+  "T": 0.3,
+  "M": 0.2,
+  "TH": 0.2,
+  "D": 0.05,
+  "H": 0.12,
+  "C": 0.13
+ },
+ "uncertainty": {
+  "min_components_for_trust": 3,
+  "telemetry_bonus": 0.25
+ },
+ "evidence": "GLFC Sp87-3; USGS/USFWS/agency literature; GLATOS project timing (see research notes in builder docstring)",
+ "status": "sufficient"
+}
