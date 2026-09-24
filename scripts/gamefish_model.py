@@ -36,7 +36,20 @@ from PIL import Image, ImageDraw, ImageFilter
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from geospatial_utils import (apply_shoreline_mask, load_bounds, load_watermask)
 
-MODEL_VERSION = "1.0.0"
+MODEL_VERSION = "1.1.0"
+
+# Single unified spectrum for ALL nine species (dark blue = lowest likelihood,
+# dark red = highest). One shared meaning and progression everywhere.
+UNIFIED_STOPS = [
+    (13, 42, 120),    # dark blue: none/lowest
+    (20, 110, 220),   # blue
+    (25, 180, 220),   # cyan
+    (60, 190, 120),   # green
+    (240, 220, 60),   # yellow
+    (245, 150, 30),   # orange
+    (210, 40, 30),    # red
+    (140, 10, 15),    # dark red: highest
+]
 
 # Named movement-corridor geography: documented biological movement systems
 # (spawning rivers, connecting channels, migration axes), NOT lines between
@@ -65,8 +78,9 @@ CORRIDORS = {
     "niagara_shore_erie": (-79.20, 42.60, -78.80, 43.00),
 }
 
-# Distinct single-hue sequential gradients (dark -> saturated -> bright).
-SPECIES_HUES = {
+# (Retired in model 1.1.0: all species share UNIFIED_STOPS. The table is
+# kept for provenance so past renders remain interpretable.)
+SPECIES_HUES_RETIRED_V1_0 = {
     "walleye": [(16, 42, 28), (27, 94, 52), (64, 150, 80), (150, 200, 110), (235, 225, 130)],
     "yellow_perch": [(46, 32, 8), (128, 84, 16), (205, 140, 30), (240, 190, 80), (250, 235, 160)],
     "lake_trout": [(8, 24, 60), (20, 70, 140), (30, 130, 200), (120, 200, 235), (225, 245, 255)],
@@ -357,7 +371,7 @@ def _interp(stops, t):
 
 
 def render_species(final, conf, species_key, alpha=205):
-    stops = SPECIES_HUES.get(species_key, SPECIES_HUES["walleye"])
+    stops = UNIFIED_STOPS  # one shared spectrum for all species (v1.1.0)
     water = _water()
     rgba = np.zeros(final.shape + (4,), np.uint8)
     f = np.clip(final, 0, 1)[water]
@@ -370,52 +384,6 @@ def render_species(final, conf, species_key, alpha=205):
 
 
 LEGEND_SIZE = (640, 300)
-
-COMBINED_KEY_ORDER = [
-    ("brown_trout", "Brown Trout"),
-    ("lake_sturgeon", "Lake Sturgeon"),
-    ("lake_trout", "Lake Trout"),
-    ("muskellunge", "Muskellunge"),
-    ("northern_pike", "Northern Pike"),
-    ("smallmouth_bass", "Smallmouth Bass"),
-    ("steelhead", "Steelhead"),
-    ("walleye", "Walleye"),
-    ("yellow_perch", "Yellow Perch"),
-]
-COMBINED_KEY_SIZE = (640, 46 + 62 * len(COMBINED_KEY_ORDER) + 34)
-
-
-def draw_combined_key(path):
-    """One raster key for all nine gradients, using each species' own
-    validated gradient colors (no new colors, no common scale). Deterministic:
-    byte-stable unless SPECIES_HUES changes (then bump MODEL_VERSION)."""
-    W, H = COMBINED_KEY_SIZE
-    img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
-    d = ImageDraw.Draw(img)
-    ft, fb, fs = _font(19), _font(13), _font(11)
-    d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
-    d.text((12, 6), "GAME-FISH DISTRIBUTION GRADIENTS \u2014 VISUAL KEY",
-           font=ft, fill=(10, 10, 10))
-    d.text((12, 30), "Per-species low \u2192 high modeled distribution / habitat index",
-           font=fs, fill=(40, 40, 40))
-    y = 46
-    for key, label in COMBINED_KEY_ORDER:
-        stops = SPECIES_HUES[key]
-        d.text((12, y), label, font=fb, fill=(10, 10, 10))
-        d.text((W - 52, y), "HIGH", font=fs, fill=(10, 10, 10))
-        bx, by, bw, bh = 12, y + 18, W - 24, 22
-        for i in range(bw):
-            d.line([(bx + i, by), (bx + i, by + bh)],
-                   fill=_interp(stops, i / (bw - 1)) + (255,))
-        d.rectangle([bx, by, bx + bw - 1, by + bh], outline=(40, 40, 40))
-        d.text((bx, by + bh + 2), "LOW (transparent)", font=fs, fill=(40, 40, 40))
-        y += 62
-    d.text((12, H - 20),
-           "NOT fish counts. Transparency = low confidence / outside modeled water.",
-           font=fs, fill=(60, 60, 60))
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    img.save(path)
-    return path
 
 
 def _font(size):
@@ -442,7 +410,7 @@ def draw_fish_legend(path, species_key, label, lines_top, lines_bottom, model_ve
     for s in lines_top:
         d.text((12, y), s, font=fb, fill=(40, 40, 40))
         y += 17
-    stops = SPECIES_HUES.get(species_key, SPECIES_HUES["walleye"])
+    stops = UNIFIED_STOPS  # shared spectrum; legend matches the raster
     bx, by, bw, bh = 12, y + 4, W - 24, 26
     for i in range(bw):
         d.line([(bx + i, by), (bx + i, by + bh)],

@@ -2,7 +2,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🐟 LIVE SMALLMOUTH BASS DISTRIBUTION</name>
-    <description><![CDATA[<h2>SMALLMOUTH BASS — LIVE MODELED DISTRIBUTION</h2><p>Live modeled distribution estimate based on current environmental conditions, known species behavior, movement knowledge, and available telemetry evidence. This layer does not represent a census or confirmed presence of individual fish.</p><p>This entry auto-refreshes from the live overlay (telemetry &times; seasonal &times; thermal &times; diel &times; habitat &times; corridors, weighted mean). Add this file once; new model cycles appear automatically.</p><p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA and acoustic-telemetry evidence (USGS real-time + GLATOS deployments).</p><p><b>All nine species key:</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/gamefish/legend_key.png" width="600" alt="combined nine-species gradient key"></p>]]></description>
+    <description><![CDATA[<h2>SMALLMOUTH BASS — LIVE MODELED DISTRIBUTION</h2><p>Live modeled distribution estimate based on current environmental conditions, known species behavior, movement knowledge, and available telemetry evidence. This layer does not represent a census or confirmed presence of individual fish.</p><p>This entry auto-refreshes from the live overlay (telemetry &times; seasonal &times; thermal &times; diel &times; habitat &times; corridors, weighted mean). Add this file once; new model cycles appear automatically.</p><p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA and acoustic-telemetry evidence (USGS real-time + GLATOS deployments).</p>]]></description>
     <NetworkLink>
       <name>🐟 LIVE SMALLMOUTH BASS DISTRIBUTION — auto-refresh</name>
       <Link>

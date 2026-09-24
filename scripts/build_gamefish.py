@@ -326,16 +326,10 @@ def live_description_html(cfg, meta, token, legend_img_html):
     """Static folder description: no retrieval/update timestamps (they would
     go stale inside Google Earth). Timestamps live in metadata.json and the
     versioned legend image instead."""
-    base = pages_base_url()
     return (
         f"<h2>{cfg['title']}</h2>"
         f"<p>{G.DISCLAIMER}</p>"
         f"{legend_img_html}"
-        f"<p><b>All nine species key:</b><br>"
-        f"<img src=\"{base}/gamefish/legend_key.png?v={G.MODEL_VERSION}\" "
-        f"width=\"600\" alt=\"combined nine-species gradient key\"><br>"
-        f"Each species keeps its own gradient colors and low-to-high meaning; "
-        f"this key maps species to colors to intensity.</p>"
         f"<p><b>Method:</b> telemetry evidence &times; seasonal migration &times; "
         f"thermal suitability &times; diel behavior &times; habitat &times; movement "
         f"corridors (weighted mean; confidence-gated transparency). Telemetry is "
@@ -362,7 +356,6 @@ def live_description_html(cfg, meta, token, legend_img_html):
 def entry_description_html_static(cfg):
     """Static entry description: explains the product and the auto-refresh;
     carries no timestamps or version tokens (entry files stay byte-stable)."""
-    base = pages_base_url()
     return (
         f"<h2>{cfg['title']}</h2>"
         f"<p>{G.DISCLAIMER}</p>"
@@ -372,15 +365,7 @@ def entry_description_html_static(cfg):
         f"Add this file once; new model cycles appear automatically.</p>"
         f"<p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA and acoustic-telemetry "
         f"evidence (USGS real-time + GLATOS deployments).</p>"
-        f"<p><b>All nine species key:</b><br>"
-        f"<img src=\"{base}/gamefish/legend_key.png\" "
-        f"width=\"600\" alt=\"combined nine-species gradient key\"></p>"
     )
-
-
-def pages_base_url():
-    from build_kml import pages_base
-    return pages_base()
 
 
 def write_kmls(cfg, PRODUCT, meta, token, stage=None):
