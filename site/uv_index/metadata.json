@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP CPC Global UV Index, operational GRIB2 (12 UTC GFS run, hourly steps to 120 h)",
   "variable": "uvi (UV index field in GRIB2 carries erythemally weighted flux in W/m^2; UV Index = flux x 40, applied exactly once)",
   "source_url": "https://www.cpc.ncep.noaa.gov/products/stratosphere/uv_index/uv_global.shtml",
-  "data_time_utc": "valid 2026-09-24 01:00 AM EDT (run 2026-09-23 08:00 AM EDT, forecast hour +17)",
-  "source_last_modified_utc": "Wed, 23 Sep 2026 18:25:46 GMT",
-  "processing_time_utc": "2026-09-24 01:24 AM EDT",
+  "data_time_utc": "valid 2026-09-24 03:00 AM EDT (run 2026-09-23 08:00 AM EDT, forecast hour +19)",
+  "source_last_modified_utc": "Wed, 23 Sep 2026 18:25:57 GMT",
+  "processing_time_utc": "2026-09-24 02:30 AM EDT",
   "units": "UV Index (display); source erythemal flux W m^-2 x 40",
   "spatial_resolution_source": "~0.25 deg regular lat/lon (1440x721), bilinear-resampled to canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -31,14 +31,14 @@
   ],
   "legend_scale_html": "UV Index (UV Index), fixed absolute scale: <b>LOWEST 0</b> (green, low) \u2192 3-5 (yellow, moderate) \u2192 6-7 (orange, high) \u2192 8-10 (red, very high) \u2192 <b>HIGHEST+ 11+</b> (violet, extreme). Same index always shows the same color. Current maximum over the lakes: <b>0.0</b>.",
   "source_run": "2026-09-23 08:00 AM EDT",
-  "forecast_hour": 17,
-  "valid_time_utc": "2026-09-24 01:00 AM EDT",
-  "source_id": "uvi-20260923-t12z-f17",
-  "source_version": "uvi-20260923-t12z-f17",
+  "forecast_hour": 19,
+  "valid_time_utc": "2026-09-24 03:00 AM EDT",
+  "source_id": "uvi-20260923-t12z-f19",
+  "source_version": "uvi-20260923-t12z-f19",
   "uv_scale_factor_applied": 40.0,
   "stats": {
     "valid_cells": 2115000,
     "current_max_uvi": 0.0
   },
-  "folder_html": "<h2>LIVE UV INDEX</h2><p>Erythemal (sunburning) UV Index at the lake surface from the newest 12 UTC NCEP run, forecast hour nearest the current time. A forecast field, not a satellite observation: the displayed hour advances as time passes.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/uv_index/legend.png?v=uvi-20260923-t12z-f17\" width=\"600\" alt=\"key\"></p><p>UV Index (UV Index), fixed absolute scale: <b>LOWEST 0</b> (green, low) \u2192 3-5 (yellow, moderate) \u2192 6-7 (orange, high) \u2192 8-10 (red, very high) \u2192 <b>HIGHEST+ 11+</b> (violet, extreme). Same index always shows the same color. Current maximum over the lakes: <b>0.0</b>.</p><p><b>Units:</b> UV Index<br/><b>Source:</b> NOAA/NCEP CPC Global UV Index, operational GRIB2 (12 UTC GFS run, hourly steps to 120 h)<br/><b>Source run:</b> 2026-09-23 08:00 AM EDT<br/><b>Forecast hour:</b> +17h<br/><b>Valid time:</b> 2026-09-24 01:00 AM EDT<br/><b>Source version:</b> uvi-20260923-t12z-f17<br/><b>Processed:</b> 2026-09-24 01:24 AM EDT<br/><b>Why high values turn red/purple:</b> Extreme UV (11+) compresses into violet/deep-purple; ordinary low/moderate values own most of the color resolution.<br/><b>Provenance:</b> <a href=\"https://www.cpc.ncep.noaa.gov/products/stratosphere/uv_index/uv_global.shtml\">CPC UV documentation</a></p>"
+  "folder_html": "<h2>LIVE UV INDEX</h2><p>Erythemal (sunburning) UV Index at the lake surface from the newest 12 UTC NCEP run, forecast hour nearest the current time. A forecast field, not a satellite observation: the displayed hour advances as time passes.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/uv_index/legend.png?v=uvi-20260923-t12z-f19\" width=\"600\" alt=\"key\"></p><p>UV Index (UV Index), fixed absolute scale: <b>LOWEST 0</b> (green, low) \u2192 3-5 (yellow, moderate) \u2192 6-7 (orange, high) \u2192 8-10 (red, very high) \u2192 <b>HIGHEST+ 11+</b> (violet, extreme). Same index always shows the same color. Current maximum over the lakes: <b>0.0</b>.</p><p><b>Units:</b> UV Index<br/><b>Source:</b> NOAA/NCEP CPC Global UV Index, operational GRIB2 (12 UTC GFS run, hourly steps to 120 h)<br/><b>Source run:</b> 2026-09-23 08:00 AM EDT<br/><b>Forecast hour:</b> +19h<br/><b>Valid time:</b> 2026-09-24 03:00 AM EDT<br/><b>Source version:</b> uvi-20260923-t12z-f19<br/><b>Processed:</b> 2026-09-24 02:30 AM EDT<br/><b>Why high values turn red/purple:</b> Extreme UV (11+) compresses into violet/deep-purple; ordinary low/moderate values own most of the color resolution.<br/><b>Provenance:</b> <a href=\"https://www.cpc.ncep.noaa.gov/products/stratosphere/uv_index/uv_global.shtml\">CPC UV documentation</a></p>"
 }
