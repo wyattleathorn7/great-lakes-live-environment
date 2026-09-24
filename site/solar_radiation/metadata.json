@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP GFS operational surface analysis, DSWRF (downward short-wave radiation flux), 6-hourly cycles (00/06/12/18Z)",
   "variable": "DSWRF surface f000 analysis step (newest available GFS cycle)",
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/",
-  "data_time_utc": "2026-09-23 08:00 PM EDT",
+  "data_time_utc": "2026-09-24 02:00 AM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-24 12:25 AM EDT",
+  "processing_time_utc": "2026-09-24 06:25 AM EDT",
   "units": "W/m^2 (display); source W m^-2",
   "spatial_resolution_source": "~13 km GFS Gaussian grid (3072x1536), bilinear-resampled to canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,9 +30,9 @@
     230
   ],
   "legend_scale_html": "Surface downward shortwave solar radiation (W/m^2, GFS f000 analysis step), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 0 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.",
-  "model_cycle": "20260924 t00z",
-  "source_id": "gfs-20260924-t00z-f000",
-  "source_version": "gfs-20260924-t00z-f000",
+  "model_cycle": "20260924 t06z",
+  "source_id": "gfs-20260924-t06z-f000",
+  "source_version": "gfs-20260924-t06z-f000",
   "gfs_step_range": "0",
   "historical": {
     "low": 0.0,
@@ -41,19 +41,19 @@
       "p5": 0.0,
       "p25": 0.0,
       "p50": 0.0,
-      "p75": 252.32626724243164,
-      "p95": 726.950308227539,
-      "p99": 744.475015258789
+      "p75": 0.0,
+      "p95": 706.4591705322266,
+      "p99": 739.3713690185546
     },
-    "n_obs": 585846,
+    "n_obs": 605846,
     "extends": []
   },
   "stats": {
     "valid_cells": 2115000,
     "current_min": 0.0,
-    "current_max": 8.187992507752814,
-    "nighttime": false,
+    "current_max": 0.0,
+    "nighttime": true,
     "interior_holes": 0
   },
-  "folder_html": "<h2>LIVE SOLAR RADIATION</h2><p>Surface downward shortwave solar radiation flux: solar power arriving at the surface, GFS f000 analysis step for the newest available cycle. Nighttime reads zero (valid data, deep blue) \u2014 not missing data. Clouds reduce values quantitatively versus clear sky.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/solar_radiation/legend.png?v=gfs-20260924-t00z-f000\" width=\"600\" alt=\"key\"></p><p>Surface downward shortwave solar radiation (W/m^2, GFS f000 analysis step), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 0 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.</p><p><b>Variable:</b> DSWRF surface f000 analysis step (newest available GFS cycle)<br/><b>Units:</b> W/m^2 (f000 analysis-step flux of the newest available GFS cycle (not instantaneous, not daily accumulation))<br/><b>Source:</b> NOAA/NCEP GFS operational surface analysis, DSWRF (downward short-wave radiation flux), 6-hourly cycles (00/06/12/18Z)<br/><b>Update:</b> GFS 6-hourly analysis cycles (00/06/12/18Z)<br/><b>Data time:</b> 2026-09-23 08:00 PM EDT<br/><b>Source version:</b> gfs-20260924-t00z-f000<br/><b>Processed:</b> 2026-09-24 12:25 AM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/\">NOMADS GFS</a></p>"
+  "folder_html": "<h2>LIVE SOLAR RADIATION</h2><p>Surface downward shortwave solar radiation flux: solar power arriving at the surface, GFS f000 analysis step for the newest available cycle. Nighttime reads zero (valid data, deep blue) \u2014 not missing data. Clouds reduce values quantitatively versus clear sky.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/solar_radiation/legend.png?v=gfs-20260924-t06z-f000\" width=\"600\" alt=\"key\"></p><p>Surface downward shortwave solar radiation (W/m^2, GFS f000 analysis step), balanced linear scale: <b>LOWEST 0</b> (dark blue) \u2192 common 0 \u2192 <b>HIGHEST+ 787.6</b> (deep purple). Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband flux, not the UV index.</p><p><b>Variable:</b> DSWRF surface f000 analysis step (newest available GFS cycle)<br/><b>Units:</b> W/m^2 (f000 analysis-step flux of the newest available GFS cycle (not instantaneous, not daily accumulation))<br/><b>Source:</b> NOAA/NCEP GFS operational surface analysis, DSWRF (downward short-wave radiation flux), 6-hourly cycles (00/06/12/18Z)<br/><b>Update:</b> GFS 6-hourly analysis cycles (00/06/12/18Z)<br/><b>Data time:</b> 2026-09-24 02:00 AM EDT<br/><b>Source version:</b> gfs-20260924-t06z-f000<br/><b>Processed:</b> 2026-09-24 06:25 AM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/pub/data/nccf/com/gfs/prod/\">NOMADS GFS</a></p>"
 }
