@@ -798,6 +798,8 @@ def fetch_buoy_obs(buoy_ids):
                 "WDIR_deg": _f(row.get("WDIR")),
                 "WSPD_ms": _f(row.get("WSPD")),
                 "WVHT_m": _f(row.get("WVHT")),
+                "DPD_s": _f(row.get("DPD")),
+                "APD_s": _f(row.get("APD")),
                 "WTMP_C": _f(row.get("WTMP")),
                 "ATMP_C": _f(row.get("ATMP")),
             }

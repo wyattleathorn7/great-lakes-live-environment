@@ -224,8 +224,8 @@ def main():
                 failures.append(f"{product}: cloud scale must be 0-100 %, got {lo}-{hi}")
             if product == "surface_pressure" and (lo, hi) != (980.0, 1040.0):
                 failures.append(f"{product}: pressure scale must be 980-1040 hPa, got {lo}-{hi}")
-            if product == "wave_direction" and (lo, hi) != (0.0, 360.0):
-                failures.append(f"{product}: wave direction scale must be 0-360, got {lo}-{hi}")
+            if product == "wave_direction" and (lo, hi) != (0.0, 12.0):
+                failures.append(f"{product}: wave period scale must be 0-12 s, got {lo}-{hi}")
             if product.startswith("gamefish_") and not (
                     (lo, hi) == (0.0, 1.0)):
                 failures.append(f"{product}: gamefish scale must be 0-1, got {lo}-{hi}")

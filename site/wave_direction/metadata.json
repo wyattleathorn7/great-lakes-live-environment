@@ -1,15 +1,15 @@
 {
   "product": "wave_direction",
-  "title": "LIVE WAVE DIRECTION",
+  "title": "LIVE WAVE PERIOD & DIRECTION",
   "freshness": "LIVE / CURRENT MODEL (analysis), 6-hourly cycles",
-  "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 WVDIR surface analysis",
-  "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 WVDIR surface analysis",
-  "variable": "WVDIR surface, analysis step (filed compass degrees 0-360 as-is, no conversion)",
+  "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 PERPW peak period + WVDIR direction, surface analysis",
+  "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 PERPW peak period + WVDIR direction, surface analysis",
+  "variable": "PERPW peak (primary) wave period, surface analysis step (filed seconds as-is, no conversion); WVDIR surface direction drives the travel arrows only",
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260925/glwu.grlc_2p5km.t13z.grib2",
   "data_time_utc": "2026-09-25 09:00 AM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-25 01:32 PM EDT",
-  "units": "degrees (display = source degrees)",
+  "processing_time_utc": "2026-09-25 02:19 PM EDT",
+  "units": "s (display = source s)",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
   "crs": "EPSG:4326",
@@ -20,25 +20,71 @@
     "lat_max": 49.5
   },
   "color_scale_min": 0.0,
-  "color_scale_max": 360.0,
-  "color_scale_units": "degrees",
-  "missing_data_treatment": "only [0,360] admitted; off-water grid points and land outside the NOAA shoreline transparent; never zero-filled.",
+  "color_scale_max": 12.0,
+  "color_scale_units": "s",
+  "missing_data_treatment": "only [0,20] admitted; off-water grid points and land outside the NOAA shoreline transparent; never zero-filled.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "legend_size": [
     640,
     230
   ],
-  "legend_scale_html": "Wave direction (compass degrees, as filed by GLWU WVDIR): <b>LOWEST 0 N</b> dark-blue &rarr; <b>45 NE</b> cyan &rarr; <b>90 E</b> green &rarr; <b>135 SE</b> yellow &rarr; <b>180 S</b> orange &rarr; <b>225 SW</b> red &rarr; <b>270 W</b> magenta &rarr; <b>315 NW</b> violet &rarr; <b>HIGHEST+ 360 N</b> dark-purple (wrap: both ends northerly). Same degree always shows the same color. Arrows point where the waves are traveling (filed direction + 180&deg;). Lake mean now: <b>134&deg; (SE)</b>.",
+  "legend_scale_html": "Peak wave period (seconds between crests, as filed by GLWU PERPW): <b>LOWEST 0s</b> dark-blue flat &rarr; <b>2</b> blue &rarr; <b>3</b> cyan &rarr; <b>4</b> green &rarr; <b>5</b> yellow &rarr; <b>6</b> orange &rarr; <b>7.5</b> red &rarr; <b>9</b> magenta &rarr; <b>10.5</b> violet &rarr; <b>HIGHEST+ 12s</b> dark-purple long swell. Same seconds always show the same color; values above 12s stay dark-purple. Arrows point where the waves are traveling (WVDIR filed direction + 180&deg;). Lake max now: <b>6.4s</b>, mean <b>3.3s</b>, mean travel <b>133&deg; (SE)</b>.",
   "model_cycle": "20260925 t13z",
-  "source_id": "glwu-20260925-1300Z-wvdir",
-  "source_version": "glwu-20260925-1300Z-wvdir",
-  "grib_short_name": "wvdir",
-  "stats": {
-    "valid_cells": 176340,
-    "mean_direction_deg": 133.7,
-    "mean_compass": "SE",
-    "arrows_drawn": 1332
+  "source_id": "glwu-20260925-1300Z-wvperiod",
+  "source_version": "glwu-20260925-1300Z-wvperiod",
+  "grib_fields": {
+    "period": "perpw",
+    "direction": "wvdir"
   },
-  "folder_html": "<h2>LIVE WAVE DIRECTION</h2><p>Mean wave direction on the lakes right now, in compass degrees exactly as filed by the NOAA wave model. Color tells direction at a glance; arrows show which way the waves are traveling.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/wave_direction/legend.png?v=glwu-20260925-1300Z-wvdir\" width=\"600\" alt=\"key\"></p><p>Wave direction (compass degrees, as filed by GLWU WVDIR): <b>LOWEST 0 N</b> dark-blue &rarr; <b>45 NE</b> cyan &rarr; <b>90 E</b> green &rarr; <b>135 SE</b> yellow &rarr; <b>180 S</b> orange &rarr; <b>225 SW</b> red &rarr; <b>270 W</b> magenta &rarr; <b>315 NW</b> violet &rarr; <b>HIGHEST+ 360 N</b> dark-purple (wrap: both ends northerly). Same degree always shows the same color. Arrows point where the waves are traveling (filed direction + 180&deg;). Lake mean now: <b>134&deg; (SE)</b>.</p><p><b>Units:</b> degrees (compass: 0/360=N, 90=E, 180=S, 270=W)<br/><b>Source:</b> NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 WVDIR surface analysis<br/><b>Update:</b> GLWU 6-hourly cycles (analysis step)<br/><b>Data time:</b> 2026-09-25 09:00 AM EDT<br/><b>Source version:</b> glwu-20260925-1300Z-wvdir<br/><b>Processed:</b> 2026-09-25 01:32 PM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl\">NOMADS GLWU</a></p>"
+  "buoy_qc": {
+    "45001": {
+      "obs_s": 5.0,
+      "grid_s": 4.576666666666667,
+      "absdiff_s": 0.42,
+      "verdict": "OK",
+      "obs_time": "2026-09-25 17:50 UTC"
+    },
+    "45002": {
+      "obs_s": 4.0,
+      "grid_s": 3.045,
+      "absdiff_s": 0.96,
+      "verdict": "OK",
+      "obs_time": "2026-09-25 17:50 UTC"
+    },
+    "45132": {
+      "obs_s": 3.0,
+      "grid_s": 4.503333333333333,
+      "absdiff_s": 1.5,
+      "verdict": "OK",
+      "obs_time": "2026-09-25 18:00 UTC"
+    },
+    "45012": {
+      "obs_s": 4.0,
+      "grid_s": 3.7900000000000005,
+      "absdiff_s": 0.21,
+      "verdict": "OK",
+      "obs_time": "2026-09-25 17:50 UTC"
+    },
+    "45005": {
+      "time_utc": "2026-09-25 17:50 UTC",
+      "WDIR_deg": 50.0,
+      "WSPD_ms": 6.0,
+      "WVHT_m": null,
+      "DPD_s": null,
+      "APD_s": null,
+      "WTMP_C": null,
+      "ATMP_C": 17.2,
+      "note": "no DPD obs"
+    }
+  },
+  "stats": {
+    "valid_cells": 331933,
+    "max_period_s": 6.35,
+    "mean_period_s": 3.258,
+    "mean_direction_deg": 132.9,
+    "mean_compass": "SE",
+    "arrows_drawn": 178
+  },
+  "folder_html": "<h2>LIVE WAVE PERIOD & DIRECTION</h2><p>How far apart the wave crests are right now (peak period, seconds) with arrows showing which way the waves travel. Long-interval swell (high seconds, purple) carries far more energy than short chop at the same height.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/wave_direction/legend.png?v=glwu-20260925-1300Z-wvperiod\" width=\"600\" alt=\"key\"></p><p>Peak wave period (seconds between crests, as filed by GLWU PERPW): <b>LOWEST 0s</b> dark-blue flat &rarr; <b>2</b> blue &rarr; <b>3</b> cyan &rarr; <b>4</b> green &rarr; <b>5</b> yellow &rarr; <b>6</b> orange &rarr; <b>7.5</b> red &rarr; <b>9</b> magenta &rarr; <b>10.5</b> violet &rarr; <b>HIGHEST+ 12s</b> dark-purple long swell. Same seconds always show the same color; values above 12s stay dark-purple. Arrows point where the waves are traveling (WVDIR filed direction + 180&deg;). Lake max now: <b>6.4s</b>, mean <b>3.3s</b>, mean travel <b>133&deg; (SE)</b>.</p><p><b>Units:</b> seconds between crests (arrows show travel direction)<br/><b>Source:</b> NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 PERPW peak period + WVDIR direction, surface analysis<br/><b>Update:</b> GLWU 6-hourly cycles (analysis step)<br/><b>Data time:</b> 2026-09-25 09:00 AM EDT<br/><b>Source version:</b> glwu-20260925-1300Z-wvperiod<br/><b>Processed:</b> 2026-09-25 02:19 PM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl\">NOMADS GLWU</a></p>"
 }

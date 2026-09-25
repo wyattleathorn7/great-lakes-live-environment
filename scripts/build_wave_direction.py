@@ -1,16 +1,17 @@
-"""Pipeline C3 — LIVE WAVE DIRECTION (independent).
+"""Pipeline C3 — LIVE WAVE PERIOD & DIRECTION (independent).
 
-NOAA/NCEP GLWU v2.1 (WAVEWATCH III) WVDIR surface analysis, 6-hourly
-cycles -> validate compass degrees 0-360 -> bin native 2.5 km Lambert
-grid onto the common canvas -> lake-water only via the shared NOAA
-shoreline mask (land transparent) -> fixed circular spectrum
-(N dark-blue -> E green -> S orange -> W magenta -> N dark-purple) +
-toward-travel arrows -> transparent PNG -> key image + metadata ->
-Folder live KML + stable entry KML (individual files).
+NOAA/NCEP GLWU v2.1 (WAVEWATCH III) surface analysis, 6-hourly cycles:
+gradient = PERPW peak (primary) wave period in seconds as filed (no
+conversion); arrows = WVDIR mean direction filed compass degrees.
+Binned from the native 2.5 km Lambert grid onto the common canvas ->
+lake-water only via the shared NOAA shoreline mask (land transparent)
+-> fixed absolute spectrum 0-12 s (dark-blue short chop to dark-purple
+long swell) + toward-travel arrows -> transparent PNG -> key image +
+metadata -> Folder live KML + stable entry KML (individual files).
 
-GLWU files compass degrees as-is (no conversion). Arrows show the
-toward-travel vector (filed FROM direction + 180 deg, standard
-oceanographic handling): east on the map for waves traveling east.
+Arrows show the toward-travel vector (filed FROM direction + 180 deg,
+standard oceanographic handling). NDBC buoy dominant period (DPD) is QC
+reference only, never the rendering source.
 
 Exit codes: 0 updated (or skipped); 2 source/validation failure
 (previous kept); 1 unexpected error.
@@ -49,28 +50,32 @@ OVERLAY_NAME = "🌊 LIVE WAVE DIRECTION"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 UA = {"User-Agent": "great-lakes-live-environment/1.0"}
 
-WDIR_STOPS = [
-    (0.0, (16, 52, 140)),    # N dark blue
-    (45.0, (20, 150, 200)),  # NE cyan-blue
-    (90.0, (90, 190, 80)),   # E green
-    (135.0, (245, 215, 50)),  # SE yellow
-    (180.0, (240, 130, 25)),  # S orange
-    (225.0, (205, 30, 35)),  # SW red
-    (270.0, (225, 40, 130)),  # W magenta/pink
-    (315.0, (130, 40, 170)),  # NW violet
-    (360.0, (59, 10, 90)),   # N dark purple (wrap: both ends northerly)
+# Peak wave period in seconds, fixed absolute scale 0-12 s: short,
+# closely-spaced wind chop sits dark-blue; long organized swell runs
+# to dark-purple. Same seconds always show the same color.
+WPER_STOPS = [
+    (0.0, (16, 52, 140)),    # dark blue: flat/calm
+    (2.0, (20, 110, 200)),   # blue
+    (3.0, (20, 190, 200)),   # cyan
+    (4.0, (90, 190, 80)),    # green
+    (5.0, (245, 215, 50)),   # yellow
+    (6.0, (240, 130, 25)),   # orange
+    (7.5, (205, 30, 35)),    # red
+    (9.0, (225, 40, 130)),   # magenta/pink
+    (10.5, (130, 40, 170)),  # violet
+    (12.0, (59, 10, 90)),    # dark purple: long swell
 ]
-WDIR_LABELS = [
-    (0.0, "0 N"),
-    (45.0, "45 NE"),
-    (90.0, "90 E"),
-    (135.0, "135 SE"),
-    (180.0, "180 S"),
-    (225.0, "225 SW"),
-    (270.0, "270 W"),
-    (315.0, "315 NW"),
-    (360.0, "360 N"),
+WPER_LABELS = [
+    (0.0, "LOWEST 0s"),
+    (2.0, "2"),
+    (4.0, "4"),
+    (6.0, "6"),
+    (8.0, "8"),
+    (10.0, "10"),
+    (12.0, "HIGHEST+ 12s"),
 ]
+WPER_MAX = 12.0
+BUOY_QC_TOLERANCE_S = 2.5
 
 
 def candidate_urls(now):
@@ -92,7 +97,7 @@ def newest_available_cycle(now):
                 idx = r.read().decode("utf-8", errors="replace").splitlines()
             for line in idx:
                 p = line.split(":")
-                if (len(p) > 5 and p[3] == "WVDIR" and "surface" in line
+                if (len(p) > 5 and p[3] == "PERPW" and "surface" in line
                         and ":anl:" in line):
                     m = re.search(r"d=(\d{10})", line)
                     if m and (best is None or m.group(1) > best[3]):
@@ -103,35 +108,45 @@ def newest_available_cycle(now):
     return best
 
 
-def fetch_wvdir(file_url, dest):
-    """Byte-range download of the WVDIR surface anl message only."""
-    req = urllib.request.Request(file_url + ".idx", headers=UA)
-    with urllib.request.urlopen(req, timeout=60) as r:
-        idx = r.read().decode("utf-8", errors="replace").splitlines()
-    start = None
+def _idx_range(idx, name):
     for i, line in enumerate(idx):
         p = line.split(":")
-        if (len(p) > 4 and p[3] == "WVDIR" and ":surface:" in line
+        if (len(p) > 4 and p[3] == name and ":surface:" in line
                 and ":anl:" in line):
             start = int(p[1])
             end = int(idx[i + 1].split(":")[1]) if i + 1 < len(idx) else None
-            break
-    if start is None:
-        raise ValueError("WVDIR surface analysis message not in .idx")
+            return start, end
+    return None, None
+
+
+def fetch_vars(file_url, dest):
+    """Byte-range download of the PERPW + WVDIR surface anl messages."""
+    req = urllib.request.Request(file_url + ".idx", headers=UA)
+    with urllib.request.urlopen(req, timeout=60) as r:
+        idx = r.read().decode("utf-8", errors="replace").splitlines()
+    ranges = []
+    for name in ("PERPW", "WVDIR"):
+        start, end = _idx_range(idx, name)
+        if start is None:
+            raise ValueError(f"{name} surface analysis message not in .idx")
+        ranges.append((name, start, end))
     os.makedirs(os.path.dirname(os.path.abspath(dest)), exist_ok=True)
-    req = urllib.request.Request(
-        file_url, headers={**UA, "Range": f"bytes={start}-{end - 1 if end else ''}"})
-    with urllib.request.urlopen(req, timeout=300) as r:
-        body = r.read()
     tmp = dest + ".part"
     with open(tmp, "wb") as f:
-        f.write(body)
+        for name, start, end in ranges:
+            req = urllib.request.Request(
+                file_url,
+                headers={**UA, "Range": f"bytes={start}-{end - 1 if end else ''}"})
+            with urllib.request.urlopen(req, timeout=300) as r:
+                f.write(r.read())
     os.replace(tmp, dest)
 
 
-def read_wvdir(path):
+def read_vars(path):
+    """Return {PERPW: (vals_s, ...), WVDIR: (vals_deg, ...)} step-0 fields."""
     from eccodes import (codes_get, codes_get_array, codes_get_values,
                          codes_grib_new_from_file, codes_release)
+    out = {}
     with open(path, "rb") as f:
         while True:
             h = codes_grib_new_from_file(f)
@@ -139,16 +154,24 @@ def read_wvdir(path):
                 break
             try:
                 sn = str(codes_get(h, "shortName")).lower()
-                if sn in ("wvdir", "mwdir", "dirpw") and str(codes_get(h, "step")) == "0":
+                name = {"perpw": "PERPW", "wvdir": "WVDIR",
+                        "mwdir": "WVDIR", "dirpw": "WVDIR"}.get(sn)
+                if name is not None and str(codes_get(h, "step")) == "0" \
+                        and name not in out:
                     vals = codes_get_values(h).astype(float)
                     lats = codes_get_array(h, "latitudes").astype(float)
                     lons = codes_get_array(h, "longitudes").astype(float)
                     lons = ((lons + 180) % 360) - 180
-                    return (vals, lats, lons, str(codes_get(h, "dataDate")),
-                            str(codes_get(h, "dataTime")).zfill(4), sn)
+                    out[name] = (vals, lats, lons,
+                                 str(codes_get(h, "dataDate")),
+                                 str(codes_get(h, "dataTime")).zfill(4), sn)
             finally:
                 codes_release(h)
-    raise ValueError("WVDIR analysis message (step=0) not found in GRIB2")
+    if "PERPW" not in out:
+        raise ValueError("PERPW analysis message (step=0) not found in GRIB2")
+    if "WVDIR" not in out:
+        raise ValueError("WVDIR analysis message (step=0) not found in GRIB2")
+    return out
 
 
 def paint_arrows(rgba, field_deg, step=16):
@@ -208,7 +231,7 @@ def run():
         print(f"[{PRODUCT}] NO CYCLE AVAILABLE (keeping previous).")
         return 2
     url, datestr, cycle, stamp = pick
-    source_id = f"glwu-{stamp[:8]}-{stamp[8:]}00Z-wvdir"
+    source_id = f"glwu-{stamp[:8]}-{stamp[8:]}00Z-wvperiod"
     prev = read_state(PRODUCT)
     if (prev.get("source_id") == source_id
             and prev.get("render_version") == RENDER_VERSION
@@ -236,34 +259,46 @@ def _build(url, datestr, cycle, stamp, source_id):
     stage_prod = os.path.join(stage, "site", PRODUCT)
     bounds = load_bounds()
     W, H = bounds["canvas_width"], bounds["canvas_height"]
-    raw_path = os.path.join(RAW_DIR, "glwu_wvdir_current.grib2")
-    fetch_wvdir(url, raw_path)
-    vals, lats, lons, data_date, data_time, sn = read_wvdir(raw_path)
+    raw_path = os.path.join(RAW_DIR, "glwu_wvperiod_current.grib2")
+    fetch_vars(url, raw_path)
+    got = read_vars(raw_path)
+    per_s, lats, lons, data_date, data_time, sn_per = got["PERPW"]
+    dir_deg, _, _, _, _, sn_dir = got["WVDIR"]
     data_time_utc = grib_stamp_to_det(data_date, data_time)
-    vals = np.asarray(vals, dtype=float).ravel()
+    per_s = np.asarray(per_s, dtype=float).ravel()
+    dir_deg = np.asarray(dir_deg, dtype=float).ravel()
     lats = np.asarray(lats, dtype=float).ravel()
     lons = np.asarray(lons, dtype=float).ravel()
 
-    ok_src = np.isfinite(vals) & (vals >= 0.0) & (vals <= 360.0)
+    ok_src = (np.isfinite(per_s) & (per_s >= 0.0) & (per_s <= 20.0)
+              & np.isfinite(dir_deg) & (dir_deg >= 0.0) & (dir_deg <= 360.0))
     if int(ok_src.sum()) < 3_000:
         raise ValueError(f"too few valid source cells ({int(ok_src.sum())})")
     rows, cols, valid = canvas_indices(lats, lons, bounds)
-    field, _counts = bin_to_canvas(rows, cols, vals, valid, (H, W),
+    field, _counts = bin_to_canvas(rows, cols, per_s, valid, (H, W),
                                    splat_radius=2)
-    okv = np.isfinite(field) & (field >= 0.0) & (field <= 360.0)
+    # Direction needs no smoothing: nearest bin keeps filed degrees exact.
+    dfield, _ = bin_to_canvas(rows, cols, dir_deg, valid, (H, W),
+                              splat_radius=0)
+    okv = np.isfinite(field) & (field >= 0.0) & (field <= 20.0)
     if int(okv.sum()) < 5_000:
         raise ValueError(f"too few canvas cells ({int(okv.sum())})")
-    mean_deg = float(np.arctan2(np.sin(np.radians(field[okv])).mean(),
-                                np.cos(np.radians(field[okv])).mean())
+    if float(field[okv].max()) > 15.0:
+        raise ValueError(f"implausible max period {float(field[okv].max()):.1f} s")
+    cur_max = float(field[okv].max())
+    cur_mean = float(field[okv].mean())
+    dokv = np.isfinite(dfield) & (dfield >= 0.0) & (dfield <= 360.0)
+    mean_deg = float(np.arctan2(np.sin(np.radians(dfield[dokv])).mean(),
+                                np.cos(np.radians(dfield[dokv])).mean())
                      * 180.0 / math.pi % 360.0)
 
-    rgba = render_rgba(field, WDIR_STOPS, bounds["overlay_alpha"])
+    rgba = render_rgba(field, WPER_STOPS, bounds["overlay_alpha"])
     rgba = apply_shoreline_mask(rgba)  # lake water only
     # Re-mask arrows/field to water for arrow sampling
     from geospatial_utils import load_watermask
     wm = load_watermask()
     water = wm > 0.5
-    field_water = np.where(water & np.isfinite(field), field, np.nan)
+    field_water = np.where(water & np.isfinite(dfield), dfield, np.nan)
     rgba, n_arrows = paint_arrows(rgba, field_water)
     # Arrows near shore can spill 1-2 px onto land: clip alpha back to
     # the water mask (no second bleed — colors already bled once).
@@ -272,38 +307,91 @@ def _build(url, datestr, cycle, stamp, source_id):
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     n_opaque = int((rgba[:, :, 3] > 0).sum())
     print(f"[{PRODUCT}] opaque={n_opaque} arrows={n_arrows} "
-          f"mean={mean_deg:.0f} ({compass(mean_deg)})")
+          f"period max={cur_max:.1f}s mean={cur_mean:.1f}s "
+          f"meandir={mean_deg:.0f} ({compass(mean_deg)})")
     if n_opaque < 5_000:
         raise ValueError("empty raster")
     if n_arrows < 50:
         raise ValueError(f"too few arrows ({n_arrows})")
 
+    # ---- buoy QC: NDBC dominant period vs grid peak period (reference) ----
+    from geospatial_utils import REPO_ROOT as _RR, fetch_buoy_obs
+    import math as _math
+    _BUOY_POS = {
+        "45001": (-87.793, 48.061),
+        "45002": (-86.411, 45.344),
+        "45132": (-81.220, 42.460),
+        "45012": (-77.383, 43.619),
+        "45005": (-82.398, 41.677),
+    }
+    _qc = fetch_buoy_obs(CONFIG["buoys"])
+    _bq = {}
+    for _bid in CONFIG["buoys"]:
+        _obs = _qc.get(_bid, {})
+        _dpd = None
+        try:
+            _dpd = float(_obs.get("DPD_s"))
+            if not _math.isfinite(_dpd):
+                _dpd = None
+        except (TypeError, ValueError):
+            _dpd = None
+        if _dpd is None:
+            print(f"[{PRODUCT}] buoy {_bid}: no DPD obs (skipped)")
+            _bq[_bid] = {**_obs, "note": "no DPD obs"}
+            continue
+        _lon, _lat = _BUOY_POS[_bid]
+        _cc = int((_lon - bounds["lon_min"])
+                  / (bounds["lon_max"] - bounds["lon_min"]) * W)
+        _rr = int((bounds["lat_max"] - _lat)
+                  / (bounds["lat_max"] - bounds["lat_min"]) * H)
+        _cell = None
+        for _dr in range(-3, 4):
+            for _dc in range(-3, 4):
+                _r2, _c2 = _rr + _dr, _cc + _dc
+                if 0 <= _r2 < H and 0 <= _c2 < W \
+                        and np.isfinite(field[_r2, _c2]):
+                    _cell = float(field[_r2, _c2])
+                    break
+            if _cell is not None:
+                break
+        _diff = None if _cell is None else round(abs(_cell - _dpd), 2)
+        _flag = ("OK" if (_diff is not None
+                          and _diff <= BUOY_QC_TOLERANCE_S)
+                 else "CHECK" if _diff is not None else "NO_GRID_CELL")
+        print(f"[{PRODUCT}] buoy {_bid}: DPD {_dpd:.1f}s grid {_cell} "
+              f"diff {_diff} -> {_flag}")
+        _bq[_bid] = {"obs_s": round(_dpd, 2), "grid_s": _cell,
+                     "absdiff_s": _diff, "verdict": _flag,
+                     "obs_time": _obs.get("time_utc")}
+
     unit = CONFIG["display_units"]
-    subtitle = (f"Wave direction ({unit})  |  {data_time_utc}  |  "
-                f"mean {mean_deg:.0f} ({compass(mean_deg)})")
+    subtitle = (f"Peak wave period ({unit}) + travel arrows  |  {data_time_utc}  |  "
+                f"max {cur_max:.1f}s, mean {cur_mean:.1f}s")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
-        "degrees", WDIR_STOPS, WDIR_LABELS,
+        "seconds", WPER_STOPS, WPER_LABELS,
         f"Source: NCEP GLWU v2.1 {datestr} t{cycle}z  |  Processed {now_det_str()}",
         note="Arrows show travel direction (filed FROM + 180).")
-    scale_html = ("Wave direction (compass degrees, as filed by GLWU WVDIR): "
-                  "<b>LOWEST 0 N</b> dark-blue &rarr; <b>45 NE</b> cyan "
-                  "&rarr; <b>90 E</b> green &rarr; <b>135 SE</b> yellow &rarr; "
-                  "<b>180 S</b> orange &rarr; <b>225 SW</b> red &rarr; "
-                  "<b>270 W</b> magenta &rarr; <b>315 NW</b> violet &rarr; "
-                  "<b>HIGHEST+ 360 N</b> dark-purple (wrap: both ends northerly). Same degree "
-                  "always shows the same color. Arrows point where the waves "
-                  "are traveling (filed direction + 180&deg;). Lake mean now: "
-                  f"<b>{mean_deg:.0f}&deg; ({compass(mean_deg)})</b>.")
+    scale_html = ("Peak wave period (seconds between crests, as filed by GLWU "
+                  "PERPW): <b>LOWEST 0s</b> dark-blue flat &rarr; <b>2</b> blue "
+                  "&rarr; <b>3</b> cyan &rarr; <b>4</b> green &rarr; <b>5</b> "
+                  "yellow &rarr; <b>6</b> orange &rarr; <b>7.5</b> red &rarr; "
+                  "<b>9</b> magenta &rarr; <b>10.5</b> violet &rarr; "
+                  "<b>HIGHEST+ 12s</b> dark-purple long swell. Same seconds "
+                  "always show the same color; values above 12s stay "
+                  "dark-purple. Arrows point where the waves are traveling "
+                  "(WVDIR filed direction + 180&deg;). Lake max now: "
+                  f"<b>{cur_max:.1f}s</b>, mean <b>{cur_mean:.1f}s</b>, "
+                  f"mean travel <b>{mean_deg:.0f}&deg; ({compass(mean_deg)})</b>.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], url, CONFIG["variable"],
         data_time_utc=data_time_utc,
         source_last_modified_utc="n/a (NOMADS)",
-        units="degrees (display = source degrees)",
+        units="s (display = source s)",
         source_resolution="~2.5 km NCEP GLWU Lambert grid (581x361)",
-        color_min=0.0, color_max=360.0, color_units="degrees",
-        missing_data_treatment=("only [0,360] admitted; off-water grid points and "
+        color_min=0.0, color_max=WPER_MAX, color_units="s",
+        missing_data_treatment=("only [0,20] admitted; off-water grid points and "
                                 "land outside the NOAA shoreline transparent; "
                                 "never zero-filled."))
     meta["legend_size"] = [lw, lh]
@@ -311,8 +399,11 @@ def _build(url, datestr, cycle, stamp, source_id):
     meta["model_cycle"] = f"{datestr} t{cycle}z"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
-    meta["grib_short_name"] = sn
+    meta["grib_fields"] = {"period": sn_per, "direction": sn_dir}
+    meta["buoy_qc"] = _bq
     meta["stats"] = {"valid_cells": int(okv.sum()),
+                     "max_period_s": round(cur_max, 2),
+                     "mean_period_s": round(cur_mean, 3),
                      "mean_direction_deg": round(mean_deg, 1),
                      "mean_compass": compass(mean_deg),
                      "arrows_drawn": n_arrows}

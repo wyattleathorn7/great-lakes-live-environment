@@ -430,18 +430,25 @@ the other products and the Pages publish proceed normally.
 - **Update:** hourly cycles. Freshness: **"LIVE / CURRENT MODEL (hourly
   HRRR cycle)"**.
 
-## 16. Wave direction — NCEP GLWU WVDIR (6-hourly analysis)
+## 16. Wave period & direction — NCEP GLWU PERPW + WVDIR (6-hourly analysis)
 
 - **Product:** same operational `glwu.grlc_2p5km.tCCz.grib2` NOMADS files
-  as wave height/wind (§3–4), `.idx` byte-range for `WVDIR` /
-  `surface` / `:anl:` (verified live among `WDIR/WVDIR/DIRPW/SWDIR`).
-- **Variable:** `WVDIR` surface analysis step, filed **compass degrees
-  0–360** used as-is (no conversion). Admitted [0, 360].
+  as wave height/wind (§3–4); `.idx` byte-ranges fetch the `PERPW` and
+  `WVDIR` `surface` / `:anl:` messages (both verified live in the same
+  files — no new source needed).
+- **Gradient:** `PERPW` peak (primary) wave period, filed **seconds**,
+  used as-is (no conversion). Admitted [0, 20], implausible >15 s
+  rejected. FIXED absolute 0–12 s spectrum (dark-blue flat → blue →
+  cyan → green → yellow → orange → red → magenta → violet →
+  dark-purple long swell; labels LOWEST 0s / 2 / 4 / 6 / 8 / 10 /
+  HIGHEST+ 12s; above 12 s clamps dark-purple).
+- **Arrows:** `WVDIR` filed compass degrees drive white-shaft
+  toward-travel arrows only (filed FROM + 180°, standard oceanographic
+  handling) — direction never colors the map.
 - **Coverage:** lake water only via the shared NOAA shoreline mask.
-- **Scale:** FIXED circular 0–360 spectrum (N dark-blue → NE cyan →
-  E green → SE yellow → S orange → SW red → W magenta → NW violet →
-  N dark-purple; both ends northerly) + toward-travel arrows (filed
-  FROM + 180°, standard oceanographic handling, white shaft/dark outline).
+- **Buoy QC (reference only):** NDBC dominant period (DPD) vs nearest
+  grid cell, tolerance 2.5 s (verified 4/4 reporting buoys OK on
+  2026-09-25).
 - **Update:** 6-hourly cycles. Freshness: **"LIVE / CURRENT MODEL
   (analysis), 6-hourly cycles"**.
 

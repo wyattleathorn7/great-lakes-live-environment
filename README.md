@@ -20,7 +20,7 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | ❄️ Live Snow Coverage | NOAA/NCEP HRRR 3 km SNOD/SNOWC snow analysis (ground snow gate), hourly cycles, Michigan-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ☁️ Live Cloud Cover | NOAA/NCEP HRRR 3 km TCDC entire-atmosphere analysis, hourly cycles; basin rectangle, clear (<1 %) transparent | LIVE / CURRENT MODEL (hourly cycle, 15-min steps) |
 | 🧭 Live Surface Pressure | NOAA/NCEP HRRR 3 km MSLMA sea-level pressure analysis, hourly cycles; basin rectangle, 1013.25 hPa mid-scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
-| 🧭 Live Wave Direction | NCEP GLWU v2.1 WVDIR surface analysis + travel arrows, water-only | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
+| 🧭 Live Wave Direction | NCEP GLWU v2.1 PERPW peak period (seconds) + WVDIR travel arrows, water-only | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 
 Sixteen additional **live game-fish distribution gradients** (walleye, yellow perch,
 lake trout, steelhead, brown trout, smallmouth bass, northern pike, muskellunge,
