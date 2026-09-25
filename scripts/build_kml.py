@@ -177,8 +177,25 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
 
 
 def entry_description_html(title, meta, note):
+    # Entry files are what users add first, so they carry the gradient key
+    # image too (unversioned legend URL: entries must stay byte-stable and
+    # version-free, and legends are fixed-scale so they rarely change).
+    legend_html = ""
+    try:
+        product = meta.get("product")
+        scale_html = meta.get("legend_scale_html")
+        if product and scale_html:
+            base = pages_base()
+            legend_html = (
+                f"<p><b>Gradient key</b><br>"
+                f"<img src=\"{base}/{product}/legend.png\" width=\"600\" "
+                f"alt=\"gradient key\"><br>{scale_html}</p>"
+            )
+    except Exception:
+        legend_html = ""
     return (
         f"<h2>{title}</h2>"
+        f"{legend_html}"
         f"<p>This entry auto-refreshes from the live overlay "
         f"(source: {meta.get('noaa_source')}).<br/>"
         f"<b>Data time:</b> {meta.get('data_time_utc')}<br/>"
