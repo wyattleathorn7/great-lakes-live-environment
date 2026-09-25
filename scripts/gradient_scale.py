@@ -143,7 +143,8 @@ def build_linear_stops(vmin, vmax, family=None, n=LINEAR_N):
     return stops
 
 
-APPLE_TEMP_STOPS = [  # (degF, rgb) fixed Apple-Weather-like spectrum    (-40.0, (108, 55, 150)),   # purple extreme cold
+APPLE_TEMP_STOPS = [  # (degF, rgb) fixed Apple-Weather-like spectrum
+    (-40.0, (108, 55, 150)),   # purple extreme cold
     (-20.0, (65, 85, 205)),
     (0.0, (35, 120, 225)),     # blue
     (20.0, (30, 165, 220)),
