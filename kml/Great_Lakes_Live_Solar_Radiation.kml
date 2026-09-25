@@ -2,7 +2,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🌞 LIVE SOLAR RADIATION</name>
-    <description><![CDATA[<h2>LIVE SOLAR RADIATION</h2><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP GFS operational surface analysis, DSWRF (downward short-wave radiation flux), 6-hourly cycles (00/06/12/18Z)).<br/><b>Data time:</b> 2026-09-24 02:00 PM EDT<br/><b>Source version:</b> gfs-20260924-t18z-f000<br/><b>Status:</b> LIVE / CURRENT MODEL (analysis)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>LIVE SOLAR RADIATION</h2><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP GFS operational surface analysis, DSWRF (downward short-wave radiation flux), 6-hourly cycles (00/06/12/18Z)).<br/><b>Data time:</b> 2026-09-24 08:00 PM EDT<br/><b>Source version:</b> gfs-20260925-t00z-f000<br/><b>Status:</b> LIVE / CURRENT MODEL (analysis)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <NetworkLink>
       <name>🌞 LIVE SOLAR RADIATION — auto-refresh</name>
       <Link>
