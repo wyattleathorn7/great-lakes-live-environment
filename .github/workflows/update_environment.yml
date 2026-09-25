@@ -2,14 +2,15 @@ name: Update Great Lakes live environment
 
 on:
   schedule:
-    # Per-product source cadence (each job runs only on its own cron;
-    # every builder is ALSO source-aware and skips when the source id
-    # is unchanged, so off-cadence wakeups never rebuild/republish):
-    # - hourly: sub-daily sources (HRRR hourly, GFS 6-hourly discovery,
-    #   UVI forecast-hour advance).
+    # Every non-fish product checks its source hourly (each job runs on
+    # the hourly cron; every builder is ALSO source-aware and skips when
+    # the source id is unchanged, so most wakeups are cheap pre-checks:
+    # GLWU/GFS/UVI .idx probes, ERDDAP time-axis probes, STAC metadata
+    # queries, GLSEA HEAD Last-Modified; only NIC NAIS (no validator
+    # headers) needs its ~3 MB download to hash-compare).
     - cron: "15 * * * *"
-    # - 4x daily: 6-hourly GLWU cycles + daily/irregular sources
-    #   (GLSEA, NIC NAIS, VIIRS composites, ERDDAP dailies).
+    # - 4x daily: game-fish gradients only (GLSEA daily + date-driven
+    #   seasonal/diel terms).
     - cron: "35 2,8,14,20 * * *"
   workflow_dispatch:
     inputs:
@@ -69,7 +70,7 @@ jobs:
           if-no-files-found: warn
 
   water_temperature:
-    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'water_temperature' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'water_temperature' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -101,7 +102,7 @@ jobs:
           if-no-files-found: warn
 
   ice_coverage:
-    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'ice_coverage' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'ice_coverage' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -133,7 +134,7 @@ jobs:
           if-no-files-found: warn
 
   ice_thickness:
-    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'ice_thickness' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'ice_thickness' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -165,7 +166,7 @@ jobs:
           if-no-files-found: warn
 
   ice_type:
-    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'ice_type' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'ice_type' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -229,7 +230,7 @@ jobs:
           if-no-files-found: warn
 
   leaf_color:
-    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'leaf_color' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'leaf_color' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -262,7 +263,7 @@ jobs:
           if-no-files-found: warn
 
   chlorophyll:
-    if: ${{ github.event.schedule == '35 2,8,14,20 * * *' || inputs.product == 'all' || inputs.product == 'chlorophyll' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'chlorophyll' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read

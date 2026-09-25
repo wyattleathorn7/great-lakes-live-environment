@@ -22,6 +22,7 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, base_metadata,
                               download, ensure_coords, fetch_buoy_obs,
+                              head_last_modified,
                               http_date_to_det, now_det_str, promote_stage,
                               read_state,
                               source_token, stage_dir, utcnow_iso,
@@ -62,6 +63,24 @@ def main():
 
 def run():
     raw_path = os.path.join(RAW_DIR, "glsea_cur.asc")
+    # Cheap hourly gate: HEAD the Last-Modified stamp before the ~8 MB
+    # download. Match with the committed state -> source unchanged, KMLs
+    # only. Anything else falls through to download + content-hash compare.
+    prev = read_state(PRODUCT)
+    lm = head_last_modified(GLSEA_URL)
+    if lm and lm == prev.get("source_last_modified") \
+            and prev.get("render_version") == RENDER_VERSION \
+            and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
+            and os.path.exists(os.path.join(
+                SITE_DIR, "kml", "live",
+                "Great_Lakes_Live_Water_Temperature.kml")):
+        print(f"[{PRODUCT}] HEAD unchanged ({lm}); keeping raster.")
+        refresh_kml_base_url(PRODUCT, "Great_Lakes_Live_Water_Temperature.kml",
+                             "\U0001F321\uFE0F LIVE WATER TEMPERATURE",
+                             CONFIG["title"],
+                             "Turn on/off independently of wave and ice layers.",
+                             CONFIG["refresh_interval_seconds"])
+        return 0
     try:
         info = download(GLSEA_URL, raw_path)
     except Exception as e:

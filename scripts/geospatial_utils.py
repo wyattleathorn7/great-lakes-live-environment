@@ -129,6 +129,21 @@ def bleed_rgb_into_transparent(rgba, iterations=10):
 USER_AGENT = {"User-Agent": "great-lakes-live-environment/1.0 (NOAA data automation; contact: repo owner)"}
 
 
+def head_last_modified(url, timeout=30):
+    """HEAD request returning the Last-Modified header value, or None.
+
+    Never raises: any failure (including no header sent) yields None so the
+    caller falls through to its normal download-then-compare path. Lets
+    hourly runs skip multi-MB downloads when the source is unchanged.
+    """
+    try:
+        req = urllib.request.Request(url, headers=USER_AGENT, method="HEAD")
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.headers.get("Last-Modified")
+    except Exception:
+        return None
+
+
 def load_bounds():
     with open(os.path.join(CONFIG_DIR, "great_lakes_bounds.json")) as f:
         return json.load(f)
