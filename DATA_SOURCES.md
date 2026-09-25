@@ -262,10 +262,16 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   mean MORE turbid water (clear water naturally sits blue). The legacy
   `nesdisVHNkdparDaily` id is kept as fallback but returned 404 on its
   time axis on 2026-09-23 (intermittent/gone). No NRT KdPAR dataset
-  exists on ERDDAP (searched 2026-09-23). The GLERL clarity-turbidity
-  ERDDAP was assessed but is bot-walled, so KdPAR stays the operational
-  source; the description names the exact variable.
+  exists on ERDDAP (re-searched 2026-09-25: SQ newest 2026-09-15,
+  ~10 d production latency; no NRT/gapfilled KdPAR id exists). The GLERL
+  clarity-turbidity ERDDAP was assessed but is bot-walled, so KdPAR stays
+  the operational source; the description names the exact variable.
 - Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
+- **Display scale (v3):** FIXED log-spaced absolute 0.02–5+ m⁻¹
+  (KdPAR is log-distributed; a linear scale crushed typical lake water
+  into one blue). Values shown exactly as observed.
+- **Cadence:** source probed hourly (workflow) with a 7-day newest-valid
+  mosaic, so any new ERDDAP publication rebuilds within the hour.
 
 ## 8. Solar — NOAA/NCEP GFS DSWRF f000 analysis (6-hourly); Air temperature — HRRR (hourly)
 

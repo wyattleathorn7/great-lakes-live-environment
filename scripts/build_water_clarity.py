@@ -34,8 +34,8 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, load_bounds, promote_stage,
                               RENDER_VERSION, iso_to_det, read_state, save_png, source_token, stage_dir,
                               now_det_str, utcnow_iso, write_metadata, write_state)
-from gradient_scale import (build_linear_stops, draw_scale_legend,
-                            fmt_val, load_record, record_tick_labels,
+from gradient_scale import (KDPAR_LOG_MAX, KDPAR_LOG_MIN, KDPAR_LOG_STOPS,
+                            KDPAR_LOG_TICKS, draw_scale_legend, load_record,
                             render_rgba, save_record, update_record)
 
 PRODUCT = "water_clarity"
@@ -93,7 +93,7 @@ def run():
     # v2 marker forces one rebuild to deploy the resample fix.
     ds = dataset if "dataset" in dir() else DATASET
     # v2 marker forces one rebuild to deploy the resample fix.
-    source_id = f"{dataset}-v2-{times[0][:10]}"
+    source_id = f"{dataset}-v3-{times[0][:10]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
@@ -166,7 +166,10 @@ def _build(bounds, times, dataset):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    stops = build_linear_stops(rec["hist_min"], rec["hist_max"])
+    # Fixed log-spaced absolute scale (not the drifting historical record):
+    # the same KdPAR always shows the same color. Record stats are still
+    # tracked below for QC.
+    stops = KDPAR_LOG_STOPS
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
     rgba = apply_shoreline_mask(rgba)  # water-only product
     save_png(rgba, os.path.join(stage_prod, "current.png"))
@@ -176,7 +179,7 @@ def _build(bounds, times, dataset):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = record_tick_labels(rec)
+    labels = KDPAR_LOG_TICKS
     subtitle = (f"Kd(PAR) ({unit}) — larger = more turbid  |  "
                 f"{times[0][:10]} (+{MOSAIC_DAYS - 1}d mosaic)")
     lw, lh = draw_scale_legend(
@@ -185,10 +188,10 @@ def _build(bounds, times, dataset):
         f"Source: NOAA CoastWatch VIIRS KdPAR  |  Processed {now_det_str()}",
         note="Transparent = land/cloud/missing.")
     scale_html = (f"Diffuse attenuation coefficient for PAR ({unit}), "
-                  f"balanced linear scale: <b>LOWEST {fmt_val(rec['hist_min'])}</b> "
-                  f"clearest (dark blue) → common {fmt_val(p['p50'])} → "
-                  f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b> most turbid "
-                  f"(deep purple). Larger values always mean murkier water; "
+                  f"FIXED log-spaced scale <b>LOWEST 0.02</b> "
+                  f"clearest (dark blue) → 0.1 → 0.3 → <b>1.0</b> turbid (red) → "
+                  f"<b>HIGHEST+ 5+</b> most turbid (violet). "
+                  f"Larger values always mean murkier water; "
                   f"source values are never altered.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -198,7 +201,7 @@ def _build(bounds, times, dataset):
         source_last_modified_utc="n/a (ERDDAP)",
         units=f"{unit} (display); source m^-1",
         source_resolution="~4 km VIIRS L3, bilinear-resampled to canvas",
-        color_min=rec["hist_min"], color_max=rec["hist_max"], color_units=unit,
+        color_min=KDPAR_LOG_MIN, color_max=KDPAR_LOG_MAX, color_units=unit,
         missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
                                 f"[{lo},{hi}] values admitted; never interpolated."))
     meta["legend_size"] = [lw, lh]
@@ -211,7 +214,7 @@ def _build(bounds, times, dataset):
     meta["dataset"] = dataset
     # v2 = bilinear canvas resample (same dashed-stripe fix as
     # chlorophyll; shared _bin_grid). One-time rotation.
-    source_id = f"{dataset}-v2-{times[0][:10]}"
+    source_id = f"{dataset}-v3-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]

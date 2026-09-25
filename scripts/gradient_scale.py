@@ -188,6 +188,35 @@ SOLAR_FLUX_TICKS = [  # (value, label) drawn at true scale positions
 ]
 
 
+KDPAR_LOG_STOPS = [  # (m^-1, rgb) fixed LOG-SPACED absolute scale for KdPAR.
+    # KdPAR is log-distributed in nature (lake-wide median ~0.16, plumes to
+    # 5+); a linear scale crushes 95% of lake water into one blue. Log-spaced
+    # anchors give every order of magnitude readable color resolution while
+    # values are still shown exactly as observed (renderer interpolates by
+    # value between anchors; 5+ clamps into violet).
+    (0.02, (13, 42, 120)),    # clearest: deep blue
+    (0.04, (25, 110, 220)),   # blue
+    (0.08, (25, 180, 220)),   # cyan
+    (0.15, (60, 190, 120)),   # green
+    (0.30, (240, 220, 60)),   # yellow
+    (0.60, (245, 150, 25)),   # orange
+    (1.20, (220, 60, 30)),    # red: turbid
+    (2.50, (190, 25, 120)),   # magenta
+    (5.00, (100, 15, 130)),   # most turbid: violet (5+ clamps here)
+]
+KDPAR_LOG_MIN = 0.02
+KDPAR_LOG_MAX = 5.0
+
+
+KDPAR_LOG_TICKS = [  # (value, label) drawn at true scale positions
+    (0.02, "0.02 Clearest"),
+    (0.10, "0.1"),
+    (0.30, "0.3"),
+    (1.00, "1.0 Turbid"),
+    (5.00, "5+"),
+]
+
+
 def record_tick_labels(rec):
     """Legend tick (value, text) pairs: LOWEST min, p25/p50/p75, HIGHEST+
     max. Drawn at true linear positions by draw_scale_legend."""
