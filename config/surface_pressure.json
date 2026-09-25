@@ -1,0 +1,21 @@
+{
+  "product": "surface_pressure",
+  "title": "LIVE SURFACE PRESSURE",
+  "freshness_label": "LIVE / CURRENT MODEL (hourly HRRR cycle)",
+  "source_name": "NOAA/NCEP HRRR 3 km MSLMA mean sea-level pressure analysis (hourly cycles)",
+  "source_url": "https://rapidrefresh.noaa.gov/hrrr",
+  "nomads_base": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod",
+  "variable": "MSLMA mean sea level, analysis step (filed Pa / 100 = hPa, the only conversion)",
+  "source_units": "Pa (filed) -> hPa (display)",
+  "display_units": "hPa",
+  "standard_atmosphere_hpa": 1013.25,
+  "coverage": "Basin rectangle lon -93..-73.5, lat 40.5..49.5 (all Great Lakes + land). No shoreline cut: full rectangle stays visible.",
+  "center_note": "Average everyday pressure 1013.25 hPa sits in the MIDDLE of the gradient (yellow). Lower than average runs dark-blue->green to the left; higher than average runs orange->dark-purple to the right.",
+  "color_min_hpa": 980.0,
+  "color_max_hpa": 1040.0,
+  "valid_min_hpa": 900.0,
+  "valid_max_hpa": 1100.0,
+  "refresh_interval_seconds": 3600,
+  "what": "Hourly HRRR sea-level pressure analysis over the Great Lakes basin in hPa. The everyday average (1013.25 hPa) is the middle color so lows and highs read as departures from normal at a glance.",
+  "why_extreme": "Deep storm lows (<990) and strong highs (>1032) compress into the endpoint purples; ordinary near-average weather owns most of the color resolution."
+}

@@ -1,7 +1,7 @@
 # Great Lakes Live Environment
 
-One automated GitHub system publishing **twenty-eight independent live raster layers**
-for Google Earth: twelve environmental layers from official NOAA/NASA operational
+One automated GitHub system publishing **thirty-one independent live raster layers**
+for Google Earth: fifteen environmental layers from official NOAA/NASA operational
 sources, plus **sixteen live game-fish distribution gradients** (see below).
 
 | Layer | Source | Refresh wording |
@@ -18,6 +18,9 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | ☀️ Live Solar Radiation | NOAA/NCEP RAP hourly DSWRF surface flux (incoming sunlight W/m²; not a UV Index), value valid for the current hour; fixed sequential scale, water-only | LIVE / CURRENT MODEL (hourly RAP cycle) |
 | 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles; FIXED Apple-style absolute spectrum (-40..130 °F), water-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ❄️ Live Snow Coverage | NOAA/NCEP HRRR 3 km SNOD/SNOWC snow analysis (ground snow gate), hourly cycles, Michigan-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| ☁️ Live Cloud Cover | NOAA/NCEP HRRR 3 km TCDC entire-atmosphere analysis, hourly cycles; basin rectangle, clear (<1 %) transparent | LIVE / CURRENT MODEL (hourly cycle, 15-min steps) |
+| 🧭 Live Surface Pressure | NOAA/NCEP HRRR 3 km MSLMA sea-level pressure analysis, hourly cycles; basin rectangle, 1013.25 hPa mid-scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| 🧭 Live Wave Direction | NCEP GLWU v2.1 WVDIR surface analysis + travel arrows, water-only | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 
 Sixteen additional **live game-fish distribution gradients** (walleye, yellow perch,
 lake trout, steelhead, brown trout, smallmouth bass, northern pike, muskellunge,
@@ -145,6 +148,9 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_solar_radiation.py`,
 `python scripts/build_air_temperature.py`,
 `python scripts/build_snow_coverage.py`,
+`python scripts/build_cloud_cover.py`,
+`python scripts/build_surface_pressure.py`,
+`python scripts/build_wave_direction.py`,
 `python scripts/build_gamefish.py --species walleye` (16 species: walleye,
 yellow_perch, lake_trout, steelhead, brown_trout, smallmouth_bass,
 northern_pike, muskellunge, lake_sturgeon, lake_whitefish, chinook_salmon,

@@ -401,6 +401,50 @@ Per-product independence: a failed download/validation aborts **only that
 product's** update (exit status recorded, previous `site/` assets untouched);
 the other products and the Pages publish proceed normally.
 
+## 14. Cloud cover — NOAA/NCEP HRRR TCDC (hourly analysis)
+
+- **Product:** HRRR CONUS `wrfsfcf00` analysis via NOMADS
+  (`.../hrrr/prod/hrrr.YYYYMMDD/conus/hrrr.tCCz.wrfsfcf00.grib2`, `.idx`
+  byte-range for `TCDC` / `entire atmosphere`), decoded with ecCodes.
+- **Variable:** `TCDC` entire atmosphere, analysis step, filed **%**
+  used as-is (no conversion). Valid range [0, 100].
+- **Coverage:** full basin rectangle (no shoreline cut); clear sky
+  (<1 %) and missing data fully transparent so the map shows through.
+- **Scale:** FIXED absolute 0–100 % spectrum dark-blue → blue → cyan →
+  green → yellow → orange → red → magenta → violet → dark-purple
+  (labels 0 clear / 10 / 25 / 50 / 75 / 100 overcast).
+- **Update:** HRRR hourly cycles (15-min subhourly steps feed the hourly
+  view). Freshness: **"LIVE / CURRENT MODEL (hourly HRRR cycle, 15-min steps)"**.
+
+## 15. Surface pressure — NOAA/NCEP HRRR MSLMA (hourly analysis)
+
+- **Product:** same HRRR `wrfsfcf00` files, `MSLMA` / `mean sea level`
+  message (shortName `mslma`, step 0).
+- **Variable:** filed Pa ÷ 100 = **hPa** (the only conversion);
+  admitted [900, 1100]. Displayed on a FIXED 980–1040 hPa spectrum with
+  the standard atmosphere **1013.25 hPa in the middle (yellow)** — lows
+  run dark-blue → green left, highs run orange → dark-purple right
+  (labels LOWEST 980 / 1000 / AVERAGE 1013.25 / 1025 / HIGHEST+ 1040).
+- **Coverage:** full basin rectangle (no shoreline cut); only missing
+  data transparent.
+- **Update:** hourly cycles. Freshness: **"LIVE / CURRENT MODEL (hourly
+  HRRR cycle)"**.
+
+## 16. Wave direction — NCEP GLWU WVDIR (6-hourly analysis)
+
+- **Product:** same operational `glwu.grlc_2p5km.tCCz.grib2` NOMADS files
+  as wave height/wind (§3–4), `.idx` byte-range for `WVDIR` /
+  `surface` / `:anl:` (verified live among `WDIR/WVDIR/DIRPW/SWDIR`).
+- **Variable:** `WVDIR` surface analysis step, filed **compass degrees
+  0–360** used as-is (no conversion). Admitted [0, 360].
+- **Coverage:** lake water only via the shared NOAA shoreline mask.
+- **Scale:** FIXED circular 0–360 spectrum (N dark-blue → NE cyan →
+  E green → SE yellow → S orange → SW red → W magenta → NW violet →
+  N dark-purple; both ends northerly) + toward-travel arrows (filed
+  FROM + 180°, standard oceanographic handling, white shaft/dark outline).
+- **Update:** 6-hourly cycles. Freshness: **"LIVE / CURRENT MODEL
+  (analysis), 6-hourly cycles"**.
+
 ## 13. Game-fish distribution gradients (16 species, `gamefish_<species>`)
 
 - **What:** live modeled distribution / habitat-likelihood rasters (0..1 index,

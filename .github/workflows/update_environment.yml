@@ -22,7 +22,8 @@ on:
         options: ["all", "wave_height", "water_temperature", "ice_coverage",
                   "ice_thickness", "ice_type", "wind", "leaf_color",
                   "chlorophyll", "water_clarity", "solar_radiation",
-                  "air_temperature", "snow_coverage", "uv_index", "gamefish"]
+                  "air_temperature", "snow_coverage", "uv_index",
+                  "cloud_cover", "surface_pressure", "wave_direction", "gamefish"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -460,6 +461,102 @@ jobs:
             output/state/uv_index
           if-no-files-found: warn
 
+  cloud_cover:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'cloud_cover' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update cloud cover
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_cloud_cover.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Cloud source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-cloud_cover
+          path: |
+            site/cloud_cover
+            site/kml/Great_Lakes_Live_Cloud_Cover.kml
+            site/kml/live/Great_Lakes_Live_Cloud_Cover.kml
+            kml/Great_Lakes_Live_Cloud_Cover.kml
+            output/state/cloud_cover.json
+          if-no-files-found: warn
+
+  surface_pressure:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'surface_pressure' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update surface pressure
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_surface_pressure.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Pressure source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-surface_pressure
+          path: |
+            site/surface_pressure
+            site/kml/Great_Lakes_Live_Surface_Pressure.kml
+            site/kml/live/Great_Lakes_Live_Surface_Pressure.kml
+            kml/Great_Lakes_Live_Surface_Pressure.kml
+            output/state/surface_pressure.json
+          if-no-files-found: warn
+
+  wave_direction:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'wave_direction' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update wave direction
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_wave_direction.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Wave direction source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-wave_direction
+          path: |
+            site/wave_direction
+            site/kml/Great_Lakes_Live_Wave_Direction.kml
+            site/kml/live/Great_Lakes_Live_Wave_Direction.kml
+            kml/Great_Lakes_Live_Wave_Direction.kml
+            output/state/wave_direction.json
+          if-no-files-found: warn
+
   gamefish:
     # Nine species, one matrix leg each: independent products, independent
     # failures (same failure isolation as the twelve environment products).
@@ -512,7 +609,7 @@ jobs:
           if-no-files-found: warn
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

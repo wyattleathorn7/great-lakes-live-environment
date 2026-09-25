@@ -55,6 +55,12 @@ PRODUCTS = {
                        "max_opaque_min": 0},  # off-season => transparent OK
     "uv_index": {"kml": "Great_Lakes_Live_UV_Index.kml",
                  "max_opaque_min": 10_000},
+    "cloud_cover": {"kml": "Great_Lakes_Live_Cloud_Cover.kml",
+                    "max_opaque_min": 0},  # clear-sky day => transparent OK
+    "surface_pressure": {"kml": "Great_Lakes_Live_Surface_Pressure.kml",
+                         "max_opaque_min": 10_000},
+    "wave_direction": {"kml": "Great_Lakes_Live_Wave_Direction.kml",
+                       "max_opaque_min": 10_000},
     "gamefish_walleye": {"kml": "WALLEYE_LIVE.kml",
                          "max_opaque_min": 10_000},
     "gamefish_yellow_perch": {"kml": "YELLOW_PERCH_LIVE.kml",
@@ -179,6 +185,11 @@ def main():
                     # leaf grows on LAND: opaque must avoid open-lake water
                     bleed = int(((a[:, :, 3] > 0) & (mask > 250)).sum())
                     what = "open-lake water"
+                elif product in ("cloud_cover", "surface_pressure"):
+                    # basin-rectangle layers (user requirement): full
+                    # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
+                    bleed = 0
+                    what = "the shared shoreline mask"
                 else:
                     bleed = int(((a[:, :, 3] > 0) & (mask == 0)).sum())
                     what = "the shared shoreline mask"
@@ -209,6 +220,12 @@ def main():
                 failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
             if product == "uv_index" and (lo, hi) != (0.0, 12.0):
                 failures.append(f"{product}: UV scale must be 0-12, got {lo}-{hi}")
+            if product == "cloud_cover" and (lo, hi) != (0.0, 100.0):
+                failures.append(f"{product}: cloud scale must be 0-100 %, got {lo}-{hi}")
+            if product == "surface_pressure" and (lo, hi) != (980.0, 1040.0):
+                failures.append(f"{product}: pressure scale must be 980-1040 hPa, got {lo}-{hi}")
+            if product == "wave_direction" and (lo, hi) != (0.0, 360.0):
+                failures.append(f"{product}: wave direction scale must be 0-360, got {lo}-{hi}")
             if product.startswith("gamefish_") and not (
                     (lo, hi) == (0.0, 1.0)):
                 failures.append(f"{product}: gamefish scale must be 0-1, got {lo}-{hi}")
@@ -404,7 +421,8 @@ def main():
                                     f"onInterval in {kp}")
                 if product in ("chlorophyll", "water_clarity",
                                "solar_radiation", "air_temperature",
-                               "uv_index"):
+                               "uv_index", "cloud_cover",
+                               "surface_pressure", "wave_direction"):
                     if "<Folder>" not in text:
                         failures.append(f"{product}: no product Folder in live KML")
                     for _need in ("LOWEST", "HIGHEST+", "legend.png?v="):
