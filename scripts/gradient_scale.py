@@ -160,31 +160,30 @@ APPLE_TEMP_STOPS = [  # (degF, rgb) fixed Apple-Weather-like spectrum
 ]
 
 
-SOLAR_FLUX_STOPS = [  # (W/m^2, rgb) fixed absolute scale, UV-index-style
-    # progression (green -> yellow -> orange -> red -> magenta/violet) so
-    # flux intensity reads at a glance. Display bands only: this is
-    # BROADBAND shortwave flux, not the EPA UV Index (separate product).
-    (0.0, (13, 42, 120)),     # night: deep blue (valid zero, not missing)
-    (50.0, (25, 110, 220)),   # dawn/dusk blue
-    (150.0, (35, 170, 70)),   # low: green
-    (300.0, (230, 215, 40)),  # moderate: yellow
-    (450.0, (245, 150, 25)),  # amber/orange
-    (600.0, (230, 80, 25)),   # high: orange-red
-    (750.0, (210, 30, 35)),   # very high: red
-    (900.0, (195, 25, 130)),  # magenta
-    (1000.0, (110, 15, 130)),  # extreme: violet (1000+ clamps here)
+SOLAR_FLUX_STOPS = [  # (W/m^2, rgb) fixed absolute SEQUENTIAL scale.
+    # Near-black night -> navy -> blue -> cyan -> green -> yellow ->
+    # orange -> red -> near-white extreme. Same flux always shows the same
+    # color. Broadband sunlight only (not a UV index, not a light meter).
+    (0.0, (8, 10, 18)),       # night: near-black (valid zero, not missing)
+    (120.0, (25, 50, 130)),   # deep navy / dark blue
+    (260.0, (25, 140, 210)),  # cyan-blue
+    (400.0, (45, 185, 130)),  # green
+    (540.0, (235, 215, 60)),  # yellow
+    (680.0, (245, 150, 30)),  # orange
+    (810.0, (215, 45, 25)),   # red
+    (1000.0, (245, 245, 245)),  # extreme: near-white (1000+ clamps here)
 ]
 SOLAR_FLUX_MAX = 1000.0
 
 
-SOLAR_FLUX_TICKS = [  # (value, label) drawn at true scale positions
-    (0.0, "0 Night"),
-    (150.0, "150 Low"),
+SOLAR_FLUX_TICKS = [  # (value, label) numeric W/m^2 only; no categories
+    (0.0, "0"),
+    (150.0, "150"),
     (300.0, "300"),
-    (450.0, "450 Mod"),
-    (600.0, "600 High"),
-    (750.0, "750 V.High"),
-    (1000.0, "1000+ Extr"),
+    (450.0, "450"),
+    (600.0, "600"),
+    (750.0, "750"),
+    (1000.0, "1000+"),
 ]
 
 

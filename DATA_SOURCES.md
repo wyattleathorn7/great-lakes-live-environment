@@ -275,23 +275,26 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
 
 ## 8. Solar — NOAA/NCEP GFS DSWRF f000 analysis (6-hourly); Air temperature — HRRR (hourly)
 
-- **Solar product (verified live 2026-09-23):** GFS operational
-  `sfluxgrbf000` analysis via NOMADS
-  (`.../gfs/prod/gfs.YYYYMMDD/CC/atmos/gfs.tCCz.sfluxgrbf000.grib2`,
-  CC = 00/06/12/18, DSWRF byte-range only ~3 MB). Variable `sdswrf`
-  = Surface downward short-wave radiation flux, W m⁻², analysis step
-  (verified grid `regular_gg` 3072×1536, values 0–1052 W/m² on
-  2026-09-22 12Z). Newest available cycle is detected from `.idx`
-  probes across days/cycles (never assumed from the schedule). The
-  native Gaussian grid is BILINEARLY resampled onto the canvas — this
-  replaced the HRRR byte-range path whose splat binning left
-  stripe-shaped holes; a flood-fill interior-hole guard over watermask
-  water fails the run instead of shipping stripes (verified 0 holes,
-  2026-09-23). Nighttime zero is VALID data (deep blue), never NoData.
-  FIXED absolute UV-index-style scale 0–1000+ W/m² (night deep blue →
-  green → yellow → orange → red → magenta → violet extreme; same flux
-  always shows the same color; broadband flux shown exactly as observed —
-  this is NOT the EPA UV Index, which is a separate product).
+- **Solar product (RAP, verified live 2026-09-25):** NOAA/NCEP Rapid
+  Refresh (RAP) hourly surface DSWRF via NOMADS
+  (`.../rap/prod/rap.YYYYMMDD/rap.tCCz.awp252bgrbfHH.grib2`, 13 km native
+  grid, DSWRF message byte-ranged via `.idx`). The newest cycle whose
+  DSWRF field is valid for the current hour is used (analysis step when
+  present, else the shortest forecast lead; cycle, valid time, units, and
+  lead are all recorded in metadata). Variable `sdswrf` = Surface
+  downward short-wave radiation flux, W m⁻² — modeled incoming sunlight
+  energy at the surface (broadband: ultraviolet + visible +
+  near-infrared). This is not a UV Index and not a visible-light meter
+  reading; it is an hourly weather-model estimate, not a ground sensor
+  measurement at every location.
+  native 13 km Lambert grid is mean-binned onto the canvas (same approach
+  as the HRRR products); a flood-fill interior-hole guard over watermask
+  water fails the run instead of shipping artefacts. Nighttime zero is
+  VALID data (near-black), never NoData.
+  FIXED absolute sequential scale 0–1000+ W/m² (near-black night →
+  navy → blue → cyan → green → yellow → orange → red → near-white
+  extreme; same flux always shows the same color; numeric W/m² ticks
+  only, no UV-level categories).
 - **Air temperature product:** HRRR CONUS `wrfsfcf00` analysis via NOMADS
   (direct HTTPS + `.idx` byte ranges, TMP2m only). Variable `TMP` 2 m
   above ground (K → °F). Lambert 1799×1059, per-cell WGS84 via ecCodes.

@@ -1,4 +1,4 @@
-"""NCEP HRRR CONUS analysis fetcher (shared by solar + air temperature).
+"""NCEP HRRR CONUS analysis fetcher (air temperature + snow coverage).
 
 Downloads ONLY the needed GRIB2 messages via .idx byte ranges (a full
 HRRR 2D file is ~150 MB; TMP2m is ~8 MB, DSWRF ~1 MB). Decodes with
