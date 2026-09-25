@@ -2,9 +2,10 @@
 
 NOAA/NCEP HRRR 3 km 2 m temperature analysis (hourly cycles; Kelvin ->
 Fahrenheit; fixed Apple-Weather-like absolute spectrum -40..130 F with a
-purple extreme-cold end, continuous through freezing) -> validate -> clip
-to Great Lakes water via the shared NOAA shoreline mask (water only; land
-is transparent) -> transparent PNG -> key image + metadata -> Folder KML.
+purple extreme-cold end, continuous through freezing) -> validate -> FULL
+BASIN RECTANGLE (lon -93..-73.5, lat 40.5..49.5: land and water both
+paint; only missing data is transparent) -> transparent PNG -> key image
++ metadata -> Folder KML.
 
 The color scale is FIXED (same colors for the same temperatures every
 day); the historical record still tracks LOWEST/HIGHEST+ and its ticks
@@ -25,7 +26,6 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
-                               apply_shoreline_mask,
                                base_metadata, bin_to_canvas, canvas_indices,
                                fetch_buoy_obs, grib_stamp_to_det, load_bounds,
                                now_det_str, promote_stage,
@@ -142,7 +142,8 @@ def _build(base, datestr, cycle):
     rec, res = update_record(rec, res, sample)
     stops = list(APPLE_TEMP_STOPS)  # fixed Apple-like absolute scale
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
-    rgba = apply_shoreline_mask(rgba)  # water-only product
+    # NOTE: full basin rectangle (no shoreline cut). Only missing data
+    # is transparent.
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     if int((rgba[:, :, 3] > 0).sum()) < 50_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: empty raster. Keeping previous.")
@@ -203,8 +204,9 @@ def _build(base, datestr, cycle):
         units=f"{unit} (display); source K",
         source_resolution="~3 km HRRR Lambert grid (1799x1059)",
         color_min=rec["hist_min"], color_max=rec["hist_max"], color_units=unit,
-        missing_data_treatment=("only [-60,55] C admitted pre-conversion; "
-                                "missing analysis transparent; never interpolated."))
+         missing_data_treatment=("only [-60,55] C admitted pre-conversion; "
+                                 "full basin rectangle, no shoreline cut; "
+                                 "missing analysis transparent; never interpolated."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["model_cycle"] = f"{datestr} t{cycle}z"

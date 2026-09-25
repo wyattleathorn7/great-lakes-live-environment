@@ -185,7 +185,7 @@ not support Region, so multi-image tile pyramids are deliberately avoided:
 they produce fetch failures, not sharper shores. Shoreline crispness comes
 from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
 
-## 5. Leaf color — NASA MODIS Aqua via Planetary Computer (Michigan-only)
+## 5. Leaf color — NASA MODIS Aqua via Planetary Computer (basin-wide land)
 
 - **Products:** MYD13A1.061 (NDVI + pixel reliability, 16-day) and
   MYD09A1.061 (surface reflectance red/green/blue/SWIR + state QA, 8-day),
@@ -220,10 +220,12 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   harmonizes), mosaicked once to `assets/leaf_landcover.png`
   (deciduous/mixed/evergreen/shrub/grass/crop/urban/barren/water;
   wetlands→shrub behavior). `scripts/build_leaf_landcover.py` reproduces it.
-- **Footprint (Michigan-only):** `assets/michigan_mask.png` = authoritative
-  Michigan state boundary (Natural Earth 50m admin-1), both peninsulas,
-  hard clip; Great Lakes water cut by the shared shoreline mask. (The old
-  50-mi buffer asset is retired.)
+- **Footprint (basin-wide land):** every basin land pixel paints (whole
+  lon −93…−73.5 / lat 40.5…49.5 rectangle minus open lake water);
+  Great Lakes water cut by the shared shoreline mask (leaves do not
+  grow on open water, so water stays transparent). Full-coverage
+  gap-fill (hold-forward history, nearest-valid propagation, circular-
+  median fallback) leaves no land holes.
 - **Phenology (leaf_phenology v2):** per-pixel NDVI trajectory (current +
   rolling quarter-res history for baseline max with class priors +
   median direction reference) → circular phase 0..1 → class modulation
@@ -300,9 +302,9 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   above ground (K → °F). Lambert 1799×1059, per-cell WGS84 via ecCodes.
   FIXED Apple-style absolute spectrum (-40..130 °F); the historical
   record still tracks LOWEST/HIGHEST+ as ticks on it.
-- Both clipped to lake water with the shared NOAA shoreline mask (land
-  transparent). Freshness wording: **"LIVE / CURRENT MODEL (analysis)"**
-  with cycle stamp.
+- Both paint the FULL basin rectangle (no shoreline cut; only missing
+  data transparent). Freshness wording: **"LIVE / CURRENT MODEL
+  (analysis)"** with cycle stamp.
 
 ## 12. UV Index — NOAA/NCEP CPC Global UV (operational GRIB2, 12Z run)
 
@@ -339,8 +341,9 @@ de-collided (endpoints always kept).
 
 - **Snow product source:** NOAA/NCEP HRRR 3 km `SNOD` snow depth (m) gated
   by `SNOWC` snow cover % (analysis step, hourly cycles, NOMADS ranged
-  GRIB2). Gate: SNOD > 0.002 m AND SNOWC > 0 AND within Michigan AND not
-  lake water; everything else transparent. Depth displayed in inches
+  GRIB2). Gate: SNOD > 0.002 m AND SNOWC > 0 anywhere in the basin
+  (open lake water stays transparent — no ground-snow signal exists on
+  water); everything else transparent. Depth displayed in inches
   (direct conversion). Assessed and rejected for operability: SNODAS
   (all endpoints dead/retired: NOMADS paths 403/404, NSIDC mirror stale
   at 2023, NOHRSC reorganized to overview pages); MOD10A1/MYD10A1 on

@@ -1,11 +1,12 @@
-"""Pipeline L — LIVE SNOW COVERAGE (independent, Michigan-only).
+"""Pipeline L — LIVE SNOW COVERAGE (independent, basin-wide).
 
 NOAA/NCEP HRRR 3 km snow analysis (hourly cycles): SNOD snow depth (m)
-gated by SNOWC snow-cover % — COLOR means CONFIRMED SNOW ON THE GROUND.
-Falling snow, forecasts, precipitation, radar, clouds, and uncertain or
-invalid observations are transparent, as are no-snow land, water, and
-everything outside Michigan. Masks: authoritative Michigan boundary +
-shared shoreline mask. Continuous OKLab-friendly gradient (silver to
+gated by SNOWC snow-cover % — COLOR means CONFIRMED SNOW ON THE GROUND
+anywhere in the Great Lakes basin rectangle (lon -93..-73.5, lat
+40.5..49.5). Falling snow, forecasts, precipitation, radar, clouds, and
+uncertain or invalid observations are transparent, as are no-snow land
+and open lake water (no ground-snow signal exists on water). Masks:
+shared shoreline mask (water cut only). Continuous OKLab-friendly gradient (silver to
 white), historical LOWEST/HIGHEST+ scale, Folder KML, no ScreenOverlay.
 
 Depth in inches is a direct unit conversion of the source metres (no
@@ -28,7 +29,7 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
                               apply_shoreline_mask,
                               base_metadata, bin_to_canvas, canvas_indices,
-                              grib_stamp_to_det, load_bounds, load_michigan_mask,
+                              grib_stamp_to_det, load_bounds,
                               now_det_str,
                               promote_stage, read_state, save_png,
                               source_token, stage_dir, utcnow_iso,
@@ -115,10 +116,9 @@ def _build(base, datestr, cycle):
                               (H, W), splat_radius=2)
     fld_c, _c = bin_to_canvas(rows, cols, np.asarray(sc).ravel(), ok_src,
                               (H, W), splat_radius=2)
-    mich = load_michigan_mask()
     gate = (np.isfinite(fld_d) & np.isfinite(fld_c)
             & (fld_d > CONFIG["gate_depth_m"]) & (fld_c > CONFIG["gate_cover_pct"])
-            & (fld_d <= CONFIG["valid_max_m"]) & mich)
+            & (fld_d <= CONFIG["valid_max_m"]))
     n_snow = int(gate.sum())
     print(f"[{PRODUCT}] {datestr} t{cycle}z: snow pixels={n_snow}")
     inches = np.where(gate, fld_d * M_TO_IN, np.nan)
@@ -134,8 +134,7 @@ def _build(base, datestr, cycle):
     stops = build_linear_stops(rec["hist_min"], rec["hist_max"],
                                family=SNOW_FAMILY)
     rgba = render_rgba(inches, stops, bounds["overlay_alpha"])
-    rgba = apply_shoreline_mask(rgba)
-    rgba[~mich, 3] = 0  # Michigan hard clip (state polygon covers lake water)
+    rgba = apply_shoreline_mask(rgba)  # open lake water stays transparent
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     p = rec["percentiles"]
@@ -163,7 +162,7 @@ def _build_empty(stage, stage_prod, bounds, W, H, data_time_utc, datestr,
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     unit = CONFIG["display_units"]
     subtitle = (f"Snow depth on the ground ({unit})  |  {data_time_utc}  |  "
-                f"no snow in Michigan")
+                f"no snow in the basin")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops,
@@ -201,9 +200,9 @@ def _finish(stage, stage_prod, bounds, W, H, rec, res, stops, legend_wh,
         units=f"{unit} (display); source m",
         source_resolution="~3 km HRRR Lambert grid (1799x1059)",
         color_min=rec["hist_min"], color_max=vmax, color_units=unit,
-        missing_data_treatment=("only SNOD>0.002 m with SNOWC>0 inside "
-                                "Michigan admitted; no-snow/cloud/invalid/"
-                                "out-of-state transparent; never interpolated."))
+         missing_data_treatment=("only SNOD>0.002 m with SNOWC>0 admitted, "
+                                 "anywhere in the basin; no-snow/cloud/invalid/"
+                                 "open-water transparent; never interpolated."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["model_cycle"] = f"{datestr} t{cycle}z"

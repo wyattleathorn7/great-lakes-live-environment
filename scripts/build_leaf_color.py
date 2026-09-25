@@ -10,8 +10,8 @@ NASA MODIS Aqua global 500 m composites via Planetary Computer STAC
     autumn redness proxy + NDSI snow (no separate snow source needed).
 Land classes: committed US-NLCD + Canada-NALCMS mosaic
   (assets/leaf_landcover.png; static ancillary, documented).
-Michigan mask: committed assets/michigan_mask.png (authoritative state
-boundary, both peninsulas). Water: shared mask (lakes transparent).
+Footprint: all basin land (Great-Lakes water stays transparent — leaves
+  do not grow on open water).
 
 Per-pixel phenology phase (leaf_phenology.py) from NDVI trajectory +
 baseline + direction + class + spectral gating; circular continuous LUT;
@@ -188,7 +188,7 @@ def run():
     sig = hashlib.sha256(
         ("|".join(sorted(i.id for i in list(vi.values()) + list(rf.values())))
          ).encode()).hexdigest()
-    source_id_hint = f"leaf-v3-{sig[:12]}"
+    source_id_hint = f"leaf-v4-{sig[:12]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id_hint \
             and prev.get("render_version") == RENDER_VERSION \
@@ -319,9 +319,9 @@ def _build(bounds, W, H, vi, rf, sig):
     # ancillary grids
     lc = np.array(Image.open(os.path.join(REPO_ROOT, "assets",
                                           "leaf_landcover.png")).convert("L"))
-    from geospatial_utils import load_michigan_mask, load_watermask
+    from geospatial_utils import load_watermask
     land = load_watermask() < 0.5  # NOT lake water (mask is float 0..1)
-    mich = load_michigan_mask()  # Michigan-only hard clip
+    foot = np.ones((H, W), dtype=bool)  # basin-wide footprint (was Michigan-only)
     if lc.shape != (H, W):
         raise ValueError(f"landcover shape {lc.shape} != canvas")
 
@@ -334,17 +334,17 @@ def _build(bounds, W, H, vi, rf, sig):
 
     phase = compute_phase_grid(ndvi, lc, redness, snow,
                                bad | cloudy, marginal, hist)
-    # FULL-COVERAGE RULE (v3): every Michigan land pixel (state mask minus
-    # Great-Lakes water) must render opaque. Clouds, snow, masked landcover
-    # classes (urban/barren/nodata/inland-water) and bad-QA pixels with no
-    # history previously went transparent, leaving speckled holes across
-    # the state. Gap-fill them: hold-forward history first, then
+    # FULL-COVERAGE RULE (v4): every basin land pixel (whole rectangle
+    # minus Great-Lakes water) must render opaque. Clouds, snow, masked
+    # landcover classes (urban/barren/nodata/inland-water) and bad-QA
+    # pixels with no history previously went transparent, leaving speckled
+    # holes. Gap-fill them: hold-forward history first, then
     # nearest-valid spatial propagation, then global circular-median
     # fallback -- never transparent on land.
-    phase = fill_phase_full_coverage(phase, mich, land, prev_phase_grid(hist))
+    phase = fill_phase_full_coverage(phase, foot, land, prev_phase_grid(hist))
     lut = np.array(build_leaf_lut(), dtype=np.uint8)
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    target = mich & land
+    target = foot & land
     ok = np.isfinite(phase) & target
     # Safety net: if any target pixel is still NaN (should be impossible
     # after the fill), it is a bug -- fail loudly rather than ship holes.
@@ -355,8 +355,6 @@ def _build(bounds, W, H, vi, rf, sig):
     rgba[ok, 3] = bounds["overlay_alpha"]
     from geospatial_utils import apply_shoreline_mask
     rgba = apply_shoreline_mask(rgba, invert=True)  # leaf grows on LAND
-    # Michigan edge: hard clip outside the state boundary
-    rgba[~mich, 3] = 0
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     n_opaque = int((rgba[:, :, 3] > 0).sum())
     print(f"[{PRODUCT}] opaque pixels={n_opaque}")
@@ -392,7 +390,7 @@ def _build(bounds, W, H, vi, rf, sig):
         units="phenology phase 0..1 (display color); source NDVI/reflectance",
         source_resolution="500 m MODIS sinusoidal, reprojected to canvas (nearest)",
         color_min=0.0, color_max=1.0, color_units="phenology phase (circular)",
-        missing_data_treatment=("Michigan land renders with full coverage: "
+         missing_data_treatment=("Basin land renders with full coverage: "
                                 "cloud/bad-QA hold the previous phase, then "
                                 "nearest-valid spatial fill; snow, urban/barren/"
                                 "nodata and inland-water classes are gap-filled "
@@ -406,7 +404,7 @@ def _build(bounds, W, H, vi, rf, sig):
         "autumn coloration, leaf drop, and return to dormancy. Color "
         "represents a satellite-derived phenological state and should not "
         "be interpreted as the exact color of every individual tree. "
-        "Every Michigan land pixel is painted: clouds hold the previous "
+         "Every basin land pixel is painted: clouds hold the previous "
         "phase, and snow, urban, barren, nodata or briefly missing pixels "
         "are filled from surrounding valid land and recent history. Only "
         "Great-Lakes water stays transparent.")
@@ -429,17 +427,15 @@ def _build(bounds, W, H, vi, rf, sig):
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
-        "michigan_mask": "assets/michigan_mask.png (authoritative state "
-                          "boundary, both peninsulas; hard clip)", 
-        "algorithm": "leaf_phenology v3 (trajectory + baseline + class + "
+        "algorithm": "leaf_phenology v4 (trajectory + baseline + class + "
                      "spectral gating; 19-anchor OKLab circular gradient; "
-                     "full-coverage Michigan gap-fill)",
+                     "full-coverage basin gap-fill)",
     }
-    # v3 = full-coverage Michigan gap-fill (no land holes) + full-coverage
+    # v4 = full-coverage basin gap-fill (no land holes) + full-coverage
     # mosaic rule (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.
-    source_id = f"leaf-v3-{sig[:12]}"
+    source_id = f"leaf-v4-{sig[:12]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {
@@ -448,7 +444,7 @@ def _build(bounds, W, H, vi, rf, sig):
     }
     write_metadata(stage_prod, meta)
 
-    # v3 = full-coverage Michigan gap-fill (no land holes) + full-coverage
+    # v4 = full-coverage basin gap-fill (no land holes) + full-coverage
     # mosaic rule (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.
@@ -551,11 +547,12 @@ def prev_phase_grid(hist):
     return hist["phase"][ys[:, None], xs]
 
 
-def fill_phase_full_coverage(phase, mich, land, prev_phase=None):
-    """Gap-fill phenology phase so Michigan land has zero holes.
+def fill_phase_full_coverage(phase, footprint, land, prev_phase=None):
+    """Gap-fill phenology phase so basin land has zero holes.
 
-    Target = mich & land (state mask minus Great-Lakes water; shoreline
-    antialiasing applied later). Fill order for missing target pixels:
+    Target = footprint & land (basin rectangle minus Great-Lakes water;
+    shoreline antialiasing applied later). Fill order for missing target
+    pixels:
       1. hold-forward previous published phase (temporal continuity,
          works for clouds/snow/urban alike);
       2. nearest-valid spatial propagation (Voronoi fill; preserves local
@@ -564,7 +561,7 @@ def fill_phase_full_coverage(phase, mich, land, prev_phase=None):
          valid neighbor at all).
     Valid observed pixels are never altered.
     """
-    target = np.asarray(mich, dtype=bool) & np.asarray(land, dtype=bool)
+    target = np.asarray(footprint, dtype=bool) & np.asarray(land, dtype=bool)
     out = np.array(phase, dtype=float)
     valid = np.isfinite(out) & target
     if not np.any(valid):

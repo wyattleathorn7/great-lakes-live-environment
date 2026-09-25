@@ -13,6 +13,6 @@
   "valid_max_m": 5.0,
   "allow_negative": false,
   "refresh_interval_seconds": 3600,
-  "what": "Snow physically present on the ground in Michigan. Falling snow, snowfall forecasts, precipitation, radar echoes, clouds, and uncertain detections are transparent. No snow means transparent \u2014 never a haze.",
+  "what": "Snow physically present on the ground anywhere in the Great Lakes basin. Falling snow, snowfall forecasts, precipitation, radar echoes, clouds, and uncertain detections are transparent. No snow means transparent \u2014 never a haze.",
   "why_extreme": "Rare deep accumulations compress into magenta/pink/white; ordinary depths own most of the color resolution. White is reserved for the extreme end."
 }

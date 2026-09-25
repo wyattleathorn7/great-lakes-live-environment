@@ -12,12 +12,12 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | 🧊 Live Ice Thickness | USNIC NAIS daily SIGRID-3 shapefile → WMO stage-range midpoints, concentration-weighted (**derived**, inches) | LATEST AVAILABLE (seasonal) |
 | 🧊 Live Ice Type | USNIC NAIS daily SIGRID-3 shapefile → predominant WMO stage (**analyzed**, 17 categories + unknown) | LATEST AVAILABLE (seasonal) |
 | 💨 Live Wind | NCEP GLWU `UGRD/VGRD` surface analysis → knots → **Beaufort Force 0–12** + direction arrows | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
-| 🍂 Live Leaf Color | NASA MODIS Aqua MYD13A1/MYD09A1 global 500 m via Planetary Computer (NDVI trajectory + reflectance + NDSI snow) → circular phenology phase | LATEST AVAILABLE COMPOSITE |
+| 🍂 Live Leaf Color | NASA MODIS Aqua MYD13A1/MYD09A1 global 500 m via Planetary Computer (NDVI trajectory + reflectance + NDSI snow) → circular phenology phase, basin-wide land (open water transparent) | LATEST AVAILABLE COMPOSITE |
 | 🦠 Live Chlorophyll | NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP); newest-valid 7-day mosaic; balanced linear scale, water-only | LATEST AVAILABLE (daily composite) |
 | 🌫️ Live Water Clarity | NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, NRT, Global 4 km, Daily (ERDDAP); newest-valid 7-day mosaic; balanced linear scale, water-only | LATEST AVAILABLE (daily composite) |
-| ☀️ Live Solar Radiation | NOAA/NCEP RAP hourly DSWRF surface flux (incoming sunlight W/m²; not a UV Index), value valid for the current hour; fixed sequential scale, water-only | LIVE / CURRENT MODEL (hourly RAP cycle) |
-| 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles; FIXED Apple-style absolute spectrum (-40..130 °F), water-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
-| ❄️ Live Snow Coverage | NOAA/NCEP HRRR 3 km SNOD/SNOWC snow analysis (ground snow gate), hourly cycles, Michigan-only | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| ☀️ Live Solar Radiation | NOAA/NCEP RAP hourly DSWRF surface flux (incoming sunlight W/m²; not a UV Index), value valid for the current hour; fixed sequential scale, full basin rectangle | LIVE / CURRENT MODEL (hourly RAP cycle) |
+| 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles; FIXED Apple-style absolute spectrum (-40..130 °F), full basin rectangle | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| ❄️ Live Snow Coverage | NOAA/NCEP HRRR 3 km SNOD/SNOWC snow analysis (ground snow gate), hourly cycles, basin-wide (open water transparent) | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ☁️ Live Cloud Cover | NOAA/NCEP HRRR 3 km TCDC entire-atmosphere analysis, hourly cycles; basin rectangle, clear (<1 %) transparent | LIVE / CURRENT MODEL (hourly cycle, 15-min steps) |
 | 🧭 Live Surface Pressure | NOAA/NCEP HRRR 3 km MSLMA sea-level pressure analysis, hourly cycles; basin rectangle, 1013.25 hPa mid-scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | 🧭 Live Wave Direction | NCEP GLWU v2.1 PERPW peak period (seconds) + WVDIR travel arrows, water-only | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |

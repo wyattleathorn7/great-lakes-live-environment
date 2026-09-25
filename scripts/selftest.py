@@ -131,7 +131,8 @@ def main():
         a = np.array(Image.open(png).convert("RGBA"))
         if p == "leaf_color":
             _bad = ((a[:, :, 3] > 0) & (mask > 250 / 255)).sum() == 0
-        elif p in ("cloud_cover", "surface_pressure", "uv_index"):
+        elif p in ("cloud_cover", "surface_pressure", "uv_index",
+                   "air_temperature", "solar_radiation"):
             # basin-rectangle layers: land coverage is by design.
             _bad = True
         else:
@@ -361,14 +362,14 @@ def main():
               (_rgba[:, :, 2] > 245) & (_rgba[:, :, 3] > 0)).sum()
     check("snow-white-rare", 0 < _white < 0.15 * 40 * 40, int(_white))
 
-    # ---- leaf Michigan-only + OKLab ----
+    # ---- leaf basin-wide land + OKLab (water stays transparent) ----
     from PIL import Image as _Im3
     _lpng = _np4.array(_Im3.open(os.path.join(
         SITE_DIR, "leaf_color", "current.png")).convert("RGBA"))
-    _mm2 = _np4.array(_Im3.open(os.path.join(
-        REPO_ROOT, "assets", "michigan_mask.png")).convert("L")) > 0
-    check("leaf-michigan-only",
-          bool(((_lpng[:, :, 3] > 0) & ~_mm2).sum() == 0))
+    _wm2 = (_np4.array(_Im3.open(os.path.join(
+        REPO_ROOT, "assets", "great_lakes_watermask.png")).convert("L")) > 127)
+    check("leaf-avoids-water",
+          bool(((_lpng[:, :, 3] > 0) & _wm2).sum() == 0))
     from gradient_scale import oklab_lut
     from leaf_phenology import PHASE_ANCHORS
     _olut = oklab_lut(PHASE_ANCHORS)

@@ -4,8 +4,9 @@ NOAA/NCEP RAP (Rapid Refresh) hourly surface DSWRF (downward short-wave
 radiation flux, W/m^2): newest available hourly cycle with the value
 valid for the current hour (analysis step when present, else the shortest
 forecast lead) -> validate -> bin the native 13 km Lambert grid onto the
-canvas -> clip to Great Lakes water via the shared NOAA shoreline mask
-(water only; land is transparent) -> FIXED absolute sequential gradient
+canvas -> FULL BASIN RECTANGLE (lon -93..-73.5, lat 40.5..49.5: land and
+water both paint; only missing data is transparent) -> FIXED absolute
+sequential gradient
 (near-black night -> near-white extreme) -> transparent PNG -> key image
 + metadata -> Folder live KML + stable entry KML.
 
@@ -37,7 +38,6 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
-                              apply_shoreline_mask,
                               base_metadata, bin_to_canvas, canvas_indices,
                               grib_stamp_to_det, load_bounds,
                               now_det_str, promote_stage,
@@ -236,7 +236,8 @@ def _build(base, datestr, cycle, lead, source_id):
     # reads at a glance. Record stats are still tracked below for QC.
     stops = SOLAR_FLUX_STOPS
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
-    rgba = apply_shoreline_mask(rgba)  # water-only product
+    # NOTE: full basin rectangle (no shoreline cut). Only missing data
+    # is transparent.
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     n_opaque = int((rgba[:, :, 3] > 0).sum())
     # Interior-hole guard: transparent pixels fully enclosed by opaque
@@ -285,10 +286,10 @@ def _build(base, datestr, cycle, lead, source_id):
         source_resolution="~13 km RAP native grid (awp252), "
                           "mean-binned to canvas (display smoothing only)",
         color_min=0.0, color_max=SOLAR_FLUX_MAX, color_units=unit,
-        missing_data_treatment=("only [0,1400] admitted; land outside the "
-                                "NOAA shoreline and missing analysis "
-                                "transparent; never interpolated across "
-                                "land/water."))
+         missing_data_treatment=("only [0,1400] admitted; full basin rectangle, "
+                                 "no shoreline cut; missing analysis "
+                                 "transparent; never interpolated across "
+                                 "space."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["model_cycle"] = f"{datestr} t{cycle}z"

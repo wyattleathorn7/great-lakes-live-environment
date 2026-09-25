@@ -186,9 +186,12 @@ def main():
                     bleed = int(((a[:, :, 3] > 0) & (mask > 250)).sum())
                     what = "open-lake water"
                 elif product in ("cloud_cover", "surface_pressure",
-                                   "uv_index"):
+                                   "uv_index", "air_temperature",
+                                   "solar_radiation"):
                     # basin-rectangle layers (user requirement): full
                     # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
+                    # (Leaf/snow stay land-cut: leaves and ground snow
+                    # have no signal on open water.)
                     bleed = 0
                     what = "the shared shoreline mask"
                 else:
@@ -240,19 +243,6 @@ def main():
                 for _k in ("low", "high", "percentiles"):
                     if _k not in _h:
                         failures.append(f"{product}: historical missing '{_k}'")
-            if product in ("snow_coverage", "leaf_color"):
-                # Michigan-only: opaque must be inside the Michigan mask
-                import numpy as _np2
-                from PIL import Image as _Im2
-                import os as _os2
-                try:
-                    _mm = _np2.array(_Im2.open(_os2.path.join(
-                        REPO_ROOT, "assets", "michigan_mask.png")).convert("L")) > 0
-                    _aa = _np2.array(Image.open(png).convert("RGBA"))[:, :, 3] > 0
-                    if _mm.shape == _aa.shape and int((_aa & ~_mm).sum()) > 0:
-                        failures.append(f"{product}: data outside Michigan")
-                except Exception as _e:
-                    failures.append(f"{product}: Michigan check failed: {_e}")
             if product in ("chlorophyll", "water_clarity", "solar_radiation",
                            "air_temperature"):
                 _h = meta.get("historical", {})
