@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles",
   "variable": "TMP 2 m above ground, analysis step",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-09-25 06:00 AM EDT",
+  "data_time_utc": "2026-09-25 07:00 AM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-25 07:25 AM EDT",
+  "processing_time_utc": "2026-09-25 08:30 AM EDT",
   "units": "degF (display); source K",
   "spatial_resolution_source": "~3 km HRRR Lambert grid (1799x1059)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,21 +30,21 @@
     230
   ],
   "legend_scale_html": "2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 27.11</b> / <b>HIGHEST+ 75.58</b> marked on the scale. Freezing has no color break.",
-  "model_cycle": "hrrr.20260925 t10z",
-  "source_id": "hrrr-hrrr.20260925-t10z",
-  "source_version": "hrrr-hrrr.20260925-t10z",
+  "model_cycle": "hrrr.20260925 t11z",
+  "source_id": "hrrr-hrrr.20260925-t11z",
+  "source_version": "hrrr-hrrr.20260925-t11z",
   "historical": {
     "low": 27.105360107421916,
     "high": 75.58269775390629,
     "percentiles": {
-      "p5": 37.52946289062504,
-      "p25": 41.33280517578126,
-      "p50": 47.200836181640625,
-      "p75": 55.87090587615967,
-      "p95": 61.07008789062504,
-      "p99": 63.778750572204586
+      "p5": 36.731580810546916,
+      "p25": 40.78158081054691,
+      "p50": 46.75446319580078,
+      "p75": 55.81071472167969,
+      "p95": 60.87321472167969,
+      "p99": 63.39408081054692
     },
-    "n_obs": 1465846,
+    "n_obs": 1485846,
     "extends": [
       {
         "at": "2026-09-22 04:04 UTC",
@@ -86,45 +86,47 @@
   },
   "stats": {
     "valid_cells": 2114386,
-    "current_min": 30.77946289062504,
-    "current_max": 67.34196289062504
+    "current_min": 30.769080810546917,
+    "current_max": 66.31908081054692
   },
   "buoy_qc": {
     "45001": {
-      "obs_F": 56.84,
-      "grid_F": 58.11696289062504,
-      "absdiff_F": 1.28,
-      "verdict": "OK",
-      "obs_time": "2026-09-25 11:00 UTC"
+      "time_utc": "2026-09-25 11:50 UTC",
+      "WDIR_deg": null,
+      "WSPD_ms": null,
+      "WVHT_m": null,
+      "WTMP_C": 12.8,
+      "ATMP_C": null,
+      "note": "no ATMP obs"
     },
     "45002": {
-      "obs_F": 61.34,
-      "grid_F": 62.27946289062504,
-      "absdiff_F": 0.94,
+      "obs_F": 61.52,
+      "grid_F": 62.044080810546916,
+      "absdiff_F": 0.52,
       "verdict": "OK",
-      "obs_time": "2026-09-25 10:50 UTC"
+      "obs_time": "2026-09-25 11:50 UTC"
     },
     "45132": {
-      "obs_F": 61.16,
-      "grid_F": 60.92946289062504,
-      "absdiff_F": 0.23,
+      "obs_F": 59.9,
+      "grid_F": 61.36908081054692,
+      "absdiff_F": 1.47,
       "verdict": "OK",
-      "obs_time": "2026-09-25 11:00 UTC"
+      "obs_time": "2026-09-25 12:00 UTC"
     },
     "45012": {
-      "obs_F": 59.36,
-      "grid_F": 57.77946289062504,
-      "absdiff_F": 1.58,
+      "obs_F": 58.82,
+      "grid_F": 57.319080810546915,
+      "absdiff_F": 1.5,
       "verdict": "OK",
-      "obs_time": "2026-09-25 11:00 UTC"
+      "obs_time": "2026-09-25 11:50 UTC"
     },
     "45005": {
-      "obs_F": 61.52,
-      "grid_F": 63.74196289062504,
-      "absdiff_F": 2.22,
+      "obs_F": 60.98,
+      "grid_F": 62.944080810546915,
+      "absdiff_F": 1.96,
       "verdict": "OK",
-      "obs_time": "2026-09-25 11:00 UTC"
+      "obs_time": "2026-09-25 11:50 UTC"
     }
   },
-  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=hrrr-hrrr.20260925-t10z\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 27.11</b> / <b>HIGHEST+ 75.58</b> marked on the scale. Freezing has no color break.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-25 06:00 AM EDT<br/><b>Processed:</b> 2026-09-25 07:25 AM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
+  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=hrrr-hrrr.20260925-t11z\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 27.11</b> / <b>HIGHEST+ 75.58</b> marked on the scale. Freezing has no color break.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-25 07:00 AM EDT<br/><b>Processed:</b> 2026-09-25 08:30 AM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
 }
