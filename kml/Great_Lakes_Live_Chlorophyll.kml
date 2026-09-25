@@ -2,7 +2,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🌿 LIVE CHLOROPHYLL / ALGAL ACTIVITY</name>
-    <description><![CDATA[<h2>LIVE CHLOROPHYLL / ALGAL ACTIVITY</h2><p>This entry auto-refreshes from the live overlay (source: NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)).<br/><b>Data time:</b> 2026-09-23 08:00 AM EDT (newest of 7-day mosaic)<br/><b>Source version:</b> nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v3-2026-09-23<br/><b>Status:</b> LATEST AVAILABLE (daily composite)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>LIVE CHLOROPHYLL / ALGAL ACTIVITY</h2><p>This entry auto-refreshes from the live overlay (source: NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)).<br/><b>Data time:</b> 2026-09-15 08:00 AM EDT (newest of 7-day mosaic)<br/><b>Source version:</b> nesdisVHNSQchlaDaily-v3-2026-09-15<br/><b>Status:</b> LATEST AVAILABLE (daily composite)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <NetworkLink>
       <name>🌿 LIVE CHLOROPHYLL / ALGAL ACTIVITY — auto-refresh</name>
       <Link>
