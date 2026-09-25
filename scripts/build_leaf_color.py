@@ -14,9 +14,10 @@ Footprint: all basin land (Great-Lakes water stays transparent — leaves
   do not grow on open water).
 
 Per-pixel phenology phase (leaf_phenology.py) from NDVI trajectory +
-baseline + direction + class + spectral gating; circular continuous LUT;
-rolling quarter-res history in output/state/leaf_color/ for baseline,
-direction and bad-observation hold-forward.
+baseline + class + spectral gating; circular continuous LUT; rolling
+quarter-res NDVI history in output/state/leaf_color/ for the baseline
+reference. RENDER RULE: only currently-observed pixels paint — history
+never renders, fills never render.
 
 Exit codes: 0 = updated (or skipped, composites unchanged); 2 = source/
 validation failure (previous valid raster left untouched); 1 = unexpected.
@@ -388,7 +389,8 @@ def _build(bounds, W, H, vi, rf, sig):
     if lc.shape != (H, W):
         raise ValueError(f"landcover shape {lc.shape} != canvas")
 
-    # history (quarter-res): previous NDVI stack + phase for baseline/hold
+    # history (quarter-res NDVI stack for the baseline reference only;
+    # history never renders — only current observations paint)
     hist = load_history()
     with np.errstate(invalid="ignore", divide="ignore"):
         redness = np.clip(((red / (red + green + blue + 1e-6)) - 0.38) / 0.12, 0, 1)
@@ -401,26 +403,24 @@ def _build(bounds, W, H, vi, rf, sig):
     # zipper steps + WarpedVRT edge lines); all other pixels untouched.
     phase = _blend_overlap_bands(
         phase, _overlap_bands([(r[0], r[2]) for r in ndvi_r]))
-    # FULL-COVERAGE RULE (v6): every basin land pixel (whole rectangle
-    # minus Great-Lakes water) must render opaque. Clouds, snow, masked
-    # landcover classes (urban/barren/nodata/inland-water) and bad-QA
-    # pixels are filled by isotropic diffusion of TODAY's observed
-    # neighbors (smooth regional blend, no directional smearing or
-    # striping) -- never transparent on land. History is observation-only
-    # and never carries filled values forward.
-    from gradient_scale import diffuse_fill_circular
+    # ACCURACY RULE (v7): paint ONLY what this composite observes. Every
+    # currently-observed land pixel renders at full strength; clouds, snow,
+    # bad QA, masked classes (urban/barren/nodata/inland-water) and open
+    # water stay TRANSPARENT — never carried views, never modeled fills.
+    # What you see is 100% the source's current information.
     phase_obs = np.array(phase, dtype=float)
     target = foot & land
-    phase = diffuse_fill_circular(phase, target, radius=80, passes=4)
+    phase = np.where(np.isfinite(phase) & target, phase, np.nan)
     lut = np.array(build_leaf_lut(), dtype=np.uint8)
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
     target = foot & land
     ok = np.isfinite(phase) & target
-    # Safety net: if any target pixel is still NaN (should be impossible
-    # after the fill), it is a bug -- fail loudly rather than ship holes.
-    n_holes = int((target & ~ok).sum())
-    if n_holes:
-        raise ValueError(f"full-coverage fill left {n_holes} holes")
+    # Transparency IS the product: unobserved land (clouds/snow/bad-QA/
+    # masked classes) stays see-through, so coverage naturally varies run
+    # to run. Only a near-empty observation set is a failure.
+    n_transparent = int((target & ~ok).sum())
+    print(f"[{PRODUCT}] observed={int(ok.sum())} "
+          f"transparent-no-data={n_transparent}")
     rgba[ok, 0:3] = lut[np.clip((phase[ok] * 255).astype(int), 0, 255)]
     rgba[ok, 3] = bounds["overlay_alpha"]
     from geospatial_utils import apply_shoreline_mask
@@ -460,26 +460,28 @@ def _build(bounds, W, H, vi, rf, sig):
         units="phenology phase 0..1 (display color); source NDVI/reflectance",
         source_resolution="500 m MODIS sinusoidal, reprojected to canvas (nearest)",
         color_min=0.0, color_max=1.0, color_units="phenology phase (circular)",
-         missing_data_treatment=("Basin land renders with full coverage: "
-                                 "cloud/bad-QA/snow gaps are filled by isotropic "
-                                 "diffusion of today's observed neighbors (smooth "
-                                 "regional blend); snow, urban/barren/nodata and "
-                                 "inland-water classes likewise take neighbor "
-                                 "values so no land holes remain. History holds "
-                                 "observations only and never carries fills "
-                                 "forward. "
-                                 "Great-Lakes water transparent via shared mask."))
+         missing_data_treatment=("ONLY currently-observed vegetated land "
+                                 "paints — 100% the source's current "
+                                 "information. Clouds, snow, bad QA, masked "
+                                 "classes (urban/barren/nodata/inland-water) "
+                                 "and Great-Lakes water stay transparent; "
+                                 "never carried views, never modeled fills. "
+                                 "History (observations only) feeds the "
+                                 "trajectory baseline, never the picture."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = (
-        "Satellite-derived seasonal vegetation state. The continuous color "
-        "scale represents the changing seasonal condition of vegetated land, "
-        "from winter dormancy through spring emergence, active growth, "
-        "autumn coloration, leaf drop, and return to dormancy. Color "
-        "represents a satellite-derived phenological state and should not "
-        "be interpreted as the exact color of every individual tree. "
-         "Every basin land pixel is painted: cloudy or missing pixels take "
-         "a smooth blend of today's surrounding observed land. Only "
-         "Great-Lakes water stays transparent.")
+        "What each color means (one trip around the year, left to right on "
+        "the key): <b>deep blue</b> = dormant winter; <b>light "
+        "blue/cyan</b> = spring awakening and bud break; "
+        "<b>teal-green</b> = leaf emergence; <b>green</b> = growing season; "
+        "<b>yellow-green/yellow</b> = first color; <b>orange</b> = autumn "
+        "coloring; <b>red/magenta</b> = peak color into leaf drop; "
+        "<b>purple</b> = late drop returning to <b>deep-blue</b> dormant "
+        "(the scale wraps: both ends are winter). Color is the "
+        "satellite-derived growth stage, not the color of individual "
+        "trees. Only land the satellite actually saw this composite is "
+        "painted — <b>transparent = clouds, snow, cities, bare ground, "
+        "water, or otherwise no current observation</b>.")
     meta["data_nature"] = CONFIG["data_nature"]
     meta["gradient"] = {"interpolation": "OKLab (perceptually uniform)",
                         "anchors": 19, "distinct_raster_colors": n_colors,
@@ -499,16 +501,16 @@ def _build(bounds, W, H, vi, rf, sig):
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
-        "algorithm": "leaf_phenology v4 (trajectory + baseline + class + "
+        "algorithm": "leaf_phenology v7 (trajectory + baseline + class + "
                      "spectral gating; 19-anchor OKLab circular gradient; "
-                     "full-coverage basin gap-fill)",
+                     "observed-only rendering, transparent no-data)",
     }
-    # v6 = diffusion fill (isotropic, stripe-free) + overlap-band seam
-    # blend + observation-only history + full-coverage mosaic rule
+    # v7 = observed-only rendering (transparent no-data) + overlap-band
+    # seam blend + observation-only history + full-coverage mosaic rule
     # (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.
-    source_id = f"leaf-v6-{sig[:12]}"
+    source_id = f"leaf-v7-{sig[:12]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {
@@ -517,8 +519,8 @@ def _build(bounds, W, H, vi, rf, sig):
     }
     write_metadata(stage_prod, meta)
 
-    # v6 = diffusion fill (isotropic, stripe-free) + overlap-band seam
-    # blend + observation-only history + full-coverage mosaic rule
+    # v7 = observed-only rendering (transparent no-data) + overlap-band
+    # seam blend + observation-only history + full-coverage mosaic rule
     # (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.

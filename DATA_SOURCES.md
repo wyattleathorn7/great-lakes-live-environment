@@ -234,14 +234,15 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   spectral gating (redness proxy only counts while declining; NDSI snow →
   transparent; cloud/bad-QA → filled, see below).
   Continuous 19-anchor circular LUT (wraparound-identical deep blue).
-- **Mosaic + fill (v6):** tiles combined first-valid-wins (single-tile
-  pixels keep exact source values); the narrow inter-tile overlap bands
-  get a 3-px horizontal blend so zipper steps and resampling edge lines
-  vanish. Cloudy/missing land is filled by isotropic diffusion of
-  today's observed neighbors (smooth regional blend — no directional
-  smearing or striping; observed pixels never altered). History holds
-  observations only (duplicate-suppressed, never carries fills forward),
-  so fallback artifacts cannot self-perpetuate.
+- **Mosaic + rendering (v7, observed-only):** tiles combined
+  first-valid-wins (single-tile pixels keep exact source values); the
+  narrow inter-tile overlap bands get a 3-px horizontal blend so zipper
+  steps and resampling edge lines vanish. ONLY currently-observed
+  vegetated land paints — clouds, snow, bad QA, masked classes and water
+  stay transparent (100% the source's current information; never carried
+  views, never modeled fills). History (observations only,
+  duplicate-suppressed) feeds the trajectory baseline alone and never
+  renders.
 - Freshness wording: **"LATEST AVAILABLE COMPOSITE"** (+ age, + STALE flag).
 
 ## 6. Chlorophyll — NOAA CoastWatch S-NPP+NOAA-20 VIIRS (NRT gapfilled, daily)
