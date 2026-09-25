@@ -188,7 +188,7 @@ def run():
     sig = hashlib.sha256(
         ("|".join(sorted(i.id for i in list(vi.values()) + list(rf.values())))
          ).encode()).hexdigest()
-    source_id_hint = f"leaf-v4-{sig[:12]}"
+    source_id_hint = f"leaf-v6-{sig[:12]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id_hint \
             and prev.get("render_version") == RENDER_VERSION \
@@ -219,7 +219,9 @@ def _mosaic(pairs):
 
     Fill codes (which are finite numbers like 65535/-28672) are forced to
     NaN first — otherwise the first tile's fill would shadow later tiles'
-    valid data and poison QA bit tests.
+    valid data and poison QA bit tests. Single-tile pixels keep their
+    exact source values; tile overlap bands are blended separately
+    (see _blend_overlap_bands) so valid data is never averaged away.
     """
     acc = None
     for a, f in pairs:
@@ -235,6 +237,67 @@ def _mosaic(pairs):
             acc = np.where(np.isfinite(acc), acc,
                            np.where(np.isfinite(a), a, np.nan))
     return acc
+
+
+def _overlap_bands(reads, dilate=2):
+    """Boolean mask of dilated inter-tile overlap bands.
+
+    reads = [((array, tags, nodata), ...) per tile] as returned by
+    read_window for one variable (NDVI). Pixels covered by 2+ tiles,
+    dilated by `dilate` px via shifts (no scipy), are where tile seams
+    and resampling-edge lines can live.
+    """
+    H, W = reads[0][0].shape
+    cnt = np.zeros((H, W), dtype=np.int16)
+    for a, f in reads:
+        a = np.asarray(a, dtype=float)
+        if f is not None:
+            try:
+                a = np.where(a == float(f), np.nan, a)
+            except (TypeError, ValueError):
+                pass
+        cnt += np.isfinite(a).astype(np.int16)
+    band = cnt >= 2
+    if dilate > 0:
+        grown = band.copy()
+        for _ in range(dilate):
+            up = np.zeros_like(band)
+            up[1:] = grown[:-1]
+            dn = np.zeros_like(band)
+            dn[:-1] = grown[1:]
+            lf = np.zeros_like(band)
+            lf[:, 1:] = grown[:, :-1]
+            rt = np.zeros_like(band)
+            rt[:, :-1] = grown[:, 1:]
+            grown = grown | up | dn | lf | rt
+        band = grown
+    band[0, :] = band[-1, :] = False
+    band[:, 0] = band[:, -1] = False
+    return band
+
+
+def _blend_overlap_bands(phase, band):
+    """Kill tile-seam lines: 3-px horizontal nanmean inside overlap bands.
+
+    A 1-px ragged seam (zipper from first-wins, edge resampling lines)
+    disappears into its neighbors; everything outside the narrow bands
+    keeps byte-exact source values.
+    """
+    out = np.array(phase, dtype=float)
+    sel = np.asarray(band, dtype=bool) & np.isfinite(out)
+    if not sel.any():
+        return out
+    left = np.roll(out, 1, axis=1)
+    right = np.roll(out, -1, axis=1)
+    stack = np.stack([left, out, right]).astype(float)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            mean = np.nanmean(stack, axis=0)
+    use = sel & np.isfinite(mean)
+    out[use] = np.clip(mean[use], 0.0, 0.999)
+    return np.clip(out, 0.0, 0.999)
 
 
 def _build(bounds, W, H, vi, rf, sig):
@@ -334,14 +397,21 @@ def _build(bounds, W, H, vi, rf, sig):
 
     phase = compute_phase_grid(ndvi, lc, redness, snow,
                                bad | cloudy, marginal, hist)
-    # FULL-COVERAGE RULE (v4): every basin land pixel (whole rectangle
+    # Tile-seam repair: blend the narrow inter-tile overlap bands (kills
+    # zipper steps + WarpedVRT edge lines); all other pixels untouched.
+    phase = _blend_overlap_bands(
+        phase, _overlap_bands([(r[0], r[2]) for r in ndvi_r]))
+    # FULL-COVERAGE RULE (v6): every basin land pixel (whole rectangle
     # minus Great-Lakes water) must render opaque. Clouds, snow, masked
     # landcover classes (urban/barren/nodata/inland-water) and bad-QA
-    # pixels with no history previously went transparent, leaving speckled
-    # holes. Gap-fill them: hold-forward history first, then
-    # nearest-valid spatial propagation, then global circular-median
-    # fallback -- never transparent on land.
-    phase = fill_phase_full_coverage(phase, foot, land, prev_phase_grid(hist))
+    # pixels are filled by isotropic diffusion of TODAY's observed
+    # neighbors (smooth regional blend, no directional smearing or
+    # striping) -- never transparent on land. History is observation-only
+    # and never carries filled values forward.
+    from gradient_scale import diffuse_fill_circular
+    phase_obs = np.array(phase, dtype=float)
+    target = foot & land
+    phase = diffuse_fill_circular(phase, target, radius=80, passes=4)
     lut = np.array(build_leaf_lut(), dtype=np.uint8)
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
     target = foot & land
@@ -391,11 +461,14 @@ def _build(bounds, W, H, vi, rf, sig):
         source_resolution="500 m MODIS sinusoidal, reprojected to canvas (nearest)",
         color_min=0.0, color_max=1.0, color_units="phenology phase (circular)",
          missing_data_treatment=("Basin land renders with full coverage: "
-                                "cloud/bad-QA hold the previous phase, then "
-                                "nearest-valid spatial fill; snow, urban/barren/"
-                                "nodata and inland-water classes are gap-filled "
-                                "from neighbors/history so no land holes remain. "
-                                "Great-Lakes water transparent via shared mask."))
+                                 "cloud/bad-QA/snow gaps are filled by isotropic "
+                                 "diffusion of today's observed neighbors (smooth "
+                                 "regional blend); snow, urban/barren/nodata and "
+                                 "inland-water classes likewise take neighbor "
+                                 "values so no land holes remain. History holds "
+                                 "observations only and never carries fills "
+                                 "forward. "
+                                 "Great-Lakes water transparent via shared mask."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = (
         "Satellite-derived seasonal vegetation state. The continuous color "
@@ -404,10 +477,9 @@ def _build(bounds, W, H, vi, rf, sig):
         "autumn coloration, leaf drop, and return to dormancy. Color "
         "represents a satellite-derived phenological state and should not "
         "be interpreted as the exact color of every individual tree. "
-         "Every basin land pixel is painted: clouds hold the previous "
-        "phase, and snow, urban, barren, nodata or briefly missing pixels "
-        "are filled from surrounding valid land and recent history. Only "
-        "Great-Lakes water stays transparent.")
+         "Every basin land pixel is painted: cloudy or missing pixels take "
+         "a smooth blend of today's surrounding observed land. Only "
+         "Great-Lakes water stays transparent.")
     meta["data_nature"] = CONFIG["data_nature"]
     meta["gradient"] = {"interpolation": "OKLab (perceptually uniform)",
                         "anchors": 19, "distinct_raster_colors": n_colors,
@@ -431,11 +503,12 @@ def _build(bounds, W, H, vi, rf, sig):
                      "spectral gating; 19-anchor OKLab circular gradient; "
                      "full-coverage basin gap-fill)",
     }
-    # v4 = full-coverage basin gap-fill (no land holes) + full-coverage
-    # mosaic rule (all 3 tiles required) + NaN-aware history means.
+    # v6 = diffusion fill (isotropic, stripe-free) + overlap-band seam
+    # blend + observation-only history + full-coverage mosaic rule
+    # (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.
-    source_id = f"leaf-v4-{sig[:12]}"
+    source_id = f"leaf-v6-{sig[:12]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {
@@ -444,8 +517,9 @@ def _build(bounds, W, H, vi, rf, sig):
     }
     write_metadata(stage_prod, meta)
 
-    # v4 = full-coverage basin gap-fill (no land holes) + full-coverage
-    # mosaic rule (all 3 tiles required) + NaN-aware history means.
+    # v6 = diffusion fill (isotropic, stripe-free) + overlap-band seam
+    # blend + observation-only history + full-coverage mosaic rule
+    # (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.
     token = meta["source_version"]
@@ -464,7 +538,7 @@ def _build(bounds, W, H, vi, rf, sig):
         entry_description_html(CONFIG["title"], meta, SKIP_NOTE),
         CONFIG["refresh_interval_seconds"], out_dirs=outs["entry"])
 
-    save_history(ndvi, phase, vi_ids, sig)
+    save_history(ndvi, phase_obs, vi_ids, sig)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"composite_sig": sig,
                           "source_id": source_id,
@@ -526,92 +600,23 @@ def save_history(ndvi, phase, vi_ids, sig):
         h = np.load(os.path.join(STATE_DIR, "hist_ndvi.npy"))
     except Exception:
         h = np.full((4,) + HIST_SHAPE, -128, dtype=np.int8)
-    h = np.roll(h, -1, axis=0)
-    h[-1] = np.clip(np.nan_to_num(
+    new_layer = np.clip(np.nan_to_num(
         downsample_quarter(np.where(np.isfinite(ndvi), ndvi, np.nan)),
         nan=-1.28) * 100.0, -128, 127).astype(np.int8)
+    if h.shape == (4,) + HIST_SHAPE and np.array_equal(h[-1], new_layer):
+        # Duplicate-suppression: same composites rebuilt (e.g. version
+        # rotations) must not stack identical layers — that would skew the
+        # rolling baseline toward the present and mute real change.
+        pass
+    else:
+        h = np.roll(h, -1, axis=0)
+        h[-1] = new_layer
     np.save(os.path.join(STATE_DIR, "hist_ndvi.npy"), h)
     np.save(os.path.join(STATE_DIR, "hist_phase.npy"),
             downsample_quarter(np.where(np.isfinite(phase), phase, np.nan)
                                ).astype(np.float32))
     json.dump({"dates": sorted(set(vi_ids.values())), "sig": sig},
               open(os.path.join(STATE_DIR, "hist_meta.json"), "w"))
-
-
-def prev_phase_grid(hist):
-    """Upsample quarter-res history phase to full canvas (nearest)."""
-    qh, qw = HIST_SHAPE
-    H, W = load_bounds()["canvas_height"], load_bounds()["canvas_width"]
-    ys = np.clip((np.arange(H) * qh / H).astype(int), 0, qh - 1)
-    xs = np.clip((np.arange(W) * qw / W).astype(int), 0, qw - 1)
-    return hist["phase"][ys[:, None], xs]
-
-
-def fill_phase_full_coverage(phase, footprint, land, prev_phase=None):
-    """Gap-fill phenology phase so basin land has zero holes.
-
-    Target = footprint & land (basin rectangle minus Great-Lakes water;
-    shoreline antialiasing applied later). Fill order for missing target
-    pixels:
-      1. hold-forward previous published phase (temporal continuity,
-         works for clouds/snow/urban alike);
-      2. nearest-valid spatial propagation (Voronoi fill; preserves local
-         gradient texture, avoids circular-mean seam artifacts);
-      3. global circular-median fallback (only if a component has no
-         valid neighbor at all).
-    Valid observed pixels are never altered.
-    """
-    target = np.asarray(footprint, dtype=bool) & np.asarray(land, dtype=bool)
-    out = np.array(phase, dtype=float)
-    valid = np.isfinite(out) & target
-    if not np.any(valid):
-        return out
-    missing = target & ~np.isfinite(out)
-    if prev_phase is not None:
-        pp = np.asarray(prev_phase, dtype=float)
-        if pp.shape == out.shape:
-            use = missing & np.isfinite(pp)
-            out[use] = np.clip(pp[use], 0.0, 0.999)
-            missing = target & ~np.isfinite(out)
-    if np.any(missing):
-        # Nearest-valid propagation: iteratively dilate filled region.
-        filled = np.isfinite(out) & target
-        # Seed: also allow valid pixels just outside target to donate
-        # colors across the target edge (prevents edge darkening).
-        donor = np.where(np.isfinite(out), out, np.nan)
-        cur = np.where(filled, donor, np.nan)
-        it = 0
-        while np.any(target & ~np.isfinite(cur)) and it < 5000:
-            it += 1
-            nxt = cur.copy()
-            have = np.isfinite(cur)
-            for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                shift_have = np.roll(np.roll(have, dy, axis=0), dx, axis=1)
-                shift_val = np.roll(np.roll(cur, dy, axis=0), dx, axis=1)
-                # np.roll wraps edges; mask wrapped rows/cols.
-                if dy == 1:
-                    shift_have[0, :] = False
-                elif dy == -1:
-                    shift_have[-1, :] = False
-                if dx == 1:
-                    shift_have[:, 0] = False
-                elif dx == -1:
-                    shift_have[:, -1] = False
-                take = (~np.isfinite(nxt)) & shift_have
-                nxt[take] = shift_val[take]
-            if np.array_equal(np.isfinite(nxt), np.isfinite(cur)):
-                break
-            cur = nxt
-        still = target & ~np.isfinite(cur)
-        if np.any(still):
-            # Global circular-median fallback (unit-circle median).
-            v = out[valid]
-            ang = v * 2.0 * math.pi
-            mx, my = float(np.median(np.cos(ang))), float(np.median(np.sin(ang)))
-            fb = (math.atan2(my, mx) / (2.0 * math.pi)) % 1.0
-            cur[still] = min(max(fb, 0.0), 0.999)
-        out = cur
-    return np.clip(out, 0.0, 0.999)
 
 
 def compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist):

@@ -6,9 +6,9 @@
   "product_name": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
   "variable": "NDVI trajectory + surface reflectance + NDSI snow + land class -> circular phenology phase 0..1",
   "source_url": "https://planetarycomputer.microsoft.com/",
-  "data_time_utc": "VI composite start 2026-08-05 (+16d window); reflectance 2026-08-13 (+8d); retrieved 2026-09-25 02:54 PM EDT",
+  "data_time_utc": "VI composite start 2026-08-05 (+16d window); reflectance 2026-08-13 (+8d); retrieved 2026-09-25 03:55 PM EDT",
   "source_last_modified_utc": "composite sig 1ce56c63a4cc",
-  "processing_time_utc": "2026-09-25 02:54 PM EDT",
+  "processing_time_utc": "2026-09-25 03:55 PM EDT",
   "units": "phenology phase 0..1 (display color); source NDVI/reflectance",
   "spatial_resolution_source": "500 m MODIS sinusoidal, reprojected to canvas (nearest)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -22,19 +22,19 @@
   "color_scale_min": 0.0,
   "color_scale_max": 1.0,
   "color_scale_units": "phenology phase (circular)",
-  "missing_data_treatment": "Basin land renders with full coverage: cloud/bad-QA hold the previous phase, then nearest-valid spatial fill; snow, urban/barren/nodata and inland-water classes are gap-filled from neighbors/history so no land holes remain. Great-Lakes water transparent via shared mask.",
+  "missing_data_treatment": "Basin land renders with full coverage: cloud/bad-QA/snow gaps are filled by isotropic diffusion of today's observed neighbors (smooth regional blend); snow, urban/barren/nodata and inland-water classes likewise take neighbor values so no land holes remain. History holds observations only and never carries fills forward. Great-Lakes water transparent via shared mask.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "legend_size": [
     640,
     250
   ],
-  "legend_scale_html": "Satellite-derived seasonal vegetation state. The continuous color scale represents the changing seasonal condition of vegetated land, from winter dormancy through spring emergence, active growth, autumn coloration, leaf drop, and return to dormancy. Color represents a satellite-derived phenological state and should not be interpreted as the exact color of every individual tree. Every basin land pixel is painted: clouds hold the previous phase, and snow, urban, barren, nodata or briefly missing pixels are filled from surrounding valid land and recent history. Only Great-Lakes water stays transparent.",
+  "legend_scale_html": "Satellite-derived seasonal vegetation state. The continuous color scale represents the changing seasonal condition of vegetated land, from winter dormancy through spring emergence, active growth, autumn coloration, leaf drop, and return to dormancy. Color represents a satellite-derived phenological state and should not be interpreted as the exact color of every individual tree. Every basin land pixel is painted: cloudy or missing pixels take a smooth blend of today's surrounding observed land. Only Great-Lakes water stays transparent.",
   "data_nature": "observed satellite composites + derived phenology state",
   "gradient": {
     "interpolation": "OKLab (perceptually uniform)",
     "anchors": 19,
-    "distinct_raster_colors": 183,
+    "distinct_raster_colors": 159,
     "wraparound": "first == last deep blue #123B73"
   },
   "provenance": {
@@ -57,7 +57,7 @@
     "composite_date": "2026-08-05",
     "source_age_days": 51,
     "stale": false,
-    "retrieved": "2026-09-25 02:54 PM EDT",
+    "retrieved": "2026-09-25 03:55 PM EDT",
     "native_resolution_m": 500,
     "native_crs": "MODIS sinusoidal",
     "resampling": "nearest (no invented values)",
@@ -66,11 +66,11 @@
     "water_mask": "assets/great_lakes_watermask.png (shared)",
     "algorithm": "leaf_phenology v4 (trajectory + baseline + class + spectral gating; 19-anchor OKLab circular gradient; full-coverage basin gap-fill)"
   },
-  "source_id": "leaf-v4-1ce56c63a4cc",
-  "source_version": "leaf-v4-1ce56c63a4cc",
+  "source_id": "leaf-v6-1ce56c63a4cc",
+  "source_version": "leaf-v6-1ce56c63a4cc",
   "stats": {
     "good_pixels": 965108,
     "opaque_pixels": 1774102,
-    "phase_mean": 0.5034
+    "phase_mean": 0.5579
   }
 }

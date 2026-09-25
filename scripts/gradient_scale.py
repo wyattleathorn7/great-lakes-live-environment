@@ -227,6 +227,59 @@ def record_tick_labels(rec):
             (rec["hist_max"], f"HIGHEST+ {fmt_val(rec['hist_max'])}")]
 
 
+def _box_sum(a, r):
+    """Integral-image box sum, window 2r+1, zero-padded (same shape out)."""
+    a = np.asarray(a, dtype=float)
+    H, W = a.shape
+    p = np.pad(a, r, mode="constant")
+    ii = np.zeros((p.shape[0] + 1, p.shape[1] + 1), dtype=float)
+    ii[1:, 1:] = np.cumsum(np.cumsum(p, axis=0), axis=1)
+    s = 2 * r + 1
+    return ii[s:s + H, s:s + W] - ii[0:H, s:s + W] \
+        - ii[s:s + H, 0:W] + ii[0:H, 0:W]
+
+
+def diffuse_fill_circular(field, mask, radius=200, passes=3):
+    """Fill missing `mask` pixels by isotropic diffusion of observed values.
+
+    Circular (unit-vector) box-blur diffusion: each pass spreads observed
+    data `radius` px in every direction simultaneously, so filled regions
+    are smooth blends with NO directional smearing, striping, or dependence
+    on update order. Observed pixels are never altered. Anything still
+    missing after all passes (no observations basin-wide) gets the global
+    circular median. Display/honesty note: filled pixels are labeled as
+    modeled continuity in product metadata, never as observations.
+    """
+    field = np.asarray(field, dtype=float)
+    mask = np.asarray(mask, dtype=bool)
+    obs = np.isfinite(field) & mask
+    if not obs.any():
+        return np.where(mask, 0.5, np.nan)
+    cur = np.where(obs, field, np.nan)
+    for _ in range(passes):
+        have = np.isfinite(cur)
+        ang = np.where(have, cur * 2.0 * math.pi, 0.0)
+        w = have.astype(float)
+        cw = np.cos(ang) * w
+        swv = np.sin(ang) * w
+        sc = _box_sum(cw, radius)
+        ss = _box_sum(swv, radius)
+        sw = _box_sum(w, radius)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            m = (np.arctan2(ss, sc) / (2.0 * math.pi)) % 1.0
+        fill = (~have) & (sw > 0)
+        cur = np.where(fill, np.clip(m, 0.0, 0.999), cur)
+    still = mask & ~np.isfinite(cur)
+    if still.any():
+        v = cur[obs]
+        ang = v * 2.0 * math.pi
+        mx, my = float(np.median(np.cos(ang))), float(np.median(np.sin(ang)))
+        cur[still] = min(max((math.atan2(my, mx) / (2.0 * math.pi)) % 1.0,
+                             0.0), 0.999)
+    out = np.where(mask, cur, np.nan)
+    return np.clip(out, 0.0, 0.999)
+
+
 def color_for(value, stops):
     """Interpolated RGB for a value given anchor stops; clamps out of range
     into the endpoint colors (values above max stay deep purple, never break)."""
