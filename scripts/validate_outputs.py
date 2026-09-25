@@ -185,7 +185,8 @@ def main():
                     # leaf grows on LAND: opaque must avoid open-lake water
                     bleed = int(((a[:, :, 3] > 0) & (mask > 250)).sum())
                     what = "open-lake water"
-                elif product in ("cloud_cover", "surface_pressure"):
+                elif product in ("cloud_cover", "surface_pressure",
+                                   "uv_index"):
                     # basin-rectangle layers (user requirement): full
                     # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
                     bleed = 0

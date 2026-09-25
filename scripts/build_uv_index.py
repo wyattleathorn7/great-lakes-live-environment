@@ -5,11 +5,12 @@ NOAA/NCEP CPC operational Global UV Index GRIB2, from the 12 UTC GFS run
 ``uvi.YYYYMMDD/`` dirs) -> verify parameter metadata -> convert the filed
 erythemal flux (W/m^2) to UV Index (x40, exactly once) -> select the
 forecast hour nearest the current time -> bilinear resample of the native
-regular lat/lon grid onto the canvas (continuous, no holes) -> clip to
-Great Lakes water via the shared NOAA shoreline mask -> fixed absolute
-0..11+ EPA-style gradient (same index always shows the same color) ->
-transparent PNG -> key image + metadata -> Folder live KML + stable
-entry KML.
+regular lat/lon grid onto the canvas (continuous, no holes) -> FULL BASIN
+RECTANGLE (lon -93..-73.5, lat 40.5..49.5: land and water both paint, same
+footprint as cloud cover and surface pressure; only missing data is
+transparent) -> fixed absolute 0..11+ EPA-style gradient (same index
+always shows the same color) -> transparent PNG -> key image + metadata
+-> Folder live KML + stable entry KML.
 
 The UV source is a FORECAST field, not independent hourly satellite
 observations: one 12Z run per day provides all 120 hourly steps. A new
@@ -33,7 +34,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, apply_shoreline_mask,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
                               base_metadata, download, fmt_det, load_bounds,
                               now_det_str,
                               promote_stage, read_state, resample_gridded,
@@ -233,7 +234,8 @@ def _build(got, raw_path, now):
         return 2
 
     rgba = render_rgba(field, UV_STOPS, bounds["overlay_alpha"])
-    rgba = apply_shoreline_mask(rgba)  # water-only product
+    # NOTE: full basin rectangle (no shoreline cut) — same footprint as
+    # cloud cover and surface pressure. Only missing data is transparent.
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     n_opaque = int((rgba[:, :, 3] > 0).sum())
     if n_opaque < 50_000:
@@ -267,9 +269,10 @@ def _build(got, raw_path, now):
         source_resolution="~0.25 deg regular lat/lon (1440x721), "
                           "bilinear-resampled to canvas",
         color_min=0.0, color_max=UV_MAX, color_units=unit,
-        missing_data_treatment=("source grid fully valid (global forecast); "
-                                "land outside the NOAA shoreline transparent; "
-                                "never zero-filled."))
+         missing_data_treatment=("source grid fully valid (global forecast); "
+                                 "full basin rectangle, no shoreline cut; "
+                                 "only missing data transparent; "
+                                 "never zero-filled."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["source_run"] = run_str

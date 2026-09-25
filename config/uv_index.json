@@ -13,6 +13,6 @@
   "flux_to_index": 40.0,
   "allow_negative": false,
   "refresh_interval_seconds": 3600,
-  "what": "Erythemal (sunburning) UV Index at the lake surface from the newest 12 UTC NCEP run, forecast hour nearest the current time. A forecast field, not a satellite observation: the displayed hour advances as time passes.",
+  "what": "Erythemal (sunburning) UV Index over the full Great Lakes basin rectangle from the newest 12 UTC NCEP run, forecast hour nearest the current time. A forecast field, not a satellite observation: the displayed hour advances as time passes.",
   "why_extreme": "Extreme UV (11+) compresses into violet/deep-purple; ordinary low/moderate values own most of the color resolution."
 }
