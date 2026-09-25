@@ -143,8 +143,7 @@ def build_linear_stops(vmin, vmax, family=None, n=LINEAR_N):
     return stops
 
 
-APPLE_TEMP_STOPS = [  # (degF, rgb) fixed Apple-Weather-like spectrum
-    (-40.0, (108, 55, 150)),   # purple extreme cold
+APPLE_TEMP_STOPS = [  # (degF, rgb) fixed Apple-Weather-like spectrum    (-40.0, (108, 55, 150)),   # purple extreme cold
     (-20.0, (65, 85, 205)),
     (0.0, (35, 120, 225)),     # blue
     (20.0, (30, 165, 220)),
@@ -157,6 +156,34 @@ APPLE_TEMP_STOPS = [  # (degF, rgb) fixed Apple-Weather-like spectrum
     (100.0, (220, 50, 30)),
     (115.0, (195, 25, 45)),
     (130.0, (168, 18, 40)),    # deep red extreme heat
+]
+
+
+SOLAR_FLUX_STOPS = [  # (W/m^2, rgb) fixed absolute scale, UV-index-style
+    # progression (green -> yellow -> orange -> red -> magenta/violet) so
+    # flux intensity reads at a glance. Display bands only: this is
+    # BROADBAND shortwave flux, not the EPA UV Index (separate product).
+    (0.0, (13, 42, 120)),     # night: deep blue (valid zero, not missing)
+    (50.0, (25, 110, 220)),   # dawn/dusk blue
+    (150.0, (35, 170, 70)),   # low: green
+    (300.0, (230, 215, 40)),  # moderate: yellow
+    (450.0, (245, 150, 25)),  # amber/orange
+    (600.0, (230, 80, 25)),   # high: orange-red
+    (750.0, (210, 30, 35)),   # very high: red
+    (900.0, (195, 25, 130)),  # magenta
+    (1000.0, (110, 15, 130)),  # extreme: violet (1000+ clamps here)
+]
+SOLAR_FLUX_MAX = 1000.0
+
+
+SOLAR_FLUX_TICKS = [  # (value, label) drawn at true scale positions
+    (0.0, "0 Night"),
+    (150.0, "150 Low"),
+    (300.0, "300"),
+    (450.0, "450 Mod"),
+    (600.0, "600 High"),
+    (750.0, "750 V.High"),
+    (1000.0, "1000+ Extr"),
 ]
 
 

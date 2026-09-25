@@ -282,8 +282,10 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   stripe-shaped holes; a flood-fill interior-hole guard over watermask
   water fails the run instead of shipping stripes (verified 0 holes,
   2026-09-23). Nighttime zero is VALID data (deep blue), never NoData.
-  Balanced LINEAR scale over the observed record (broadband flux shown
-  exactly as observed — this is NOT the UV index).
+  FIXED absolute UV-index-style scale 0–1000+ W/m² (night deep blue →
+  green → yellow → orange → red → magenta → violet extreme; same flux
+  always shows the same color; broadband flux shown exactly as observed —
+  this is NOT the EPA UV Index, which is a separate product).
 - **Air temperature product:** HRRR CONUS `wrfsfcf00` analysis via NOMADS
   (direct HTTPS + `.idx` byte ranges, TMP2m only). Variable `TMP` 2 m
   above ground (K → °F). Lambert 1799×1059, per-cell WGS84 via ecCodes.

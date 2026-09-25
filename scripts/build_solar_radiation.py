@@ -39,9 +39,9 @@ from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
                               read_state, resample_gridded, save_png,
                               source_token, stage_dir, utcnow_iso,
                               write_metadata, write_state)
-from gradient_scale import (build_linear_stops, draw_scale_legend,
-                            fmt_val, load_record, record_tick_labels,
-                            render_rgba, save_record, update_record)
+from gradient_scale import (SOLAR_FLUX_MAX, SOLAR_FLUX_STOPS,
+                             SOLAR_FLUX_TICKS, draw_scale_legend, load_record,
+                             render_rgba, save_record, update_record)
 
 PRODUCT = "solar_radiation"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -217,7 +217,10 @@ def _build(base, datestr, cycle, source_id):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    stops = build_linear_stops(rec["hist_min"], rec["hist_max"])
+    # Fixed absolute UV-index-style scale (not the drifting historical
+    # record): the same flux always shows the same color, so intensity
+    # reads at a glance. Record stats are still tracked below for QC.
+    stops = SOLAR_FLUX_STOPS
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
     rgba = apply_shoreline_mask(rgba)  # water-only product
     save_png(rgba, os.path.join(stage_prod, "current.png"))
@@ -236,7 +239,7 @@ def _build(base, datestr, cycle, source_id):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = record_tick_labels(rec)
+    labels = SOLAR_FLUX_TICKS
     night = cur_max < 5.0
     subtitle = (f"Downward shortwave flux ({unit}, GFS f000 analysis)  |  "
                 f"{data_time_utc}" + ("  |  nighttime" if night else ""))
@@ -247,13 +250,15 @@ def _build(base, datestr, cycle, source_id):
         f"Processed {now_det_str()}",
         note="Zero is valid nighttime data (deep blue), not missing.")
     scale_html = (f"Surface downward shortwave solar radiation ({unit}, "
-                  f"GFS f000 analysis step), balanced linear "
-                  f"scale: <b>LOWEST {fmt_val(rec['hist_min'])}</b> (dark blue) → "
-                  f"common {fmt_val(p['p50'])} → "
-                  f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b> (deep purple). "
-                  f"Values shown exactly as observed; night reads zero; "
-                  f"clouds reduce values quantitatively. Broadband flux, "
-                  f"not the UV index.")
+                  f"GFS f000 analysis step), FIXED absolute scale 0&ndash;1000+: "
+                  f"night <b>0</b> (deep blue) &rarr; low <b>150</b> (green) &rarr; "
+                  f"moderate <b>300&ndash;450</b> (yellow/amber) &rarr; high "
+                  f"<b>600</b> (orange-red) &rarr; very high <b>750</b> (red) &rarr; "
+                  f"extreme <b>1000+</b> (violet). <b>LOWEST 0</b>, "
+                  f"<b>HIGHEST+ 1000+</b>. Same flux always shows the same "
+                  f"color. Values shown exactly as observed; night reads zero; "
+                  f"clouds reduce values quantitatively. Broadband flux display "
+                  f"bands &mdash; not the EPA UV Index (separate product).")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
@@ -262,7 +267,7 @@ def _build(base, datestr, cycle, source_id):
         units=f"{unit} (display); source W m^-2",
         source_resolution="~13 km GFS Gaussian grid (3072x1536), "
                           "bilinear-resampled to canvas",
-        color_min=rec["hist_min"], color_max=rec["hist_max"], color_units=unit,
+        color_min=0.0, color_max=SOLAR_FLUX_MAX, color_units=unit,
         missing_data_treatment=("only [0,1400] admitted; land outside the "
                                 "NOAA shoreline and missing analysis "
                                 "transparent; never interpolated across "
