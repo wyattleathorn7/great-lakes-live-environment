@@ -638,7 +638,10 @@ jobs:
             [ -d "$a" ] || continue
             cp -r "$a." ./ 2>/dev/null || true
           done
-          ls -R site | head -30
+          # NOTE: `head` closes the pipe after 30 lines, so plain
+          # `ls | head` dies with SIGPIPE under `pipefail` once the tree
+          # outgrows the pipe buffer — must not fail the publish job.
+          ls -R site | head -30 || true
         shell: bash
       - name: Validate outputs
         run: python scripts/validate_outputs.py
