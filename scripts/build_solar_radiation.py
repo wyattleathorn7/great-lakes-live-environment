@@ -5,9 +5,12 @@ radiation flux, W/m^2): newest available hourly cycle with the value
 valid for the current hour (analysis step when present, else the shortest
 forecast lead) -> validate -> bin the native 13 km Lambert grid onto the
 canvas -> FULL BASIN RECTANGLE (lon -93..-73.5, lat 40.5..49.5: land and
-water both paint; only missing data is transparent) -> FIXED absolute
-sequential gradient
-(near-black night -> near-white extreme) -> transparent PNG -> key image
+water both paint; only missing data is transparent) -> STEADY-GRADIENT
+smoothing (NaN-aware blur of the coarse 13 km cells; resampling pinholes
+filled, true domain edge left missing; stats stay on raw values) ->
+FIXED absolute sequential gradient
+(near-black night -> near-white extreme) -> softer-opacity PNG
+(alpha 160 so the base map reads through) -> key image
 + metadata -> Folder live KML + stable entry KML.
 
 Modeled incoming sunlight energy at the surface (broadband: includes
@@ -54,6 +57,9 @@ RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "Great_Lakes_Live_Solar_Radiation.kml"
 OVERLAY_NAME = "\U0001F31E LIVE SOLAR RADIATION"
 SKIP_NOTE = "Turn on/off independently of all other layers."
+SOLAR_ALPHA = 160  # softer than the shared 205: sunlight tints the map
+SMOOTH_RADIUS = 8  # px; NaN-aware box-blur passes for a steady gradient
+SMOOTH_PASSES = 2
 
 RAP_BASE = "https://nomads.ncep.noaa.gov/pub/data/nccf/com/rap/prod"
 RAP_GRID = "awp252bgrbf"  # RAP native 13 km grid covering North America
@@ -121,6 +127,87 @@ def fetch_rap_dswrf(file_url, dest):
         f.write(body)
     os.replace(tmp, dest)
     return start, end
+
+
+def _box1(a, r, axis):
+    """Moving sum, window 2r+1 along axis, zero-padded (same shape out)."""
+    pad = [(r, r) if i == axis else (0, 0) for i in range(a.ndim)]
+    p = np.pad(a, pad, mode="constant")
+    z = [slice(None)] * a.ndim
+    z[axis] = slice(None, 1)
+    c = np.concatenate([np.zeros_like(p[tuple(z)]), np.cumsum(p, axis=axis)],
+                       axis=axis)
+    n = a.shape[axis]
+    hi = [slice(None)] * a.ndim
+    lo = [slice(None)] * a.ndim
+    hi[axis] = slice(2 * r + 1, 2 * r + 1 + n)
+    lo[axis] = slice(0, n)
+    return c[tuple(hi)] - c[tuple(lo)]
+
+
+def _smooth_nan(field, r, passes=2):
+    """NaN-aware separable box-blur (Gaussian-like after passes).
+
+    Only real source values diffuse; missing stays missing (NaN where no
+    valid value falls inside the kernel). Display smoothing only —
+    source precision unchanged.
+    """
+    vals = np.where(np.isfinite(field), field, 0.0).astype(float)
+    w = np.isfinite(field).astype(float)
+    for _ in range(passes):
+        for axis in (0, 1):
+            vals = _box1(vals, r, axis)
+            w = _box1(w, r, axis)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        out = vals / np.where(w > 0, w, np.nan)
+    out[w <= 0] = np.nan
+    return out
+
+
+def _enclosed_invalid(field):
+    """Boolean mask of NaN pixels NOT connected to the image border.
+
+    These are resampling pinholes (e.g. unsampled canvas pixels between
+    coarse RAP cells) — safe to fill from smoothed neighbors. Border-
+    connected missing (true domain edge) is never filled.
+    """
+    from collections import deque
+    bad = ~np.isfinite(field)
+    if not bad.any():
+        return np.zeros_like(bad)
+    H, W = bad.shape
+    seen = np.zeros((H, W), dtype=bool)
+    dq = deque()
+    for c in range(W):
+        for r in (0, H - 1):
+            if bad[r, c] and not seen[r, c]:
+                seen[r, c] = True
+                dq.append((r, c))
+    for r in range(H):
+        for c in (0, W - 1):
+            if bad[r, c] and not seen[r, c]:
+                seen[r, c] = True
+                dq.append((r, c))
+    while dq:
+        r, c = dq.popleft()
+        for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            rr, cc = r + dr, c + dc
+            if 0 <= rr < H and 0 <= cc < W and bad[rr, cc] \
+                    and not seen[rr, cc]:
+                seen[rr, cc] = True
+                dq.append((rr, cc))
+    return bad & ~seen
+
+
+def steady_field(field):
+    """Steady-gradient render field: smoothed everywhere valid, pinholes
+    filled from smoothed neighbors, true domain edge left missing."""
+    smooth = _smooth_nan(field, SMOOTH_RADIUS, SMOOTH_PASSES)
+    out = np.where(np.isfinite(field), smooth, np.nan)
+    holes = _enclosed_invalid(field)
+    fill = holes & np.isfinite(smooth)
+    out[fill] = smooth[fill]
+    return out, int(fill.sum())
 
 
 def read_rap_dswrf(path):
@@ -231,11 +318,17 @@ def _build(base, datestr, cycle, lead, source_id):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
+    # Steady gradient: NaN-aware smoothing of the coarse RAP cells plus
+    # pinhole fill (unsampled canvas pixels between cells). Stats/record
+    # below stay on the raw binned values — smoothing is display only.
+    render_field_vals, n_filled = steady_field(
+        np.where(okv, field, np.nan))
+    print(f"[{PRODUCT}] steady-gradient smoothing filled {n_filled} pinholes")
     # Fixed absolute sequential scale (not the drifting historical
     # record): the same flux always shows the same color, so intensity
     # reads at a glance. Record stats are still tracked below for QC.
     stops = SOLAR_FLUX_STOPS
-    rgba = render_rgba(field, stops, bounds["overlay_alpha"])
+    rgba = render_rgba(render_field_vals, stops, SOLAR_ALPHA)
     # NOTE: full basin rectangle (no shoreline cut). Only missing data
     # is transparent.
     save_png(rgba, os.path.join(stage_prod, "current.png"))
@@ -284,7 +377,9 @@ def _build(base, datestr, cycle, lead, source_id):
         source_last_modified_utc="n/a (NOMADS)",
         units=f"{unit} (display); source W m^-2",
         source_resolution="~13 km RAP native grid (awp252), "
-                          "mean-binned to canvas (display smoothing only)",
+                          "mean-binned to canvas then NaN-aware smoothed "
+                          "for a steady gradient (display only; source "
+                          "precision unchanged)",
         color_min=0.0, color_max=SOLAR_FLUX_MAX, color_units=unit,
          missing_data_treatment=("only [0,1400] admitted; full basin rectangle, "
                                  "no shoreline cut; missing analysis "

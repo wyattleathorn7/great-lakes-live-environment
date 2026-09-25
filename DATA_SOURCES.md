@@ -290,8 +290,12 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   reading; it is an hourly weather-model estimate, not a ground sensor
   measurement at every location.
   native 13 km Lambert grid is mean-binned onto the canvas (same approach
-  as the HRRR products); a flood-fill interior-hole guard over watermask
-  water fails the run instead of shipping artefacts. Nighttime zero is
+  as the HRRR products) plus NaN-aware blur smoothing for a steady
+  gradient (resampling pinholes between the coarse cells filled; true
+  domain edge left missing; stats stay on raw values); a flood-fill
+  interior-hole guard over watermask water fails the run instead of
+  shipping artefacts. Rendered at alpha 160 (softer than the shared
+  205) so the base map reads through. Nighttime zero is
   VALID data (near-black), never NoData.
   FIXED absolute sequential scale 0–1000+ W/m² (near-black night →
   navy → blue → cyan → green → yellow → orange → red → near-white
