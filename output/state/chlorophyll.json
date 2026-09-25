@@ -1,15 +1,15 @@
 {
   "data_times": [
+    "2026-09-23T12:00:00Z",
     "2026-09-22T12:00:00Z",
     "2026-09-21T12:00:00Z",
     "2026-09-20T12:00:00Z",
     "2026-09-19T12:00:00Z",
     "2026-09-18T12:00:00Z",
-    "2026-09-17T12:00:00Z",
-    "2026-09-16T12:00:00Z"
+    "2026-09-17T12:00:00Z"
   ],
   "dataset": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-  "source_id": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v3-2026-09-22",
+  "source_id": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v3-2026-09-23",
   "render_version": 2,
-  "processing_time_utc": "2026-09-24 10:59 AM EDT"
+  "processing_time_utc": "2026-09-24 10:47 PM EDT"
 }
