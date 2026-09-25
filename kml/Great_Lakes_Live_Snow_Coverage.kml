@@ -2,7 +2,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>❄️ LIVE SNOW COVERAGE</name>
-    <description><![CDATA[<h2>❄️ LIVE SNOW COVERAGE</h2><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP HRRR 3 km snow analysis (SNOD snow depth + SNOWC snow cover), hourly cycles).<br/><b>Data time:</b> 2026-09-24 08:00 PM EDT<br/><b>Source version:</b> hrrr-hrrr.20260925-t00z<br/><b>Status:</b> LIVE / CURRENT MODEL (analysis)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>❄️ LIVE SNOW COVERAGE</h2><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP HRRR 3 km snow analysis (SNOD snow depth + SNOWC snow cover), hourly cycles).<br/><b>Data time:</b> 2026-09-24 09:00 PM EDT<br/><b>Source version:</b> hrrr-hrrr.20260925-t01z<br/><b>Status:</b> LIVE / CURRENT MODEL (analysis)</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <NetworkLink>
       <name>❄️ LIVE SNOW COVERAGE — auto-refresh</name>
       <Link>
