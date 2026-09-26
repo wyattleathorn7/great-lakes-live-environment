@@ -2,12 +2,12 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🌡️ LIVE WATER TEMPERATURE</name>
-    <description><![CDATA[<h2>GREAT LAKES SURFACE WATER TEMPERATURE</h2><p><b>Data time:</b> 2026-09-25 02:51 AM EDT<br/><b>Source updated:</b> 2026-09-25 02:51 AM EDT<br/><b>Source version:</b> glsea-Fri-25-Sep-2026-06-51-03-GMT<br/><b>Processed:</b> 2026-09-25 03:26 AM EDT<br/><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=glsea-Fri-25-Sep-2026-06-51-03-GMT" width="600" alt="legend"><br>Surface water temperature (°F): cold <b>53°F</b> (deep blue) → <b>62°F</b> → warm <b>71°F</b> (red). Lakewide mean this run: <b>62.1°F</b>.</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href="https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and ice layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <description><![CDATA[<h2>GREAT LAKES SURFACE WATER TEMPERATURE</h2><p><b>Data time:</b> 2026-09-26 02:50 AM EDT<br/><b>Source updated:</b> 2026-09-26 02:50 AM EDT<br/><b>Source version:</b> glsea-Sat-26-Sep-2026-06-50-58-GMT<br/><b>Processed:</b> 2026-09-26 03:23 AM EDT<br/><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=glsea-Sat-26-Sep-2026-06-50-58-GMT" width="600" alt="legend"><br>Surface water temperature (°F): cold <b>53°F</b> (deep blue) → <b>61.5°F</b> → warm <b>70°F</b> (red). Lakewide mean this run: <b>62.1°F</b>.</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href="https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and ice layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <GroundOverlay>
       <name>🌡️ LIVE WATER TEMPERATURE</name>
       <drawOrder>10</drawOrder>
       <Icon>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/current.png?v=glsea-Fri-25-Sep-2026-06-51-03-GMT</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/current.png?v=glsea-Sat-26-Sep-2026-06-50-58-GMT</href>
         <refreshMode>onInterval</refreshMode>
         <refreshInterval>21600</refreshInterval>
       </Icon>
