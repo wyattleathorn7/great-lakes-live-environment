@@ -189,7 +189,7 @@ def run():
     sig = hashlib.sha256(
         ("|".join(sorted(i.id for i in list(vi.values()) + list(rf.values())))
          ).encode()).hexdigest()
-    source_id_hint = f"leaf-v6-{sig[:12]}"
+    source_id_hint = f"leaf-v8-{sig[:12]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id_hint \
             and prev.get("render_version") == RENDER_VERSION \
@@ -501,16 +501,16 @@ def _build(bounds, W, H, vi, rf, sig):
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
-        "algorithm": "leaf_phenology v7 (trajectory + baseline + class + "
+        "algorithm": "leaf_phenology v8 (trajectory + baseline + class + "
                      "spectral gating; 19-anchor OKLab circular gradient; "
                      "observed-only rendering, transparent no-data)",
     }
-    # v7 = observed-only rendering (transparent no-data) + overlap-band
+    # v8 = large legible key image + observed-only rendering (transparent no-data) + overlap-band
     # seam blend + observation-only history + full-coverage mosaic rule
     # (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.
-    source_id = f"leaf-v7-{sig[:12]}"
+    source_id = f"leaf-v8-{sig[:12]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {
@@ -519,7 +519,7 @@ def _build(bounds, W, H, vi, rf, sig):
     }
     write_metadata(stage_prod, meta)
 
-    # v7 = observed-only rendering (transparent no-data) + overlap-band
+    # v8 = large legible key image + observed-only rendering (transparent no-data) + overlap-band
     # seam blend + observation-only history + full-coverage mosaic rule
     # (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards

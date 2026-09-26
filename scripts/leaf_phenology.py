@@ -136,17 +136,21 @@ LEAF_LEGEND_PHASES = [
 
 
 def draw_leaf_legend(path, title, subtitle, source_line, lut):
-    """Continuous phenology legend (bar + phase labels, two rows)."""
+    """Large legible phenology key (bar + phase labels, two clear rows).
+
+    Sized for the Google Earth info panel: big bar, staggered labels with
+    room to breathe so nothing overlaps.
+    """
     from PIL import Image, ImageDraw
     from geospatial_utils import _legend_font
-    W, H = 640, 250
+    W, H = 760, 300
     img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
     d = ImageDraw.Draw(img)
-    f_title, f_body, f_small = _legend_font(22), _legend_font(15), _legend_font(13)
+    f_title, f_body, f_small = _legend_font(26), _legend_font(17), _legend_font(15)
     d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
-    d.text((14, 8), title, font=f_title, fill=(10, 10, 10))
-    d.text((14, 36), subtitle, font=f_body, fill=(40, 40, 40))
-    bx, by, bw, bh = 14, 66, W - 28, 34
+    d.text((16, 10), title, font=f_title, fill=(10, 10, 10))
+    d.text((16, 44), subtitle, font=f_body, fill=(40, 40, 40))
+    bx, by, bw, bh = 16, 80, W - 32, 44
     for i in range(bw):
         c = lut[int(i / (bw - 1) * 255)]
         d.line([(bx + i, by), (bx + i, by + bh)], fill=tuple(c) + (255,))
@@ -155,9 +159,9 @@ def draw_leaf_legend(path, title, subtitle, source_line, lut):
         for phase, label in items:
             x = bx + int(phase * (bw - 1))
             tw = d.textlength(label, font=f_small)
-            d.text((min(max(x - tw / 2, 2), W - tw - 2), by + bh + 6 + row * 18),
+            d.text((min(max(x - tw / 2, 2), W - tw - 2), by + bh + 8 + row * 24),
                    label, font=f_small, fill=(10, 10, 10))
-    d.text((14, H - 22), source_line, font=f_small, fill=(60, 60, 60))
+    d.text((16, H - 26), source_line, font=f_small, fill=(60, 60, 60))
     import os
     os.makedirs(os.path.dirname(path), exist_ok=True)
     img.save(path)
