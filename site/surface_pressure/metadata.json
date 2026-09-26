@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3 km MSLMA mean sea-level pressure analysis (hourly cycles)",
   "variable": "MSLMA mean sea level, analysis step (filed Pa / 100 = hPa, the only conversion)",
   "source_url": "https://rapidrefresh.noaa.gov/hrrr",
-  "data_time_utc": "2026-09-26 04:00 PM EDT",
+  "data_time_utc": "2026-09-26 05:00 PM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-26 05:24 PM EDT",
+  "processing_time_utc": "2026-09-26 06:23 PM EDT",
   "units": "hPa (display; source Pa / 100)",
   "spatial_resolution_source": "~3 km HRRR CONUS grid (1799x1059), mean-binned to canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,14 +30,14 @@
     230
   ],
   "legend_scale_html": "Sea-level pressure (hPa, HRRR analysis, fixed absolute scale): <b>LOWEST 980</b> dark-blue deep low &rarr; <b>1000</b> cyan &rarr; <b>1006</b> green &rarr; <b>AVERAGE 1013.25</b> yellow middle &rarr; <b>1017</b> orange &rarr; <b>1023</b> red &rarr; <b>1029</b> magenta &rarr; <b>HIGHEST+ 1040</b> dark-purple. Same pressure always shows the same color; the everyday average sits in the middle. Current basin range: <b>1005-1024 hPa</b> (above average (high)).",
-  "model_cycle": "hrrr.20260926 t20z",
-  "source_id": "hrrr-hrrr.20260926-t20z-mslma-anl",
-  "source_version": "hrrr-hrrr.20260926-t20z-mslma-anl",
+  "model_cycle": "hrrr.20260926 t21z",
+  "source_id": "hrrr-hrrr.20260926-t21z-mslma-anl",
+  "source_version": "hrrr-hrrr.20260926-t21z-mslma-anl",
   "standard_atmosphere_hpa": 1013.25,
   "stats": {
     "valid_cells": 2114386,
-    "current_min_hpa": 1005.15,
-    "current_max_hpa": 1024.23
+    "current_min_hpa": 1005.02,
+    "current_max_hpa": 1023.86
   },
-  "folder_html": "<h2>LIVE SURFACE PRESSURE</h2><p>Hourly HRRR sea-level pressure analysis over the Great Lakes basin in hPa. The everyday average (1013.25 hPa) is the middle color so lows and highs read as departures from normal at a glance.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/surface_pressure/legend.png?v=hrrr-hrrr.20260926-t20z-mslma-anl\" width=\"600\" alt=\"key\"></p><p>Sea-level pressure (hPa, HRRR analysis, fixed absolute scale): <b>LOWEST 980</b> dark-blue deep low &rarr; <b>1000</b> cyan &rarr; <b>1006</b> green &rarr; <b>AVERAGE 1013.25</b> yellow middle &rarr; <b>1017</b> orange &rarr; <b>1023</b> red &rarr; <b>1029</b> magenta &rarr; <b>HIGHEST+ 1040</b> dark-purple. Same pressure always shows the same color; the everyday average sits in the middle. Current basin range: <b>1005-1024 hPa</b> (above average (high)).</p><p><b>Units:</b> hPa (hectopascals, sea-level)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km MSLMA mean sea-level pressure analysis (hourly cycles)<br/><b>Update:</b> HRRR hourly cycles<br/><b>Data time:</b> 2026-09-26 04:00 PM EDT<br/><b>Source version:</b> hrrr-hrrr.20260926-t20z-mslma-anl<br/><b>Processed:</b> 2026-09-26 05:24 PM EDT<br/><b>Provenance:</b> <a href=\"https://rapidrefresh.noaa.gov/hrrr\">NOAA HRRR</a></p>"
+  "folder_html": "<h2>LIVE SURFACE PRESSURE</h2><p>Hourly HRRR sea-level pressure analysis over the Great Lakes basin in hPa. The everyday average (1013.25 hPa) is the middle color so lows and highs read as departures from normal at a glance.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/surface_pressure/legend.png?v=hrrr-hrrr.20260926-t21z-mslma-anl\" width=\"600\" alt=\"key\"></p><p>Sea-level pressure (hPa, HRRR analysis, fixed absolute scale): <b>LOWEST 980</b> dark-blue deep low &rarr; <b>1000</b> cyan &rarr; <b>1006</b> green &rarr; <b>AVERAGE 1013.25</b> yellow middle &rarr; <b>1017</b> orange &rarr; <b>1023</b> red &rarr; <b>1029</b> magenta &rarr; <b>HIGHEST+ 1040</b> dark-purple. Same pressure always shows the same color; the everyday average sits in the middle. Current basin range: <b>1005-1024 hPa</b> (above average (high)).</p><p><b>Units:</b> hPa (hectopascals, sea-level)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km MSLMA mean sea-level pressure analysis (hourly cycles)<br/><b>Update:</b> HRRR hourly cycles<br/><b>Data time:</b> 2026-09-26 05:00 PM EDT<br/><b>Source version:</b> hrrr-hrrr.20260926-t21z-mslma-anl<br/><b>Processed:</b> 2026-09-26 06:23 PM EDT<br/><b>Provenance:</b> <a href=\"https://rapidrefresh.noaa.gov/hrrr\">NOAA HRRR</a></p>"
 }
