@@ -9,6 +9,10 @@ on:
     # queries, GLSEA HEAD Last-Modified; only NIC NAIS (no validator
     # headers) needs its ~3 MB download to hash-compare).
     - cron: "15 * * * *"
+    # Cloud cover rides GOES-East 5-minute scans, so its job ALSO runs on
+    # a 12-minute cadence (10-20 min live requirement); the builder still
+    # skips cheaply when no new scan has posted.
+    - cron: "*/12 * * * *"
     # - 4x daily: game-fish gradients only (GLSEA daily + date-driven
     #   seasonal/diel terms).
     - cron: "35 2,8,14,20 * * *"
@@ -462,7 +466,7 @@ jobs:
           if-no-files-found: warn
 
   cloud_cover:
-    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'cloud_cover' }}
+    if: ${{ github.event.schedule == '15 * * * *' || github.event.schedule == '*/12 * * * *' || inputs.product == 'all' || inputs.product == 'cloud_cover' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read

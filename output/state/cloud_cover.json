@@ -1,6 +1,6 @@
 {
-  "model_cycle": "hrrr.20260926 t12z",
-  "source_id": "hrrr-hrrr.20260926-t12z-tcdc-anl",
+  "model_cycle": "GOES-19 scan 2026-09-26 13:36Z",
+  "source_id": "goes19-acmc-20260926-1336",
   "render_version": 2,
-  "processing_time_utc": "2026-09-26 09:23 AM EDT"
+  "processing_time_utc": "2026-09-26 09:43 AM EDT"
 }

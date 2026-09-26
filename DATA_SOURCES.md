@@ -417,20 +417,31 @@ Per-product independence: a failed download/validation aborts **only that
 product's** update (exit status recorded, previous `site/` assets untouched);
 the other products and the Pages publish proceed normally.
 
-## 14. Cloud cover — NOAA/NCEP HRRR TCDC (hourly analysis)
+## 14. Cloud cover — GOES-East ABI Clear Sky Mask (live observation)
 
-- **Product:** HRRR CONUS `wrfsfcf00` analysis via NOMADS
-  (`.../hrrr/prod/hrrr.YYYYMMDD/conus/hrrr.tCCz.wrfsfcf00.grib2`, `.idx`
-  byte-range for `TCDC` / `entire atmosphere`), decoded with ecCodes.
-- **Variable:** `TCDC` entire atmosphere, analysis step, filed **%**
-  used as-is (no conversion). Valid range [0, 100].
-- **Coverage:** full basin rectangle (no shoreline cut); clear sky
-  (<1 %) and missing data fully transparent so the map shows through.
-- **Scale:** FIXED absolute 0–100 % spectrum dark-blue → blue → cyan →
-  green → yellow → orange → red → magenta → violet → dark-purple
-  (labels 0 clear / 10 / 25 / 50 / 75 / 100 overcast).
-- **Update:** HRRR hourly cycles (15-min subhourly steps feed the hourly
-  view). Freshness: **"LIVE / CURRENT MODEL (hourly HRRR cycle, 15-min steps)"**.
+- **Product:** NOAA GOES-East (GOES-19) ABI L2 Clear Sky Mask, CONUS
+  2 km, new scan every 5 minutes, public S3
+  (`s3://noaa-goes19/ABI-L2-ACMC/YYYY/DDD/HH/`, anonymous HTTPS, no
+  credentials). Replaced HRRR TCDC in v2: the model's cloud analysis
+  carries rectangular assimilation footprints that read as unphysical
+  blocks — the satellite retrieval has none.
+- **Variables:** `BCM` binary mask (0 = clear_or_probably_clear,
+  1 = cloudy_or_probably_cloudy) gated by `DQF==0` (good quality);
+  `ACM` 4-level mask retained for reference. Fixed-grid → WGS84 via
+  pyproj with the file's own subpoint/height (hand-rolled geostationary
+  math was cross-checked against it and dropped after a 3° latitude
+  error was found in the hand derivation).
+- **Rendering:** % = observed fraction of cloudy 2 km pixels per canvas
+  neighborhood (true area density, no invented precision); oblique view
+  stretches ground spacing, so splat radius 2 closes the diamond gaps.
+  Clear (<1%) and missing stay transparent.
+- **Scale:** FIXED 0–100 % spectrum (same stops as before).
+- **Update:** 5-minute scans; workflow polls on a 12-minute cron.
+  Freshness: **"LIVE / CURRENT OBSERVATION (GOES-East 5-min scans)"**.
+- **Retired (v1):** HRRR `TCDC` entire-atmosphere analysis. It verified
+  against METARs but its analysis increments carry rectangular
+  assimilation footprints (confirmed present in the raw GRIB2), which
+  read as unphysical blocks — replaced by the satellite retrieval.
 
 ## 15. Surface pressure — NOAA/NCEP HRRR MSLMA (hourly analysis)
 
