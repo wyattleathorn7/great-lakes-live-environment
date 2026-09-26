@@ -4,11 +4,11 @@
   "freshness": "LATEST AVAILABLE (daily composite)",
   "noaa_source": "NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQkdparDaily), legacy NRT id as fallback",
   "product_name": "NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQkdparDaily), legacy NRT id as fallback",
-  "variable": "kd_par (Diffuse Attenuation Coefficient for PAR; NOAA MECB algorithm; product status Experimental); mosaic 2026-09-15..2026-09-09",
+  "variable": "kd_par (Diffuse Attenuation Coefficient for PAR; NOAA MECB algorithm; product status Experimental); mosaic 2026-09-16..2026-09-10",
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNSQkdparDaily.html",
-  "data_time_utc": "2026-09-15 08:00 AM EDT (newest of 7-day mosaic)",
+  "data_time_utc": "2026-09-16 08:00 AM EDT (newest of 7-day mosaic)",
   "source_last_modified_utc": "n/a (ERDDAP)",
-  "processing_time_utc": "2026-09-25 07:28 AM EDT",
+  "processing_time_utc": "2026-09-25 08:31 PM EDT",
   "units": "m^-1 (display); source m^-1",
   "spatial_resolution_source": "~4 km VIIRS L3, bilinear-resampled to canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -34,23 +34,23 @@
     "low": 0.022000002,
     "high": 6.3350005,
     "percentiles": {
-      "p5": 0.11894519858156,
-      "p25": 0.1429455801844597,
-      "p50": 0.1636909172576742,
-      "p75": 0.20012255012989044,
-      "p95": 0.3562388430405173,
-      "p99": 1.1665000915527344
+      "p5": 0.11937156027371028,
+      "p25": 0.14444494220921228,
+      "p50": 0.16609397635933676,
+      "p75": 0.20008739829063416,
+      "p95": 0.3593635173909225,
+      "p99": 1.1829721530057473
     },
-    "n_obs": 304176,
+    "n_obs": 324176,
     "extends": []
   },
   "stats": {
-    "valid_cells": 17230,
-    "current_min": 0.059735498817929875,
-    "current_max": 6.233502978723658
+    "valid_cells": 16766,
+    "current_min": 0.0650856170212342,
+    "current_max": 5.734659300237397
   },
   "dataset": "nesdisVHNSQkdparDaily",
-  "source_id": "nesdisVHNSQkdparDaily-v3-2026-09-15",
-  "source_version": "nesdisVHNSQkdparDaily-v3-2026-09-15",
-  "folder_html": "<h2>LIVE WATER CLARITY / TURBIDITY</h2><p>Diffuse attenuation coefficient for photosynthetically available radiation (KdPAR): how quickly sunlight fades with depth. Larger values mean more turbid water; smaller values mean clearer water. Source values are never altered for color convenience.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_clarity/legend.png?v=nesdisVHNSQkdparDaily-v3-2026-09-15\" width=\"600\" alt=\"key\"></p><p>Diffuse attenuation coefficient for PAR (m^-1), FIXED log-spaced scale <b>LOWEST 0.02</b> clearest (dark blue) \u2192 0.1 \u2192 0.3 \u2192 <b>1.0</b> turbid (red) \u2192 <b>HIGHEST+ 5+</b> most turbid (violet). Larger values always mean murkier water; source values are never altered.</p><p><b>Exact variable:</b> kd_par (Diffuse Attenuation Coefficient for PAR; NOAA MECB algorithm; product status Experimental)<br/><b>Units:</b> m^-1<br/><b>Source:</b> NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQkdparDaily), legacy NRT id as fallback<br/><b>Update:</b> daily composites<br/><b>Data time:</b> 2026-09-15 08:00 AM EDT (mosaic 2026-09-15..2026-09-09)<br/><b>Processed:</b> 2026-09-25 07:28 AM EDT<br/><b>Why turbid water turns red/purple:</b> Rare very-turbid water (storm resuspension, river plumes, intense blooms) compresses into red-violet/deep-purple; ordinary clear conditions own most of the color resolution.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNSQkdparDaily.html\">ERDDAP dataset</a></p>"
+  "source_id": "nesdisVHNSQkdparDaily-v3-2026-09-16",
+  "source_version": "nesdisVHNSQkdparDaily-v3-2026-09-16",
+  "folder_html": "<h2>LIVE WATER CLARITY / TURBIDITY</h2><p>Diffuse attenuation coefficient for photosynthetically available radiation (KdPAR): how quickly sunlight fades with depth. Larger values mean more turbid water; smaller values mean clearer water. Source values are never altered for color convenience.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_clarity/legend.png?v=nesdisVHNSQkdparDaily-v3-2026-09-16\" width=\"600\" alt=\"key\"></p><p>Diffuse attenuation coefficient for PAR (m^-1), FIXED log-spaced scale <b>LOWEST 0.02</b> clearest (dark blue) \u2192 0.1 \u2192 0.3 \u2192 <b>1.0</b> turbid (red) \u2192 <b>HIGHEST+ 5+</b> most turbid (violet). Larger values always mean murkier water; source values are never altered.</p><p><b>Exact variable:</b> kd_par (Diffuse Attenuation Coefficient for PAR; NOAA MECB algorithm; product status Experimental)<br/><b>Units:</b> m^-1<br/><b>Source:</b> NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Science Quality, Global 4 km, Daily (ERDDAP nesdisVHNSQkdparDaily), legacy NRT id as fallback<br/><b>Update:</b> daily composites<br/><b>Data time:</b> 2026-09-16 08:00 AM EDT (mosaic 2026-09-16..2026-09-10)<br/><b>Processed:</b> 2026-09-25 08:31 PM EDT<br/><b>Why turbid water turns red/purple:</b> Rare very-turbid water (storm resuspension, river plumes, intense blooms) compresses into red-violet/deep-purple; ordinary clear conditions own most of the color resolution.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNSQkdparDaily.html\">ERDDAP dataset</a></p>"
 }
