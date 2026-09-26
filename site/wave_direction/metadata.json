@@ -5,10 +5,10 @@
   "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 PERPW peak period + WVDIR direction, surface analysis",
   "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 PERPW peak period + WVDIR direction, surface analysis",
   "variable": "PERPW peak (primary) wave period, surface analysis step (filed seconds as-is, no conversion); WVDIR surface direction drives the travel arrows only",
-  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260926/glwu.grlc_2p5km.t13z.grib2",
-  "data_time_utc": "2026-09-26 09:00 AM EDT",
+  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260926/glwu.grlc_2p5km.t19z.grib2",
+  "data_time_utc": "2026-09-26 03:00 PM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-26 10:24 AM EDT",
+  "processing_time_utc": "2026-09-26 04:23 PM EDT",
   "units": "s (display = source s)",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -29,74 +29,70 @@
     640,
     230
   ],
-  "legend_scale_html": "Peak wave period (seconds between crests, as filed by GLWU PERPW): <b>LOWEST 0s</b> dark-blue flat &rarr; <b>2</b> blue &rarr; <b>3</b> cyan &rarr; <b>4</b> green &rarr; <b>5</b> yellow &rarr; <b>6</b> orange &rarr; <b>7.5</b> red &rarr; <b>9</b> magenta &rarr; <b>10.5</b> violet &rarr; <b>HIGHEST+ 12s</b> dark-purple long swell. Same seconds always show the same color; values above 12s stay dark-purple. Arrows point where the waves are traveling (WVDIR filed direction + 180&deg;). Lake max now: <b>6.6s</b>, mean <b>2.8s</b>, mean travel <b>64&deg; (NE)</b>.",
-  "model_cycle": "20260926 t13z",
-  "source_id": "glwu-20260926-1300Z-wvperiod",
-  "source_version": "glwu-20260926-1300Z-wvperiod",
+  "legend_scale_html": "Peak wave period (seconds between crests, as filed by GLWU PERPW): <b>LOWEST 0s</b> dark-blue flat &rarr; <b>2</b> blue &rarr; <b>3</b> cyan &rarr; <b>4</b> green &rarr; <b>5</b> yellow &rarr; <b>6</b> orange &rarr; <b>7.5</b> red &rarr; <b>9</b> magenta &rarr; <b>10.5</b> violet &rarr; <b>HIGHEST+ 12s</b> dark-purple long swell. Same seconds always show the same color; values above 12s stay dark-purple. Arrows point where the waves are traveling (WVDIR filed direction + 180&deg;). Lake max now: <b>5.7s</b>, mean <b>2.6s</b>, mean travel <b>66&deg; (NE)</b>.",
+  "model_cycle": "20260926 t19z",
+  "source_id": "glwu-20260926-1900Z-wvperiod",
+  "source_version": "glwu-20260926-1900Z-wvperiod",
   "grib_fields": {
     "period": "perpw",
     "direction": "wvdir"
   },
   "buoy_qc": {
     "45001": {
-      "time_utc": "2026-09-26 14:00 UTC",
-      "WDIR_deg": 100.0,
+      "time_utc": "2026-09-26 19:50 UTC",
+      "WDIR_deg": 120.0,
       "WSPD_ms": 4.0,
-      "WVHT_m": null,
+      "WVHT_m": 0.1,
       "DPD_s": null,
-      "APD_s": null,
-      "WTMP_C": 13.2,
-      "ATMP_C": 13.7,
+      "APD_s": 2.3,
+      "WTMP_C": 13.4,
+      "ATMP_C": 13.8,
       "note": "no DPD obs"
     },
     "45002": {
-      "time_utc": "2026-09-26 14:00 UTC",
-      "WDIR_deg": 120.0,
-      "WSPD_ms": 2.0,
-      "WVHT_m": null,
+      "time_utc": "2026-09-26 19:50 UTC",
+      "WDIR_deg": 60.0,
+      "WSPD_ms": 1.0,
+      "WVHT_m": 0.1,
       "DPD_s": null,
-      "APD_s": null,
-      "WTMP_C": 18.0,
-      "ATMP_C": 17.6,
+      "APD_s": 2.6,
+      "WTMP_C": 19.7,
+      "ATMP_C": 17.9,
       "note": "no DPD obs"
     },
     "45132": {
       "obs_s": 3.0,
-      "grid_s": 3.0233333333333334,
-      "absdiff_s": 0.02,
+      "grid_s": 2.22,
+      "absdiff_s": 0.78,
       "verdict": "OK",
-      "obs_time": "2026-09-26 14:00 UTC"
+      "obs_time": "2026-09-26 20:00 UTC"
     },
     "45012": {
-      "time_utc": "2026-09-26 14:00 UTC",
-      "WDIR_deg": 30.0,
-      "WSPD_ms": 7.0,
-      "WVHT_m": null,
-      "DPD_s": null,
-      "APD_s": null,
-      "WTMP_C": 18.6,
-      "ATMP_C": 15.6,
-      "note": "no DPD obs"
+      "obs_s": 4.0,
+      "grid_s": 3.72,
+      "absdiff_s": 0.28,
+      "verdict": "OK",
+      "obs_time": "2026-09-26 19:50 UTC"
     },
     "45005": {
-      "time_utc": "2026-09-26 14:00 UTC",
-      "WDIR_deg": 360.0,
-      "WSPD_ms": 6.0,
+      "time_utc": "2026-09-26 19:50 UTC",
+      "WDIR_deg": 30.0,
+      "WSPD_ms": 4.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
       "WTMP_C": null,
-      "ATMP_C": 16.6,
+      "ATMP_C": 18.5,
       "note": "no DPD obs"
     }
   },
   "stats": {
-    "valid_cells": 331980,
-    "max_period_s": 6.57,
-    "mean_period_s": 2.772,
-    "mean_direction_deg": 64.4,
+    "valid_cells": 332063,
+    "max_period_s": 5.74,
+    "mean_period_s": 2.604,
+    "mean_direction_deg": 66.1,
     "mean_compass": "NE",
     "arrows_drawn": 178
   },
-  "folder_html": "<h2>LIVE WAVE PERIOD & DIRECTION</h2><p>How far apart the wave crests are right now (peak period, seconds) with arrows showing which way the waves travel. Long-interval swell (high seconds, purple) carries far more energy than short chop at the same height.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/wave_direction/legend.png?v=glwu-20260926-1300Z-wvperiod\" width=\"600\" alt=\"key\"></p><p>Peak wave period (seconds between crests, as filed by GLWU PERPW): <b>LOWEST 0s</b> dark-blue flat &rarr; <b>2</b> blue &rarr; <b>3</b> cyan &rarr; <b>4</b> green &rarr; <b>5</b> yellow &rarr; <b>6</b> orange &rarr; <b>7.5</b> red &rarr; <b>9</b> magenta &rarr; <b>10.5</b> violet &rarr; <b>HIGHEST+ 12s</b> dark-purple long swell. Same seconds always show the same color; values above 12s stay dark-purple. Arrows point where the waves are traveling (WVDIR filed direction + 180&deg;). Lake max now: <b>6.6s</b>, mean <b>2.8s</b>, mean travel <b>64&deg; (NE)</b>.</p><p><b>Units:</b> seconds between crests (arrows show travel direction)<br/><b>Source:</b> NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 PERPW peak period + WVDIR direction, surface analysis<br/><b>Update:</b> GLWU 6-hourly cycles (analysis step)<br/><b>Data time:</b> 2026-09-26 09:00 AM EDT<br/><b>Source version:</b> glwu-20260926-1300Z-wvperiod<br/><b>Processed:</b> 2026-09-26 10:24 AM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl\">NOMADS GLWU</a></p>"
+  "folder_html": "<h2>LIVE WAVE PERIOD & DIRECTION</h2><p>How far apart the wave crests are right now (peak period, seconds) with arrows showing which way the waves travel. Long-interval swell (high seconds, purple) carries far more energy than short chop at the same height.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/wave_direction/legend.png?v=glwu-20260926-1900Z-wvperiod\" width=\"600\" alt=\"key\"></p><p>Peak wave period (seconds between crests, as filed by GLWU PERPW): <b>LOWEST 0s</b> dark-blue flat &rarr; <b>2</b> blue &rarr; <b>3</b> cyan &rarr; <b>4</b> green &rarr; <b>5</b> yellow &rarr; <b>6</b> orange &rarr; <b>7.5</b> red &rarr; <b>9</b> magenta &rarr; <b>10.5</b> violet &rarr; <b>HIGHEST+ 12s</b> dark-purple long swell. Same seconds always show the same color; values above 12s stay dark-purple. Arrows point where the waves are traveling (WVDIR filed direction + 180&deg;). Lake max now: <b>5.7s</b>, mean <b>2.6s</b>, mean travel <b>66&deg; (NE)</b>.</p><p><b>Units:</b> seconds between crests (arrows show travel direction)<br/><b>Source:</b> NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 PERPW peak period + WVDIR direction, surface analysis<br/><b>Update:</b> GLWU 6-hourly cycles (analysis step)<br/><b>Data time:</b> 2026-09-26 03:00 PM EDT<br/><b>Source version:</b> glwu-20260926-1900Z-wvperiod<br/><b>Processed:</b> 2026-09-26 04:23 PM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl\">NOMADS GLWU</a></p>"
 }
