@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles",
   "variable": "TMP 2 m above ground, analysis step",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-09-26 01:00 PM EDT",
+  "data_time_utc": "2026-09-26 02:00 PM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-09-26 02:27 PM EDT",
+  "processing_time_utc": "2026-09-26 03:22 PM EDT",
   "units": "degF (display); source K",
   "spatial_resolution_source": "~3 km HRRR Lambert grid (1799x1059)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,21 +30,21 @@
     230
   ],
   "legend_scale_html": "2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 27.11</b> / <b>HIGHEST+ 77.24</b> marked on the scale. Freezing has no color break.",
-  "model_cycle": "hrrr.20260926 t17z",
-  "source_id": "hrrr-hrrr.20260926-t17z",
-  "source_version": "hrrr-hrrr.20260926-t17z",
+  "model_cycle": "hrrr.20260926 t18z",
+  "source_id": "hrrr-hrrr.20260926-t18z",
+  "source_version": "hrrr-hrrr.20260926-t18z",
   "historical": {
     "low": 27.105360107421916,
     "high": 77.2385571289063,
     "percentiles": {
-      "p5": 53.61872100830078,
-      "p25": 59.62769317626953,
-      "p50": 63.349971771240234,
-      "p75": 66.06027954101563,
-      "p95": 69.22996704101566,
-      "p99": 71.2354670410156
+      "p5": 55.45991943359379,
+      "p25": 60.98747253417969,
+      "p50": 65.24741943359379,
+      "p75": 67.8349194335938,
+      "p95": 70.81616943359379,
+      "p99": 72.6161694335938
     },
-    "n_obs": 2085846,
+    "n_obs": 2105846,
     "extends": [
       {
         "at": "2026-09-22 04:04 UTC",
@@ -98,45 +98,49 @@
   },
   "stats": {
     "valid_cells": 2114386,
-    "current_min": 46.897779541015666,
-    "current_max": 76.93527954101566
+    "current_min": 47.697419433593794,
+    "current_max": 77.9599194335938
   },
   "buoy_qc": {
     "45001": {
-      "obs_F": 56.84,
-      "grid_F": 57.47277954101567,
-      "absdiff_F": 0.63,
-      "verdict": "OK",
-      "obs_time": "2026-09-26 17:50 UTC"
+      "time_utc": "2026-09-26 18:40 UTC",
+      "WDIR_deg": null,
+      "WSPD_ms": null,
+      "WVHT_m": 0.2,
+      "DPD_s": null,
+      "APD_s": 2.4,
+      "WTMP_C": null,
+      "ATMP_C": null,
+      "note": "no ATMP obs"
     },
     "45002": {
-      "obs_F": 62.96,
-      "grid_F": 62.647779541015666,
-      "absdiff_F": 0.31,
+      "obs_F": 65.12,
+      "grid_F": 62.26616943359379,
+      "absdiff_F": 2.85,
       "verdict": "OK",
-      "obs_time": "2026-09-26 17:50 UTC"
+      "obs_time": "2026-09-26 18:50 UTC"
     },
     "45132": {
-      "obs_F": 66.02,
-      "grid_F": 64.33527954101567,
-      "absdiff_F": 1.68,
+      "obs_F": 66.74,
+      "grid_F": 65.92241943359379,
+      "absdiff_F": 0.82,
       "verdict": "OK",
-      "obs_time": "2026-09-26 18:00 UTC"
+      "obs_time": "2026-09-26 19:00 UTC"
     },
     "45012": {
-      "obs_F": 65.48,
-      "grid_F": 63.772779541015666,
-      "absdiff_F": 1.71,
+      "obs_F": 66.92,
+      "grid_F": 64.0099194335938,
+      "absdiff_F": 2.91,
       "verdict": "OK",
-      "obs_time": "2026-09-26 17:50 UTC"
+      "obs_time": "2026-09-26 18:50 UTC"
     },
     "45005": {
-      "obs_F": 64.22,
-      "grid_F": 64.78527954101567,
-      "absdiff_F": 0.57,
+      "obs_F": 64.76,
+      "grid_F": 63.89741943359379,
+      "absdiff_F": 0.86,
       "verdict": "OK",
-      "obs_time": "2026-09-26 17:50 UTC"
+      "obs_time": "2026-09-26 18:50 UTC"
     }
   },
-  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=hrrr-hrrr.20260926-t17z\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 27.11</b> / <b>HIGHEST+ 77.24</b> marked on the scale. Freezing has no color break.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-26 01:00 PM EDT<br/><b>Processed:</b> 2026-09-26 02:27 PM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
+  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=hrrr-hrrr.20260926-t18z\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), fixed Apple-style absolute spectrum (-40..130 F): purple extreme cold \u2192 blue \u2192 cyan \u2192 green \u2192 yellow \u2192 orange \u2192 red extreme heat. Same temperature always shows the same color. Record <b>LOWEST 27.11</b> / <b>HIGHEST+ 77.24</b> marked on the scale. Freezing has no color break.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-09-26 02:00 PM EDT<br/><b>Processed:</b> 2026-09-26 03:22 PM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
 }
