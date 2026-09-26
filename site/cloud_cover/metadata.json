@@ -6,9 +6,9 @@
   "product_name": "NOAA GOES-East (GOES-19) ABI L2 Clear Sky Mask, CONUS 2 km (5-minute scans)",
   "variable": "BCM binary mask (0 = clear_or_probably_clear, 1 = cloudy_or_probably_cloudy) gated by DQF==0; % = observed cloudy fraction per canvas neighborhood",
   "source_url": "https://www.goes-r.gov/products/baseline-clear-sky-mask",
-  "data_time_utc": "2026-09-26 14:16 UTC",
+  "data_time_utc": "2026-09-26 15:16 UTC",
   "source_last_modified_utc": "n/a (S3)",
-  "processing_time_utc": "2026-09-26 10:24 AM EDT",
+  "processing_time_utc": "2026-09-26 11:24 AM EDT",
   "units": "% (display = observed % cloudy)",
   "spatial_resolution_source": "2 km GOES-19 ABI fixed grid (1500x2500 CONUS), binary mask mean-binned to canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,16 +30,16 @@
     230
   ],
   "legend_scale_html": "Cloud cover (%, OBSERVED neighborhood fraction from GOES-East: share of 2 km satellite pixels flagged cloudy around each point): <b>LOWEST 0 clear</b> transparent &rarr; thin cloud <b>dark-blue/blue/cyan</b> &rarr; <b>40 green</b> &rarr; <b>55 yellow</b> &rarr; <b>70 orange</b> &rarr; <b>82 red</b> &rarr; <b>90 magenta</b> &rarr; <b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same color; clear areas stay see-through. Satellite retrieval, not a weather model: no analysis blocks.",
-  "model_cycle": "GOES-19 scan 2026-09-26 14:16Z",
-  "source_id": "goes19-acmc-20260926-1416",
-  "source_version": "goes19-acmc-20260926-1416",
-  "goes_file": "OR_ABI-L2-ACMC-M6_G19_s20262691416167_e20262691418541_c20262691419298.nc",
+  "model_cycle": "GOES-19 scan 2026-09-26 15:16Z",
+  "source_id": "goes19-acmc-20260926-1516",
+  "source_version": "goes19-acmc-20260926-1516",
+  "goes_file": "OR_ABI-L2-ACMC-M6_G19_s20262691516167_e20262691518541_c20262691519284.nc",
   "subpoint_lon": -75.0,
   "stats": {
     "valid_cells": 2113875,
     "current_max_pct": 100.0,
-    "current_mean_pct": 53.1,
-    "opaque_pixels": 1157842
+    "current_mean_pct": 53.2,
+    "opaque_pixels": 1158677
   },
-  "folder_html": "<h2>LIVE CLOUD COVER</h2><p>Observed cloud cover right now from the GOES-East weather satellite: the share of 2 km satellite pixels flagged cloudy around each point. Clear areas are transparent so the map underneath shows through. A direct satellite retrieval \u2014 not a weather-model estimate, so no analysis blocks.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/cloud_cover/legend.png?v=goes19-acmc-20260926-1416\" width=\"600\" alt=\"key\"></p><p>Cloud cover (%, OBSERVED neighborhood fraction from GOES-East: share of 2 km satellite pixels flagged cloudy around each point): <b>LOWEST 0 clear</b> transparent &rarr; thin cloud <b>dark-blue/blue/cyan</b> &rarr; <b>40 green</b> &rarr; <b>55 yellow</b> &rarr; <b>70 orange</b> &rarr; <b>82 red</b> &rarr; <b>90 magenta</b> &rarr; <b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same color; clear areas stay see-through. Satellite retrieval, not a weather model: no analysis blocks.</p><p><b>Variable:</b> BCM binary mask (0 = clear_or_probably_clear, 1 = cloudy_or_probably_cloudy) gated by DQF==0; % = observed cloudy fraction per canvas neighborhood<br/><b>Units:</b> % cloud cover (observed)<br/><b>Source:</b> NOAA GOES-East (GOES-19) ABI L2 Clear Sky Mask, CONUS 2 km (5-minute scans)<br/><b>Update:</b> GOES-East 5-minute scans<br/><b>Data time:</b> 2026-09-26 14:16 UTC<br/><b>Source version:</b> goes19-acmc-20260926-1416<br/><b>Processed:</b> 2026-09-26 10:24 AM EDT<br/><b>Provenance:</b> <a href=\"https://www.goes-r.gov/products/baseline-clear-sky-mask\">NOAA GOES</a></p>"
+  "folder_html": "<h2>LIVE CLOUD COVER</h2><p>Observed cloud cover right now from the GOES-East weather satellite: the share of 2 km satellite pixels flagged cloudy around each point. Clear areas are transparent so the map underneath shows through. A direct satellite retrieval \u2014 not a weather-model estimate, so no analysis blocks.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/cloud_cover/legend.png?v=goes19-acmc-20260926-1516\" width=\"600\" alt=\"key\"></p><p>Cloud cover (%, OBSERVED neighborhood fraction from GOES-East: share of 2 km satellite pixels flagged cloudy around each point): <b>LOWEST 0 clear</b> transparent &rarr; thin cloud <b>dark-blue/blue/cyan</b> &rarr; <b>40 green</b> &rarr; <b>55 yellow</b> &rarr; <b>70 orange</b> &rarr; <b>82 red</b> &rarr; <b>90 magenta</b> &rarr; <b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same color; clear areas stay see-through. Satellite retrieval, not a weather model: no analysis blocks.</p><p><b>Variable:</b> BCM binary mask (0 = clear_or_probably_clear, 1 = cloudy_or_probably_cloudy) gated by DQF==0; % = observed cloudy fraction per canvas neighborhood<br/><b>Units:</b> % cloud cover (observed)<br/><b>Source:</b> NOAA GOES-East (GOES-19) ABI L2 Clear Sky Mask, CONUS 2 km (5-minute scans)<br/><b>Update:</b> GOES-East 5-minute scans<br/><b>Data time:</b> 2026-09-26 15:16 UTC<br/><b>Source version:</b> goes19-acmc-20260926-1516<br/><b>Processed:</b> 2026-09-26 11:24 AM EDT<br/><b>Provenance:</b> <a href=\"https://www.goes-r.gov/products/baseline-clear-sky-mask\">NOAA GOES</a></p>"
 }
