@@ -5,10 +5,10 @@
   "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 UGRD/VGRD surface analysis",
   "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 UGRD/VGRD surface analysis",
   "variable": "UGRD/VGRD surface wind components, analysis step; speed = sqrt(U^2+V^2), visualized as Beaufort Force 0-12",
-  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260926/glwu.grlc_2p5km.t07z.grib2",
-  "data_time_utc": "2026-09-26 03:00 AM EDT",
-  "source_last_modified_utc": "Sat, 26 Sep 2026 07:26:54 GMT",
-  "processing_time_utc": "2026-09-26 04:26 AM EDT",
+  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260926/glwu.grlc_2p5km.t13z.grib2",
+  "data_time_utc": "2026-09-26 09:00 AM EDT",
+  "source_last_modified_utc": "Sat, 26 Sep 2026 13:27:03 GMT",
+  "processing_time_utc": "2026-09-26 10:24 AM EDT",
   "units": "kt + Beaufort Force 0-12 (display); source m/s",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -29,10 +29,10 @@
     640,
     464
   ],
-  "legend_scale_html": "WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only):<br/><b>F0</b> \u2014 Calm (0\u20130.99 kt)<br/><b>F1</b> \u2014 Light air (1\u20133 kt)<br/><b>F2</b> \u2014 Light breeze (4\u20136 kt)<br/><b>F3</b> \u2014 Gentle breeze (7\u201310 kt)<br/><b>F4</b> \u2014 Moderate breeze (11\u201316 kt)<br/><b>F5</b> \u2014 Fresh breeze (17\u201321 kt)<br/><b>F6</b> \u2014 Strong breeze (22\u201327 kt)<br/><b>F7</b> \u2014 High wind (28\u201333 kt)<br/><b>F8</b> \u2014 Gale (34\u201340 kt)<br/><b>F9</b> \u2014 Strong gale (41\u201347 kt)<br/><b>F10</b> \u2014 Storm (48\u201355 kt)<br/><b>F11</b> \u2014 Violent storm (56\u201363 kt)<br/><b>F12</b> \u2014 Hurricane-force (\u226564 kt)<br/>Maximum this run: <b>19 kt</b> (Beaufort 5). Arrows point where the air moves.",
-  "model_cycle": "20260926 t07z",
-  "source_id": "glwu-20260926-0700Z",
-  "source_version": "glwu-20260926-0700Z",
+  "legend_scale_html": "WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only):<br/><b>F0</b> \u2014 Calm (0\u20130.99 kt)<br/><b>F1</b> \u2014 Light air (1\u20133 kt)<br/><b>F2</b> \u2014 Light breeze (4\u20136 kt)<br/><b>F3</b> \u2014 Gentle breeze (7\u201310 kt)<br/><b>F4</b> \u2014 Moderate breeze (11\u201316 kt)<br/><b>F5</b> \u2014 Fresh breeze (17\u201321 kt)<br/><b>F6</b> \u2014 Strong breeze (22\u201327 kt)<br/><b>F7</b> \u2014 High wind (28\u201333 kt)<br/><b>F8</b> \u2014 Gale (34\u201340 kt)<br/><b>F9</b> \u2014 Strong gale (41\u201347 kt)<br/><b>F10</b> \u2014 Storm (48\u201355 kt)<br/><b>F11</b> \u2014 Violent storm (56\u201363 kt)<br/><b>F12</b> \u2014 Hurricane-force (\u226564 kt)<br/>Maximum this run: <b>21 kt</b> (Beaufort 5). Arrows point where the air moves.",
+  "model_cycle": "20260926 t13z",
+  "source_id": "glwu-20260926-1300Z",
+  "source_version": "glwu-20260926-1300Z",
   "beaufort_table": [
     {
       "force": 0,
@@ -116,45 +116,45 @@
   "methodology": "Wind speed = sqrt(U^2+V^2) from GLWU UGRD/VGRD surface analysis (m/s, direction of motion), x1.94384 -> knots, mapped to WMO Beaufort Force 0-12 with unmodified thresholds. Arrows point along the (U,V) movement vector (no FROM->TOWARD reversal needed for GRIB components); calm (<0.5 m/s) gets no arrow. Overlay alpha cut by the shared GSHHG shoreline mask.",
   "stats": {
     "valid_cells": 44863,
-    "max_kt": 19.1,
+    "max_kt": 21.0,
     "max_beaufort": 5,
-    "arrows_drawn": 227
+    "arrows_drawn": 234
   },
   "buoy_qc": {
     "45001": {
+      "obs_kt": 7.8,
+      "grid_kt_approx": 8.5,
+      "absdiff_kt": 0.7,
+      "verdict": "OK",
+      "obs_time": "2026-09-26 14:00 UTC"
+    },
+    "45002": {
       "obs_kt": 3.9,
       "grid_kt_approx": 5.0,
       "absdiff_kt": 1.1,
       "verdict": "OK",
-      "obs_time": "2026-09-26 07:50 UTC"
-    },
-    "45002": {
-      "obs_kt": 3.9,
-      "grid_kt_approx": 2.0,
-      "absdiff_kt": 1.9,
-      "verdict": "OK",
-      "obs_time": "2026-09-26 07:50 UTC"
+      "obs_time": "2026-09-26 14:00 UTC"
     },
     "45132": {
-      "obs_kt": 15.6,
+      "obs_kt": 11.7,
       "grid_kt_approx": 13.5,
-      "absdiff_kt": 2.1,
+      "absdiff_kt": 1.8,
       "verdict": "OK",
-      "obs_time": "2026-09-26 08:00 UTC"
+      "obs_time": "2026-09-26 14:00 UTC"
     },
     "45012": {
-      "obs_kt": 17.5,
+      "obs_kt": 13.6,
       "grid_kt_approx": 13.5,
-      "absdiff_kt": 4.0,
+      "absdiff_kt": 0.1,
       "verdict": "OK",
-      "obs_time": "2026-09-26 07:50 UTC"
+      "obs_time": "2026-09-26 13:50 UTC"
     },
     "45005": {
-      "obs_kt": 9.7,
+      "obs_kt": 11.7,
       "grid_kt_approx": 13.5,
-      "absdiff_kt": 3.8,
+      "absdiff_kt": 1.8,
       "verdict": "OK",
-      "obs_time": "2026-09-26 07:50 UTC"
+      "obs_time": "2026-09-26 14:00 UTC"
     }
   }
 }
