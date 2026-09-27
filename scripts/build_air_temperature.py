@@ -1,11 +1,9 @@
 """Pipeline K — LIVE AIR TEMPERATURE (independent).
 
 NOAA/NCEP HRRR 3 km 2 m temperature analysis (hourly cycles; Kelvin ->
-Fahrenheit; FIXED banded 5 F-step key, -60..150 F, after the reference
-gradient: blue-white extreme cold -> gray-blue subfreezing -> royal-blue
-freezing wall -> turquoise/blue frigid -> lime/teal transition ->
-mellow yellow -> orange/gold warming -> scorching pink/red, BRIGHTENED
-throughout so no band renders dark) -> validate -> FULL
+Fahrenheit; FIXED key, -60..150 F, after the reference gradient zones,
+BRIGHTENED throughout so no color renders dark; the MAP paints a steady
+continuous gradient passing exactly through every key color) -> validate -> FULL
 BASIN RECTANGLE (lon -93..-73.5, lat 40.5..49.5: land and water both
 paint; only missing data is transparent) -> transparent PNG -> key image
 + metadata -> Folder KML.
@@ -106,21 +104,32 @@ TEMP_BANDS = [
 ]
 
 # Step-function stops: identical colors on both edges of each band, so the
-# renderer paints FLAT 5-degree bands (no blending between bands). Built
+# KEY IMAGE paints flat 5-degree bars (no blending between bars). Built
 # band by band (NOT globally sorted) so each shared edge keeps the order
 # (hi, old-color), (lo, new-color) with a zero-width transition segment.
 TEMP_STOPS = []
 for _lo, _hi, _rgb in TEMP_BANDS:
     TEMP_STOPS += [(_lo, _rgb), (_hi, _rgb)]
 
+# Smooth raster stops: one anchor at each band CENTER in its band color, so
+# the MAP paints a STEADY continuous gradient that passes exactly through
+# every key color (band centers match the key pixel-for-pixel; only the
+# 5-degree spans across boundaries blend). Same key colors, same order,
+# strictly increasing values: a faithful monotonic function of source
+# temperature, like the previous continuous spectrum.
+TEMP_SMOOTH_STOPS = [((lo + hi) / 2.0, rgb) for lo, hi, rgb in TEMP_BANDS]
+
 SCALE_HTML = (
-    "2 m air temperature (degF), FIXED banded 5-degree key (-60..150 F): "
-    "<b>LOWEST -60</b> blue-white (extreme cold) &rarr; gray-blue "
-    "subfreezing &rarr; <b>royal-blue freezing wall (30-40)</b> &rarr; "
-    "frigid turquoise/blues (40-55) &rarr; transitional lime/teals "
-    "(55-70) &rarr; mellow yellows (70-85) &rarr; warming orange/golds "
-    "(85-100) &rarr; <b>HIGHEST+ 150 scorching pink/reds (100+)</b>. "
-    "Same temperature always shows the same color; every band is "
+    "2 m air temperature (degF), FIXED key (-60..150 F) with a STEADY "
+    "gradient on the map: the raster blends smoothly through blue-white "
+    "extreme cold &rarr; gray-blue subfreezing &rarr; <b>royal-blue "
+    "freezing wall (30-40)</b> &rarr; frigid turquoise/blues (40-55) "
+    "&rarr; transitional lime/teals (55-70) &rarr; mellow yellows "
+    "(70-85) &rarr; warming orange/golds (85-100) &rarr; <b>scorching "
+    "pink/reds (100+) to HIGHEST+ 150</b>, passing exactly through every "
+    "key color (key bars show the <b>LOWEST -60</b> to <b>HIGHEST+ 150</b> "
+    "band centers). "
+    "Same temperature always shows the same color; every color is "
     "brightened so nothing renders dark. Freezing (32 F) sits inside "
     "the royal-blue wall.")
 
@@ -287,7 +296,9 @@ def _build(base, datestr, cycle):
         print(f"[{PRODUCT}] cold start: seeding history from this analysis.")
     sample = vals[::max(1, vals.size // 20000)][:20000]
     rec, res = update_record(rec, res, sample)
-    stops = list(TEMP_STOPS)  # fixed brightened 5 F-step banded key
+    # Map: steady gradient through the key colors (band centers exact).
+    # Key image uses TEMP_STOPS (flat bars) and is NOT touched.
+    stops = list(TEMP_SMOOTH_STOPS)
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
     # NOTE: full basin rectangle (no shoreline cut). Only missing data
     # is transparent.
