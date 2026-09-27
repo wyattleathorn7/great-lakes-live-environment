@@ -678,10 +678,21 @@ jobs:
           path: artifacts
       - name: Merge product artifacts into site/
         run: |
+          shopt -s nullglob
+          echo "artifact dirs present:"
+          ls -la artifacts/
+          merged=0
           for a in artifacts/site-*/; do
             [ -d "$a" ] || continue
-            cp -r "$a." ./ 2>/dev/null || true
+            echo "merging: $a"
+            cp -r "$a/." ./
+            merged=$((merged+1))
           done
+          echo "merged $merged artifact dirs"
+          # Proof of application (and loud failure below if the merge
+          # silently did nothing: a quiet stale deploy is worse than a
+          # red job, so nothing here is silenced with || true).
+          git status --porcelain=v1 --untracked-files=no -- site kml output/state | head -30
           # NOTE: `head` closes the pipe after 30 lines, so plain
           # `ls | head` dies with SIGPIPE under `pipefail` once the tree
           # outgrows the pipe buffer — must not fail the publish job.
