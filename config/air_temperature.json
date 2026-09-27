@@ -20,6 +20,6 @@
     "45005"
   ],
   "buoy_qc_tolerance_f": 5.0,
-  "what": "Near-surface (2 m) air temperature from the operational HRRR analysis. Apple-style spectrum: deep blue cold through red warm, with rare extreme cold continuing into blue-violet/violet/deep-purple (continuous through freezing, no break).",
-  "why_extreme": "Record cold anchors deep purple; record heat anchors the red end; ordinary temperatures own most of the color resolution."
+  "what": "Near-surface (2 m) air temperature from the operational HRRR analysis. Banded 5-degree key (-60..150 F): blue-white extreme cold, gray-blue subfreezing, royal-blue freezing wall (30-40), frigid turquoise/blues (40-55), lime/teal transition (55-70), mellow yellows (70-85), orange/gold warming (85-100), scorching pink/reds past 100. Every band brightened so nothing renders dark.",
+  "why_extreme": "Extreme cold anchors near-white blue-white; extreme heat anchors vivid pink/red; ordinary temperatures own most of the key." 
 }

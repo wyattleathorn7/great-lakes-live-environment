@@ -1,16 +1,19 @@
 """Pipeline K — LIVE AIR TEMPERATURE (independent).
 
 NOAA/NCEP HRRR 3 km 2 m temperature analysis (hourly cycles; Kelvin ->
-Fahrenheit; fixed Apple-Weather-like absolute spectrum -40..130 F with a
-purple extreme-cold end, continuous through freezing) -> validate -> FULL
+Fahrenheit; FIXED banded 5 F-step key, -60..150 F, after the reference
+gradient: blue-white extreme cold -> gray-blue subfreezing -> royal-blue
+freezing wall -> turquoise/blue frigid -> lime/teal transition ->
+mellow yellow -> orange/gold warming -> scorching pink/red, BRIGHTENED
+throughout so no band renders dark) -> validate -> FULL
 BASIN RECTANGLE (lon -93..-73.5, lat 40.5..49.5: land and water both
 paint; only missing data is transparent) -> transparent PNG -> key image
 + metadata -> Folder KML.
 
 The color scale is FIXED (same colors for the same temperatures every
-day); the historical record still tracks LOWEST/HIGHEST+ and its ticks
-ride on the fixed axis. Exit codes: 0 updated (or skipped); 2 failure
-(previous kept); 1 unexpected error.
+day); the historical record still tracks LOWEST/HIGHEST+ and its values
+are reported in the description. Exit codes: 0 updated (or skipped);
+2 failure (previous kept); 1 unexpected error.
 """
 
 import json
@@ -31,8 +34,8 @@ from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
                                now_det_str, promote_stage,
                                read_state, save_png, source_token, stage_dir,
                                utcnow_iso, write_metadata, write_state)
-from gradient_scale import (APPLE_TEMP_STOPS, draw_scale_legend, fmt_val,
-                            load_record, record_tick_labels, render_rgba,
+from gradient_scale import (draw_scale_legend, fmt_val,
+                            load_record, render_rgba,
                             save_record, update_record)
 from hrrr import fetch_messages, latest_cycle, read_messages
 
@@ -51,6 +54,86 @@ BUOY_POS = {
     "45012": (-77.383, 43.619),
     "45005": (-82.398, 41.677),
 }
+
+# Banded 5 F-step key (-60..150 F) following the reference gradient zones,
+# BRIGHTENED so no band renders dark on the map or in the key image:
+# blue-white extreme cold -> gray-blue subfreezing -> royal-blue freezing
+# wall -> turquoise/blue frigid -> lime/teal transition -> mellow yellow ->
+# orange/gold warming -> vivid scorching pink/red (lifted maroons).
+TEMP_BANDS = [
+    (-60, -55, (232, 241, 250)),
+    (-55, -50, (220, 233, 247)),
+    (-50, -45, (207, 224, 245)),
+    (-45, -40, (194, 215, 242)),
+    (-40, -35, (180, 205, 239)),
+    (-35, -30, (166, 195, 236)),
+    (-30, -25, (152, 185, 233)),
+    (-25, -20, (138, 175, 230)),
+    (-20, -15, (124, 165, 226)),
+    (-15, -10, (110, 155, 222)),
+    (-10, -5, (96, 145, 218)),
+    (-5, 0, (82, 127, 208)),
+    (0, 5, (91, 135, 214)),
+    (5, 10, (84, 120, 194)),
+    (10, 15, (78, 106, 175)),
+    (15, 20, (71, 92, 156)),
+    (20, 25, (65, 78, 137)),
+    (25, 30, (58, 66, 119)),
+    (30, 35, (46, 79, 214)),
+    (35, 40, (43, 86, 227)),
+    (40, 45, (31, 127, 208)),
+    (45, 50, (31, 160, 216)),
+    (50, 55, (37, 184, 200)),
+    (55, 60, (47, 191, 168)),
+    (60, 65, (95, 196, 137)),
+    (65, 70, (168, 212, 106)),
+    (70, 75, (214, 222, 95)),
+    (75, 80, (242, 225, 76)),
+    (80, 85, (245, 201, 58)),
+    (85, 90, (245, 168, 46)),
+    (90, 95, (240, 126, 34)),
+    (95, 100, (232, 90, 40)),
+    (100, 105, (240, 64, 106)),
+    (105, 110, (238, 36, 88)),
+    (110, 115, (224, 22, 64)),
+    (115, 120, (211, 18, 70)),
+    (120, 125, (196, 15, 62)),
+    (125, 130, (178, 13, 56)),
+    (130, 135, (160, 12, 50)),
+    (135, 140, (142, 11, 44)),
+    (140, 145, (124, 10, 38)),
+    (145, 150, (106, 9, 32)),
+]
+
+# Step-function stops: identical colors on both edges of each band, so the
+# renderer paints FLAT 5-degree bands (no blending between bands). Built
+# band by band (NOT globally sorted) so each shared edge keeps the order
+# (hi, old-color), (lo, new-color) with a zero-width transition segment.
+TEMP_STOPS = []
+for _lo, _hi, _rgb in TEMP_BANDS:
+    TEMP_STOPS += [(_lo, _rgb), (_hi, _rgb)]
+
+TEMP_TICK_LABELS = [
+    (-60.0, "LOWEST -60"),
+    (0.0, "0"),
+    (32.0, "32 freeze"),
+    (55.0, "55"),
+    (70.0, "70"),
+    (85.0, "85"),
+    (100.0, "100+"),
+    (150.0, "HIGHEST+ 150"),
+]
+
+SCALE_HTML = (
+    "2 m air temperature (degF), FIXED banded 5-degree key (-60..150 F): "
+    "<b>LOWEST -60</b> blue-white (extreme cold) &rarr; gray-blue "
+    "subfreezing &rarr; <b>royal-blue freezing wall (30-40)</b> &rarr; "
+    "frigid turquoise/blues (40-55) &rarr; transitional lime/teals "
+    "(55-70) &rarr; mellow yellows (70-85) &rarr; warming orange/golds "
+    "(85-100) &rarr; <b>HIGHEST+ 150 scorching pink/reds (100+)</b>. "
+    "Same temperature always shows the same color; every band is "
+    "brightened so nothing renders dark. Freezing (32 F) sits inside "
+    "the royal-blue wall.")
 
 
 def ff(x):
@@ -140,7 +223,7 @@ def _build(base, datestr, cycle):
         print(f"[{PRODUCT}] cold start: seeding history from this analysis.")
     sample = vals[::max(1, vals.size // 20000)][:20000]
     rec, res = update_record(rec, res, sample)
-    stops = list(APPLE_TEMP_STOPS)  # fixed Apple-like absolute scale
+    stops = list(TEMP_STOPS)  # fixed brightened 5 F-step banded key
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
     # NOTE: full basin rectangle (no shoreline cut). Only missing data
     # is transparent.
@@ -181,21 +264,17 @@ def _build(base, datestr, cycle):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = record_tick_labels(rec)  # record ticks ride the fixed axis
+    labels = list(TEMP_TICK_LABELS)  # fixed band positions on the key
     subtitle = (f"2 m air temperature ({unit})  |  {data_time_utc}")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
         f"Source: NOAA HRRR {datestr} t{cycle}z analysis  |  "
         f"Processed {now_det_str()}",
-        note="Apple-style spectrum; extreme cold continues into violet.")
-    scale_html = (f"2 m air temperature ({unit}), fixed Apple-style "
-                  f"absolute spectrum (-40..130 F): purple extreme cold → "
-                  f"blue → cyan → green → yellow → orange → red extreme "
-                  f"heat. Same temperature always shows the same color. "
-                  f"Record <b>LOWEST {fmt_val(rec['hist_min'])}</b> / "
-                  f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b> marked on "
-                  f"the scale. Freezing has no color break.")
+        note="Brightened 5-degree bands; record LOWEST/HIGHEST+ in description.")
+    scale_html = SCALE_HTML + (
+        f" Record <b>LOWEST {fmt_val(rec['hist_min'])}</b> / "
+        f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b>.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],

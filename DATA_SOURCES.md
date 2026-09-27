@@ -313,8 +313,13 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
 - **Air temperature product:** HRRR CONUS `wrfsfcf00` analysis via NOMADS
   (direct HTTPS + `.idx` byte ranges, TMP2m only). Variable `TMP` 2 m
   above ground (K → °F). Lambert 1799×1059, per-cell WGS84 via ecCodes.
-  FIXED Apple-style absolute spectrum (-40..130 °F); the historical
-  record still tracks LOWEST/HIGHEST+ as ticks on it.
+  FIXED brightened banded 5 °F key (-60..150 °F): blue-white extreme
+  cold → gray-blue subfreezing → royal-blue freezing wall (30–40) →
+  frigid turquoise/blues (40–55) → lime/teal transition (55–70) →
+  mellow yellows (70–85) → orange/gold warming (85–100) → scorching
+  pink/reds past 100 (dark maroons lifted so no band renders dark);
+  the historical record still tracks LOWEST/HIGHEST+ as values in the
+  description.
 - Both paint the FULL basin rectangle (no shoreline cut; only missing
   data transparent). Freshness wording: **"LIVE / CURRENT MODEL
   (analysis)"** with cycle stamp.
@@ -345,8 +350,9 @@ records. Color mapping is LINEAR and balanced: anchor colors are spread
 evenly across the value range so every part of the scale owns an equal
 share of color resolution (no compression of any value region). Record
 percentiles are drawn as tick labels at true linear positions. Air
-temperature instead uses a FIXED Apple-style absolute spectrum
-(-40..130 °F); its record ticks ride the fixed axis. One mapping
+temperature instead uses a FIXED brightened banded 5 °F key
+(-60..150 °F, flat bands); its record LOWEST/HIGHEST+ values ride in
+the description text. One mapping
 function paints raster + legend identically; crowded middle ticks are
 de-collided (endpoints always kept).
 
