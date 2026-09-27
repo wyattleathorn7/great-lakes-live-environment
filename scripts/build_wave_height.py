@@ -320,7 +320,8 @@ def _build(got, used_url, datestr, cycle, raw_path):
                          "Turn on/off independently of temperature and ice layers.",
                          block),
         CONFIG["refresh_interval_seconds"], token,
-        out_dirs=outs["live"])
+        out_dirs=outs["live"],
+        meta=meta)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(
         PRODUCT, "Great_Lakes_Live_Wave_Height.kml",

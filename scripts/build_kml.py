@@ -62,6 +62,50 @@ def legend_block(legend_path, cache_token, scale_html):
     )
 
 
+def fetch_header_html(meta, refresh_interval):
+    """Two-line Detroit-time header for the very top of live descriptions.
+
+    ``Time fetched`` = when this live file's data was fetched/processed
+    (Detroit wall clock, compact AM/PM). ``Next update`` = fetched +
+    this layer's own KML refreshInterval, i.e. the exact time Google
+    Earth next re-checks the layer per the refreshMode=onInterval
+    contract in this same file. That re-check moment is deterministic
+    (hence a trustworthy prediction); whether it carries NEW imagery
+    depends on the source having published since (often it hasn't, and
+    the current image simply re-confirms).
+
+    Derived from committed metadata (processing_time_utc), never wall-now,
+    so skip-path KML rewrites stay byte-identical while the source is
+    unchanged (no commit churn, no stale-while-claiming-fresh times).
+    """
+    from datetime import datetime, timedelta
+    raw = (meta or {}).get("processing_time_utc", "")
+    dt = None
+    try:
+        dt = datetime.strptime(raw.strip(), "%Y-%m-%d %I:%M %p %Z")
+    except (ValueError, AttributeError):
+        dt = None
+    if dt is None:
+        try:
+            from geospatial_utils import detroit_tz
+            dt = datetime.now(detroit_tz()).replace(tzinfo=None)
+        except Exception:
+            from datetime import timezone
+            dt = datetime.now(timezone.utc)
+    tzname = (raw.strip().rsplit(" ", 1)[-1] if raw else "") or "ET"
+
+    def _compact(d):
+        return f"{d.hour % 12 or 12}:{d.minute:02d}{d.strftime('%p')}"
+
+    try:
+        interval = int(refresh_interval)
+    except (TypeError, ValueError):
+        interval = 3600
+    nxt = dt + timedelta(seconds=interval)
+    return (f"<p><b>Time fetched:</b> {_compact(dt)} {tzname}<br/>"
+            f"<b>Next update:</b> {_compact(nxt)} {tzname}</p>")
+
+
 def _serialize(doc, descriptions):
     """Pretty-print; inject CDATA descriptions in document order."""
     xml = minidom.parseString(ET.tostring(doc)).toprettyxml(
@@ -81,17 +125,21 @@ def _write(xml, out_dirs):
 
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
               description_html, refresh_interval, cache_token, out_dirs=None,
-              folder=None):
+              folder=None, meta=None):
     """Write the LIVE overlay file (one GroundOverlay, versioned PNG href).
 
     ``cache_token`` MUST be the deterministic source version
     (``source_token(...)`` of the source observation/cycle id), never a
     processing timestamp or random value. ``out_dirs`` selects where the
-    live file goes; the default is the deployed live path.
+    live file goes; the default is the deployed live path. When ``meta``
+    is given, the Time-fetched/Next-update header is prepended to the
+    main description (the Folder description when present, else the
+    Document description).
     """
     bounds = load_bounds()
     base = pages_base()
     png_url = f"{base}/{png_path}?v={cache_token}"
+    header = fetch_header_html(meta, refresh_interval) if meta else ""
 
     doc = _q("kml")
     document = _q("Document")
@@ -116,7 +164,7 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     box.append(_q("east", str(bounds["lon_max"])))
     box.append(_q("west", str(bounds["lon_min"])))
     ground.append(box)
-    descriptions = [description_html]
+    descriptions = [header + description_html]
     if folder is not None:
         folder_el = _q("Folder")
         folder_el.append(_q("name", folder[0]))
@@ -125,7 +173,7 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
         folder_el.append(_fdesc)
         folder_el.append(ground)
         document.append(folder_el)
-        descriptions.append(folder[1])
+        descriptions.append(header + folder[1])
     else:
         document.append(ground)
 
@@ -264,7 +312,7 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
               f"{product}/current.png", f"{product}/legend.png",
               description_html(title, meta, note, block),
               refresh_interval, version,
-              folder=(title, folder) if folder else None)
+              folder=(title, folder) if folder else None, meta=meta)
     build_entry_kml(product, kml_filename, overlay_name,
                     entry_description_html(title, meta, note),
                     refresh_interval)

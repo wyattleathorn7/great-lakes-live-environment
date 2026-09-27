@@ -239,7 +239,8 @@ def _build(file_url, scan_dt, source_id):
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
         folder=(CONFIG["title"], folder_html),
-        out_dirs=outs["live"])
+        out_dirs=outs["live"],
+        meta=meta)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(
         PRODUCT, KML_FILE, OVERLAY_NAME,

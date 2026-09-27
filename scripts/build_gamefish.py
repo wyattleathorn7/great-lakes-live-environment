@@ -331,9 +331,8 @@ def _build(cfg, PRODUCT, species, shape, now, info, raw_path, source_id, tele):
 
 
 def live_description_html(cfg, meta, token, legend_img_html):
-    """Static folder description: no retrieval/update timestamps (they would
-    go stale inside Google Earth). Timestamps live in metadata.json and the
-    versioned legend image instead."""
+    """Live description: fetch/next-update header is prepended centrally by
+    build_kml (refreshed via the NetworkLink poll); static body below it."""
     return (
         f"<h2>{cfg['title']}</h2>"
         f"<p>{G.DISCLAIMER}</p>"
@@ -384,7 +383,7 @@ def write_kmls(cfg, PRODUCT, meta, token, stage=None):
     if stage is None:
         build_kml(PRODUCT, live_name, cfg["overlay_name"],
                   f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png", desc,
-                  cfg["refresh_interval_seconds"], token)
+                  cfg["refresh_interval_seconds"], token, meta=meta)
         build_entry_kml(PRODUCT, live_name, cfg["overlay_name"],
                         entry_description_html_static(cfg),
                         cfg["refresh_interval_seconds"])
@@ -393,7 +392,7 @@ def write_kmls(cfg, PRODUCT, meta, token, stage=None):
         kml_text = build_kml(PRODUCT, live_name, cfg["overlay_name"],
                              f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
                              desc, cfg["refresh_interval_seconds"], token,
-                             out_dirs=outs["live"])
+                             out_dirs=outs["live"], meta=meta)
         assert_no_vector_geometry(kml_text)
         build_entry_kml(PRODUCT, live_name, cfg["overlay_name"],
                         entry_description_html_static(cfg),

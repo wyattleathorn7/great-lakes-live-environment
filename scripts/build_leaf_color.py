@@ -533,7 +533,8 @@ def _build(bounds, W, H, vi, rf, sig):
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
-        out_dirs=outs["live"])
+        out_dirs=outs["live"],
+        meta=meta)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(
         PRODUCT, KML_FILE, OVERLAY_NAME,

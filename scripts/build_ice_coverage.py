@@ -212,7 +212,8 @@ def _build(info, raw_path, digest, source_id=None):
                          "Turn on/off independently of wave and temperature layers.",
                          block),
         CONFIG["refresh_interval_seconds"], token,
-        out_dirs=outs["live"])
+        out_dirs=outs["live"],
+        meta=meta)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(
         PRODUCT, "Great_Lakes_Live_Ice_Coverage.kml",
