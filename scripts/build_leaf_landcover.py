@@ -51,17 +51,30 @@ def fetch_nlcd(W, H, bounds):
 
 
 def fetch_canada(W, H, bounds):
+    """Reproject the NRCan raster onto the canvas exactly, per pixel.
+
+    A windowed read stretched uniformly across the canvas misregisters
+    the east by ~150 km (longitude is nonlinear in Lambert conformal
+    coordinates over a 19.5-degree span), which carved a false nodata
+    hole through E Ontario / NNY. rasterio.warp.reproject handles the
+    nonlinearity per pixel; nearest resampling keeps classes exact.
+    """
     import rasterio
     from rasterio.enums import Resampling
-    from rasterio.warp import transform_bounds
-    from rasterio.windows import from_bounds
+    from rasterio.transform import from_bounds as transform_from_bounds
+    from rasterio.warp import reproject
     with rasterio.open("/vsicurl/" + CANADA_S3) as src:
-        wb = transform_bounds("EPSG:4326", src.crs, bounds["lon_min"],
-                              bounds["lat_min"], bounds["lon_max"],
-                              bounds["lat_max"])
-        win = from_bounds(*wb, src.transform)
-        return src.read(1, window=win, out_shape=(H, W),
-                        resampling=Resampling.nearest)
+        dst_transform = transform_from_bounds(
+            bounds["lon_min"], bounds["lat_min"],
+            bounds["lon_max"], bounds["lat_max"], W, H)
+        out = np.zeros((H, W), dtype=np.uint8)
+        reproject(
+            rasterio.band(src, 1), out,
+            src_transform=src.transform, src_crs=src.crs,
+            dst_transform=dst_transform, dst_crs="EPSG:4326",
+            resampling=Resampling.nearest,
+            src_nodata=0, dst_nodata=0)
+        return out
 
 
 def main():
