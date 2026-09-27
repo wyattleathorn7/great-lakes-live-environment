@@ -12,6 +12,9 @@ on:
     # Cloud cover rides GOES-East 5-minute scans, so its job ALSO runs on
     # a 12-minute cadence (10-20 min live requirement); the builder still
     # skips cheaply when no new scan has posted.
+    # Precipitation rides the IEM NEXRAD 5-minute mosaic, so it ALSO runs
+    # on the 12-minute cadence for the fastest practical refresh; Google
+    # Earth itself re-polls every 60 s (KML refreshInterval).
     - cron: "*/12 * * * *"
     # - 4x daily: game-fish gradients only (GLSEA daily + date-driven
     #   seasonal/diel terms).
@@ -27,7 +30,7 @@ on:
                   "ice_thickness", "ice_type", "wind", "leaf_color",
                   "chlorophyll", "water_clarity", "solar_radiation",
                   "air_temperature", "snow_coverage", "uv_index",
-                  "cloud_cover", "surface_pressure", "wave_direction", "gamefish"]
+                  "cloud_cover", "surface_pressure", "wave_direction", "precipitation", "gamefish"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -561,6 +564,38 @@ jobs:
             output/state/wave_direction.json
           if-no-files-found: warn
 
+  precipitation:
+    if: ${{ github.event.schedule == '15 * * * *' || github.event.schedule == '*/12 * * * *' || inputs.product == 'all' || inputs.product == 'precipitation' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update precipitation
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_precipitation.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Precipitation source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-precipitation
+          path: |
+            site/precipitation
+            site/kml/Great_Lakes_Live_Precipitation.kml
+            site/kml/live/Great_Lakes_Live_Precipitation.kml
+            kml/Great_Lakes_Live_Precipitation.kml
+            output/state/precipitation.json
+          if-no-files-found: warn
+
   gamefish:
     # Nine species, one matrix leg each: independent products, independent
     # failures (same failure isolation as the twelve environment products).
@@ -613,7 +648,7 @@ jobs:
           if-no-files-found: warn
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, precipitation, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

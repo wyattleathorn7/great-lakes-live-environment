@@ -479,6 +479,50 @@ the other products and the Pages publish proceed normally.
 - **Update:** 6-hourly cycles. Freshness: **"LIVE / CURRENT MODEL
   (analysis), 6-hourly cycles"**.
 
+## 17. Precipitation — IEM NEXRAD N0Q base reflectivity (live radar, 5-minute mosaic)
+
+- **Product (verified live 2026-09-27):** Iowa Environmental Mesonet
+  (Iowa State University) CONUS NEXRAD N0Q Base Reflectivity mosaic,
+  built from the NOAA NWS WSR-88D Level-III network and rebuilt every
+  5 minutes. WMS endpoint
+  `https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?`
+  (layer `nexrad-n0q-900913`, verified via GetCapabilities + GetMap).
+  Professional + credible: Iowa State archives the operational NWS feed
+  (same data that drives NWS warnings) and serves it as an OGC WMS.
+  Docs: `https://mesonet.agron.iastate.edu/current/radar.phtml`,
+  `https://mesonet.agron.iastate.edu/docs/nexrad_composites/`.
+- **Access:** WMS GetMap for the exact common canvas
+  (SRS EPSG:4326, BBOX lon −93,lat 40.5,lon −73.5,lat 49.5,
+  WIDTH 1800 HEIGHT 1175, FORMAT image/png, TRANSPARENT=TRUE).
+  The WMS renders the N0Q palette itself, so the live gradient in
+  Google Earth IS the source's real-time gradient — never a recolor.
+  Verified live 2026-09-27: 1800×1175 RGBA, ~5% opaque (light rain over
+  the basin), remainder alpha 0.
+- **Variable:** N0Q base reflectivity, dBZ (decibels of reflectivity):
+  raw radar echo strength. FIXED absolute 5–75 dBZ key matching the
+  reference image: Very Light cyan/blue (~5–20: drizzle, mist) →
+  Light greens (~20–30: light rain/snow) → Moderate dark green
+  (~30–40: steady rain/snow) → Heavy yellow/orange (~40–50) →
+  Severe red (~50–60: hail possible) → Intense magenta/purple (~60–70:
+  large hail, flash flooding) → Extreme white (70+: destructive).
+- **All seasons / all types:** base reflectivity is echo strength from
+  any hydrometeor — spring/summer/fall rain, winter snow and
+  lake-effect bands, thunderstorms + hail whenever convection fires.
+  Reflectivity does not classify type; it shows intensity, so one scale
+  covers rain, snow, and thunderstorms all year.
+- **Transparency:** no echo (no precipitation) is fully transparent
+  (alpha 0) — kept exactly as the source returns it, never zero-filled.
+  Full basin rectangle (no shoreline cut: precipitation falls on land
+  and water alike). A dry-over-the-basin run is a VALID transparent
+  raster, not a failure (same semantics as a clear-sky cloud run).
+- **Refresh (fastest possible):** source rebuilds every 5 minutes; the
+  workflow polls on the 12-minute cadence (same as cloud cover); both
+  KML refreshIntervals (entry NetworkLink + live Icon) are 60 s, so a
+  newly published scan appears in Google Earth within about a minute.
+  Overlay only (GroundOverlay) — Google Earth has no live-video
+  primitive. Freshness wording: **"LIVE / CURRENT OBSERVATION
+  (NEXRAD 5-min mosaic)"**.
+
 ## 13. Game-fish distribution gradients (16 species, `gamefish_<species>`)
 
 - **What:** live modeled distribution / habitat-likelihood rasters (0..1 index,

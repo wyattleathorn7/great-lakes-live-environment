@@ -1,0 +1,20 @@
+{
+  "product": "precipitation",
+  "title": "LIVE PRECIPITATION",
+  "freshness_label": "LIVE / CURRENT OBSERVATION (NEXRAD 5-min mosaic)",
+  "source_name": "Iowa Environmental Mesonet (Iowa State University) CONUS NEXRAD N0Q Base Reflectivity mosaic from NOAA NWS WSR-88D Level-III (5-minute updates)",
+  "source_url": "https://mesonet.agron.iastate.edu/current/radar.phtml",
+  "wms_url": "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi",
+  "wms_layer": "nexrad-n0q-900913",
+  "file_pattern": "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=nexrad-n0q-900913&SRS=EPSG:4326&BBOX=-93,40.5,-73.5,49.5&WIDTH=1800&HEIGHT=1175&FORMAT=image/png&TRANSPARENT=TRUE",
+  "variable": "N0Q base reflectivity (dBZ): raw radar echo strength from the NOAA WSR-88D network, composited every 5 minutes. Shows rain, snow, and thunderstorms in all seasons; it does not classify type, it shows intensity.",
+  "source_units": "dBZ (decibels of reflectivity)",
+  "display_units": "dBZ",
+  "coverage": "Basin rectangle lon -93..-73.5, lat 40.5..49.5 (all Great Lakes + surrounding land). Full rectangle, no shoreline cut: precipitation falls on land and water alike.",
+  "transparency": "No precipitation (no radar echo) is fully transparent (alpha 0). Only pixels with a radar echo paint, from Very Light cyan/blue through Light/Moderate green to Heavy yellow/orange, Severe red, Intense magenta/purple, Extreme white.",
+  "valid_min": 5.0,
+  "valid_max": 75.0,
+  "refresh_interval_seconds": 60,
+  "what": "Live radar precipitation right now over the Great Lakes: rain in spring/summer/fall, snow and lake-effect snow in winter, thunderstorms and hail whenever convection fires. Colors are echo intensity (dBZ): the stronger the echo, the heavier the precipitation.",
+  "why_extreme": "Extreme (white, 75+ dBZ) is reserved for the most intense echoes: damaging hail, torrential downpours, tornadic storms."
+}

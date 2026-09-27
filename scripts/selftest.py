@@ -105,7 +105,8 @@ def main():
              "ice_thickness", "ice_type", "wind", "leaf_color",
              "chlorophyll", "water_clarity", "solar_radiation",
              "air_temperature", "snow_coverage", "uv_index",
-             "cloud_cover", "surface_pressure", "wave_direction"]
+             "cloud_cover", "surface_pressure", "wave_direction",
+             "precipitation"]
     for p in prods:
         for kf in (os.path.join(REPO_ROOT, "kml", f"Great_Lakes_Live_{_k(p)}.kml"),
                    os.path.join(SITE_DIR, "kml", f"Great_Lakes_Live_{_k(p)}.kml")):
@@ -132,7 +133,7 @@ def main():
         if p == "leaf_color":
             _bad = ((a[:, :, 3] > 0) & (mask > 250 / 255)).sum() == 0
         elif p in ("cloud_cover", "surface_pressure", "uv_index",
-                   "air_temperature", "solar_radiation"):
+                   "air_temperature", "solar_radiation", "precipitation"):
             # basin-rectangle layers: land coverage is by design.
             _bad = True
         else:
@@ -452,7 +453,8 @@ def _k(p):
             "uv_index": "UV_Index",
             "cloud_cover": "Cloud_Cover",
             "surface_pressure": "Surface_Pressure",
-            "wave_direction": "Wave_Direction"}[p]
+            "wave_direction": "Wave_Direction",
+            "precipitation": "Precipitation"}[p]
 
 
 if __name__ == "__main__":

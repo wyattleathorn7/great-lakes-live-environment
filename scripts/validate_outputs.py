@@ -56,7 +56,9 @@ PRODUCTS = {
     "uv_index": {"kml": "Great_Lakes_Live_UV_Index.kml",
                  "max_opaque_min": 10_000},
     "cloud_cover": {"kml": "Great_Lakes_Live_Cloud_Cover.kml",
-                    "max_opaque_min": 0},  # clear-sky day => transparent OK
+                      "max_opaque_min": 0},  # clear-sky day => transparent OK
+    "precipitation": {"kml": "Great_Lakes_Live_Precipitation.kml",
+                      "max_opaque_min": 0},  # dry over the basin => transparent OK
     "surface_pressure": {"kml": "Great_Lakes_Live_Surface_Pressure.kml",
                          "max_opaque_min": 10_000},
     "wave_direction": {"kml": "Great_Lakes_Live_Wave_Direction.kml",
@@ -187,7 +189,12 @@ def main():
                     what = "open-lake water"
                 elif product in ("cloud_cover", "surface_pressure",
                                    "uv_index", "air_temperature",
-                                   "solar_radiation"):
+                                   "solar_radiation", "precipitation"):
+                    # basin-rectangle layers (user requirement): full
+                    # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
+                    # (Leaf/snow stay land-cut: leaves and ground snow
+                    # have no signal on open water. Precipitation falls
+                    # on land and water alike, so no shoreline cut.)
                     # basin-rectangle layers (user requirement): full
                     # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
                     # (Leaf/snow stay land-cut: leaves and ground snow
@@ -226,6 +233,8 @@ def main():
                 failures.append(f"{product}: UV scale must be 0-12, got {lo}-{hi}")
             if product == "cloud_cover" and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: cloud scale must be 0-100 %, got {lo}-{hi}")
+            if product == "precipitation" and (lo, hi) != (5.0, 75.0):
+                failures.append(f"{product}: precipitation scale must be 5-75 dBZ, got {lo}-{hi}")
             if product == "surface_pressure" and (lo, hi) != (980.0, 1040.0):
                 failures.append(f"{product}: pressure scale must be 980-1040 hPa, got {lo}-{hi}")
             if product == "wave_direction" and (lo, hi) != (0.0, 12.0):
@@ -413,7 +422,8 @@ def main():
                 if product in ("chlorophyll", "water_clarity",
                                "solar_radiation", "air_temperature",
                                "uv_index", "cloud_cover",
-                               "surface_pressure", "wave_direction"):
+                               "surface_pressure", "wave_direction",
+                               "precipitation"):
                     if "<Folder>" not in text:
                         failures.append(f"{product}: no product Folder in live KML")
                     for _need in ("LOWEST", "HIGHEST+", "legend.png?v="):
