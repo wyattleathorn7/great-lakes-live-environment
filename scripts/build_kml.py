@@ -62,8 +62,8 @@ def legend_block(legend_path, cache_token, scale_html):
     )
 
 
-def fetch_header_html(meta, refresh_interval):
-    """Two-line Detroit-time header for the very top of live descriptions.
+def fetch_header_html(meta, refresh_interval, include_next=True):
+    """Detroit-time header for the very top of descriptions.
 
     ``Time fetched`` = when this live file's data was fetched/processed
     (Detroit wall clock, compact AM/PM). ``Next update`` = fetched +
@@ -102,6 +102,11 @@ def fetch_header_html(meta, refresh_interval):
     except (TypeError, ValueError):
         interval = 3600
     nxt = dt + timedelta(seconds=interval)
+    if not include_next:
+        # Frozen files (entries): only the historical fact. A frozen
+        # prediction would go stale and read wrong, so entries carry
+        # "Time fetched" alone; the live folder below carries both.
+        return f"<p><b>Time fetched:</b> {_compact(dt)} {tzname}</p>"
     return (f"<p><b>Time fetched:</b> {_compact(dt)} {tzname}<br/>"
             f"<b>Next update:</b> {_compact(nxt)} {tzname}</p>")
 
@@ -241,7 +246,11 @@ def entry_description_html(title, meta, note):
             )
     except Exception:
         legend_html = ""
+    # Lead with the fetch fact: the entry is the first item opened, so the
+    # time must read here too. No prediction line (frozen file honesty).
+    fetched = fetch_header_html(meta, 0, include_next=False)
     return (
+        f"{fetched}"
         f"<h2>{title}</h2>"
         f"{legend_html}"
         f"<p>This entry auto-refreshes from the live overlay "
