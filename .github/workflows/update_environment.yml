@@ -682,16 +682,33 @@ jobs:
           echo "artifact dirs present:"
           ls -la artifacts/
           merged=0
+          # Multi-artifact layout: one subdir per artifact name.
           for a in artifacts/site-*/; do
             [ -d "$a" ] || continue
             echo "merging: $a"
             cp -r "$a/." ./
             merged=$((merged+1))
           done
-          echo "merged $merged artifact dirs"
-          # Proof of application (and loud failure below if the merge
-          # silently did nothing: a quiet stale deploy is worse than a
-          # red job, so nothing here is silenced with || true).
+          # Single-artifact layout: download-artifact extracts one lone
+          # artifact FLAT into path/ (artifacts/site, artifacts/kml,
+          # artifacts/output) with no per-name subdir, so the glob above
+          # matches nothing. This silently deployed stale files until
+          # caught; handle it explicitly.
+          for t in site kml output; do
+            if [ -d "artifacts/$t" ]; then
+              echo "merging flat tree: artifacts/$t"
+              mkdir -p "$t"
+              cp -r "artifacts/$t/." "./$t/"
+              merged=$((merged+1))
+            fi
+          done
+          echo "merged $merged artifact trees"
+          if [ "$merged" -eq 0 ] && [ -n "$(ls -A artifacts 2>/dev/null)" ]; then
+            echo "ERROR: artifacts present but none merged; refusing to deploy stale files"
+            exit 1
+          fi
+          # Proof of application in the log (loud by design: a quiet stale
+          # deploy is worse than a red job).
           git status --porcelain=v1 --untracked-files=no -- site kml output/state | head -30
           # NOTE: `head` closes the pipe after 30 lines, so plain
           # `ls | head` dies with SIGPIPE under `pipefail` once the tree
