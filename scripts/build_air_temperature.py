@@ -34,7 +34,7 @@ from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
                                now_det_str, promote_stage,
                                read_state, save_png, source_token, stage_dir,
                                utcnow_iso, write_metadata, write_state)
-from gradient_scale import (draw_scale_legend, fmt_val,
+from gradient_scale import (fmt_val,
                             load_record, render_rgba,
                             save_record, update_record)
 from hrrr import fetch_messages, latest_cycle, read_messages
@@ -113,17 +113,6 @@ TEMP_STOPS = []
 for _lo, _hi, _rgb in TEMP_BANDS:
     TEMP_STOPS += [(_lo, _rgb), (_hi, _rgb)]
 
-TEMP_TICK_LABELS = [
-    (-60.0, "LOWEST -60"),
-    (0.0, "0"),
-    (32.0, "32 freeze"),
-    (55.0, "55"),
-    (70.0, "70"),
-    (85.0, "85"),
-    (100.0, "100+"),
-    (150.0, "HIGHEST+ 150"),
-]
-
 SCALE_HTML = (
     "2 m air temperature (degF), FIXED banded 5-degree key (-60..150 F): "
     "<b>LOWEST -60</b> blue-white (extreme cold) &rarr; gray-blue "
@@ -137,6 +126,81 @@ SCALE_HTML = (
 
 
 def ff(x):
+    try:
+        v = float(x)
+        return v if math.isfinite(v) else None
+    except (TypeError, ValueError):
+        return None
+
+
+# Zone callouts for the key image (mirrors the reference gradient layout):
+# (band_lo, band_hi, [text lines], text rgb darkened for white background).
+KEY_ZONES = [
+    (100, 150, ["Scorching PINK/REDS", "past 100\u00b0F \u2014 really hot!"], (194, 20, 68)),
+    (85, 100, ["Warming ORANGE/GOLDS", "past 85\u00b0F"], (194, 94, 16)),
+    (70, 85, ["Mellow YELLOWS,", "70\u201385\u00b0"], (154, 130, 0)),
+    (55, 70, ["Transitional LIME/TEALS,", "55\u201370\u00b0"], (30, 122, 90)),
+    (40, 55, ["Frigid TURQUOISE/BLUES,", "40\u201355\u00b0F"], (11, 111, 164)),
+    (30, 40, ["Royal-BLUE wall", "at freezing (32\u00b0F)"], (30, 64, 214)),
+    (0, 30, ["Light GRAY/BLUES", "set in at 0\u00b0F"], (61, 78, 115)),
+    (-60, 0, ["Barely-there BLUE/WHITE \u2014", "extremely cold!"], (74, 111, 165)),
+]
+
+
+def draw_banded_key(path, title, subtitle, bands, zones, source_line):
+    """Key image recreating the reference gradient layout on white.
+
+    Left column: one labeled bar per 5 F band (hottest on top), painted
+    with the EXACT band colors used on the raster. Right column: bracket
+    callouts grouping the bands into named zones. Returns (W, H).
+    """
+    from PIL import Image, ImageDraw
+    from geospatial_utils import _legend_font
+    W = 640
+    pad = 12
+    label_w, bar_w = 92, 196
+    bar_x0 = pad + label_w + 8
+    bar_x1 = bar_x0 + bar_w
+    bracket_x = bar_x1 + 14
+    text_x = bracket_x + 10
+    row_h, gap = 20, 3
+    stride = row_h + gap
+    y0 = 64
+    n = len(bands)
+    rows_end = y0 + n * stride
+    H = rows_end + 44
+    img = Image.new("RGBA", (W, H), (255, 255, 255, 255))
+    d = ImageDraw.Draw(img)
+    f_title, f_body, f_small = _legend_font(20), _legend_font(14), _legend_font(12)
+    d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
+    d.text((pad, 8), title, font=f_title, fill=(10, 10, 10))
+    d.text((pad, 34), subtitle, font=f_small, fill=(40, 40, 40))
+    # bands hottest-on-top like the reference
+    ordered = sorted(bands, key=lambda b: b[0], reverse=True)
+    row_of_lo = {}
+    for i, (lo, hi, rgb) in enumerate(ordered):
+        y = y0 + i * stride
+        row_of_lo[lo] = y
+        d.text((pad, y + 2), f"{lo} to {hi}", font=f_small, fill=(10, 10, 10))
+        d.rectangle([bar_x0, y, bar_x1, y + row_h], fill=rgb + (255,),
+                    outline=(90, 90, 90))
+    # zone brackets + callouts
+    for zlo, zhi, lines, color in zones:
+        top_lo = zhi - 5  # topmost band's lo edge in this zone
+        y_top = row_of_lo[top_lo] + row_h // 2
+        y_bot = row_of_lo[zlo] + row_h // 2
+        d.line([(bar_x1 + 4, y_top), (bracket_x, y_top)], fill=(80, 80, 80), width=1)
+        d.line([(bar_x1 + 4, y_bot), (bracket_x, y_bot)], fill=(80, 80, 80), width=1)
+        d.line([(bracket_x, y_top), (bracket_x, y_bot)], fill=(80, 80, 80), width=1)
+        ym = (y_top + y_bot) / 2 - (len(lines) * 17) / 2
+        for k, line in enumerate(lines):
+            d.text((text_x, ym + k * 17), line, font=f_body, fill=color)
+    d.text((pad, rows_end + 8), source_line, font=f_small, fill=(60, 60, 60))
+    d.text((pad, rows_end + 24), "No-data transparent. Same color = same temperature.",
+           font=f_small, fill=(60, 60, 60))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    return W, H
     try:
         v = float(x)
         return v if math.isfinite(v) else None
@@ -264,14 +328,12 @@ def _build(base, datestr, cycle):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = list(TEMP_TICK_LABELS)  # fixed band positions on the key
     subtitle = (f"2 m air temperature ({unit})  |  {data_time_utc}")
-    lw, lh = draw_scale_legend(
+    lw, lh = draw_banded_key(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
-        unit, stops, labels,
+        TEMP_BANDS, KEY_ZONES,
         f"Source: NOAA HRRR {datestr} t{cycle}z analysis  |  "
-        f"Processed {now_det_str()}",
-        note="Brightened 5-degree bands; record LOWEST/HIGHEST+ in description.")
+        f"Processed {now_det_str()}")
     scale_html = SCALE_HTML + (
         f" Record <b>LOWEST {fmt_val(rec['hist_min'])}</b> / "
         f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b>.")
