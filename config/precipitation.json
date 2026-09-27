@@ -14,7 +14,7 @@
   "transparency": "No precipitation (no radar echo) is fully transparent (alpha 0). Only pixels with a radar echo paint, from Very Light cyan/blue through Light/Moderate green to Heavy yellow/orange, Severe red, Intense magenta/purple, Extreme white.",
   "valid_min": 5.0,
   "valid_max": 75.0,
-  "refresh_interval_seconds": 60,
+  "refresh_interval_seconds": 30,
   "what": "Live radar precipitation right now over the Great Lakes: rain in spring/summer/fall, snow and lake-effect snow in winter, thunderstorms and hail whenever convection fires. Colors are echo intensity (dBZ): the stronger the echo, the heavier the precipitation.",
   "why_extreme": "Extreme (white, 75+ dBZ) is reserved for the most intense echoes: damaging hail, torrential downpours, tornadic storms."
 }

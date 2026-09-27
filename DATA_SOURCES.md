@@ -522,9 +522,10 @@ the other products and the Pages publish proceed normally.
   and water alike). A dry-over-the-basin run is a VALID transparent
   raster, not a failure (same semantics as a clear-sky cloud run).
 - **Refresh (fastest possible):** source rebuilds every 5 minutes; the
-  workflow polls on the 12-minute cadence (same as cloud cover); both
-  KML refreshIntervals (entry NetworkLink + live Icon) are 60 s, so a
-  newly published scan appears in Google Earth within about a minute.
+  workflow polls on its own 5-minute cadence (the fastest GitHub Actions
+  allows, precipitation-only schedule); both KML refreshIntervals (entry
+  NetworkLink + live Icon) are 30 s, so a newly published scan appears
+  in Google Earth within about half a minute.
   Overlay only (GroundOverlay) — Google Earth has no live-video
   primitive. Freshness wording: **"LIVE / CURRENT OBSERVATION
   (NEXRAD 5-min mosaic)"**.

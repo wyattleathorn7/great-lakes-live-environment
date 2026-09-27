@@ -22,10 +22,12 @@ Moderate / Heavy / Severe / Intense / Extreme key explains.
 
 Raster-only GroundOverlay (never a video: Google Earth has no live
 video primitive — the overlay refreshes). Google Earth side refreshes
-at 60 s (fastest sustainable cadence): each poll re-fetches the live
+every 30 s (fastest practical cadence: each poll re-fetches the live
 KML, and the overlay Icon re-requests its PNG, so a newly published
-scan appears within about a minute. Source cadence is 5 minutes
-(IEM rebuilds the mosaic every 5 min); the 60 s poll guarantees no
+scan appears within about half a minute; polling faster would only
+re-download an unchanged image since the source itself rebuilds every
+5 minutes). Source cadence is 5 minutes
+(IEM rebuilds the mosaic every 5 min); the 30 s poll guarantees no
 extra staleness is added client-side.
 
 Exit codes: 0 updated (or skipped); 2 source/validation failure

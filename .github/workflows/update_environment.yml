@@ -13,9 +13,14 @@ on:
     # a 12-minute cadence (10-20 min live requirement); the builder still
     # skips cheaply when no new scan has posted.
     # Precipitation rides the IEM NEXRAD 5-minute mosaic, so it ALSO runs
-    # on the 12-minute cadence for the fastest practical refresh; Google
-    # Earth itself re-polls every 60 s (KML refreshInterval).
+    # on the 12-minute cadence; Google Earth itself re-polls every 30 s
+    # (KML refreshInterval).
     - cron: "*/12 * * * *"
+    # Precipitation ONLY: absolute fastest CI cadence GitHub allows
+    # (5 minutes, matching the NEXRAD mosaic rebuild). Only the
+    # precipitation job answers this schedule; every other job's `if:`
+    # ignores it, and publish (if: always()) ships whatever is new.
+    - cron: "*/5 * * * *"
     # - 4x daily: game-fish gradients only (GLSEA daily + date-driven
     #   seasonal/diel terms).
     - cron: "35 2,8,14,20 * * *"
@@ -565,7 +570,7 @@ jobs:
           if-no-files-found: warn
 
   precipitation:
-    if: ${{ github.event.schedule == '15 * * * *' || github.event.schedule == '*/12 * * * *' || inputs.product == 'all' || inputs.product == 'precipitation' }}
+    if: ${{ github.event.schedule == '15 * * * *' || github.event.schedule == '*/12 * * * *' || github.event.schedule == '*/5 * * * *' || inputs.product == 'all' || inputs.product == 'precipitation' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -686,6 +691,10 @@ jobs:
         run: python scripts/validate_outputs.py
       - name: Offline self-tests
         run: python scripts/selftest.py
+      - name: Rebase onto latest main (a concurrent push mid-run must not
+          fail the deploy the way a stale checkout does)
+        run: git pull --rebase --autostash || git rebase --abort
+        shell: bash
       - name: Commit updated layers back to repo
         uses: stefanzweifel/git-auto-commit-action@v7
         with:
