@@ -173,7 +173,7 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
         folder_el.append(_fdesc)
         folder_el.append(ground)
         document.append(folder_el)
-        descriptions.append(header + folder[1])
+        descriptions.append(header + strip_old_stamps(folder[1]))
     else:
         document.append(ground)
 
@@ -245,10 +245,7 @@ def entry_description_html(title, meta, note):
         f"<h2>{title}</h2>"
         f"{legend_html}"
         f"<p>This entry auto-refreshes from the live overlay "
-        f"(source: {meta.get('noaa_source')}).<br/>"
-        f"<b>Data time:</b> {meta.get('data_time_utc')}<br/>"
-        f"<b>Source version:</b> {meta.get('source_version')}<br/>"
-        f"<b>Status:</b> {meta.get('freshness')}</p>"
+        f"(source: {meta.get('noaa_source')}).</p>"
         f"<p>{note} Add this file once; new source cycles appear "
         f"automatically.</p>"
         f"<p><i>Not endorsed by NOAA.</i></p>"
@@ -258,11 +255,7 @@ def entry_description_html(title, meta, note):
 def description_html(title, meta, kml_self_hint, legend_html=""):
     return (
         f"<h2>{title}</h2>"
-        f"<p><b>Data time:</b> {meta.get('data_time_utc')}<br/>"
-        f"<b>Source updated:</b> {meta.get('source_last_modified_utc')}<br/>"
-        f"<b>Source version:</b> {meta.get('source_version')}<br/>"
-        f"<b>Processed:</b> {meta.get('processing_time_utc')}<br/>"
-        f"<b>Status:</b> {meta.get('freshness')}</p>"
+        f"<p><b>Status:</b> {meta.get('freshness')}</p>"
         f"{legend_html}"
         f"<p><b>Source:</b> {meta.get('noaa_source')}<br/>"
         f"<a href=\"{meta.get('source_url')}\">{meta.get('source_url')}</a></p>"
@@ -271,6 +264,28 @@ def description_html(title, meta, kml_self_hint, legend_html=""):
         f"{kml_self_hint}</p>"
         f"<p><i>Not endorsed by NOAA.</i></p>"
     )
+
+
+import re as _re
+
+_STAMP_RE = _re.compile(
+    r"<b>(Data time|Source updated|Source version|Processed):</b>"
+    r"[^<]*(?:<br\s*/>)?")
+
+
+def strip_old_stamps(html):
+    """Remove legacy timestamp lines from a stored folder description.
+
+    The Time-fetched/Next-update header (prepended separately) is now the
+    only clock in live descriptions; older Data-time/Processed/etc. lines
+    would contradict it once cached. Values never contain tags, so the
+    label-anchored match is exact. Cleans up dangling breaks.
+    """
+    if not html:
+        return html
+    out = _STAMP_RE.sub("", html)
+    out = out.replace("<p><br/>", "<p>").replace("<p> <br/>", "<p>")
+    return out
 
 
 def live_out_dirs(stage, kml_filename):
