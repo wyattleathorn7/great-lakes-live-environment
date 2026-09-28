@@ -5,10 +5,10 @@
   "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III)",
   "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III)",
   "variable": "HTSGW (significant height of combined wind waves and swell, analysis step)",
-  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260927/glwu.grlc_2p5km.t19z.grib2",
-  "data_time_utc": "2026-09-27 03:00 PM EDT",
-  "source_last_modified_utc": "Sun, 27 Sep 2026 19:26:58 GMT",
-  "processing_time_utc": "2026-09-27 05:19 PM EDT",
+  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20260928/glwu.grlc_2p5km.t01z.grib2",
+  "data_time_utc": "2026-09-27 09:00 PM EDT",
+  "source_last_modified_utc": "Mon, 28 Sep 2026 01:26:54 GMT",
+  "processing_time_utc": "2026-09-28 02:50 AM EDT",
   "units": "ft (display); source m",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,14 +25,14 @@
   "missing_data_treatment": "GRIB2 missing value 9999 and off-water grid points rendered fully transparent; never zero-filled.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "model_cycle": "20260927 t19z",
-  "source_id": "glwu-20260927-1900Z",
-  "source_version": "glwu-20260927-1900Z",
+  "model_cycle": "20260928 t01z",
+  "source_id": "glwu-20260928-0100Z",
+  "source_version": "glwu-20260928-0100Z",
   "stats": {
     "valid_cells": 44863,
-    "max_ft": 7.15,
-    "mean_ft": 0.863,
-    "p99_5_ft": 6.66
+    "max_ft": 6.1,
+    "mean_ft": 0.897,
+    "p99_5_ft": 5.81
   },
   "legend_size": [
     640,
@@ -42,48 +42,52 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_ft": 0.98,
-      "grid_ft": 0.9623797333333334,
-      "absdiff_ft": 0.02,
+      "obs_ft": 0.66,
+      "grid_ft": 0.6999125333333334,
+      "absdiff_ft": 0.04,
       "verdict": "OK",
-      "obs_time": "2026-09-27 20:50 UTC"
+      "obs_time": "2026-09-28 06:20 UTC"
     },
     "45002": {
-      "time_utc": "2026-09-27 20:40 UTC",
-      "WDIR_deg": 290.0,
-      "WSPD_ms": 2.0,
+      "time_utc": "2026-09-28 06:30 UTC",
+      "WDIR_deg": 10.0,
+      "WSPD_ms": 1.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
-      "WTMP_C": 19.0,
+      "WTMP_C": 18.2,
       "ATMP_C": 17.9,
       "note": "no WVHT obs"
     },
     "45132": {
-      "obs_ft": 0.98,
-      "grid_ft": 0.5358705333333333,
-      "absdiff_ft": 0.45,
+      "obs_ft": 1.31,
+      "grid_ft": 0.8311461333333333,
+      "absdiff_ft": 0.48,
       "verdict": "OK",
-      "obs_time": "2026-09-27 21:00 UTC"
+      "obs_time": "2026-09-28 06:00 UTC"
     },
     "45012": {
-      "obs_ft": 4.59,
-      "grid_ft": 5.194663333333334,
-      "absdiff_ft": 0.6,
-      "verdict": "OK",
-      "obs_time": "2026-09-27 20:50 UTC"
+      "time_utc": "2026-09-28 06:30 UTC",
+      "WDIR_deg": 50.0,
+      "WSPD_ms": 7.0,
+      "WVHT_m": null,
+      "DPD_s": null,
+      "APD_s": null,
+      "WTMP_C": 18.6,
+      "ATMP_C": 16.8,
+      "note": "no WVHT obs"
     },
     "45005": {
-      "time_utc": "2026-09-27 20:50 UTC",
-      "WDIR_deg": 290.0,
-      "WSPD_ms": 3.0,
+      "time_utc": "2026-09-28 06:20 UTC",
+      "WDIR_deg": 360.0,
+      "WSPD_ms": 8.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
       "WTMP_C": null,
-      "ATMP_C": 20.7,
+      "ATMP_C": 17.8,
       "note": "no WVHT obs"
     }
   },
-  "legend_scale_html": "Wave height (feet, one continuous gradient): <b>0</b> dark blue \u2192 <b>2</b> blue/cyan \u2192 <b>5</b> cyan/green \u2192 <b>9</b> green/yellow \u2192 <b>12\u201315</b> yellow-orange \u2192 orange \u2192 <b>20</b> red \u2192 <b>23\u201326</b> red-violet \u2192 violet \u2192 <b>30+</b> dark purple extreme. Model maximum this run: <b>7.2 ft</b>. Values above 30 ft stay dark purple. Significant height = average of highest third of waves."
+  "legend_scale_html": "Wave height (feet, one continuous gradient): <b>0</b> dark blue \u2192 <b>2</b> blue/cyan \u2192 <b>5</b> cyan/green \u2192 <b>9</b> green/yellow \u2192 <b>12\u201315</b> yellow-orange \u2192 orange \u2192 <b>20</b> red \u2192 <b>23\u201326</b> red-violet \u2192 violet \u2192 <b>30+</b> dark purple extreme. Model maximum this run: <b>6.1 ft</b>. Values above 30 ft stay dark purple. Significant height = average of highest third of waves."
 }

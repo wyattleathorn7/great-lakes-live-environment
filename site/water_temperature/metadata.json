@@ -6,9 +6,9 @@
   "product_name": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
   "variable": "lake surface water temperature (satellite-derived AVHRR/VIIRS composite)",
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
-  "data_time_utc": "2026-09-27 02:51 AM EDT",
-  "source_last_modified_utc": "2026-09-27 02:51 AM EDT",
-  "processing_time_utc": "2026-09-27 09:00 AM EDT",
+  "data_time_utc": "2026-09-28 02:50 AM EDT",
+  "source_last_modified_utc": "2026-09-28 02:50 AM EDT",
+  "processing_time_utc": "2026-09-28 02:50 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -20,18 +20,18 @@
     "lat_max": 49.5
   },
   "color_scale_min": 53,
-  "color_scale_max": 70,
+  "color_scale_max": 69,
   "color_scale_units": "\u00b0F",
   "missing_data_treatment": "land code 255.0 and -9999/no-data rendered fully transparent; never interpolated.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "source_id": "glsea-Sun, 27 Sep 2026 06:51:11 GMT",
-  "source_version": "glsea-Sun-27-Sep-2026-06-51-11-GMT",
+  "source_id": "glsea-Mon, 28 Sep 2026 06:50:39 GMT",
+  "source_version": "glsea-Mon-28-Sep-2026-06-50-39-GMT",
   "stats": {
     "valid_cells": 148682,
-    "lakewide_mean_F": 62.11,
-    "min_F": 51.17,
-    "max_F": 72.19
+    "lakewide_mean_F": 62.17,
+    "min_F": 51.19,
+    "max_F": 72.14
   },
   "legend_size": [
     640,
@@ -41,44 +41,52 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 55.76,
-      "grid_F": 55.805,
-      "absdiff_F": 0.05,
+      "obs_F": 56.3,
+      "grid_F": 55.841,
+      "absdiff_F": 0.46,
       "verdict": "OK",
-      "obs_time": "2026-09-27 12:30 UTC"
+      "obs_time": "2026-09-28 06:20 UTC"
     },
     "45002": {
-      "obs_F": 64.4,
-      "grid_F": 64.79599999999999,
-      "absdiff_F": 0.4,
-      "verdict": "OK",
-      "obs_time": "2026-09-27 12:20 UTC"
+      "time_utc": "2026-09-28 06:20 UTC",
+      "WDIR_deg": 10.0,
+      "WSPD_ms": 2.0,
+      "WVHT_m": 0.0,
+      "DPD_s": null,
+      "APD_s": 2.5,
+      "WTMP_C": null,
+      "ATMP_C": 18.0,
+      "note": "no WTMP obs"
     },
     "45132": {
-      "obs_F": 66.02,
-      "grid_F": 67.955,
-      "absdiff_F": 1.94,
+      "obs_F": 66.2,
+      "grid_F": 67.6715,
+      "absdiff_F": 1.47,
       "verdict": "OK",
-      "obs_time": "2026-09-27 12:00 UTC"
+      "obs_time": "2026-09-28 06:00 UTC"
     },
     "45012": {
-      "obs_F": 65.48,
-      "grid_F": 66.3845,
-      "absdiff_F": 0.9,
-      "verdict": "OK",
-      "obs_time": "2026-09-27 12:30 UTC"
+      "time_utc": "2026-09-28 06:20 UTC",
+      "WDIR_deg": 60.0,
+      "WSPD_ms": 7.0,
+      "WVHT_m": 1.1,
+      "DPD_s": 5.0,
+      "APD_s": 4.0,
+      "WTMP_C": null,
+      "ATMP_C": 16.9,
+      "note": "no WTMP obs"
     },
     "45005": {
-      "time_utc": "2026-09-27 12:30 UTC",
+      "time_utc": "2026-09-28 06:20 UTC",
       "WDIR_deg": 360.0,
-      "WSPD_ms": 6.0,
+      "WSPD_ms": 8.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
       "WTMP_C": null,
-      "ATMP_C": 16.8,
+      "ATMP_C": 17.8,
       "note": "no WTMP obs"
     }
   },
-  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>53\u00b0F</b> (deep blue) \u2192 <b>61.5\u00b0F</b> \u2192 warm <b>70\u00b0F</b> (red). Lakewide mean this run: <b>62.1\u00b0F</b>."
+  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>53\u00b0F</b> (deep blue) \u2192 <b>61\u00b0F</b> \u2192 warm <b>69\u00b0F</b> (red). Lakewide mean this run: <b>62.2\u00b0F</b>."
 }
