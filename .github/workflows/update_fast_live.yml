@@ -1,0 +1,159 @@
+name: Fast live refresh (precipitation + cloud cover)
+
+# Dedicated 5-minute refresh for the two fastest-moving layers. This
+# workflow exists because the main workflow's full cycle (all products +
+# game-fish matrix + full validation + repo commit, ~20-30 min, serialized)
+# cannot keep 5-minute sources fresh, and requesting many frequent
+# schedules on one workflow gets GitHub-throttled into hour-long gaps.
+#
+# Design for speed AND safety:
+# - Only 2 product jobs + a lean publish (no gamefish, no selftest).
+# - Publish validates the FULL site (all 33 products must stay green)
+#   but never commits back to main: it deploys the merged site directly.
+#   No commit => no push races, no history spam from 5-minute cycles.
+#   The hourly main workflow remains the committing path of record.
+# - cancel-in-progress: a newer cycle replaces a stale queued one, so a
+#   backlog can never serve old data as "fresh".
+# - The loud artifact merge (fail rather than deploy stale) is duplicated
+#   here: a quiet stale deploy is worse than a red job.
+#
+# Expected end-to-end: ~3-6 minutes source-to-Pages when GitHub starts the
+# run promptly. Schedule delivery itself is GitHub's throttle to own;
+# manual/nightly dispatches start in seconds.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fast-live-refresh
+  cancel-in-progress: true
+
+jobs:
+  precipitation:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update precipitation
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_precipitation.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Precipitation source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-precipitation
+          path: |
+            site/precipitation
+            site/kml/Great_Lakes_Live_Precipitation.kml
+            site/kml/live/Great_Lakes_Live_Precipitation.kml
+            kml/Great_Lakes_Live_Precipitation.kml
+            output/state/precipitation.json
+          if-no-files-found: warn
+
+  cloud_cover:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update cloud cover
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_cloud_cover.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Cloud source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-cloud_cover
+          path: |
+            site/cloud_cover
+            site/kml/Great_Lakes_Live_Cloud_Cover.kml
+            site/kml/live/Great_Lakes_Live_Cloud_Cover.kml
+            kml/Great_Lakes_Live_Cloud_Cover.kml
+            output/state/cloud_cover.json
+          if-no-files-found: warn
+
+  fast_publish:
+    needs: [precipitation, cloud_cover]
+    # Ship whatever succeeded; a single-source outage must not block the
+    # other layer, and must never block on a red job.
+    if: always()
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+      - name: Merge product artifacts into site/
+        run: |
+          shopt -s nullglob
+          merged=0
+          # Multi-artifact layout: one subdir per artifact name.
+          for a in artifacts/site-*/; do
+            [ -d "$a" ] || continue
+            echo "merging: $a"
+            cp -r "$a/." ./
+            merged=$((merged+1))
+          done
+          # Single-artifact layout: a lone artifact extracts FLAT into
+          # path/ (no per-name subdir). Missing this once caused silent
+          # stale deploys; handle it explicitly.
+          for t in site kml output; do
+            if [ -d "artifacts/$t" ]; then
+              echo "merging flat tree: artifacts/$t"
+              mkdir -p "$t"
+              cp -r "artifacts/$t/." "./$t/"
+              merged=$((merged+1))
+            fi
+          done
+          echo "merged $merged artifact trees"
+          if [ "$merged" -eq 0 ] && [ -n "$(ls -A artifacts 2>/dev/null)" ]; then
+            echo "ERROR: artifacts present but none merged; refusing to deploy stale files"
+            exit 1
+          fi
+          git status --porcelain=v1 --untracked-files=no -- site kml output/state | head -30
+        shell: bash
+      - name: Validate outputs
+        run: python scripts/validate_outputs.py
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -442,7 +442,9 @@ the other products and the Pages publish proceed normally.
   stretches ground spacing, so splat radius 2 closes the diamond gaps.
   Clear (<1%) and missing stay transparent.
 - **Scale:** FIXED 0–100 % spectrum (same stops as before).
-- **Update:** 5-minute scans; workflow polls on a 12-minute cron.
+- **Update:** 5-minute scans; the dedicated fast workflow
+  (`update_fast_live.yml`) polls on its own 5-minute cadence with a lean
+  publish (no commit), so scans ship in minutes.
   Freshness: **"LIVE / CURRENT OBSERVATION (GOES-East 5-min scans)"**.
 - **Retired (v1):** HRRR `TCDC` entire-atmosphere analysis. It verified
   against METARs but its analysis increments carry rectangular
@@ -522,8 +524,9 @@ the other products and the Pages publish proceed normally.
   and water alike). A dry-over-the-basin run is a VALID transparent
   raster, not a failure (same semantics as a clear-sky cloud run).
 - **Refresh (fastest possible):** source rebuilds every 5 minutes; the
-  workflow polls on its own 5-minute cadence (the fastest GitHub Actions
-  allows, precipitation-only schedule); both KML refreshIntervals (entry
+  dedicated fast workflow (`update_fast_live.yml`) polls on its own
+  5-minute cadence with a lean publish (validate + deploy, no commit),
+  so scans ship in minutes; both KML refreshIntervals (entry
   NetworkLink + live Icon) are 30 s, so a newly published scan appears
   in Google Earth within about half a minute.
   Overlay only (GroundOverlay) — Google Earth has no live-video

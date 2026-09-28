@@ -9,18 +9,13 @@ on:
     # queries, GLSEA HEAD Last-Modified; only NIC NAIS (no validator
     # headers) needs its ~3 MB download to hash-compare).
     - cron: "15 * * * *"
-    # Cloud cover rides GOES-East 5-minute scans, so its job ALSO runs on
-    # a 12-minute cadence (10-20 min live requirement); the builder still
-    # skips cheaply when no new scan has posted.
-    # Precipitation rides the IEM NEXRAD 5-minute mosaic, so it ALSO runs
-    # on the 12-minute cadence; Google Earth itself re-polls every 30 s
-    # (KML refreshInterval).
-    - cron: "*/12 * * * *"
-    # Precipitation ONLY: absolute fastest CI cadence GitHub allows
-    # (5 minutes, matching the NEXRAD mosaic rebuild). Only the
-    # precipitation job answers this schedule; every other job's `if:`
-    # ignores it, and publish (if: always()) ships whatever is new.
-    - cron: "*/5 * * * *"
+    # Cloud cover and precipitation refresh on their own 5-minute cadence
+    # in update_fast_live.yml (lean publish, no commit). This workflow keeps
+    # them on the hourly run as fallback, plus manual dispatch.
+    # (An earlier */12 + */5 experiment here proved that stacking frequent
+    # schedules on the heavy full workflow gets throttled into hour-long
+    # gaps and serializes into stale deploys — hence the split.)
+  workflow_dispatch:
     # - 4x daily: game-fish gradients only (GLSEA daily + date-driven
     #   seasonal/diel terms).
     - cron: "35 2,8,14,20 * * *"
@@ -474,7 +469,7 @@ jobs:
           if-no-files-found: warn
 
   cloud_cover:
-    if: ${{ github.event.schedule == '15 * * * *' || github.event.schedule == '*/12 * * * *' || inputs.product == 'all' || inputs.product == 'cloud_cover' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'cloud_cover' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -570,7 +565,7 @@ jobs:
           if-no-files-found: warn
 
   precipitation:
-    if: ${{ github.event.schedule == '15 * * * *' || github.event.schedule == '*/12 * * * *' || github.event.schedule == '*/5 * * * *' || inputs.product == 'all' || inputs.product == 'precipitation' }}
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'precipitation' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
