@@ -15,7 +15,6 @@ on:
     # (An earlier */12 + */5 experiment here proved that stacking frequent
     # schedules on the heavy full workflow gets throttled into hour-long
     # gaps and serializes into stale deploys — hence the split.)
-  workflow_dispatch:
     # - 4x daily: game-fish gradients only (GLSEA daily + date-driven
     #   seasonal/diel terms).
     - cron: "35 2,8,14,20 * * *"
