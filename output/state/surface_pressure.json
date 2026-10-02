@@ -1,6 +1,6 @@
 {
-  "model_cycle": "hrrr.20261001 t19z",
-  "source_id": "hrrr-hrrr.20261001-t19z-mslma-anl",
+  "model_cycle": "hrrr.20261001 t23z",
+  "source_id": "hrrr-hrrr.20261001-t23z-mslma-anl",
   "render_version": 2,
-  "processing_time_utc": "2026-10-01 04:22 PM EDT"
+  "processing_time_utc": "2026-10-01 08:50 PM EDT"
 }
