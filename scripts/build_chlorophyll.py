@@ -66,22 +66,32 @@ def main():
 
 
 def recent_times(n):
-    """Newest n daily timestamps (ISO) from the freshest live dataset."""
+    """Newest n daily timestamps (ISO) + the dataset that owns the newest.
+
+    Newest-wins across DATASETS: every candidate's time axis is probed and
+    the freshest end date wins, so the mosaic can never strand on a stale
+    primary while a fallback has newer data. Unreachable candidates are
+    skipped; per-day gaps fall back across datasets in _build.
+    """
     import datetime as dt
-    end, dataset = None, None
-    last = None
+    best = None  # (end_dt, dataset)
+    errors = []
     for cand in DATASETS:
         try:
             end = latest_time(cand)
-            dataset = cand
-            break
+            end_dt = dt.datetime.fromisoformat(end.replace("Z", "+00:00"))
+            if best is None or end_dt > best[0]:
+                best = (end_dt, cand)
         except Exception as e:
             print(f"[{PRODUCT}] dataset {cand} time-axis probe failed: "
                   f"{str(e)[:100]}")
-            last = e
-    if end is None:
-        raise last or RuntimeError("no chlorophyll dataset reachable")
-    base = dt.datetime.fromisoformat(end.replace("Z", "+00:00"))
+            errors.append(e)
+    if best is None:
+        raise errors[0] if errors else RuntimeError(
+            "no chlorophyll dataset reachable")
+    base, dataset = best
+    print(f"[{PRODUCT}] freshest source: {dataset} "
+          f"({base.strftime('%Y-%m-%dT12:00:00Z')})")
     return ([((base - dt.timedelta(days=i)).strftime("%Y-%m-%dT12:00:00Z"))
              for i in range(n)], dataset)
 
@@ -133,13 +143,25 @@ def _build(bounds, times, dataset):
     lo, hi = CONFIG["valid_min"], CONFIG["valid_max"]
     # newest-valid-wins mosaic over the latest daily composites
     acc = None
+    day_sources = {}
+    # Newest dataset first, then the rest: a day missing on the primary is
+    # filled from whichever candidate has it (cloud gaps / short outages).
+    order = [dataset] + [d for d in DATASETS if d != dataset]
     for t in times:
-        try:
-            la, lo_n, g = fetch_csv(dataset, VARS[dataset], t, bounds["lat_min"],
-                                     bounds["lat_max"], bounds["lon_min"],
-                                     bounds["lon_max"], stride=STRIDE)
-        except Exception as e:
-            print(f"[{PRODUCT}] WARNING: {t} unavailable: {str(e)[:120]}")
+        g = None
+        for ds in order:
+            try:
+                la, lo_n, g = fetch_csv(ds, VARS[ds], t, bounds["lat_min"],
+                                         bounds["lat_max"], bounds["lon_min"],
+                                         bounds["lon_max"], stride=STRIDE)
+                day_sources[t] = ds
+                if ds != dataset:
+                    print(f"[{PRODUCT}] {t} filled from fallback {ds}")
+                break
+            except Exception as e:
+                print(f"[{PRODUCT}] WARNING: {t} on {ds} unavailable: "
+                      f"{str(e)[:120]}")
+        if g is None:
             continue
         v = np.where((g >= lo) & (g <= hi), g, np.nan)
         acc = v if acc is None else np.where(np.isfinite(acc), acc, v)
@@ -227,6 +249,7 @@ def _build(bounds, times, dataset):
     meta["stats"] = {"valid_cells": n_valid, "current_min": cur_min,
                      "current_max": cur_max}
     meta["dataset"] = dataset
+    meta["mosaic_sources"] = day_sources
     # v3 = log-scale color mapping (linear hid all background variation
     # in one blue). One-time rotation to deploy the fixed rendering;
     # afterwards the id tracks source dataset+date only.
@@ -268,6 +291,7 @@ def _build(bounds, times, dataset):
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"data_times": times,
                           "dataset": dataset,
+                          "mosaic_sources": day_sources,
                           "source_id": source_id,
                           "render_version": RENDER_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})

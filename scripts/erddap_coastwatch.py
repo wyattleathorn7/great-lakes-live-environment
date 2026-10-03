@@ -51,17 +51,19 @@ def _retriable(e):
 
 
 def fetch_csv(dataset, var, time_str, lat0, lat1, lon0, lon1, retries=ATTEMPTS,
-              stride=1):
+              stride=1, altitude=True):
     """Return (lats_1d, lons_1d, values_2d) for one time step.
 
     Raises on failure (caller maps to exit 2). time_str like
     '2026-09-12T12:00:00Z'. Works for Lon0360 datasets (pass 0-360 lons)
     and standard -180..180 ones. stride subsamples the grid (stride=2
     halves each axis) to keep large full-domain requests under the
-    front-end rate limits.
+    front-end rate limits. altitude=False omits the [(0.0)] level index
+    for datasets without an altitude dimension (e.g. erdMH1 L3SMI).
     """
     s = f":{stride}:" if stride and stride > 1 else ":"
-    q = (f"{dataset}.csv?{var}[({time_str})][(0.0)]"
+    alt = "[(0.0)]" if altitude else ""
+    q = (f"{dataset}.csv?{var}[({time_str})]{alt}"
          f"[({lat0}){s}({lat1})][({lon0}){s}({lon1})]")
     last = None
     for attempt in range(1, retries + 1):
@@ -88,11 +90,17 @@ def _parse(text, lat0, lat1, lon0, lon1):
     lats, lons, vals = [], [], []
     for line in lines[2:]:
         p = line.split(",")
-        if len(p) < 5:
+        # 5 cols = (time,altitude,lat,lon,value); 4 cols = datasets
+        # without an altitude dimension (e.g. erdMH1 L3SMI).
+        if len(p) == 5:
+            la_i, lo_i, v_i = 2, 3, 4
+        elif len(p) == 4:
+            la_i, lo_i, v_i = 1, 2, 3
+        else:
             continue
         try:
-            la, lo = float(p[2]), float(p[3])
-            v = float(p[4]) if p[4] not in ("NaN", "") else math.nan
+            la, lo = float(p[la_i]), float(p[lo_i])
+            v = float(p[v_i]) if p[v_i] not in ("NaN", "") else math.nan
         except ValueError:
             continue
         lats.append(la)
