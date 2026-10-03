@@ -2,7 +2,7 @@
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <name>🐟 LIVE LAKE STURGEON DISTRIBUTION</name>
-    <description><![CDATA[<p><b>Time fetched:</b> 7:58PM EDT</p><h2>LAKE STURGEON — LIVE MODELED DISTRIBUTION</h2><p>Live modeled distribution estimate based on current environmental conditions, known species behavior, movement knowledge, and available telemetry evidence. This layer does not represent a census or confirmed presence of individual fish.</p><p>This entry auto-refreshes from the live overlay (telemetry &times; seasonal &times; thermal &times; diel &times; habitat &times; corridors, weighted mean). Add this file once; new model cycles appear automatically.</p><p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA and acoustic-telemetry evidence (USGS real-time + GLATOS deployments).</p>]]></description>
+    <description><![CDATA[<p><b>Time fetched:</b> 4:31AM EDT</p><h2>LAKE STURGEON — LIVE MODELED DISTRIBUTION</h2><p>Live modeled distribution estimate based on current environmental conditions, known species behavior, movement knowledge, and available telemetry evidence. This layer does not represent a census or confirmed presence of individual fish.</p><p>This entry auto-refreshes from the live overlay (telemetry &times; seasonal &times; thermal &times; diel &times; habitat &times; corridors, weighted mean). Add this file once; new model cycles appear automatically.</p><p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA and acoustic-telemetry evidence (USGS real-time + GLATOS deployments).</p>]]></description>
     <NetworkLink>
       <name>🐟 LIVE LAKE STURGEON DISTRIBUTION — auto-refresh</name>
       <Link>
