@@ -272,14 +272,11 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   candidate time axis is probed and the freshest end date owns the mosaic
   (a fixed priority order previously stranded the mosaic on SQ 09-18 while
   NRT had 09-21; the NRT id 404'd on 2026-09-23 but is back online).
-  Because NRT KdPAR stalled after 2026-09-21 while the layer visibly
-  changes day-to-day, mosaic days missing on BOTH KdPAR ids fall back to
-  MODIS Aqua Kd490 NRT (`erdMH1kd4901day_R2022NRT`, `Kd_490`, KD2,
-  valid 0.01–6.0 m⁻¹, verified publishing ~daily, newest 2026-09-27) so
-  new information still ships every 24 h; Kd490 is attenuation at 490 nm,
-  not PAR broadband, but shares units and larger=more-turbid direction
-  and the same fixed log display scale, and every Kd490 day is labeled in
-  `mosaic_sources` + metadata `fallback_note` + legend subtitle. Variable `kd_par` = Diffuse
+  Retired 2026-10-03: a MODIS Aqua Kd490 NRT per-day fallback mixed a
+  DIFFERENT variable (attenuation at 490 nm, numerically lower than PAR
+  broadband for the same water) into the KdPAR scale — whole lakes pinned
+  to the floor navy with square seams at the variable boundaries. One
+  variable, one scale since: missing days stay transparent. Variable `kd_par` = Diffuse
   Attenuation Coefficient for PAR (NOAA MECB algorithm; product status
   Experimental — stated in metadata), m⁻¹, valid 0.016–32. Larger values
   mean MORE turbid water (clear water naturally sits blue). The legacy

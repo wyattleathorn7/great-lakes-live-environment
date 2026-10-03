@@ -47,17 +47,12 @@ CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
 # so the mosaic always tracks the freshest operational stream.
 DATASETS = ["nesdisVHNkdparDaily", "nesdisVHNSQkdparDaily"]
 VAR = "kd_par"
-# Daily-fresh fallback of last resort (verified live 2026-09-28, newest
-# 2026-09-27, publishes ~daily): MODIS Aqua Kd490 NRT
-# (erdMH1kd4901day_R2022NRT, Kd_490, KD2 algorithm, valid 0.01-6.0 m^-1,
-# no altitude dimension). DIFFERENT variable from KdPAR (attenuation at
-# 490 nm, not PAR broadband) but same physical direction (larger = more
-# turbid) and same units, so it shares the fixed log display scale.
-# Used ONLY for mosaic days missing on BOTH KdPAR ids, and every such
-# day is labeled in mosaic_sources + metadata fallback note.
-K490_DATASET = "erdMH1kd4901day_R2022NRT"
-K490_VAR = "Kd_490"
-K490_MIN, K490_MAX = 0.01, 6.0
+# NOTE (2026-10-03): a MODIS Aqua Kd490 NRT daily fallback lived here briefly.
+# Removed: Kd490 (attenuation at 490 nm) reads numerically LOWER than KdPAR
+# (broadband PAR) for the same water, so mixed mosaics pinned whole lakes
+# to the scale floor (dark navy) and drew visible square seams between the
+# variables. One variable, one scale: KdPAR only, even when that means an
+# older newest-day during KdPAR stalls. Honest staleness beats false color.
 KML_FILE = "Great_Lakes_Live_Water_Clarity_Turbidity.kml"
 OVERLAY_NAME = "\U0001F30A LIVE WATER CLARITY / TURBIDITY"
 SKIP_NOTE = "Turn on/off independently of all other layers."
@@ -97,25 +92,9 @@ def recent_times(n):
             errors.append(e)
     if best is None:
         raise errors[0] if errors else RuntimeError("no KdPAR dataset reachable")
-    base_kd, dataset = best
-    # K490 fallback clock: MODIS Aqua NRT publishes ~daily and may be newer
-    # than any KdPAR id (e.g. 2026-09-27 vs KdPAR 2026-09-21). The mosaic
-    # anchors at the freshest of the two so new clarity information ships
-    # every 24 h even while KdPAR stalls; KdPAR days still win wherever
-    # both variables have the day (see _build).
-    try:
-        k490_end = latest_time(K490_DATASET)
-        base_k490 = dt.datetime.fromisoformat(k490_end.replace("Z", "+00:00"))
-    except Exception as e:
-        print(f"[{PRODUCT}] K490 time-axis probe failed: {str(e)[:100]}")
-        base_k490 = None
-    if base_k490 is not None and base_k490 > base_kd:
-        base, anchor = base_k490, K490_DATASET
-    else:
-        base, anchor = base_kd, dataset
-    print(f"[{PRODUCT}] freshest KdPAR: {dataset} "
-          f"({base_kd.strftime('%Y-%m-%dT12:00:00Z')}); "
-          f"mosaic anchor: {anchor} ({base.strftime('%Y-%m-%dT12:00:00Z')})")
+    base, anchor = best
+    print(f"[{PRODUCT}] freshest KdPAR: {anchor} "
+          f"({base.strftime('%Y-%m-%dT12:00:00Z')})")
     return ([((base - dt.timedelta(days=i)).strftime("%Y-%m-%dT12:00:00Z"))
              for i in range(n)], anchor)
 
@@ -173,10 +152,9 @@ def _build(bounds, times, dataset):
     grids = {}
     day_sources = {}
     day_vars = {}
-    # Per-day source order: KdPAR ids newest-first (anchor first), then the
-    # K490 daily fallback. KdPAR wins every day it has; K490 fills days
-    # KdPAR lacks entirely (stalls/outages) so the mosaic still advances
-    # ~daily. Different admission windows per variable.
+    # Per-day source order: KdPAR ids newest-first (anchor first). One
+    # variable only (see note at DATASETS): days missing on both ids stay
+    # transparent rather than borrowing a different variable.
     kdpar_order = ([dataset] + [d for d in DATASETS if d != dataset]
                    if dataset in DATASETS else list(DATASETS))
     for t in times:
@@ -196,27 +174,11 @@ def _build(bounds, times, dataset):
                       f"{str(e)[:120]}")
         vmin, vmax = lo, hi
         if g is None:
-            try:
-                # Stride 1: this L3SMI dataset returns empty grids on
-                # strided requests; the basin subset is small enough.
-                la, lo_n, g = fetch_csv(
-                    K490_DATASET, K490_VAR, t, bounds["lat_min"],
-                    bounds["lat_max"], bounds["lon_min"], bounds["lon_max"],
-                    altitude=False)
-                day_sources[t] = K490_DATASET
-                day_vars[t] = K490_VAR
-                vmin, vmax = K490_MIN, K490_MAX
-                print(f"[{PRODUCT}] {t} filled from K490 fallback "
-                      f"({K490_DATASET})")
-            except Exception as e:
-                print(f"[{PRODUCT}] WARNING: {t} on {K490_DATASET} "
-                      f"unavailable: {str(e)[:120]}")
-        if g is None:
             continue
         v = np.where((g >= vmin) & (g <= vmax), g, np.nan)
-        # Resample each day to the canvas BEFORE mosaicking: sources have
-        # different native grids (KdPAR 241x521 vs K490 217x469) that
-        # cannot be combined raw. Newest-valid-wins then runs on canvas.
+    # Resample each day to the canvas BEFORE mosaicking: sources have
+    # different native grids that cannot be combined raw. Newest-valid-wins
+    # then runs on canvas.
         try:
             fday = _bin_grid(la, lo_n, v, bounds, W, H)
         except Exception as e:
@@ -228,8 +190,8 @@ def _build(bounds, times, dataset):
     if acc is None:
         print(f"[{PRODUCT}] VALIDATION FAILED: no daily files. Keeping previous.")
         return 2
-    # Honest newest: the anchor date may hold no data on any source (e.g.
-    # K490 time axis newer than its retrievable days). All stamps below use
+    # Honest newest: the anchor date may hold no data on any source.
+    # All stamps below use
     # the newest day actually present in the mosaic, and the source id
     # tracks that day's owner — so the id only advances when real data does.
     eff_newest = max(day_sources)
@@ -272,22 +234,12 @@ def _build(bounds, times, dataset):
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
     labels = KDPAR_LOG_TICKS
-    k490_days = sorted(t[:10] for t, s in day_sources.items()
-                       if K490_DATASET in s)
-    k490_note = (""
-                 if not k490_days else
-                 f" Mosaic day(s) {', '.join(k490_days)} from MODIS Aqua "
-                 f"Kd490 NRT ({K490_VAR}, KD2, attenuation at 490 nm — "
-                 f"same m^-1 units and larger=more-turbid direction as "
-                 f"KdPAR; KdPAR stalled upstream).")
     subtitle = (f"Kd(PAR) ({unit}) — larger = more turbid  |  "
-                f"{eff_newest[:10]} (+{MOSAIC_DAYS - 1}d mosaic)"
-                f"{' +Kd490' if k490_days else ''}")
+                f"{eff_newest[:10]} (+{MOSAIC_DAYS - 1}d mosaic)")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
-        f"Source: NOAA CoastWatch VIIRS KdPAR"
-        f"{' + MODIS Kd490 fallback' if k490_days else ''}  |  "
+        f"Source: NOAA CoastWatch VIIRS KdPAR  |  "
         f"Processed {now_det_str()}",
         note="Transparent = land/cloud/missing.")
     scale_html = (f"Diffuse attenuation coefficient for PAR ({unit}), "
@@ -317,14 +269,6 @@ def _build(bounds, times, dataset):
     meta["dataset"] = eff_owner
     meta["mosaic_sources"] = day_sources
     meta["mosaic_variables"] = day_vars
-    if k490_days:
-        meta["fallback_note"] = (
-            f"Mosaic day(s) {', '.join(k490_days)} use MODIS Aqua Kd490 NRT "
-            f"({K490_DATASET}, {K490_VAR}, KD2 algorithm, valid "
-            f"[{K490_MIN},{K490_MAX}] m^-1) because no KdPAR id published "
-            f"those days. Kd490 is attenuation at 490 nm (not PAR "
-            f"broadband) but shares units and larger=more-turbid "
-            f"direction; values shown exactly as observed.")
     # v3 = fixed log-spaced absolute scale (same-value-same-color).
     # The id tracks the newest day ACTUALLY present and its owner, so it
     # advances exactly when real data does (never on empty anchor days).
@@ -343,7 +287,6 @@ def _build(bounds, times, dataset):
         f"<b>Update:</b> daily composites<br/>"
         f"<b>Data time:</b> {iso_to_det(eff_newest)} (mosaic {eff_newest[:10]}..{times[-1][:10]})<br/>"
         f"<b>Processed:</b> {meta['processing_time_utc']}<br/>"
-        f"{'<b>Source fallback:</b> ' + meta['fallback_note'] + '<br/>' if k490_days else ''}"
         f"<b>Why turbid water turns red/purple:</b> {CONFIG['why_extreme']}<br/>"
         f"<b>Provenance:</b> <a href=\"{CONFIG['source_url']}\">ERDDAP dataset</a></p>")
     meta["folder_html"] = folder_html
