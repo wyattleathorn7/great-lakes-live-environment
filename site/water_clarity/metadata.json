@@ -8,7 +8,7 @@
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNkdparDaily.html",
   "data_time_utc": "2026-09-30 08:00 AM EDT (newest of 7-day mosaic)",
   "source_last_modified_utc": "n/a (ERDDAP)",
-  "processing_time_utc": "2026-10-03 07:44 AM EDT",
+  "processing_time_utc": "2026-10-03 12:22 PM EDT",
   "units": "m^-1 (display); source m^-1",
   "spatial_resolution_source": "~4 km VIIRS L3, bilinear-resampled to canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -34,14 +34,14 @@
     "low": 0.022000002,
     "high": 6.3350005,
     "percentiles": {
-      "p5": 0.13382231300881356,
-      "p25": 0.16072605226300196,
-      "p50": 0.18196385075082672,
-      "p75": 0.2172151431441307,
-      "p95": 0.5922471970319747,
-      "p99": 2.575596332550049
+      "p5": 0.13943310053924662,
+      "p25": 0.1626995270501411,
+      "p50": 0.18293875576001917,
+      "p75": 0.21745743345638305,
+      "p95": 0.5931925117969508,
+      "p99": 2.4831618595123106
     },
-    "n_obs": 544176,
+    "n_obs": 564176,
     "extends": []
   },
   "stats": {
@@ -70,5 +70,5 @@
   },
   "source_id": "nesdisVHNkdparDaily-v3-2026-09-30",
   "source_version": "nesdisVHNkdparDaily-v3-2026-09-30",
-  "folder_html": "<h2>LIVE WATER CLARITY / TURBIDITY</h2><p>Diffuse attenuation coefficient for photosynthetically available radiation (KdPAR): how quickly sunlight fades with depth. Larger values mean more turbid water; smaller values mean clearer water. Source values are never altered for color convenience.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_clarity/legend.png?v=nesdisVHNkdparDaily-v3-2026-09-30\" width=\"600\" alt=\"key\"></p><p>Diffuse attenuation coefficient for PAR (m^-1), FIXED log-spaced scale <b>LOWEST 0.02</b> clearest (dark blue) \u2192 0.1 \u2192 0.3 \u2192 <b>1.0</b> turbid (red) \u2192 <b>HIGHEST+ 5+</b> most turbid (violet). Larger values always mean murkier water; source values are never altered.</p><p><b>Exact variable:</b> kd_par (Diffuse Attenuation Coefficient for PAR; NOAA MECB algorithm; product status Experimental)<br/><b>Units:</b> m^-1<br/><b>Source:</b> NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Global 4 km, Daily (ERDDAP; newest-wins across nesdisVHNkdparDaily NRT and nesdisVHNSQkdparDaily Science Quality, per-day fallback) + MODIS Aqua Kd490 NRT (erdMH1kd4901day_R2022NRT) daily fallback for days KdPAR lacks<br/><b>Update:</b> daily composites<br/><b>Data time:</b> 2026-09-30 08:00 AM EDT (mosaic 2026-09-30..2026-09-24)<br/><b>Processed:</b> 2026-10-03 07:44 AM EDT<br/><b>Why turbid water turns red/purple:</b> Rare very-turbid water (storm resuspension, river plumes, intense blooms) compresses into red-violet/deep-purple; ordinary clear conditions own most of the color resolution.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNkdparDaily.html\">ERDDAP dataset</a></p>"
+  "folder_html": "<h2>LIVE WATER CLARITY / TURBIDITY</h2><p>Diffuse attenuation coefficient for photosynthetically available radiation (KdPAR): how quickly sunlight fades with depth. Larger values mean more turbid water; smaller values mean clearer water. Source values are never altered for color convenience.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_clarity/legend.png?v=nesdisVHNkdparDaily-v3-2026-09-30\" width=\"600\" alt=\"key\"></p><p>Diffuse attenuation coefficient for PAR (m^-1), FIXED log-spaced scale <b>LOWEST 0.02</b> clearest (dark blue) \u2192 0.1 \u2192 0.3 \u2192 <b>1.0</b> turbid (red) \u2192 <b>HIGHEST+ 5+</b> most turbid (violet). Larger values always mean murkier water; source values are never altered.</p><p><b>Exact variable:</b> kd_par (Diffuse Attenuation Coefficient for PAR; NOAA MECB algorithm; product status Experimental)<br/><b>Units:</b> m^-1<br/><b>Source:</b> NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, Global 4 km, Daily (ERDDAP; newest-wins across nesdisVHNkdparDaily NRT and nesdisVHNSQkdparDaily Science Quality, per-day fallback) + MODIS Aqua Kd490 NRT (erdMH1kd4901day_R2022NRT) daily fallback for days KdPAR lacks<br/><b>Update:</b> daily composites<br/><b>Data time:</b> 2026-09-30 08:00 AM EDT (mosaic 2026-09-30..2026-09-24)<br/><b>Processed:</b> 2026-10-03 12:22 PM EDT<br/><b>Why turbid water turns red/purple:</b> Rare very-turbid water (storm resuspension, river plumes, intense blooms) compresses into red-violet/deep-purple; ordinary clear conditions own most of the color resolution.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNkdparDaily.html\">ERDDAP dataset</a></p>"
 }
