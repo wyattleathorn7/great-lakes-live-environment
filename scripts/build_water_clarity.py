@@ -261,7 +261,9 @@ def _build(bounds, times, dataset):
     # tracked below for QC.
     stops = KDPAR_LOG_STOPS
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
-    rgba = apply_shoreline_mask(rgba)  # water-only product
+    # Hard shoreline clip: majority-land pixels go fully transparent so no
+    # fringe blocks sit on shore at high zoom (water-only product).
+    rgba = apply_shoreline_mask(rgba, hard_cut=True)  # water-only product
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     if int((rgba[:, :, 3] > 0).sum()) < 100:
         print(f"[{PRODUCT}] VALIDATION FAILED: empty raster. Keeping previous.")

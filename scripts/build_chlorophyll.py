@@ -204,7 +204,9 @@ def _build(bounds, times, dataset):
         logfield = np.where(np.isfinite(field) & (field > 0),
                             np.log10(np.maximum(field, lo)), np.nan)
     rgba = render_rgba(logfield, stops, bounds["overlay_alpha"])
-    rgba = apply_shoreline_mask(rgba)  # water-only product
+    # Hard shoreline clip: majority-land pixels go fully transparent so no
+    # fringe blocks sit on shore at high zoom (water-only product).
+    rgba = apply_shoreline_mask(rgba, hard_cut=True)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     if int((rgba[:, :, 3] > 0).sum()) < 100:
         print(f"[{PRODUCT}] VALIDATION FAILED: empty raster. Keeping previous.")
