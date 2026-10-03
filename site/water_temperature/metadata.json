@@ -6,9 +6,9 @@
   "product_name": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
   "variable": "lake surface water temperature (satellite-derived AVHRR/VIIRS composite)",
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
-  "data_time_utc": "2026-10-02 02:50 AM EDT",
-  "source_last_modified_utc": "2026-10-02 02:50 AM EDT",
-  "processing_time_utc": "2026-10-02 03:03 AM EDT",
+  "data_time_utc": "2026-10-03 02:51 AM EDT",
+  "source_last_modified_utc": "2026-10-03 02:51 AM EDT",
+  "processing_time_utc": "2026-10-03 07:44 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,13 +25,13 @@
   "missing_data_treatment": "land code 255.0 and -9999/no-data rendered fully transparent; never interpolated.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "source_id": "glsea-Fri, 02 Oct 2026 06:50:34 GMT",
-  "source_version": "glsea-Fri-02-Oct-2026-06-50-34-GMT",
+  "source_id": "glsea-Sat, 03 Oct 2026 06:51:11 GMT",
+  "source_version": "glsea-Sat-03-Oct-2026-06-51-11-GMT",
   "stats": {
     "valid_cells": 148682,
-    "lakewide_mean_F": 62.27,
-    "min_F": 52.48,
-    "max_F": 70.07
+    "lakewide_mean_F": 62.01,
+    "min_F": 52.45,
+    "max_F": 70.09
   },
   "legend_size": [
     640,
@@ -41,44 +41,48 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 55.58,
-      "grid_F": 56.9525,
-      "absdiff_F": 1.37,
+      "obs_F": 54.86,
+      "grid_F": 56.605999999999995,
+      "absdiff_F": 1.75,
       "verdict": "OK",
-      "obs_time": "2026-10-02 06:40 UTC"
+      "obs_time": "2026-10-03 11:20 UTC"
     },
     "45002": {
-      "obs_F": 64.22,
-      "grid_F": 65.0975,
-      "absdiff_F": 0.88,
+      "obs_F": 64.4,
+      "grid_F": 64.4045,
+      "absdiff_F": 0.0,
       "verdict": "OK",
-      "obs_time": "2026-10-02 06:30 UTC"
+      "obs_time": "2026-10-03 11:10 UTC"
     },
     "45132": {
-      "obs_F": 66.74,
-      "grid_F": 67.334,
-      "absdiff_F": 0.59,
+      "obs_F": 65.12,
+      "grid_F": 67.379,
+      "absdiff_F": 2.26,
       "verdict": "OK",
-      "obs_time": "2026-10-02 06:00 UTC"
+      "obs_time": "2026-10-03 11:00 UTC"
     },
     "45012": {
-      "obs_F": 65.3,
-      "grid_F": 65.6645,
-      "absdiff_F": 0.36,
-      "verdict": "OK",
-      "obs_time": "2026-10-02 06:30 UTC"
+      "time_utc": "2026-10-03 11:20 UTC",
+      "WDIR_deg": 40.0,
+      "WSPD_ms": 5.0,
+      "WVHT_m": 0.7,
+      "DPD_s": 5.0,
+      "APD_s": 3.4,
+      "WTMP_C": null,
+      "ATMP_C": 13.2,
+      "note": "no WTMP obs"
     },
     "45005": {
-      "time_utc": "2026-10-02 06:40 UTC",
-      "WDIR_deg": 190.0,
-      "WSPD_ms": 2.0,
+      "time_utc": "2026-10-03 11:20 UTC",
+      "WDIR_deg": 30.0,
+      "WSPD_ms": 8.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
       "WTMP_C": null,
-      "ATMP_C": 21.2,
+      "ATMP_C": 15.5,
       "note": "no WTMP obs"
     }
   },
-  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>54\u00b0F</b> (deep blue) \u2192 <b>61.5\u00b0F</b> \u2192 warm <b>69\u00b0F</b> (red). Lakewide mean this run: <b>62.3\u00b0F</b>."
+  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>54\u00b0F</b> (deep blue) \u2192 <b>61.5\u00b0F</b> \u2192 warm <b>69\u00b0F</b> (red). Lakewide mean this run: <b>62.0\u00b0F</b>."
 }
