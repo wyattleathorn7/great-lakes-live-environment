@@ -703,7 +703,7 @@ jobs:
           fi
           # Proof of application in the log (loud by design: a quiet stale
           # deploy is worse than a red job).
-          git status --porcelain=v1 --untracked-files=no -- site kml output/state | head -30
+          git status --porcelain=v1 --untracked-files=no -- site kml output/state | head -30 || true
           # NOTE: `head` closes the pipe after 30 lines, so plain
           # `ls | head` dies with SIGPIPE under `pipefail` once the tree
           # outgrows the pipe buffer — must not fail the publish job.
