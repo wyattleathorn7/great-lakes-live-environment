@@ -66,7 +66,7 @@ PRODUCTS = {
     "aurora": {"kml": "Great_Lakes_Live_Ovation_Aurora_Forecast.kml",
                "max_opaque_min": 0},  # quiet-oval intervals => transparent OK (like clear-sky cloud)
     "bacteria": {"kml": "Great_Lakes_Live_Water_Quality.kml",
-                 "max_opaque_min": 100},  # NO DATA slate covers all lake water
+                 "max_opaque_min": 0},  # NO DATA water is transparent; halos only where sampled
     "gamefish_walleye": {"kml": "WALLEYE_LIVE.kml",
                          "max_opaque_min": 10_000},
     "gamefish_yellow_perch": {"kml": "YELLOW_PERCH_LIVE.kml",

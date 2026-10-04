@@ -20,7 +20,7 @@ Authoritative basis:
 No basin-wide continuous bacterial raster exists (EPA programs are
 station-based); this layer therefore NEVER fabricates measurements:
   - water with a defensible observation -> 13-step gradient halo
-  - water without one -> explicit NO DATA slate (never zero/low)
+  - water without one -> transparent NO DATA (never zero/low)
 
 Coverage: 100% of the five Great Lakes water surfaces via the shared
 NOAA shoreline mask (land transparent). US + Canadian water included;
@@ -76,7 +76,8 @@ KML_FILE = "Great_Lakes_Live_Water_Quality.kml"
 OVERLAY_NAME = "\U0001F4A7 LIVE WATER QUALITY"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 WATER_ALPHA = 205
-NODATA_RGB = (110, 125, 150)  # explicit NO DATA slate over water
+NODATA_RGB = (110, 125, 150)  # NO DATA key swatch (legend only; on the
+# map NO DATA water stays transparent so a gap never reads as clean)
 Halo_R = 14  # px splat radius per monitoring station (~ display only)
 UA = {"User-Agent": "great-lakes-live-environment/1.0"}
 
@@ -417,6 +418,14 @@ def draw_log_legend(path, title, subtitle, unit_label, ticks, source_line, note=
         d.text((min(max(x - tw / 2, 2), W - tw - 2), by + bh + 4),
                text, font=f_small, fill=(10, 10, 10))
     d.text((bx + bw - 70, by + bh + 24), unit_label, font=f_body, fill=(10, 10, 10))
+    # NO DATA key swatch (top-right): slate box + label. On the map itself
+    # NO DATA water is transparent; the swatch preserves the distinction
+    # between "no observation" and "low/zero" inside the key image.
+    sx, sy, sw, sh = W - 110, 10, 34, 16
+    d.rectangle([sx, sy, sx + sw, sy + sh], fill=NODATA_RGB + (255,),
+                outline=(40, 40, 40))
+    d.text((sx + sw + 6, sy - 2), "NO DATA", font=f_small,
+           fill=(10, 10, 10))
     d.text((14, H - 42), source_line, font=f_small, fill=(60, 60, 60))
     if note:
         d.text((14, H - 24), note, font=f_small, fill=(60, 60, 60))
@@ -485,10 +494,11 @@ def _build(obs_rows, query_url, fetch_ok, fetch_note, source_id):
     wm = load_watermask()
     water = wm >= 0.5
 
-    # Base: explicit NO DATA slate over 100% of lake water; land transparent.
+    # Base: fully transparent. Water WITHOUT a live observation stays
+    # transparent (explicit NO DATA treatment — never zero/low fill, so a
+    # missing observation can never read as clean water). Observation
+    # halos paint only on lake water below.
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    rgba[water, 0:3] = NODATA_RGB
-    rgba[water, 3] = WATER_ALPHA
 
     # Halo field: E.coli-equivalent per pixel (NaN = no observation).
     halo = np.full((H, W), np.nan)
@@ -541,7 +551,7 @@ def _build(obs_rows, query_url, fetch_ok, fetch_note, source_id):
         os.path.join(stage_prod, "legend.png"), "LIVE WATER QUALITY", subtitle,
         "CFU/100 mL", BACTERIA_TICKS,
         f"Source: {fetch_note} | EPA 2012 RWQC GM/STV/BAV",
-        note="Slate gray = NO DATA (not zero). Source checked hourly.")
+        note="No observations = transparent (NO DATA). Source checked hourly.")
     scale_html = (
         f"Human-health concern from fecal-indicator evidence, FIXED log scale "
         f"(E.coli-equiv CFU/100 mL): <b>DARK BLUE 10</b> (no detected/lowest) &rarr; "
@@ -551,7 +561,8 @@ def _build(obs_rows, query_url, fetch_ok, fetch_note, source_id):
         f"<b>ORANGE 320</b> (high) &rarr; <b>RED 410</b> (very high, EPA STV) &rarr; "
         f"<b>NEON RED 700</b> (extremely high) &rarr; <b>MAGENTA 1000</b> (severe) &rarr; "
         f"<b>PURPLE 2000</b> (extremely severe) &rarr; <b>DARK PURPLE HIGHEST+ 5000+</b> (extreme). "
-        f"<b>LOWEST 10</b>. Slate gray water = <b>NO DATA</b>, never zero bacteria.")
+        f"<b>LOWEST 10</b>. Water without observations stays transparent (<b>NO DATA</b>, "
+        f"slate swatch in key) — never zero bacteria.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
@@ -562,7 +573,8 @@ def _build(obs_rows, query_url, fetch_ok, fetch_note, source_id):
                           f"{Halo_R}px display only — no interpolation between stations, no modeled fill",
         color_min=10.0, color_max=BACTERIA_MAX, color_units="E.coli-equiv CFU/100 mL",
         missing_data_treatment=(
-            "NO authoritative observation -> slate NO DATA over water (never zero/low). "
+            "NO authoritative observation -> water stays transparent (explicit NO DATA; "
+            "never zero/low fill). "
             "Observations older than 7 days are stale -> NO DATA. "
             "Land always transparent (shore mask)."))
     meta["legend_size"] = [lw, lh]
@@ -611,7 +623,8 @@ def _build(obs_rows, query_url, fetch_ok, fetch_note, source_id):
         f"<p>Available authoritative evidence of human-health-relevant bacterial/fecal contamination in Great "
         f"Lakes recreational waters, as one unified concern spectrum ({color_list}). Dark blue = no detected "
         f"contamination / lowest measured condition; dark purple = extremely high contamination / extremely poor "
-        f"human-health water condition. Slate gray water = NO DATA.</p>"
+        f"human-health water condition. Water without a live observation stays transparent "
+        f"(NO DATA — see the slate swatch in the key).</p>"
         f"<h2>Source / Study</h2>"
         f"<p><b>Measures:</b> fecal-indicator bacteria — E. coli and enterococci (CFU/100 mL) — from the USGS "
         f"Water Quality Portal (WQX discrete samples) within EPA's BEACH/BEACON recreational-water framework.<br/>"
@@ -631,7 +644,7 @@ def _build(obs_rows, query_url, fetch_ok, fetch_note, source_id):
         f"<p><b>Standards behind the colors:</b> EPA 2012 RWQC — E. coli GM 126 / STV 410, enterococci GM 35 / "
         f"STV 130, Beach Action Value E. coli 235 (notification level). Full per-color value/unit/threshold/source/"
         f"rationale table is in metadata.json `thresholds`.</p>"
-        f"<p><b>NO DATA ≠ zero:</b> slate gray means no defensible observation exists there — it must never be read "
+        f"<p><b>NO DATA ≠ zero:</b> transparent water means no defensible observation exists there — it must never be read "
         f"as clean water. A missing observation never becomes zero bacteria.</p>"
         f"<p><b>Coverage:</b> the visual layer spans 100% of the five Great Lakes water surfaces (US + Canadian "
         f"waters; unrelated inland lakes excluded; land transparent), while measured-data availability varies — "

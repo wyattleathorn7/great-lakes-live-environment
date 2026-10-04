@@ -13,7 +13,7 @@
   "temporal": "SWPC publishes a new OVATION run about every 5 minutes; this layer checks the source hourly and rebuilds only when the Observation/Forecast time changes",
   "valid_min": 0.0,
   "valid_max": 100.0,
-  "detection_floor": 2.0,
+  "detection_floor": 1.0,
   "viewline_threshold": 5.0,
   "refresh_interval_seconds": 3600,
   "what": "Expected auroral intensity over the Great Lakes from NOAA's OVATION Prime model - the same model family behind the NOAA Aurora Viewline product. This is an auroral forecast/prediction, not a guarantee that an observer will see aurora from any specific location.",
