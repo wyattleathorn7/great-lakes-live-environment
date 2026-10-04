@@ -621,9 +621,9 @@ jobs:
           name: site-aurora
           path: |
             site/aurora
-            site/kml/Great_Lakes_Live_Aurora.kml
-            site/kml/live/Great_Lakes_Live_Aurora.kml
-            kml/Great_Lakes_Live_Aurora.kml
+            site/kml/Great_Lakes_Live_Ovation_Aurora_Forecast.kml
+            site/kml/live/Great_Lakes_Live_Ovation_Aurora_Forecast.kml
+            kml/Great_Lakes_Live_Ovation_Aurora_Forecast.kml
             output/state/aurora.json
           if-no-files-found: warn
 

@@ -63,7 +63,7 @@ PRODUCTS = {
                          "max_opaque_min": 10_000},
     "wave_direction": {"kml": "Great_Lakes_Live_Wave_Direction.kml",
                        "max_opaque_min": 10_000},
-    "aurora": {"kml": "Great_Lakes_Live_Aurora.kml",
+    "aurora": {"kml": "Great_Lakes_Live_Ovation_Aurora_Forecast.kml",
                "max_opaque_min": 0},  # quiet-oval intervals => transparent OK (like clear-sky cloud)
     "bacteria": {"kml": "Great_Lakes_Live_Water_Quality.kml",
                  "max_opaque_min": 100},  # NO DATA slate covers all lake water

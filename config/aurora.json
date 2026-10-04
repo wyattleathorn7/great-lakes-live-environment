@@ -1,6 +1,6 @@
 {
   "product": "aurora",
-  "title": "LIVE NOAA AURORA",
+  "title": "LIVE OVATION AURORA FORECAST",
   "freshness_label": "LIVE / CURRENT FORECAST (OVATION Prime, hourly check)",
   "source_name": "NOAA/SWPC OVATION Prime aurora model (Aurora Viewline product family)",
   "source_url": "https://www.spaceweather.gov/products/aurora-viewline-tonight-and-tomorrow-night-experimental",

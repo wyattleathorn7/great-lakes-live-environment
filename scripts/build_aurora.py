@@ -1,4 +1,4 @@
-"""Pipeline — LIVE NOAA AURORA (independent).
+"""Pipeline — LIVE OVATION AURORA FORECAST (independent).
 
 NOAA/SWPC OVATION Prime aurora model (the model family behind the NOAA
 Aurora Viewline Tonight/Tomorrow-Night product):
@@ -60,8 +60,8 @@ from gradient_scale import draw_scale_legend, render_rgba
 PRODUCT = "aurora"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
-KML_FILE = "Great_Lakes_Live_Aurora.kml"
-OVERLAY_NAME = "\U0001F30C LIVE NOAA AURORA"
+KML_FILE = "Great_Lakes_Live_Ovation_Aurora_Forecast.kml"
+OVERLAY_NAME = "\U0001F30C LIVE OVATION AURORA FORECAST"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 AURORA_ALPHA = 205  # same as the shared overlay_alpha
 UA = {"User-Agent": "great-lakes-live-environment/1.0"}

@@ -23,7 +23,7 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | 🧭 Live Wave Direction | NCEP GLWU v2.1 PERPW peak period (seconds) + WVDIR travel arrows, water-only | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 | 🧭 Live Wave Direction | NCEP GLWU v2.1 PERPW peak period (seconds) + WVDIR travel arrows, water-only | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 | 🌧️ Live Precipitation | IEM (Iowa State) CONUS NEXRAD N0Q base reflectivity from NOAA WSR-88D (dBZ, all-season rain/snow/storms), 5-min mosaic; basin rectangle, no-echo transparent | LIVE / CURRENT OBSERVATION (NEXRAD 5-min mosaic) |
-| 🌌 Live NOAA Aurora | NOAA/SWPC OVATION Prime auroral grid (`ovation_aurora_latest.json`) + hemispheric power / forecast Kp context; fixed 0–30+ intensity scale, full basin rectangle (same footprint as Leaf Color) | LIVE / CURRENT FORECAST (OVATION Prime, hourly check) |
+| 🌌 Live Ovation Aurora Forecast | NOAA/SWPC OVATION Prime auroral grid (`ovation_aurora_latest.json`) + hemispheric power / forecast Kp context; fixed 0–30+ intensity scale, full basin rectangle (same footprint as Leaf Color) | LIVE / CURRENT FORECAST (OVATION Prime, hourly check) |
 | 💧 Live Water Quality | USGS Water Quality Portal E. coli/enterococci (7-day newest-per-station halos) under EPA BEACON + EPA 2012 RWQC thresholds (GM/STV/BAV); NO DATA slate where unobserved, water-only all five lakes | SOURCE CHECKED HOURLY / LATEST VALID OBSERVATION |
 
 Sixteen additional **live game-fish distribution gradients** (walleye, yellow perch,

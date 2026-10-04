@@ -456,7 +456,7 @@ def _k(p):
             "surface_pressure": "Surface_Pressure",
             "wave_direction": "Wave_Direction",
             "precipitation": "Precipitation",
-            "aurora": "Aurora",
+            "aurora": "Ovation_Aurora_Forecast",
             "bacteria": "Water_Quality"}[p]
 
 

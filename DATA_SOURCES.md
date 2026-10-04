@@ -542,7 +542,7 @@ the other products and the Pages publish proceed normally.
   primitive. Freshness wording: **"LIVE / CURRENT OBSERVATION
   (NEXRAD 5-min mosaic)"**.
 
-## 18. Aurora — NOAA/SWPC OVATION Prime (live forecast, hourly check)
+## 18. Ovation Aurora Forecast — NOAA/SWPC OVATION Prime (live forecast, hourly check)
 
 - **Product (verified live 2026-10-04):** OVATION Prime real-time auroral
   grid `https://services.swpc.noaa.gov/json/ovation_aurora_latest.json`
