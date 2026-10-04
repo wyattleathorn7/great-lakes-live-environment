@@ -2,16 +2,16 @@
   "product": "bacteria",
   "title": "LIVE WATER QUALITY",
   "freshness_label": "SOURCE CHECKED HOURLY / LATEST VALID OBSERVATION",
-  "source_name": "USGS Water Quality Portal (WQX E. coli / enterococci) + EPA BEACON beach-advisory framework + EPA 2012 RWQC thresholds",
+  "source_name": "USGS Water Quality Portal (WQX E. coli / enterococci / fecal coliform) + EPA BEACON beach-advisory framework + EPA 2012 RWQC & 1976 Red Book thresholds",
   "source_url": "https://www.waterqualitydata.us/",
   "beacon_url": "https://www.epa.gov/beach-tech/beacon-20-beach-advisory-and-closing-online-notification",
   "rwqc_url": "https://www.epa.gov/wqc/recreational-water-quality-criteria-and-methods",
-  "variable": "Fecal-indicator bacteria (E. coli and enterococci, CFU per 100 mL) normalized to one human-health concern index; official advisories/closures take display priority",
+  "variable": "Swim-water bacteria (E. coli, enterococci, fecal coliform — CFU per 100 mL) normalized to one human-health concern index; official advisories/closures take display priority",
   "source_units": "CFU per 100 mL (colony-forming units per 100 mL)",
   "display_units": "E. coli-equivalent CFU/100 mL (log scale) -> 13-step human-health gradient",
   "temporal": "Sources checked hourly. Monitoring agencies publish new samples only when sampling occurs (typically weekly in swim season, rarely in winter). New observation -> used. No new observation -> latest valid observation retained up to 7 days, then treated as stale/no-data. SOURCE CHECKED HOURLY is distinct from SOURCE DATA PUBLICATION FREQUENCY.",
   "freshness_window_days": 7,
   "refresh_interval_seconds": 3600,
   "what": "Available authoritative evidence of fecal-indicator bacterial contamination relevant to human recreational use of Great Lakes waters, consolidated into one human-health gradient. E. coli and enterococci are indicator organisms for fecal contamination and potential pathogen risk - they are not themselves identified as disease-causing pathogens in every sample, and this layer does not detect every pathogen.",
-  "coverage_note": "Visual coverage spans 100% of the five Great Lakes water surfaces (shared NOAA shoreline mask). Where no defensible observation exists, water paints as NO DATA (slate gray) - never as zero/low bacteria."
+  "coverage_note": "Visual scope spans 100% of the five Great Lakes water surfaces (shared NOAA shoreline mask). Where no defensible observation exists, water stays transparent as NO DATA (slate swatch in key) - never as zero/low bacteria."
 }

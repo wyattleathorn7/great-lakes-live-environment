@@ -581,10 +581,13 @@ the other products and the Pages publish proceed normally.
 
 ## 19. Water quality — fecal-indicator bacteria (EPA RWQC + USGS WQP + BEACON, hourly check)
 
-- **Terminology:** FECAL-INDICATOR BACTERIA (E. coli + enterococci) for
-  primary-contact recreational water — EPA 2012 RWQC indicators of fecal
-  contamination / potential pathogen risk. Not pathogen detections; types
-  not distinguished visually: one human-health concern spectrum.
+- **Terminology:** FECAL-INDICATOR BACTERIA (E. coli + enterococci + fecal
+  coliform) for primary-contact recreational water — the complete EPA
+  swim-water bacterial panel (EPA ECHO Water Quality Indicators program:
+  2012 RWQC for E. coli/enterococci, 1976 Red Book for fecal coliform).
+  Not pathogen detections; types not distinguished visually: one
+  human-health concern spectrum. Total coliform deliberately excluded
+  (drinking-water-oriented group, no recreational criterion).
 - **Thresholds (EPA 2012 RWQC, 36/1000 illness rate):** E. coli GM 126 /
   STV 410; enterococci GM 35 / STV 130 (32/1000 rate: 100/320, 30/110);
   Beach Action Value E. coli 235 / enterococci 70. The 13-step log scale
@@ -595,17 +598,20 @@ the other products and the Pages publish proceed normally.
   for display. Full per-color value/unit/threshold/source/rationale table
   in `site/bacteria/metadata.json` (`thresholds`).
 - **Live data:** USGS Water Quality Portal Result search (7-day window,
-  E. coli + Enterococcus, basin bbox) joined to Station-search
+  `Escherichia coli;Enterococcus;Fecal Coliform`, basin bbox) joined to Station-search
   coordinates via chunked siteid queries + persistent cache
   (`output/state/bacteria_stations.json`); newest sample per station
   wins; non-detects kept as censored upper bounds (quantitation limit or
   floor 10, flagged); halo radius 14 px on lake water only (no
-  interpolation, no modeled fill). Verified live 2026-10-04: 97 stations
-  over 45 days (range 1–3690 E.coli-equiv); the 7-day October window is
-  legitimately empty (post-season) → full-water NO DATA slate.
+  interpolation, no modeled fill). Conversions: enterococci ×3.6 (EPA GM
+  ratio), fecal coliform ×0.63 (criterion-anchored: Red Book 200 → E. coli
+  GM 126), MPN/CCE ≈ CFU (as EPA WQI does). State beach programs (MI/OH/WI/
+  IL/IN/PA/NY BeachGuard networks) submit to WQX and are covered through
+  this query. Verified live 2026-10-04: 97 stations over 45 days (range 1–3690 E.coli-equiv); the 7-day October window is
+  legitimately empty (post-season) → transparent NO DATA.
 - **Coverage:** 100% of all five Great Lakes water surfaces (US +
-  Canadian) via the shared shoreline mask; land transparent; unobserved
-  water = slate NO DATA (never zero). Canadian anchor beaches listed,
+   Canadian) via the shared shoreline mask; land transparent; unobserved
+   water = transparent NO DATA (slate swatch in key; never zero). Canadian anchor beaches listed,
   NO DATA pending an ECCC/Ontario live feed (documented gap).
 - **Temporal rule:** SOURCE CHECKED HOURLY (3600 s) ≠ publication
   frequency (agencies sample ~weekly in season); latest valid retained ≤

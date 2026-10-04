@@ -4,7 +4,7 @@ Human-health recreational-water gradient for ALL FIVE Great Lakes water
 surfaces (Superior, Michigan, Huron, Erie, Ontario — US + Canadian waters).
 
 Correct terminology (EPA 2012 Recreational Water Quality Criteria): the
-layer maps FECAL-INDICATOR BACTERIA — E. coli and enterococci — organisms
+layer maps FECAL-INDICATOR BACTERIA — E. coli, enterococci, and fecal coliform — organisms
 indicating fecal contamination and potential pathogen risk in
 primary-contact recreational waters. Indicator values are NOT pathogen
 detections, NOT disease diagnoses, and individual types are NOT
@@ -13,8 +13,9 @@ distinguished visually: one unified human-health concern spectrum.
 Authoritative basis:
   EPA 2012 RWQC thresholds (GM / STV / Beach Action Value),
     https://www.epa.gov/wqc/recreational-water-quality-criteria-and-methods
-  Live observations: USGS Water Quality Portal (WQX E. coli / enterococci,
-    discrete samples), https://www.waterqualitydata.us/
+  Live observations: USGS Water Quality Portal (WQX E. coli / enterococci /
+    fecal coliform discrete samples, incl. state beach-program submissions),
+    https://www.waterqualitydata.us/
   Advisory framework: EPA BEACON beach notification program
     https://www.epa.gov/beach-tech/beacon-20-beach-advisory-and-closing-online-notification
 No basin-wide continuous bacterial raster exists (EPA programs are
@@ -166,6 +167,17 @@ THRESHOLDS = [
 
 # Enterococci -> E.coli-equivalent factor: EPA GM ratio 126/35 = 3.6.
 ENTERO_TO_ECOLI = 126.0 / 35.0
+# Fecal coliform -> E.coli-equivalent factor: criterion-anchored.
+# EPA's 1976 "Red Book" recreational fecal-coliform criterion is a 200
+# CFU/100 mL log mean (still the national screen used by EPA ECHO's Water
+# Quality Indicators program); it plays the same role as the E. coli GM
+# 126 (the long-term waterbody standard = DARK GREEN anchor). Hence
+# FC 200 maps to 126-equiv: factor 126/200 = 0.63. State single-sample
+# fecal-coliform maxima (commonly 400) then land at ~252-equiv (YELLOW /
+# BAV-concern zone), which matches their regulatory intent.
+FECALCOLI_TO_ECOLI = 126.0 / 200.0
+
+WQP_CHARACTERISTICS = "Escherichia coli;Enterococcus;Fecal Coliform"
 
 # Committed display-anchor inventory: major public recreational beaches
 # per lake (approx shoreline positions for halo rendering; NOT survey
@@ -278,7 +290,7 @@ def wqp_station_coords(sids, timeout=120):
 
 
 def wqp_search(days=7, timeout=150):
-    """Query the Water Quality Portal for recent E. coli / enterococci in
+    """Query the Water Quality Portal for recent E. coli / enterococci / fecal coliform in
     the basin bbox, joined to station coordinates. Returns (rows, url).
 
     Non-detects (empty value + 'Not Detected'/'Below Quantification'
@@ -294,7 +306,7 @@ def wqp_search(days=7, timeout=150):
         "bBox": "-93,40.5,-73.5,49.5",
         "startDateLo": start.strftime("%m-%d-%Y"),
         "startDateHi": end.strftime("%m-%d-%Y"),
-        "characteristicName": "Escherichia coli;Enterococcus",
+        "characteristicName": WQP_CHARACTERISTICS,
         "mimeType": "csv",
         "zip": "no",
     }
@@ -303,8 +315,7 @@ def wqp_search(days=7, timeout=150):
     raw_sids = []
     prelim = []
     for rec in csv.DictReader(io.StringIO(body)):
-        char = (rec.get("CharacteristicName") or "").strip().lower()
-        if "escherichia" not in char and "enterococcus" not in char:
+        if classify_indicator(rec.get("CharacteristicName")) is None:
             continue
         sid = (rec.get("MonitoringLocationIdentifier") or "").strip()
         if sid:
@@ -345,7 +356,7 @@ def wqp_search(days=7, timeout=150):
             date = (rec.get("ActivityStartDate") or "").strip()
             rows.append({
                 "lat": lat, "lon": lon, "value": val,
-                "indicator": "ecoli" if "escherichia" in char else "enterococci",
+                "indicator": classify_indicator(rec.get("CharacteristicName")),
                 "date": date, "station": sid[:80], "station_name": sname,
                 "censored": censored,
             })
@@ -360,9 +371,32 @@ def wqp_search(days=7, timeout=150):
     return list(best.values()), url
 
 
+def classify_indicator(char):
+    """WQP characteristic name -> ecoli / enterococci / fecal_coliform / None.
+
+    The complete EPA swim-water bacterial panel (ECHO Water Quality
+    Indicators program): E. coli + Enterococcus (2012 RWQC) + Fecal
+    Coliform (1976 Red Book). Total coliform is deliberately excluded:
+    it is a drinking-water-oriented group rich in environmental (non-fecal)
+    species and has no EPA recreational criterion — mapping it would
+    mislead. Order matters: check E. coli first (some lab names embed
+    multiple tokens).
+    """
+    c = (char or "").strip().lower()
+    if "escherichia" in c or c.startswith("e. coli") or c == "e coli":
+        return "ecoli"
+    if "enterococcus" in c or "enterococci" in c:
+        return "enterococci"
+    if "fecal coliform" in c or "faecal coliform" in c:
+        return "fecal_coliform"
+    return None
+
+
 def ecoli_equivalent(obs):
     if obs["indicator"] == "enterococci":
         return obs["value"] * ENTERO_TO_ECOLI
+    if obs["indicator"] == "fecal_coliform":
+        return obs["value"] * FECALCOLI_TO_ECOLI
     return obs["value"]
 
 
@@ -597,10 +631,24 @@ def _build(obs_rows, query_url, fetch_ok, fetch_note, source_id):
         "EPA 2012 RWQC (36/1000 illness rate): E. coli GM 126 / STV 410; "
         "enterococci GM 35 / STV 130 (32/1000 rate: GM 30/100, STV 110/320). "
         "Beach Action Value: E. coli 235 / enterococci 70 (precautionary notification). "
+        "Fecal coliform: EPA 1976 Red Book recreational log-mean 200 (the national "
+        "screen still used by EPA ECHO's Water Quality Indicators program); "
+        "criterion-anchored to the E. coli GM (200 -> 126-equiv, factor 0.63). "
         "Enterococci convert to E.coli-equivalent at GM ratio 126/35 = 3.6x. "
-        "MPN/100 mL treated as CFU/100 mL for display (documented). "
+        "MPN/CCE per 100 mL treated as CFU/100 mL for display (EPA WQI does the same). "
+        "Total coliform deliberately excluded: drinking-water-oriented group with "
+        "environmental species and no EPA recreational criterion. "
         "Values 700/1000/2000/5000 are documented order-of-magnitude extensions, not EPA criteria. "
         "Official advisories/closures take display priority over raw values where both exist.")
+    meta["indicators"] = [
+        {"indicator": "Escherichia coli", "role": "EPA 2012 RWQC freshwater fecal indicator",
+         "conversion": "x1.0 (native scale)", "criteria": "GM 126 / STV 410 CFU/100 mL"},
+        {"indicator": "Enterococcus", "role": "EPA 2012 RWQC marine+fresh fecal indicator",
+         "conversion": "x3.6 (EPA GM ratio 126/35)", "criteria": "GM 35 / STV 130 CFU/100 mL"},
+        {"indicator": "Fecal Coliform", "role": "EPA 1976 Red Book recreational indicator (ECHO/WQI screen)",
+         "conversion": "x0.63 (criterion-anchored: Red Book 200 -> E. coli GM 126)",
+         "criteria": "Red Book log-mean 200 CFU/100 mL"},
+    ]
     meta["method_priority"] = ("official advisory/closure > STV exceedance > BAV exceedance > "
                                "GM context > latest valid observation; overlaps resolve to highest concern; "
                                "jurisdictional standards reconciled by mapping each to E.coli-equivalent and "
@@ -626,8 +674,9 @@ def _build(obs_rows, query_url, fetch_ok, fetch_note, source_id):
         f"human-health water condition. Water without a live observation stays transparent "
         f"(NO DATA — see the slate swatch in the key).</p>"
         f"<h2>Source / Study</h2>"
-        f"<p><b>Measures:</b> fecal-indicator bacteria — E. coli and enterococci (CFU/100 mL) — from the USGS "
-        f"Water Quality Portal (WQX discrete samples) within EPA's BEACH/BEACON recreational-water framework.<br/>"
+        f"<p><b>Measures:</b> swim-water bacteria — E. coli, enterococci, and fecal coliform "
+        f"(CFU/100 mL) — from the USGS Water Quality Portal (WQX discrete samples, incl. state "
+        f"beach-program submissions) within EPA's BEACH/BEACON recreational-water framework.<br/>"
         f"<b>Endpoints:</b> <a href=\"{CONFIG['source_url']}\">{CONFIG['source_url']}</a> · "
         f"<a href=\"{CONFIG['beacon_url']}\">EPA BEACON</a> · "
         f"<a href=\"{CONFIG['rwqc_url']}\">EPA 2012 RWQC</a><br/>"
@@ -636,11 +685,12 @@ def _build(obs_rows, query_url, fetch_ok, fetch_note, source_id):
         f"<b>Generation:</b> build_bacteria.py; source version <b>{source_id}</b>.</p>"
         f"<h2>How to Read the Gradient</h2>"
         f"<p>{scale_html}</p>"
-        f"<p><b>Why one spectrum:</b> E. coli and enterococci are BOTH fecal indicators for the same "
-        f"human-health question (is fecal contamination at levels of health concern?), so they are consolidated "
-        f"into one concern scale (enterococci ×3.6 = E.coli-equivalent, the EPA GM ratio) rather than mapped "
-        f"separately. Neither indicator is itself claimed to be a disease-causing pathogen in any sample, and the "
-        f"layer does not detect every pathogen.</p>"
+        f"<p><b>Why one spectrum:</b> E. coli, enterococci, and fecal coliform are ALL routine "
+        f"swim-water bacterial tests for the same human-health question (is fecal contamination at "
+        f"levels of health concern?), so they are consolidated into one concern scale (enterococci ×3.6 "
+        f"= E.coli-equivalent via the EPA GM ratio; fecal coliform ×0.63 via criterion-anchoring to the "
+        f"Red Book 200 / E. coli GM 126) rather than mapped separately. No indicator is itself claimed to be "
+        f"a disease-causing pathogen in any sample, and the layer does not detect every pathogen.</p>"
         f"<p><b>Standards behind the colors:</b> EPA 2012 RWQC — E. coli GM 126 / STV 410, enterococci GM 35 / "
         f"STV 130, Beach Action Value E. coli 235 (notification level). Full per-color value/unit/threshold/source/"
         f"rationale table is in metadata.json `thresholds`.</p>"
