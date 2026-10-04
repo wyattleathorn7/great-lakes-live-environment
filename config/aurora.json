@@ -1,0 +1,21 @@
+{
+  "product": "aurora",
+  "title": "LIVE NOAA AURORA",
+  "freshness_label": "LIVE / CURRENT FORECAST (OVATION Prime, hourly check)",
+  "source_name": "NOAA/SWPC OVATION Prime aurora model (Aurora Viewline product family)",
+  "source_url": "https://www.spaceweather.gov/products/aurora-viewline-tonight-and-tomorrow-night-experimental",
+  "data_endpoint": "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json",
+  "data_endpoint_text": "https://services.swpc.noaa.gov/text/ovation_latest_aurora_n.txt",
+  "kp_endpoint": "https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json",
+  "variable": "OVATION Prime auroral intensity ([lon, lat, aurora] 1-degree grid) + forecast Kp / hemispheric power context",
+  "source_units": "OVATION aurora intensity (model units, 0-30+); Kp 0-9",
+  "display_units": "auroral intensity 0-30+ (fixed absolute scale)",
+  "temporal": "SWPC publishes a new OVATION run about every 5 minutes; this layer checks the source hourly and rebuilds only when the Observation/Forecast time changes",
+  "valid_min": 0.0,
+  "valid_max": 100.0,
+  "detection_floor": 2.0,
+  "viewline_threshold": 5.0,
+  "refresh_interval_seconds": 3600,
+  "what": "Expected auroral intensity over the Great Lakes from NOAA's OVATION Prime model - the same model family behind the NOAA Aurora Viewline product. This is an auroral forecast/prediction, not a guarantee that an observer will see aurora from any specific location.",
+  "footprint_note": "Rectangular WGS84 footprint inherited exactly from LIVE LEAF COLOR (lon -93..-73.5, lat 40.5..49.5, 1800x1175). Aurora is atmospheric: full rectangle, no shoreline cut. LIVE LEAF COLOR files are never touched."
+}

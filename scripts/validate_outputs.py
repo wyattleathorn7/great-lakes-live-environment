@@ -63,6 +63,10 @@ PRODUCTS = {
                          "max_opaque_min": 10_000},
     "wave_direction": {"kml": "Great_Lakes_Live_Wave_Direction.kml",
                        "max_opaque_min": 10_000},
+    "aurora": {"kml": "Great_Lakes_Live_Aurora.kml",
+               "max_opaque_min": 0},  # quiet-oval intervals => transparent OK (like clear-sky cloud)
+    "bacteria": {"kml": "Great_Lakes_Live_Water_Quality.kml",
+                 "max_opaque_min": 100},  # NO DATA slate covers all lake water
     "gamefish_walleye": {"kml": "WALLEYE_LIVE.kml",
                          "max_opaque_min": 10_000},
     "gamefish_yellow_perch": {"kml": "YELLOW_PERCH_LIVE.kml",
@@ -189,7 +193,8 @@ def main():
                     what = "open-lake water"
                 elif product in ("cloud_cover", "surface_pressure",
                                    "uv_index", "air_temperature",
-                                   "solar_radiation", "precipitation"):
+                                   "solar_radiation", "precipitation",
+                                   "aurora"):
                     # basin-rectangle layers (user requirement): full
                     # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
                     # (Leaf/snow stay land-cut: leaves and ground snow
@@ -239,6 +244,10 @@ def main():
                 failures.append(f"{product}: pressure scale must be 980-1040 hPa, got {lo}-{hi}")
             if product == "wave_direction" and (lo, hi) != (0.0, 12.0):
                 failures.append(f"{product}: wave period scale must be 0-12 s, got {lo}-{hi}")
+            if product == "aurora" and (lo, hi) != (0.0, 30.0):
+                failures.append(f"{product}: aurora scale must be 0-30, got {lo}-{hi}")
+            if product == "bacteria" and (lo, hi) != (10.0, 5000.0):
+                failures.append(f"{product}: bacteria scale must be 10-5000, got {lo}-{hi}")
             if product.startswith("gamefish_") and not (
                     (lo, hi) == (0.0, 1.0)):
                 failures.append(f"{product}: gamefish scale must be 0-1, got {lo}-{hi}")
@@ -423,7 +432,7 @@ def main():
                                "solar_radiation", "air_temperature",
                                "uv_index", "cloud_cover",
                                "surface_pressure", "wave_direction",
-                               "precipitation"):
+                               "precipitation", "aurora", "bacteria"):
                     if "<Folder>" not in text:
                         failures.append(f"{product}: no product Folder in live KML")
                     for _need in ("LOWEST", "HIGHEST+", "legend.png?v="):

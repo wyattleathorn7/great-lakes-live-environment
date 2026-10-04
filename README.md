@@ -1,7 +1,7 @@
 # Great Lakes Live Environment
 
-One automated GitHub system publishing **thirty-one independent live raster layers**
-for Google Earth: fifteen environmental layers from official NOAA/NASA operational
+One automated GitHub system publishing **thirty-three independent live raster layers**
+for Google Earth: seventeen environmental layers from official NOAA/NASA operational
 sources, plus **sixteen live game-fish distribution gradients** (see below).
 
 | Layer | Source | Refresh wording |
@@ -21,7 +21,10 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | ☁️ Live Cloud Cover | NOAA/NCEP HRRR 3 km TCDC entire-atmosphere analysis, hourly cycles; basin rectangle, clear (<1 %) transparent | LIVE / CURRENT MODEL (hourly cycle, 15-min steps) |
 | 🧭 Live Surface Pressure | NOAA/NCEP HRRR 3 km MSLMA sea-level pressure analysis, hourly cycles; basin rectangle, 1013.25 hPa mid-scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | 🧭 Live Wave Direction | NCEP GLWU v2.1 PERPW peak period (seconds) + WVDIR travel arrows, water-only | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
+| 🧭 Live Wave Direction | NCEP GLWU v2.1 PERPW peak period (seconds) + WVDIR travel arrows, water-only | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 | 🌧️ Live Precipitation | IEM (Iowa State) CONUS NEXRAD N0Q base reflectivity from NOAA WSR-88D (dBZ, all-season rain/snow/storms), 5-min mosaic; basin rectangle, no-echo transparent | LIVE / CURRENT OBSERVATION (NEXRAD 5-min mosaic) |
+| 🌌 Live NOAA Aurora | NOAA/SWPC OVATION Prime auroral grid (`ovation_aurora_latest.json`) + hemispheric power / forecast Kp context; fixed 0–30+ intensity scale, full basin rectangle (same footprint as Leaf Color) | LIVE / CURRENT FORECAST (OVATION Prime, hourly check) |
+| 💧 Live Water Quality | USGS Water Quality Portal E. coli/enterococci (7-day newest-per-station halos) under EPA BEACON + EPA 2012 RWQC thresholds (GM/STV/BAV); NO DATA slate where unobserved, water-only all five lakes | SOURCE CHECKED HOURLY / LATEST VALID OBSERVATION |
 
 Sixteen additional **live game-fish distribution gradients** (walleye, yellow perch,
 lake trout, steelhead, brown trout, smallmouth bass, northern pike, muskellunge,
@@ -153,6 +156,8 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_surface_pressure.py`,
 `python scripts/build_wave_direction.py`,
 `python scripts/build_precipitation.py`,
+`python scripts/build_aurora.py`,
+`python scripts/build_bacteria.py`,
 `python scripts/build_gamefish.py --species walleye` (16 species: walleye,
 yellow_perch, lake_trout, steelhead, brown_trout, smallmouth_bass,
 northern_pike, muskellunge, lake_sturgeon, lake_whitefish, chinook_salmon,

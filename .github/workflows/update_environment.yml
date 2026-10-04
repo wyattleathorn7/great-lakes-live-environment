@@ -25,11 +25,11 @@ on:
         required: false
         default: "all"
         type: choice
-        options: ["all", "wave_height", "water_temperature", "ice_coverage",
-                  "ice_thickness", "ice_type", "wind", "leaf_color",
-                  "chlorophyll", "water_clarity", "solar_radiation",
-                  "air_temperature", "snow_coverage", "uv_index",
-                  "cloud_cover", "surface_pressure", "wave_direction", "precipitation", "gamefish"]
+         options: ["all", "wave_height", "water_temperature", "ice_coverage",
+                   "ice_thickness", "ice_type", "wind", "leaf_color",
+                   "chlorophyll", "water_clarity", "solar_radiation",
+                   "air_temperature", "snow_coverage", "uv_index",
+                   "cloud_cover", "surface_pressure", "wave_direction", "precipitation", "aurora", "bacteria", "gamefish"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -595,6 +595,71 @@ jobs:
             output/state/precipitation.json
           if-no-files-found: warn
 
+  aurora:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'aurora' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update aurora
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_aurora.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Aurora source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-aurora
+          path: |
+            site/aurora
+            site/kml/Great_Lakes_Live_Aurora.kml
+            site/kml/live/Great_Lakes_Live_Aurora.kml
+            kml/Great_Lakes_Live_Aurora.kml
+            output/state/aurora.json
+          if-no-files-found: warn
+
+  bacteria:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'bacteria' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update bacteria
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_bacteria.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Bacteria source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-bacteria
+          path: |
+            site/bacteria
+            site/kml/Great_Lakes_Live_Water_Quality.kml
+            site/kml/live/Great_Lakes_Live_Water_Quality.kml
+            kml/Great_Lakes_Live_Water_Quality.kml
+            output/state/bacteria.json
+            output/state/bacteria_stations.json
+          if-no-files-found: warn
+
   gamefish:
     # Nine species, one matrix leg each: independent products, independent
     # failures (same failure isolation as the twelve environment products).
@@ -647,7 +712,7 @@ jobs:
           if-no-files-found: warn
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, precipitation, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, precipitation, aurora, bacteria, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

@@ -1,0 +1,351 @@
+{
+  "product": "bacteria",
+  "title": "LIVE WATER QUALITY",
+  "freshness": "SOURCE CHECKED HOURLY / LATEST VALID OBSERVATION",
+  "noaa_source": "USGS Water Quality Portal (WQX E. coli / enterococci) + EPA BEACON beach-advisory framework + EPA 2012 RWQC thresholds",
+  "product_name": "USGS Water Quality Portal (WQX E. coli / enterococci) + EPA BEACON beach-advisory framework + EPA 2012 RWQC thresholds",
+  "variable": "Fecal-indicator bacteria (E. coli and enterococci, CFU per 100 mL) normalized to one human-health concern index; official advisories/closures take display priority",
+  "source_url": "https://www.waterqualitydata.us/",
+  "data_time_utc": "WQP window 7d ending 2026-10-04 (WQP live query OK (0 usable samples))",
+  "source_last_modified_utc": "n/a (WQP query, checked hourly)",
+  "processing_time_utc": "2026-10-04 02:00 PM EDT",
+  "units": "CFU per 100 mL (colony-forming units per 100 mL); display E. coli-equivalent CFU/100 mL (log scale) -> 13-step human-health gradient",
+  "spatial_resolution_source": "discrete monitoring stations (point samples); halo radius 14px display only \u2014 no interpolation between stations, no modeled fill",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 10.0,
+  "color_scale_max": 5000.0,
+  "color_scale_units": "E.coli-equiv CFU/100 mL",
+  "missing_data_treatment": "NO authoritative observation -> slate NO DATA over water (never zero/low). Observations older than 7 days are stale -> NO DATA. Land always transparent (shore mask).",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    230
+  ],
+  "legend_scale_html": "Human-health concern from fecal-indicator evidence, FIXED log scale (E.coli-equiv CFU/100 mL): <b>DARK BLUE 10</b> (no detected/lowest) &rarr; <b>BLUE 30</b> (very low) &rarr; <b>CYAN 60</b> (low) &rarr; <b>LIGHT GREEN 100</b> (low-to-moderate) &rarr; <b>DARK GREEN 126</b> (moderate, EPA GM) &rarr; <b>YELLOWISH GREEN 190</b> (elevated) &rarr; <b>YELLOW 235</b> (concerning, EPA Beach Action Value) &rarr; <b>ORANGE 320</b> (high) &rarr; <b>RED 410</b> (very high, EPA STV) &rarr; <b>NEON RED 700</b> (extremely high) &rarr; <b>MAGENTA 1000</b> (severe) &rarr; <b>PURPLE 2000</b> (extremely severe) &rarr; <b>DARK PURPLE HIGHEST+ 5000+</b> (extreme). <b>LOWEST 10</b>. Slate gray water = <b>NO DATA</b>, never zero bacteria.",
+  "source_id": "wqp-2026-10-04-n0-0000000",
+  "source_version": "wqp-2026-10-04-n0-0000000",
+  "wqp_query_url": "https://www.waterqualitydata.us/data/Result/search?countrycode=US&bBox=-93%2C40.5%2C-73.5%2C49.5&startDateLo=09-27-2026&startDateHi=10-04-2026&characteristicName=Escherichia+coli%3BEnterococcus&mimeType=csv&zip=no",
+  "wqp_fetch_ok": true,
+  "wqp_fetch_note": "WQP live query OK (0 usable samples)",
+  "freshness_window_days": 7,
+  "samples_used": 0,
+  "samples": [],
+  "thresholds": [
+    {
+      "color": "DARK BLUE",
+      "value": 10,
+      "unit": "CFU/100 mL",
+      "threshold": "display floor; below any EPA criterion",
+      "source": "project display floor (no health claim)",
+      "rationale": "No detected / lowest measured condition among retained observations."
+    },
+    {
+      "color": "BLUE",
+      "value": 30,
+      "unit": "CFU/100 mL",
+      "threshold": "below EPA enterococci GM 35 / well below E. coli GM 126",
+      "source": "EPA 2012 RWQC (GM enterococci 35, GM E. coli 126)",
+      "rationale": "Very low: an order of magnitude under the E. coli GM criterion."
+    },
+    {
+      "color": "CYAN",
+      "value": 60,
+      "unit": "CFU/100 mL",
+      "threshold": "below EPA GM values",
+      "source": "EPA 2012 RWQC",
+      "rationale": "Low: under half the E. coli GM criterion."
+    },
+    {
+      "color": "LIGHT GREEN",
+      "value": 100,
+      "unit": "CFU/100 mL",
+      "threshold": "below EPA E. coli GM 126 (36/1000 illness rate)",
+      "source": "EPA 2012 RWQC Table 1 (GM E. coli 126 / 100)",
+      "rationale": "Low-to-moderate: approaches but does not reach the GM criterion."
+    },
+    {
+      "color": "DARK GREEN",
+      "value": 126,
+      "unit": "CFU/100 mL",
+      "threshold": "EPA E. coli GM criterion 126 (illness rate 36/1000)",
+      "source": "EPA 2012 RWQC (GM E. coli 126; alternate 100 at 32/1000)",
+      "rationale": "Moderate: AT the geometric-mean criterion \u2014 the long-term waterbody standard."
+    },
+    {
+      "color": "YELLOWISH GREEN",
+      "value": 190,
+      "unit": "CFU/100 mL",
+      "threshold": "between GM 126 and BAV 235",
+      "source": "EPA 2012 RWQC + BAV",
+      "rationale": "Elevated: exceeds the GM criterion, below beach-action level."
+    },
+    {
+      "color": "YELLOW",
+      "value": 235,
+      "unit": "CFU/100 mL",
+      "threshold": "EPA Beach Action Value (BAV) 235 E. coli",
+      "source": "EPA 2012 RWQC supplemental BAV (75th percentile of RWQC distribution)",
+      "rationale": "Concerning: AT the precautionary beach-notification value."
+    },
+    {
+      "color": "ORANGE",
+      "value": 320,
+      "unit": "CFU/100 mL",
+      "threshold": "EPA E. coli STV 320 (illness rate 32/1000)",
+      "source": "EPA 2012 RWQC Table 1 (STV E. coli 410 / 320)",
+      "rationale": "High: exceeds the alternate statistical-threshold value."
+    },
+    {
+      "color": "RED",
+      "value": 410,
+      "unit": "CFU/100 mL",
+      "threshold": "EPA E. coli STV 410 (illness rate 36/1000)",
+      "source": "EPA 2012 RWQC Table 1 (STV E. coli 410)",
+      "rationale": "Very high / potentially unsafe: AT the single-sample STV criterion."
+    },
+    {
+      "color": "NEON RED",
+      "value": 700,
+      "unit": "CFU/100 mL",
+      "threshold": "order-of-magnitude extension above STV",
+      "source": "project extension (documented, no EPA criterion at this value)",
+      "rationale": "Extremely high: ~1.7x the STV; advisory/closure expected."
+    },
+    {
+      "color": "MAGENTA",
+      "value": 1000,
+      "unit": "CFU/100 mL",
+      "threshold": "order-of-magnitude extension (~2.4x STV)",
+      "source": "project extension (documented)",
+      "rationale": "Severe: gross exceedance; unsafe for contact recreation by any standard."
+    },
+    {
+      "color": "PURPLE",
+      "value": 2000,
+      "unit": "CFU/100 mL",
+      "threshold": "order-of-magnitude extension (~5x STV)",
+      "source": "project extension (documented)",
+      "rationale": "Extremely severe contamination event."
+    },
+    {
+      "color": "DARK PURPLE",
+      "value": 5000,
+      "unit": "CFU/100 mL",
+      "threshold": "extreme clamp (5000+ stays dark purple)",
+      "source": "project clamp (documented)",
+      "rationale": "Extremely poor human-health water condition."
+    }
+  ],
+  "threshold_notes": "EPA 2012 RWQC (36/1000 illness rate): E. coli GM 126 / STV 410; enterococci GM 35 / STV 130 (32/1000 rate: GM 30/100, STV 110/320). Beach Action Value: E. coli 235 / enterococci 70 (precautionary notification). Enterococci convert to E.coli-equivalent at GM ratio 126/35 = 3.6x. MPN/100 mL treated as CFU/100 mL for display (documented). Values 700/1000/2000/5000 are documented order-of-magnitude extensions, not EPA criteria. Official advisories/closures take display priority over raw values where both exist.",
+  "method_priority": "official advisory/closure > STV exceedance > BAV exceedance > GM context > latest valid observation; overlaps resolve to highest concern; jurisdictional standards reconciled by mapping each to E.coli-equivalent and flagging the originating indicator in metadata samples.",
+  "unit_conversions": "CFU/100 mL direct; MPN/100 mL ~= CFU/100 mL (display); enterococci x3.6 -> E.coli-equiv.",
+  "anchor_stations": [
+    {
+      "name": "Park Point Beach (Duluth)",
+      "lake": "Superior",
+      "lat": 46.72,
+      "lon": -92.0,
+      "program": "Minnesota Beach Program"
+    },
+    {
+      "name": "Bayfield City Beach",
+      "lake": "Superior",
+      "lat": 46.81,
+      "lon": -90.81,
+      "program": "Wisconsin Beach Program"
+    },
+    {
+      "name": "Marquette City Beach",
+      "lake": "Superior",
+      "lat": 46.54,
+      "lon": -87.38,
+      "program": "Michigan Beach Program"
+    },
+    {
+      "name": "Agate Bay Beach (Two Harbors)",
+      "lake": "Superior",
+      "lat": 47.02,
+      "lon": -91.67,
+      "program": "Minnesota Beach Program"
+    },
+    {
+      "name": "Chippewa Park Beach (Thunder Bay)",
+      "lake": "Superior",
+      "lat": 48.33,
+      "lon": -89.2,
+      "program": "Ontario Health Unit"
+    },
+    {
+      "name": "Grand Haven City Beach",
+      "lake": "Michigan",
+      "lat": 43.06,
+      "lon": -86.24,
+      "program": "Michigan Beach Program"
+    },
+    {
+      "name": "Sleeping Bear (Esch Rd Beach)",
+      "lake": "Michigan",
+      "lat": 44.88,
+      "lon": -86.05,
+      "program": "Michigan Beach Program"
+    },
+    {
+      "name": "Holland State Park Beach",
+      "lake": "Michigan",
+      "lat": 42.77,
+      "lon": -86.21,
+      "program": "Michigan Beach Program"
+    },
+    {
+      "name": "Montrose Beach (Chicago)",
+      "lake": "Michigan",
+      "lat": 41.96,
+      "lon": -87.64,
+      "program": "Illinois Beach Program"
+    },
+    {
+      "name": "Bradford Beach (Milwaukee)",
+      "lake": "Michigan",
+      "lat": 43.06,
+      "lon": -87.9,
+      "program": "Wisconsin Beach Program"
+    },
+    {
+      "name": "Silver Beach (St. Joseph)",
+      "lake": "Michigan",
+      "lat": 42.11,
+      "lon": -86.49,
+      "program": "Michigan Beach Program"
+    },
+    {
+      "name": "Oscoda Beach Park",
+      "lake": "Huron",
+      "lat": 44.42,
+      "lon": -83.33,
+      "program": "Michigan Beach Program"
+    },
+    {
+      "name": "Port Huron (Lakeside Beach)",
+      "lake": "Huron",
+      "lat": 43.0,
+      "lon": -82.42,
+      "program": "Michigan Beach Program"
+    },
+    {
+      "name": "Wasaga Beach",
+      "lake": "Huron",
+      "lat": 44.52,
+      "lon": -80.02,
+      "program": "Ontario Health Unit"
+    },
+    {
+      "name": "Sauble Beach",
+      "lake": "Huron",
+      "lat": 44.65,
+      "lon": -81.27,
+      "program": "Ontario Health Unit"
+    },
+    {
+      "name": "Bay City State Park Beach",
+      "lake": "Huron",
+      "lat": 43.66,
+      "lon": -83.91,
+      "program": "Michigan Beach Program"
+    },
+    {
+      "name": "Presque Isle (Beach 6)",
+      "lake": "Erie",
+      "lat": 42.11,
+      "lon": -80.15,
+      "program": "Pennsylvania Beach Program"
+    },
+    {
+      "name": "Maumee Bay State Park Beach",
+      "lake": "Erie",
+      "lat": 41.68,
+      "lon": -83.37,
+      "program": "Ohio Beach Program"
+    },
+    {
+      "name": "Cedar Point Beach",
+      "lake": "Erie",
+      "lat": 41.48,
+      "lon": -82.68,
+      "program": "Ohio Beach Program"
+    },
+    {
+      "name": "Port Stanley Main Beach",
+      "lake": "Erie",
+      "lat": 42.66,
+      "lon": -81.21,
+      "program": "Ontario Health Unit"
+    },
+    {
+      "name": "Long Point Beach",
+      "lake": "Erie",
+      "lat": 42.57,
+      "lon": -80.4,
+      "program": "Ontario Health Unit"
+    },
+    {
+      "name": "Evangola State Park Beach",
+      "lake": "Erie",
+      "lat": 42.58,
+      "lon": -79.06,
+      "program": "New York Beach Program"
+    },
+    {
+      "name": "Toronto Centre Island Beach",
+      "lake": "Ontario",
+      "lat": 43.62,
+      "lon": -79.36,
+      "program": "Toronto Public Health"
+    },
+    {
+      "name": "Hamilton Confederation Beach",
+      "lake": "Ontario",
+      "lat": 43.27,
+      "lon": -79.07,
+      "program": "Ontario Health Unit"
+    },
+    {
+      "name": "Sandbanks (Outlet Beach)",
+      "lake": "Ontario",
+      "lat": 43.9,
+      "lon": -77.3,
+      "program": "Ontario Parks"
+    },
+    {
+      "name": "Durham Beach (Oshawa)",
+      "lake": "Ontario",
+      "lat": 43.86,
+      "lon": -78.83,
+      "program": "Ontario Health Unit"
+    },
+    {
+      "name": "Southwick Beach (NY)",
+      "lake": "Ontario",
+      "lat": 43.77,
+      "lon": -76.21,
+      "program": "New York Beach Program"
+    }
+  ],
+  "coverage": "100% of the five Great Lakes water surfaces (Superior, Michigan, Huron, Erie, Ontario; US + Canadian waters) via the shared NOAA shoreline mask; unrelated inland lakes excluded; land transparent.",
+  "canada_note": "WQP covers US stations; Canadian/Ontario anchor beaches are listed and paint NO DATA until an ECCC/Ontario live feed is integrated (documented gap, upgrade path).",
+  "stats": {
+    "opaque_pixels": 340898,
+    "water_pixels": 340898,
+    "halo_pixels": 0,
+    "current_min": null,
+    "current_max": null
+  },
+  "folder_html": "<p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/bacteria/legend.png?v=wqp-2026-10-04-n0-0000000\" width=\"600\" alt=\"Bacteria gradient key\"></p><h2>What This Shows</h2><p>Available authoritative evidence of human-health-relevant bacterial/fecal contamination in Great Lakes recreational waters, as one unified concern spectrum (DARK BLUE, BLUE, CYAN, LIGHT GREEN, DARK GREEN, YELLOWISH GREEN, YELLOW, ORANGE, RED, NEON RED, MAGENTA, PURPLE, DARK PURPLE). Dark blue = no detected contamination / lowest measured condition; dark purple = extremely high contamination / extremely poor human-health water condition. Slate gray water = NO DATA.</p><h2>Source / Study</h2><p><b>Measures:</b> fecal-indicator bacteria \u2014 E. coli and enterococci (CFU/100 mL) \u2014 from the USGS Water Quality Portal (WQX discrete samples) within EPA's BEACH/BEACON recreational-water framework.<br/><b>Endpoints:</b> <a href=\"https://www.waterqualitydata.us/\">https://www.waterqualitydata.us/</a> \u00b7 <a href=\"https://www.epa.gov/beach-tech/beacon-20-beach-advisory-and-closing-online-notification\">EPA BEACON</a> \u00b7 <a href=\"https://www.epa.gov/wqc/recreational-water-quality-criteria-and-methods\">EPA 2012 RWQC</a><br/><b>Retrieval:</b> WQP live query OK (0 usable samples); window 7 days ending 2026-10-04; 0 station halos from 27 anchor beaches.<br/><b>Generation:</b> build_bacteria.py; source version <b>wqp-2026-10-04-n0-0000000</b>.</p><h2>How to Read the Gradient</h2><p>Human-health concern from fecal-indicator evidence, FIXED log scale (E.coli-equiv CFU/100 mL): <b>DARK BLUE 10</b> (no detected/lowest) &rarr; <b>BLUE 30</b> (very low) &rarr; <b>CYAN 60</b> (low) &rarr; <b>LIGHT GREEN 100</b> (low-to-moderate) &rarr; <b>DARK GREEN 126</b> (moderate, EPA GM) &rarr; <b>YELLOWISH GREEN 190</b> (elevated) &rarr; <b>YELLOW 235</b> (concerning, EPA Beach Action Value) &rarr; <b>ORANGE 320</b> (high) &rarr; <b>RED 410</b> (very high, EPA STV) &rarr; <b>NEON RED 700</b> (extremely high) &rarr; <b>MAGENTA 1000</b> (severe) &rarr; <b>PURPLE 2000</b> (extremely severe) &rarr; <b>DARK PURPLE HIGHEST+ 5000+</b> (extreme). <b>LOWEST 10</b>. Slate gray water = <b>NO DATA</b>, never zero bacteria.</p><p><b>Why one spectrum:</b> E. coli and enterococci are BOTH fecal indicators for the same human-health question (is fecal contamination at levels of health concern?), so they are consolidated into one concern scale (enterococci \u00d73.6 = E.coli-equivalent, the EPA GM ratio) rather than mapped separately. Neither indicator is itself claimed to be a disease-causing pathogen in any sample, and the layer does not detect every pathogen.</p><p><b>Standards behind the colors:</b> EPA 2012 RWQC \u2014 E. coli GM 126 / STV 410, enterococci GM 35 / STV 130, Beach Action Value E. coli 235 (notification level). Full per-color value/unit/threshold/source/rationale table is in metadata.json `thresholds`.</p><p><b>NO DATA \u2260 zero:</b> slate gray means no defensible observation exists there \u2014 it must never be read as clean water. A missing observation never becomes zero bacteria.</p><p><b>Coverage:</b> the visual layer spans 100% of the five Great Lakes water surfaces (US + Canadian waters; unrelated inland lakes excluded; land transparent), while measured-data availability varies \u2014 most open water is honestly NO DATA because monitoring is beach- and station-based.</p><h2>Data / Scientific Limitations</h2><p>Water-quality indicator visualization, not a laboratory test of every part of the lake. Station-based samples; halos (radius 14px) show conditions NEAR a sampled station only \u2014 no interpolation between stations, no modeled fill. Samples older than 7 days are stale (NO DATA). Canadian waters list anchor beaches but currently paint NO DATA pending an ECCC/Ontario live feed. Advisories/closures take display priority where both exist.</p><h2>Update Frequency</h2><p>SOURCE CHECKED HOURLY (refreshInterval 3600 s on entry NetworkLink and overlay Icon), which is distinct from source publication frequency: agencies publish only when sampling occurs (often weekly in swim season). New samples are used when they appear; otherwise the latest valid observation is retained up to 7 days, then treated as stale.</p>"
+}

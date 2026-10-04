@@ -542,6 +542,76 @@ the other products and the Pages publish proceed normally.
   primitive. Freshness wording: **"LIVE / CURRENT OBSERVATION
   (NEXRAD 5-min mosaic)"**.
 
+## 18. Aurora — NOAA/SWPC OVATION Prime (live forecast, hourly check)
+
+- **Product (verified live 2026-10-04):** OVATION Prime real-time auroral
+  grid `https://services.swpc.noaa.gov/json/ovation_aurora_latest.json`
+  (`[Longitude, Latitude, Aurora]` 1-degree global grid + Observation /
+  Forecast Time; the machine-readable source behind the
+  `aurora-viewline-tonight-and-tomorrow-night-experimental` Viewline
+  product — the webpage image is never scraped). Run context from
+  `https://services.swpc.noaa.gov/text/ovation_latest_aurora_n.txt`
+  (hemispheric power in GW, forecast Kp); Kp history/context from
+  `https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json`.
+- **What it is:** OVATION converts upstream solar-wind energy into maps of
+  auroral particle precipitation (Newell et al.; real-time implementation
+  Machol/Redmon NCEI, Viereck SWPC). Intensity = model output in OVATION
+  units (observed range 0–64+), not a naked-eye brightness meter.
+- **Footprint:** the exact LIVE LEAF COLOR rectangle
+  (lon −93…−73.5, lat 40.5…49.5, 1800×1175, WGS84), full basin rectangle
+  with no shoreline cut (atmospheric layer, like solar/air-temperature).
+  LEAF files untouched. Below the detection floor (2.0) the canvas stays
+  transparent — a quiet-oval interval is VALID output (same semantics as
+  a clear-sky cloud run), and color appears automatically on the next
+  hourly rebuild when a storm arrives.
+- **Scale:** FIXED absolute 0–30+ (faint green 3 → oval green 6 → yellow
+  10 → orange 14 → red 18 → magenta 23 → violet 30+ clamp).
+- **Viewline:** southernmost northern-hemisphere latitude in the basin
+  longitude band reaching intensity 5+, computed from the GLOBAL grid
+  (not canvas-limited) — the product's true visibility boundary even
+  when the oval sits poleward of the rectangle. Reported in
+  legend/metadata/folder text; no KML line is drawn (raster-only rule).
+  Meaning: southernmost region from which aurora may be visible low on
+  the northern horizon under dark/clear conditions — an opportunity
+  boundary, never a sighting guarantee.
+- **Refresh:** source checked hourly (entry NetworkLink + live Icon
+  `refreshInterval` 3600 s); rebuilds only when Observation/Forecast
+  time changes (source-versioned `?v=`).
+- Freshness wording: **"LIVE / CURRENT FORECAST (OVATION Prime, hourly check)"**.
+
+## 19. Water quality — fecal-indicator bacteria (EPA RWQC + USGS WQP + BEACON, hourly check)
+
+- **Terminology:** FECAL-INDICATOR BACTERIA (E. coli + enterococci) for
+  primary-contact recreational water — EPA 2012 RWQC indicators of fecal
+  contamination / potential pathogen risk. Not pathogen detections; types
+  not distinguished visually: one human-health concern spectrum.
+- **Thresholds (EPA 2012 RWQC, 36/1000 illness rate):** E. coli GM 126 /
+  STV 410; enterococci GM 35 / STV 130 (32/1000 rate: 100/320, 30/110);
+  Beach Action Value E. coli 235 / enterococci 70. The 13-step log scale
+  (10 dark-blue floor → 126 GM → 235 BAV → 320/410 STVs → 5000+ dark
+  purple clamp) anchors every transition at these values; 700/1000/2000/
+  5000 are documented order-of-magnitude extensions, not EPA criteria.
+  Enterococci ×3.6 (= 126/35 GM ratio) → E.coli-equivalent; MPN ≈ CFU
+  for display. Full per-color value/unit/threshold/source/rationale table
+  in `site/bacteria/metadata.json` (`thresholds`).
+- **Live data:** USGS Water Quality Portal Result search (7-day window,
+  E. coli + Enterococcus, basin bbox) joined to Station-search
+  coordinates via chunked siteid queries + persistent cache
+  (`output/state/bacteria_stations.json`); newest sample per station
+  wins; non-detects kept as censored upper bounds (quantitation limit or
+  floor 10, flagged); halo radius 14 px on lake water only (no
+  interpolation, no modeled fill). Verified live 2026-10-04: 97 stations
+  over 45 days (range 1–3690 E.coli-equiv); the 7-day October window is
+  legitimately empty (post-season) → full-water NO DATA slate.
+- **Coverage:** 100% of all five Great Lakes water surfaces (US +
+  Canadian) via the shared shoreline mask; land transparent; unobserved
+  water = slate NO DATA (never zero). Canadian anchor beaches listed,
+  NO DATA pending an ECCC/Ontario live feed (documented gap).
+- **Temporal rule:** SOURCE CHECKED HOURLY (3600 s) ≠ publication
+  frequency (agencies sample ~weekly in season); latest valid retained ≤
+  7 days, then stale → NO DATA. No measurements invented between samples.
+- Freshness wording: **"SOURCE CHECKED HOURLY / LATEST VALID OBSERVATION"**.
+
 ## 13. Game-fish distribution gradients (16 species, `gamefish_<species>`)
 
 - **What:** live modeled distribution / habitat-likelihood rasters (0..1 index,
