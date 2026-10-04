@@ -198,7 +198,20 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
     Users add this file to Google Earth once. It never carries a version
     token, so it stays byte-stable across rebuilds (no commit churn) while
     its NetworkLink poll discovers each newly published live file.
+
+    The NetworkLink itself carries the Time-fetched line: in Google Earth
+    the clickable layer item IS the link (its own description is what the
+    panel shows), while the Document description one level up is never
+    surfaced. The line is extracted from the entry description's leading
+    paragraph, so every product gets it with no call-site changes; if a
+    product ever stops leading with the fetch fact, its link simply has
+    no description (status quo, never a crash).
     """
+    import re as _re_link
+    _m = _re_link.match(r"\s*(<p><b>Time fetched:</b>.*?</p>)",
+                        entry_description_html or "", _re_link.DOTALL)
+    link_header = _m.group(1) if _m else ""
+
     base = pages_base()
     live_url = f"{base}/kml/live/{kml_filename}"
 
@@ -212,6 +225,10 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
 
     link = _q("NetworkLink")
     link.append(_q("name", overlay_name + " — auto-refresh"))
+    if link_header:
+        _ldesc = _q("description")
+        _ldesc.text = None
+        link.append(_ldesc)
     url = _q("Link")
     url.append(_q("href", live_url))
     url.append(_q("refreshMode", "onInterval"))
@@ -219,7 +236,11 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
     link.append(url)
     document.append(link)
 
-    xml = _serialize(doc, [entry_description_html])
+    descriptions = [entry_description_html]
+    if link_header:
+        # Document order: Document description, then the link's.
+        descriptions.append(link_header)
+    xml = _serialize(doc, descriptions)
     if out_dirs is None:
         out_dirs = [os.path.join(KML_DIR, kml_filename),
                     os.path.join(SITE_DIR, "kml", kml_filename)]
