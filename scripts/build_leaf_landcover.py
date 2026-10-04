@@ -87,7 +87,15 @@ def main():
     umap = np.vectorize(lambda v: NLCD_MAP.get(int(v), 0), otypes=[np.uint8])
     cmap = np.vectorize(lambda v: NALCMS_MAP.get(int(v), 0), otypes=[np.uint8])
     us_c, ca_c = umap(us), cmap(ca)
-    mosaic = np.where(ca_c != 0, ca_c, us_c)
+    # NLCD is authoritative wherever it is valid (it returns pure nodata
+    # outside the US, verified Toronto/Ottawa/N-Ontario windows). The
+    # Canada grid's southern edge bleeds false water (class 18) far south
+    # of Lake Ontario over US farmland (the western-NY hole: 64% of that
+    # window coded water vs 2% in the NOAA shoreline mask), and the old
+    # Canada-wins rule let that bleed override correct NLCD. NLCD-wins
+    # with Canada filling NLCD nodata (Canada + rare US gaps) keeps both
+    # sources at full authority inside their true domains.
+    mosaic = np.where(us_c != 0, us_c, ca_c)
     u, c = np.unique(mosaic, return_counts=True)
     names = {0: "nodata", 1: "deciduous", 2: "mixed", 3: "evergreen",
              4: "shrub", 5: "grass", 6: "crop", 7: "urban", 8: "barren",
