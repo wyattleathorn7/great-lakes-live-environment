@@ -25,11 +25,11 @@ on:
         required: false
         default: "all"
         type: choice
-         options: ["all", "wave_height", "water_temperature", "ice_coverage",
-                   "ice_thickness", "ice_type", "wind", "leaf_color",
-                   "chlorophyll", "water_clarity", "solar_radiation",
-                   "air_temperature", "snow_coverage", "uv_index",
-                   "cloud_cover", "surface_pressure", "wave_direction", "surface_currents", "precipitation", "aurora", "bacteria", "gamefish"]
+        options: ["all", "wave_height", "water_temperature", "ice_coverage",
+                  "ice_thickness", "ice_type", "wind", "leaf_color",
+                  "chlorophyll", "water_clarity", "solar_radiation",
+                  "air_temperature", "snow_coverage", "uv_index",
+                  "cloud_cover", "surface_pressure", "wave_direction", "surface_currents", "precipitation", "aurora", "bacteria", "gamefish"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
