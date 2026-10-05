@@ -532,12 +532,16 @@ the other products and the Pages publish proceed normally.
   Full basin rectangle (no shoreline cut: precipitation falls on land
   and water alike). A dry-over-the-basin run is a VALID transparent
   raster, not a failure (same semantics as a clear-sky cloud run).
-- **Refresh (fastest possible):** source rebuilds every 5 minutes; the
-  dedicated fast workflow (`update_fast_live.yml`) polls on its own
-  5-minute cadence with a lean publish (validate + deploy, no commit),
-  so scans ship in minutes; both KML refreshIntervals (entry
-  NetworkLink + live Icon) are 30 s, so a newly published scan appears
-  in Google Earth within about half a minute.
+- **Refresh (fastest possible, GitHub-only — no Mac execution):** source
+  rebuilds every 5 minutes; the dedicated fast workflow
+  (`update_fast_live.yml`) runs on its own 5-minute cron (`*/5 * * * *`,
+  GitHub's minimum schedule interval) with a lean publish (validate +
+  deploy, no commit), so scans ship in minutes; both KML
+  refreshIntervals (entry NetworkLink + live Icon) are 300 s, matching
+  the source cadence and the workflow schedule — each client poll can
+  pick up a newly published scan with no sub-minute polling and no
+  battery drain on any local machine. No launchd/cron heartbeat is
+  needed or wanted: GitHub's cron is the sole driver.
   Overlay only (GroundOverlay) — Google Earth has no live-video
   primitive. Freshness wording: **"LIVE / CURRENT OBSERVATION
   (NEXRAD 5-min mosaic)"**.

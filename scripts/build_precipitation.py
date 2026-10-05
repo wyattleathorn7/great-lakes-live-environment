@@ -22,13 +22,11 @@ Moderate / Heavy / Severe / Intense / Extreme key explains.
 
 Raster-only GroundOverlay (never a video: Google Earth has no live
 video primitive — the overlay refreshes). Google Earth side refreshes
-every 30 s (fastest practical cadence: each poll re-fetches the live
-KML, and the overlay Icon re-requests its PNG, so a newly published
-scan appears within about half a minute; polling faster would only
-re-download an unchanged image since the source itself rebuilds every
-5 minutes). Source cadence is 5 minutes
-(IEM rebuilds the mosaic every 5 min); the 30 s poll guarantees no
-extra staleness is added client-side.
+every 300 s (5 minutes, matching the source cadence and the GitHub
+fast-live workflow's */5 schedule — GitHub's minimum interval — so each
+client poll can pick up a newly published scan with no extra staleness
+and no battery-draining sub-minute polling on the Mac). Source cadence
+is 5 minutes (IEM rebuilds the mosaic every 5 min).
 
 Exit codes: 0 updated (or skipped); 2 source/validation failure
 (previous kept); 1 unexpected error.
@@ -122,8 +120,8 @@ def run():
     source_id = f"iem-n0q-{scan_dt.strftime('%Y%m%d-%H%M')}"
     prev = read_state(PRODUCT)
     # NOTE: no byte-stability skip here beyond the same-bin fast path:
-    # precipitation moves fast, and the workflow runs on the 12-minute
-    # cadence, so consecutive runs in one 5-min bin reuse the raster.
+    # precipitation moves fast, and the fast-live workflow runs on the
+    # 5-minute cadence, so consecutive runs in one 5-min bin reuse the raster.
     if (prev.get("source_id") == source_id
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png"))
             and os.path.exists(os.path.join(SITE_DIR, "kml", "live", KML_FILE))):
@@ -235,8 +233,8 @@ def _build(scan_dt, source_id):
         f"<p><b>Variable:</b> {CONFIG['variable']}<br/>"
         f"<b>Units:</b> dBZ<br/>"
         f"<b>Source:</b> {CONFIG['source_name']}<br/>"
-        f"<b>Update:</b> mosaic rebuilt every 5 minutes; Google Earth "
-        f"re-polls every 60 seconds<br/>"
+        f"<b>Update:</b> mosaic rebuilt every 5 minutes; GitHub rebuilds "
+        f"and re-polls every 5 minutes (300 s, fastest GitHub schedule)<br/>"
         f"<b>Data time:</b> {data_time_utc}<br/>"
         f"<b>Source version:</b> {source_id}<br/>"
         f"<b>Processed:</b> {meta['processing_time_utc']}<br/>"

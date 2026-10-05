@@ -9,7 +9,7 @@
       <Link>
         <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/Great_Lakes_Live_Precipitation.kml</href>
         <refreshMode>onInterval</refreshMode>
-        <refreshInterval>30</refreshInterval>
+        <refreshInterval>300</refreshInterval>
       </Link>
     </NetworkLink>
   </Document>

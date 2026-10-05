@@ -12,7 +12,7 @@
         <Icon>
           <href>https://wyattleathorn7.github.io/great-lakes-live-environment/precipitation/current.png?v=iem-n0q-20261005-0700</href>
           <refreshMode>onInterval</refreshMode>
-          <refreshInterval>30</refreshInterval>
+          <refreshInterval>300</refreshInterval>
         </Icon>
         <LatLonBox>
           <north>49.5</north>
