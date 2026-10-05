@@ -75,7 +75,7 @@ PRODUCT = "surface_currents"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "Great_Lakes_Live_Surface_Currents.kml"
-OVERLAY_NAME = "\U0001F30A LIVE SURFACE CURRENTS"
+OVERLAY_NAME = "\U0001F504 LIVE SURFACE CURRENTS"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 UA = {"User-Agent": "great-lakes-live-environment/1.0"}
 
@@ -373,8 +373,8 @@ def paint_flow_arrows(rgba, uu, vv, seed_step=7, river_seed_step=4,
                       sep_px=1.5, river_sep_px=1.0,
                       head_every=3, head_sep_px=5.0,
                       river_head_sep_px=3.5,
-                      line_base_alpha=90,
-                      line_bright_alpha=110, head_alpha=230):
+                      line_base_alpha=90, line_bright_alpha=110,
+                      head_alpha=230):
     """Dense flow-streak field with micro direction heads, rasterized.
 
     Jittered seeds (seeded RNG: deterministic per source field) advect
@@ -669,13 +669,20 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
         raise ValueError(f"too few canvas vectors ({n_all})")
     # river display smoothing: sub-pixel channels bin into harsh
     # stair-steps; a NaN-aware 3x3 mean inside RIVER_BOXES only softens
-    # the steps (documented display resampling; arrows trace the same
-    # smoothed field so glyphs match colors).
+    # the steps (documented display resampling; streaks trace the same
+    # smoothed field so marks match colors).
     _rb = river_box_mask(bounds)
     for _grid in (spd_c, uu_c, vv_c):
         _sm = nanmean3(_grid)
         _use = _rb & np.isfinite(_grid) & np.isfinite(_sm)
         _grid[_use] = _sm[_use]
+    # basin display smoothing: one NaN-aware 3x3 pass over speed only, so
+    # deep-zoom magnification degrades into a smooth wash rather than hard
+    # mosaic squares (vectors stay unsmoothed; traces keep full direction
+    # fidelity). Same documented display-resampling class as HRRR layers.
+    _sm_all = nanmean3(spd_c)
+    _use_all = np.isfinite(spd_c) & np.isfinite(_sm_all)
+    spd_c[_use_all] = _sm_all[_use_all]
     if float(np.nanmax(spd_c)) > CUR_MAX * 5:
         raise ValueError(f"implausible max speed {float(np.nanmax(spd_c)):.0f}")
 
