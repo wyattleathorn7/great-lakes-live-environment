@@ -6,9 +6,9 @@
   "product_name": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
   "variable": "lake surface water temperature (satellite-derived AVHRR/VIIRS composite)",
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
-  "data_time_utc": "2026-10-04 02:51 AM EDT",
-  "source_last_modified_utc": "2026-10-04 02:51 AM EDT",
-  "processing_time_utc": "2026-10-04 05:52 AM EDT",
+  "data_time_utc": "2026-10-05 02:50 AM EDT",
+  "source_last_modified_utc": "2026-10-05 02:50 AM EDT",
+  "processing_time_utc": "2026-10-05 03:00 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -19,19 +19,19 @@
     "lat_min": 40.5,
     "lat_max": 49.5
   },
-  "color_scale_min": 53,
+  "color_scale_min": 52,
   "color_scale_max": 68,
   "color_scale_units": "\u00b0F",
   "missing_data_treatment": "land code 255.0 and -9999/no-data rendered fully transparent; never interpolated.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "source_id": "glsea-Sun, 04 Oct 2026 06:51:08 GMT",
-  "source_version": "glsea-Sun-04-Oct-2026-06-51-08-GMT",
+  "source_id": "glsea-Mon, 05 Oct 2026 06:50:57 GMT",
+  "source_version": "glsea-Mon-05-Oct-2026-06-50-57-GMT",
   "stats": {
     "valid_cells": 148682,
-    "lakewide_mean_F": 61.61,
-    "min_F": 52.47,
-    "max_F": 68.92
+    "lakewide_mean_F": 61.26,
+    "min_F": 51.01,
+    "max_F": 68.52
   },
   "legend_size": [
     640,
@@ -41,44 +41,44 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 54.14,
-      "grid_F": 55.9085,
-      "absdiff_F": 1.77,
+      "obs_F": 53.06,
+      "grid_F": 55.120999999999995,
+      "absdiff_F": 2.06,
       "verdict": "OK",
-      "obs_time": "2026-10-04 08:50 UTC"
+      "obs_time": "2026-10-05 06:30 UTC"
     },
     "45002": {
-      "obs_F": 64.04,
-      "grid_F": 64.31,
-      "absdiff_F": 0.27,
+      "obs_F": 62.96,
+      "grid_F": 64.076,
+      "absdiff_F": 1.12,
       "verdict": "OK",
-      "obs_time": "2026-10-04 08:50 UTC"
+      "obs_time": "2026-10-05 06:30 UTC"
     },
     "45132": {
-      "obs_F": 65.3,
-      "grid_F": 67.001,
-      "absdiff_F": 1.7,
+      "obs_F": 65.12,
+      "grid_F": 66.488,
+      "absdiff_F": 1.37,
       "verdict": "OK",
-      "obs_time": "2026-10-04 09:00 UTC"
+      "obs_time": "2026-10-05 06:00 UTC"
     },
     "45012": {
-      "obs_F": 63.86,
-      "grid_F": 65.426,
-      "absdiff_F": 1.57,
+      "obs_F": 64.4,
+      "grid_F": 65.0255,
+      "absdiff_F": 0.63,
       "verdict": "OK",
-      "obs_time": "2026-10-04 08:50 UTC"
+      "obs_time": "2026-10-05 06:30 UTC"
     },
     "45005": {
-      "time_utc": "2026-10-04 08:50 UTC",
-      "WDIR_deg": 200.0,
-      "WSPD_ms": 3.0,
+      "time_utc": "2026-10-05 06:30 UTC",
+      "WDIR_deg": 330.0,
+      "WSPD_ms": 8.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
       "WTMP_C": null,
-      "ATMP_C": 16.2,
+      "ATMP_C": 16.4,
       "note": "no WTMP obs"
     }
   },
-  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>53\u00b0F</b> (deep blue) \u2192 <b>60.5\u00b0F</b> \u2192 warm <b>68\u00b0F</b> (red). Lakewide mean this run: <b>61.6\u00b0F</b>."
+  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>52\u00b0F</b> (deep blue) \u2192 <b>60\u00b0F</b> \u2192 warm <b>68\u00b0F</b> (red). Lakewide mean this run: <b>61.3\u00b0F</b>."
 }
