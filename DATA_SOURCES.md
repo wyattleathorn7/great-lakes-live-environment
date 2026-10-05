@@ -287,9 +287,13 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   clarity-turbidity ERDDAP was assessed but is bot-walled, so KdPAR stays
   the operational source; the description names the exact variable.
 - Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
-- **Display scale (v3):** FIXED log-spaced absolute 0.02–5+ m⁻¹
-  (KdPAR is log-distributed; a linear scale crushed typical lake water
-  into one blue). Values shown exactly as observed.
+- **Display scale (v5):** FIXED absolute 0.016–5 m⁻¹, built like the
+  other working products (UV/pressure style): hand-placed anchors tuned
+  to where lake water lives, raw values rendered directly with no
+  transforms. The floor equals valid_min, so no valid observation can
+  clamp into the floor color (retires the old scale's dark-navy "holes"
+  in ultra-clear water). Values shown exactly as observed; 5+
+  clamps into deep purple as honest extremes.
 - **Cadence:** source probed hourly (workflow) with a 7-day newest-valid
   mosaic, so any new ERDDAP publication rebuilds within the hour.
 

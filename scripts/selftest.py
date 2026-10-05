@@ -373,6 +373,61 @@ def main():
               (_rgba[:, :, 2] > 245) & (_rgba[:, :, 3] > 0)).sum()
     check("snow-white-rare", 0 < _white < 0.15 * 40 * 40, int(_white))
 
+    # ---- water clarity: working-product pattern (fixed tuned scale) ----
+    # Regression for the dark-navy "holes" in Ontario/Superior (the old
+    # scale's floor sat ABOVE valid_min, clamping valid clear water) and
+    # the uneven log spectrum. Stops live in the builder like UV/P_STOPS:
+    # fixed absolute anchors, raw-value rendering, floor == valid_min.
+    from build_water_clarity import (CLARITY_LABELS, CLARITY_MAX,
+                                     CLARITY_MIN, CLARITY_STOPS)
+    from gradient_scale import color_for as _cf
+    _wcs = CLARITY_STOPS
+    check("clarity-11-stops", len(_wcs) == 11, len(_wcs))
+    _wvals = [v for v, _ in _wcs]
+    check("clarity-ascending",
+          all(_wvals[i] < _wvals[i + 1] for i in range(len(_wvals) - 1)))
+    check("clarity-range", (_wvals[0], _wvals[-1]) == (0.016, 5.0),
+          (_wvals[0], _wvals[-1]))
+    check("clarity-clear-darkblue", _wcs[0][1] == (16, 52, 140))
+    check("clarity-turbid-deeppurple", _wcs[-1][1] == (59, 10, 90))
+    check("clarity-red-turbid-band",
+          any(v == 0.9 and c == (205, 30, 35) for v, c in _wcs))
+    # floor guard: scale floor must admit the lowest valid observation.
+    _cfg_cl = json.load(open(os.path.join(REPO_ROOT, "config",
+                                          "water_clarity.json")))
+    _lo = float(_cfg_cl["valid_min"])
+    check("clarity-floor-admits-valid", _wvals[0] <= _lo,
+          (_wvals[0], _lo))
+    # resolution where lake water lives: open-lake values must differ.
+    check("clarity-clear-end-varying",
+          _cf(0.02, _wcs) != _cf(0.06, _wcs),
+          (_cf(0.02, _wcs), _cf(0.06, _wcs)))
+    check("clarity-mid-varying",
+          _cf(0.2, _wcs) != _cf(0.45, _wcs),
+          (_cf(0.2, _wcs), _cf(0.45, _wcs)))
+    # typical lake water (0.1-0.3) must span several colors, not one flat.
+    _typ = {_cf(v / 100.0, _wcs) for v in range(10, 31, 2)}
+    check("clarity-typical-spans-colors", len(_typ) >= 4, len(_typ))
+    # labels pin the fixed scale incl. LOWEST/HIGHEST+ endpoints.
+    _td = dict(CLARITY_LABELS)
+    check("clarity-labels-endpoints",
+          CLARITY_LABELS[0][1].startswith("LOWEST")
+          and CLARITY_LABELS[-1][1].startswith("HIGHEST+"))
+    check("clarity-labels-scale",
+          min(_td) == CLARITY_MIN and max(_td) == CLARITY_MAX)
+    # synthetic raster: valid_min paints opaque; just-above-floor varies.
+    _wsyn = _np4.full((20, 20), _np4.nan)
+    _wsyn[5:15, 5:15] = _lo
+    _wrgba = _rr(_wsyn, _wcs, 205)
+    check("clarity-raster-opaque-at-floor",
+          bool((_wrgba[5:15, 5:15, 3] > 0).all()))
+    _wsyn2 = _np4.full((20, 20), _np4.nan)
+    _wsyn2[5:15, :10] = 0.02
+    _wsyn2[5:15, 10:] = 0.30
+    _wrgba2 = _rr(_wsyn2, _wcs, 205)
+    _uc2 = len(_np4.unique(_wrgba2[5:15, :, :3].reshape(-1, 3), axis=0))
+    check("clarity-raster-clear-vs-mid-differ", _uc2 >= 2, _uc2)
+
     # ---- leaf basin-wide land + OKLab (water stays transparent) ----
     from PIL import Image as _Im3
     _lpng = _np4.array(_Im3.open(os.path.join(

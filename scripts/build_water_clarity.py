@@ -6,8 +6,9 @@ algorithm, product status Experimental) -> validate -> newest-valid mosaic
 of the latest 7 daily composites (daily ocean color is cloud-sparse:
 clouds and orbit gaps leave most water pixels empty on any single day,
 so each pixel shows its newest valid observation within the window) ->
-clip to Great Lakes -> balanced LINEAR historical-range gradient (every
-part of the value scale owns an equal share of the color resolution) ->
+clip to Great Lakes -> fixed absolute KdPAR scale (same pattern as the
+other working products: tuned anchors where lake water lives, raw values
+render directly, no transforms) ->
 transparent PNG (water only, shared shoreline
 mask) -> key image + metadata -> Folder KML.
 
@@ -34,9 +35,8 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, load_bounds, promote_stage,
                               RENDER_VERSION, iso_to_det, read_state, save_png, source_token, stage_dir,
                               now_det_str, utcnow_iso, write_metadata, write_state)
-from gradient_scale import (KDPAR_LOG_MAX, KDPAR_LOG_MIN, KDPAR_LOG_STOPS,
-                            KDPAR_LOG_TICKS, draw_scale_legend, load_record,
-                            render_rgba, save_record, update_record)
+from gradient_scale import (draw_scale_legend, load_record, render_rgba,
+                            save_record, update_record)
 
 PRODUCT = "water_clarity"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -57,6 +57,45 @@ KML_FILE = "Great_Lakes_Live_Water_Clarity_Turbidity.kml"
 OVERLAY_NAME = "\U0001F30A LIVE WATER CLARITY / TURBIDITY"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 MOSAIC_DAYS = 7
+
+# Fixed absolute KdPAR scale, built the same way as the other working
+# products (cf. UV_STOPS, P_STOPS): hand-placed anchors in the master
+# blue->purple family, tuned to where lake water actually lives
+# (open-lake ~0.05-0.35 owns blue through yellow; plumes own orange/red;
+# rare >1.3 extremes own magenta/deep-purple). Same value -> same color,
+# always. Raw values render directly: no log transform, no smoothing.
+# The floor EQUALS valid_min (0.016), so no valid observation can ever
+# clamp into the floor color (the old above-valid floor painted valid
+# clear water as dark-navy "holes" in Ontario/Superior).
+CLARITY_STOPS = [
+    (0.016, (16, 52, 140)),    # clearest: dark blue
+    (0.060, (20, 110, 200)),   # blue
+    (0.120, (20, 190, 200)),   # cyan
+    (0.200, (90, 190, 80)),    # green
+    (0.300, (180, 200, 60)),   # green-yellow
+    (0.450, (245, 215, 50)),   # yellow
+    (0.650, (240, 130, 25)),   # orange
+    (0.900, (205, 30, 35)),    # red: turbid
+    (1.300, (150, 25, 110)),   # red-violet
+    (2.000, (90, 40, 160)),    # violet
+    (5.000, (59, 10, 90)),     # HIGHEST+ deep purple (5+ clamps here)
+]
+CLARITY_MIN = 0.016
+CLARITY_MAX = 5.0
+CLARITY_LABELS = [
+    (0.016, "LOWEST 0.016"),
+    (0.200, "0.2"),
+    (0.450, "0.45 typical"),
+    (0.900, "0.9 turbid"),
+    (5.000, "HIGHEST+ 5"),
+]
+# Never-again floor guard (mirrors the validate_outputs fixed-scale check):
+# the scale floor must admit the lowest valid observation.
+assert CLARITY_STOPS[0][0] <= float(CONFIG["valid_min"]), \
+    "clarity floor above valid_min would re-create floor-color holes"
+assert all(CLARITY_STOPS[i][0] < CLARITY_STOPS[i + 1][0]
+           for i in range(len(CLARITY_STOPS) - 1)), \
+    "clarity stops must strictly increase"
 
 
 def main():
@@ -218,10 +257,10 @@ def _build(bounds, times, dataset):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    # Fixed log-spaced absolute scale (not the drifting historical record):
-    # the same KdPAR always shows the same color. Record stats are still
-    # tracked below for QC.
-    stops = KDPAR_LOG_STOPS
+    # Fixed absolute scale (same pattern as UV/pressure/cloud/aurora):
+    # raw KdPAR values render directly through CLARITY_STOPS — no log
+    # transform, no smoothing. Record stats are still tracked below for QC.
+    stops = CLARITY_STOPS
     rgba = render_rgba(field, stops, bounds["overlay_alpha"])
     # Hard shoreline clip: majority-land pixels go fully transparent so no
     # fringe blocks sit on shore at high zoom (water-only product).
@@ -233,7 +272,7 @@ def _build(bounds, times, dataset):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    labels = KDPAR_LOG_TICKS
+    labels = CLARITY_LABELS
     subtitle = (f"Kd(PAR) ({unit}) — larger = more turbid  |  "
                 f"{eff_newest[:10]} (+{MOSAIC_DAYS - 1}d mosaic)")
     lw, lh = draw_scale_legend(
@@ -243,9 +282,9 @@ def _build(bounds, times, dataset):
         f"Processed {now_det_str()}",
         note="Transparent = land/cloud/missing.")
     scale_html = (f"Diffuse attenuation coefficient for PAR ({unit}), "
-                  f"FIXED log-spaced scale <b>LOWEST 0.02</b> "
-                  f"clearest (dark blue) → 0.1 → 0.3 → <b>1.0</b> turbid (red) → "
-                  f"<b>HIGHEST+ 5+</b> most turbid (violet). "
+                  f"FIXED absolute scale <b>LOWEST 0.016</b> "
+                  f"clearest (dark blue) → 0.2 → 0.45 → <b>0.9</b> turbid (red) → "
+                  f"<b>HIGHEST+ 5</b> most turbid (deep purple). "
                   f"Larger values always mean murkier water; "
                   f"source values are never altered.")
     meta = base_metadata(
@@ -256,7 +295,7 @@ def _build(bounds, times, dataset):
         source_last_modified_utc="n/a (ERDDAP)",
         units=f"{unit} (display); source m^-1",
         source_resolution="~4 km VIIRS L3, bilinear-resampled to canvas",
-        color_min=KDPAR_LOG_MIN, color_max=KDPAR_LOG_MAX, color_units=unit,
+        color_min=CLARITY_MIN, color_max=CLARITY_MAX, color_units=unit,
         missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
                                 f"[{lo},{hi}] values admitted; never interpolated."))
     meta["legend_size"] = [lw, lh]
@@ -269,10 +308,12 @@ def _build(bounds, times, dataset):
     meta["dataset"] = eff_owner
     meta["mosaic_sources"] = day_sources
     meta["mosaic_variables"] = day_vars
-    # v3 = fixed log-spaced absolute scale (same-value-same-color).
+    # v5 = working-product pattern: fixed absolute scale with tuned
+    # anchors (UV/pressure style), raw-value rendering, floor == valid_min
+    # so low-clamp holes are impossible. Forces one clean redeploy.
     # The id tracks the newest day ACTUALLY present and its owner, so it
     # advances exactly when real data does (never on empty anchor days).
-    source_id = f"{eff_owner}-v3-{eff_newest[:10]}"
+    source_id = f"{eff_owner}-v5-{eff_newest[:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]
