@@ -9,9 +9,9 @@
   "display_units": "mg/m^3",
   "valid_min": 0.001,
   "valid_max": 1000.0,
-  "log_hint": "chlorophyll spans orders of magnitude; percentile anchors handle the skew without log-warping values",
+  "log_hint": "chlorophyll spans orders of magnitude; fixed anchors are evenly spaced in log10 so each half-decade owns an equal share of the color",
   "allow_negative": false,
   "refresh_interval_seconds": 21600,
   "what": "Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.",
-  "why_extreme": "Very high values (blooms, algal activity, turbid intrusions) compress into red-violet/deep-purple; common background concentrations own most of the color resolution."
+  "why_extreme": "Fixed absolute scale with anchors where lake water lives: background water spreads blue through green, active water reads yellow-orange, and only true blooms reach red-violet/deep-purple."
 }

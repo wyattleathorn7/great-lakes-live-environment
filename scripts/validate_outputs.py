@@ -358,6 +358,8 @@ def main():
                 failures.append(f"{product}: metadata contains placeholder URL")
             if product == "water_clarity" and (lo, hi) != (0.016, 2.0):
                 failures.append(f"{product}: clarity scale must be fixed 0.016-2.0, got {lo}-{hi}")
+            if product == "chlorophyll" and (lo, hi) != (0.001, 100.0):
+                failures.append(f"{product}: chlorophyll scale must be fixed 0.001-100.0, got {lo}-{hi}")
             if product == "ice_type":
                 cats = meta.get("ice_type_categories", [])
                 codes = {c.get("code") for c in cats}

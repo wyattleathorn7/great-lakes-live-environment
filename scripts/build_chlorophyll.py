@@ -1,13 +1,14 @@
 """Pipeline H — LIVE CHLOROPHYLL / ALGAL ACTIVITY (independent).
 
-NOAA CoastWatch S-NPP VIIRS chlorophyll-a (Science Quality, Global 4 km,
-Daily; ERDDAP nesdisVHNSQchlaDaily; chlor_a, mg/m^3, OC3 algorithm) ->
-validate -> 7-day MEDIAN mosaic of the latest daily composites (daily
-ocean color is cloud-sparse and single days carry row striping, so each
-pixel shows the median valid observation within the window, which
-cancels day-calibration steps and swath seams) -> clip to Great Lakes ->
-balanced LINEAR historical-range gradient (every part of the value scale
-owns an equal share of the color resolution) -> light display smoothing
+NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily
+(ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily; chlor_a, mg/m^3,
+OC3 algorithm), fallback SQ Daily -> validate -> 7-day MEDIAN mosaic of
+the latest daily composites (daily ocean color is cloud-sparse and single
+days carry row striping, so each pixel shows the median valid observation
+within the window, which cancels day-calibration steps and swath seams)
+-> clip to Great Lakes -> fixed absolute chlorophyll scale (same pattern
+as the other working products: tuned anchors where lake water lives, raw
+values rendered directly, no per-run rescaling) -> light display smoothing
 (NaN-aware local mean, valid pixels only, same documented treatment as
 the live wind splat) -> transparent PNG (water only, shared shoreline
 mask) -> key image + metadata -> Folder KML.
@@ -18,6 +19,7 @@ measurement and NOT a HAB diagnosis. Exit codes: 0 updated (or skipped);
 """
 
 import json
+import math
 import os
 import sys
 import traceback
@@ -30,11 +32,10 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        live_out_dirs, refresh_kml_base_url)
 from erddap_coastwatch import fetch_csv, latest_time
 from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
-                               base_metadata, load_bounds, load_watermask, promote_stage,
-                               RENDER_VERSION, iso_to_det, read_state, save_png, source_token, stage_dir,
-                               now_det_str, utcnow_iso, write_metadata, write_state)
-from gradient_scale import (build_linear_stops, draw_scale_legend,
-                            fmt_val, load_record, record_tick_labels,
+                              base_metadata, load_bounds, load_watermask, promote_stage,
+                              RENDER_VERSION, iso_to_det, read_state, save_png, source_token, stage_dir,
+                              now_det_str, utcnow_iso, write_metadata, write_state)
+from gradient_scale import (draw_scale_legend, fmt_val, load_record,
                             render_rgba, save_record, update_record)
 
 PRODUCT = "chlorophyll"
@@ -56,6 +57,51 @@ MOSAIC_DAYS = 7
 STRIDE = 1  # Full ERDDAP source resolution (0.0833 deg): stride 2 threw
             # away 3/4 of the cells and rendered real gradients as 18 km
             # tall stripes/blocks. Fetches stay small (~109x235 x 7 days).
+
+# Fixed absolute chlorophyll scale, built the same way as the other
+# working products (cf. UV_STOPS, P_STOPS, CLARITY_STOPS): hand-placed
+# anchors in the preserved master blue->purple family, tuned to where lake
+# water actually lives (background ~0.5-3 owns blue through green, blooms
+# own yellow through red, rare >32 extremes own violet/deep-purple).
+# Chlorophyll spans orders of magnitude, so anchors are EVEN in log10
+# (each half-decade owns 1/10 of the color: a steady slider) while every
+# displayed value stays the true measured concentration (no value is
+# altered for color). Same value -> same color, always. The legend labels
+# sit at even bar positions (0/20/40/60/80/100%) with truthful raw-unit
+# text. Stops live in log10 space; the field is carried there to match.
+# The floor (0.001 = valid_min) admits every valid observation, so no
+# valid water can ever clamp into the floor color.
+CHL_STOPS = [  # (log10 mg/m^3, rgb)
+    (-3.0, (16, 52, 140)),     # 0.001 clearest: dark blue
+    (-2.5, (19, 93, 183)),     # 0.0032 blue
+    (-2.0, (20, 144, 200)),    # 0.01 cyan-blue
+    (-1.5, (30, 190, 183)),    # 0.032 cyan
+    (-1.0, (80, 190, 97)),     # 0.1 green
+    (-0.5, (179, 204, 63)),    # 0.32 yellow-green
+    (0.0, (243, 187, 42)),     # 1.0 yellow
+    (0.5, (234, 113, 27)),     # 3.2 orange
+    (1.0, (205, 30, 35)),      # 10 red: bloom
+    (1.5, (150, 25, 110)),     # 32 red-violet
+    (2.0, (70, 15, 100)),      # 100 HIGHEST+ deep purple (100+ clamps here)
+]
+CHL_MIN = 0.001
+CHL_MAX = 100.0
+CHL_LABELS = [  # (log10 value, text); even bar positions, truthful units
+    (-3.0, "LOWEST 0.001"),
+    (-2.0, "0.01"),
+    (-1.0, "0.1"),
+    (0.0, "1.0"),
+    (1.0, "10 bloom"),
+    (2.0, "HIGHEST+ 100"),
+]
+# Never-again guards (mirror the validate_outputs fixed-scale check):
+# the scale floor must admit the lowest valid observation, and anchors
+# must stay evenly spaced in log10 (a steady slider).
+assert CHL_STOPS[0][0] <= math.log10(float(CONFIG["valid_min"])), \
+    "chlorophyll floor above valid_min would re-create floor-color holes"
+assert all(CHL_STOPS[i][0] < CHL_STOPS[i + 1][0]
+           for i in range(len(CHL_STOPS) - 1)), \
+    "chlorophyll stops must strictly increase"
 
 
 def main():
@@ -106,9 +152,8 @@ def run():
     except Exception as e:
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
-    # v4 marker forces one rebuild to deploy the stripe fix (stride 1 +
-    # 7-day median mosaic + display smoothing).
-    source_id = f"{dataset}-v4-{times[0][:10]}"
+    # v5 marker forces one rebuild to deploy the fixed-scale rendering.
+    source_id = f"{dataset}-v5-{times[0][:10]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
@@ -203,18 +248,12 @@ def _build(bounds, times, dataset):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    # Log-scale color mapping (ocean-color standard): chlorophyll spans
-    # orders of magnitude, so a linear scale would paint 99% of lake
-    # water one blue. Colors are linear in log10(concentration) -- equal
-    # color per decade -- while every displayed value stays the true
-    # measured concentration (no value is altered for color).
-    import math as _math
-    log_min = _math.log10(max(lo, rec["hist_min"]))
-    log_max = _math.log10(max(rec["hist_max"],
-                              10.0 * max(lo, rec["hist_min"])))
-    if not (log_max > log_min):
-        log_max = log_min + 1.0
-    stops = build_linear_stops(log_min, log_max)
+    # Fixed absolute scale (same pattern as UV/pressure/clarity): raw
+    # concentrations render through CHL_STOPS with no per-run rescaling.
+    # The field is carried in log10 (ocean-color standard: concentrations
+    # span orders of magnitude) to match the log10 stops; every displayed
+    # value stays the true measured concentration.
+    stops = CHL_STOPS
     field = _display_smooth(field)
     with np.errstate(invalid="ignore", divide="ignore"):
         logfield = np.where(np.isfinite(field) & (field > 0),
@@ -237,22 +276,20 @@ def _build(bounds, times, dataset):
 
     p = rec["percentiles"]
     unit = CONFIG["display_units"]
-    # Ticks show true concentrations, positioned at their log10 places.
-    labels = [(float(_math.log10(max(v, lo))), t)
-              for v, t in record_tick_labels(rec)]
+    labels = CHL_LABELS
     subtitle = (f"Chlorophyll-a ({unit})  |  {times[0][:10]} (7-day median mosaic)")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
         f"Source: NOAA CoastWatch VIIRS chlorophyll  |  Processed {now_det_str()}",
         note="Transparent = land/cloud/missing. Not a toxin measurement.")
-    scale_html = (f"Chlorophyll-a concentration ({unit}), logarithmic "
-                  f"(base-10) scale: <b>LOWEST {fmt_val(rec['hist_min'])}</b> "
-                  f"(dark blue) → common {fmt_val(p['p50'])} (green/yellow) → "
-                  f"<b>HIGHEST+ {fmt_val(rec['hist_max'])}</b> (deep purple). "
-                  f"Equal color per decade of concentration (ocean-color "
-                  f"standard); displayed values are true concentrations, "
-                  f"never altered. High values indicate biomass/activity, "
+    scale_html = (f"Chlorophyll-a concentration ({unit}), FIXED absolute "
+                  f"scale <b>LOWEST 0.001</b> (dark blue) → 0.01 → 0.1 → "
+                  f"<b>1.0</b> → <b>10 bloom</b> (red) → "
+                  f"<b>HIGHEST+ 100</b> (deep purple). "
+                  f"Each half-decade owns an equal share of the color; "
+                  f"displayed values are true concentrations, never "
+                  f"altered. High values indicate biomass/activity, "
                   f"not toxins.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -262,7 +299,7 @@ def _build(bounds, times, dataset):
         source_last_modified_utc="n/a (ERDDAP)",
         units=f"{unit} (display); source mg m^-3",
         source_resolution="~9 km VIIRS NRT (0.0833 deg), 7-day median mosaic, NaN-aware display smoothing",
-        color_min=rec["hist_min"], color_max=rec["hist_max"], color_units=unit,
+        color_min=CHL_MIN, color_max=CHL_MAX, color_units=unit,
         missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
                                 f"[{lo},{hi}] values admitted; never interpolated; "
                                 "colors follow log10(concentration), values shown raw."))
@@ -276,10 +313,12 @@ def _build(bounds, times, dataset):
     meta["dataset"] = dataset
     meta["mosaic_sources"] = day_sources
     meta["mosaic_method"] = f"per-pixel median of {len(stack)} daily composites"
-    # v4 = stripe fix: full-resolution source, 7-day median mosaic,
-    # display smoothing. One-time rotation to deploy the fixed rendering;
-    # afterwards the id tracks source dataset+date only.
-    source_id = f"{dataset}-v4-{times[0][:10]}"
+    # v5 = fixed absolute scale with tuned log10 anchors (same-value-
+    # same-color, 0.001-100, even half-decade steps; floor admits every
+    # valid observation so low-clamp holes are impossible). One-time
+    # rotation to deploy the fixed rendering; afterwards the id tracks
+    # source dataset+date only.
+    source_id = f"{dataset}-v5-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]

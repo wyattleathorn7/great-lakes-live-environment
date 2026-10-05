@@ -258,9 +258,16 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   is not yet in CoastWatch ERDDAP, so no NOAA-21 chlorophyll is
   fabricated; the S-NPP+NOAA-20 NRT stream is the operational coverage.
   Rendered as a newest-valid mosaic of the latest 7 dailies (daily ocean
-  color is cloud-sparse; ERDDAP stride-2 fetch, canvas upscales).
-  Balanced LINEAR color scale. The gapfilled NRT stream also removes the
-  scan-line gaps of the old SQ-only mosaic.
+   color is cloud-sparse; ERDDAP stride-2 fetch, canvas upscales).
+   Balanced LINEAR color scale. The gapfilled NRT stream also removes the
+   scan-line gaps of the old SQ-only mosaic.
+- **Display scale (v5):** FIXED absolute 0.001–100 mg/m³, built like the
+  other working products (UV/pressure/clarity style): hand-placed anchors
+  in the preserved blue->purple family, evenly spaced in log10 so each
+  half-decade owns an equal share of the color and the legend labels sit
+  evenly (0/20/40/60/80/100% of the bar). The floor equals valid_min, so
+  no valid observation can clamp into the floor color. Values shown
+  exactly as observed; 100+ clamps into deep purple as honest extremes.
 - Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
 
 ## 7. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (SQ, daily)
