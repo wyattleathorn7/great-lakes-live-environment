@@ -14,8 +14,15 @@ NOWCAST analysis + NOAA/GLERL experimental GLCFS-FVCOM corridor fill:
 
 Gradient = CURRENT SPEED (fixed absolute 0-100 cm/s, source m/s x100).
 Arrows = CURRENT DIRECTION, rasterized INTO the PNG (zero KML Placemarks):
-resampled block-median movement vectors on a regular canvas grid (dense
-step inside connecting-channel boxes, coarse step on open lakes).
+NO preset lattice — jittered seeds are advected downstream along RK2
+streamlines integrated through the filed (U,V) field, and sleek needle
+glyphs are chained along each path, tangent to local flow (denser seeds
+in rivers). Every arrow position and orientation is field-derived.
+
+Narrow rivers vs the shared open-lake shoreline mask: the mask reads
+land over sub-pixel rivers, so product-local channel water (source
+vector present + inside RIVER_BOXES) restores river alpha. Shared mask
+asset untouched; validators permit opaque-outside-mask only there.
 
 Direction convention (critical, verified from file metadata):
   u_eastward = CF eastward_sea_water_velocity (m/s)
@@ -55,8 +62,9 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
-                              apply_shoreline_mask, base_metadata,
-                              bin_to_canvas, canvas_indices, download,
+                              base_metadata, bin_to_canvas,
+                              bleed_rgb_into_transparent, canvas_indices,
+                              download,
                               load_bounds, load_watermask, now_det_str,
                               promote_stage, read_state, save_png,
                               source_token, stage_dir, write_metadata,
@@ -121,14 +129,19 @@ CUR_LABELS = [
 CUR_LABELS_NO5 = [t for t in CUR_LABELS if t[0] != 5.0]
 CUR_MAX = 100.0
 
-# Dense arrow sampling inside connecting-channel boxes (rivers only, not
-# the wider lakes — Lake St. Clair and open lakes use the coarse step)
-# (lon0, lon1, lat0, lat1, name)
-CHANNEL_BOXES = [
-    (-84.70, -84.00, 46.10, 46.65, "St. Marys River"),
-    (-82.62, -82.38, 42.70, 43.02, "St. Clair River"),
-    (-83.25, -82.95, 42.00, 42.42, "Detroit River"),
-    (-79.15, -78.90, 42.88, 43.35, "Niagara River"),
+# Narrow product-local river-water boxes. The shared NOAA shoreline mask
+# (medium-resolution, built for open-lake coastlines) reads 0 over most
+# of these sub-pixel rivers, which would erase their vectors. Pixels are
+# restored ONLY where an authoritative source actually provides a vector
+# (vec_ok) AND the pixel falls inside one of these boxes — land elsewhere
+# stays transparent exactly as for every other layer. The shared mask
+# asset itself is never touched. Validators import RIVER_BOXES and permit
+# opaque pixels outside the shared mask solely inside these boxes.
+RIVER_BOXES = [
+    (-84.60, -84.10, 46.15, 46.62),   # St. Marys River
+    (-82.64, -82.36, 42.56, 43.02),   # St. Clair River
+    (-83.28, -82.96, 41.96, 42.42),   # Detroit River
+    (-79.13, -78.90, 42.86, 43.36),   # Niagara River
 ]
 
 
@@ -240,6 +253,38 @@ def fetch_fvcom_surface(dods_url, restrict_box=None):
             "valid_iso": t}
 
 
+def river_box_mask(bounds):
+    """Bool canvas mask of RIVER_BOXES (for validators: opaque outside
+    the shared shoreline is permitted only here)."""
+    import numpy as _np
+    W, H = bounds["canvas_width"], bounds["canvas_height"]
+    lon_ax = (bounds["lon_min"] + (_np.arange(W) + 0.5) / W
+              * (bounds["lon_max"] - bounds["lon_min"]))
+    lat_ax = (bounds["lat_max"] - (_np.arange(H) + 0.5) / H
+              * (bounds["lat_max"] - bounds["lat_min"]))
+    m = _np.zeros((H, W), bool)
+    for x0, x1, y0, y1 in RIVER_BOXES:
+        m |= ((lon_ax[None, :] >= x0) & (lon_ax[None, :] <= x1)
+              & (lat_ax[:, None] >= y0) & (lat_ax[:, None] <= y1))
+    return m
+
+
+def nanmean3(grid):
+    """NaN-aware 3x3 mean (display smoothing only; NaN stays NaN)."""
+    m = np.isfinite(grid).astype(float)
+    gf = np.where(np.isfinite(grid), grid, 0.0)
+    mp, gp = np.pad(m, 1), np.pad(gf, 1)
+    tot = np.zeros_like(gf)
+    cnt = np.zeros_like(gf)
+    for dr in range(3):
+        for dc in range(3):
+            tot += gp[dr:dr + gf.shape[0], dc:dc + gf.shape[1]]
+            cnt += mp[dr:dr + gf.shape[0], dc:dc + gf.shape[1]]
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.where(cnt > 0, tot / np.where(cnt > 0, cnt, 1.0),
+                        np.nan)
+
+
 def valid_to_det(iso):
     """FVCOM/GLOFS 'YYYY-MM-DDTHH:MM:SS.ffffff' (UTC) -> Detroit display."""
     try:
@@ -263,51 +308,174 @@ def compass(deg):
     return pts[int(((float(deg) % 360) + 22.5) // 45)]
 
 
-def paint_arrows(rgba, uu, vv, valid_frac, step, L=10.0):
-    """Uniform-length toward-motion arrows from canvas-grid (U,V) in m/s.
-
-    Block-median resampling over step x step windows: the displayed vector
-    is the median of the underlying field (no invented directions).
-    Skips stagnant (<1 cm/s) and poorly covered windows.
-    Returns (rgba, n).
-    """
+def sample_uv(y, x, uu, vv):
+    """Bilinear (U,V) at fractional canvas coords; (nan, nan) when any
+    corner is non-finite or out of bounds (stops traces at land/no-data)."""
     H, W = uu.shape
+    if not (0.0 <= y <= H - 1.001 and 0.0 <= x <= W - 1.001):
+        return (float("nan"), float("nan"))
+    y0, x0 = int(y), int(x)
+    y1, x1 = min(y0 + 1, H - 1), min(x0 + 1, W - 1)
+    fy, fx = y - y0, x - x0
+    try:
+        u = (uu[y0, x0] * (1 - fx) + uu[y0, x1] * fx) * (1 - fy) + \
+            (uu[y1, x0] * (1 - fx) + uu[y1, x1] * fx) * fy
+        v = (vv[y0, x0] * (1 - fx) + vv[y0, x1] * fx) * (1 - fy) + \
+            (vv[y1, x0] * (1 - fx) + vv[y1, x1] * fx) * fy
+    except IndexError:
+        return (float("nan"), float("nan"))
+    if not (np.isfinite(u) and np.isfinite(v)):
+        return (float("nan"), float("nan"))
+    return (float(u), float(v))
+
+
+def trace_streamline(sy, sx, uu, vv, ds=3.0, max_steps=24, min_speed=0.01):
+    """Integrate one downstream path (RK2 midpoint) through the filed
+    vector field. Canvas coords: +x east, +y SOUTH (row down); northward
+    +V steps y down. Returns [(y, x, dx, dy)] canvas-unit tangents.
+    Stops at land/no-data, stagnant water, or sharp hairpins (noisy
+    cells must not sling arrows across the map). Pure function of the
+    source field — every position and tangent is field-derived."""
+    path = []
+    y, x = float(sy), float(sx)
+    px, py = None, None
+    for _ in range(max_steps):
+        u, v = sample_uv(y, x, uu, vv)
+        sp = math.hypot(u, v)
+        if not math.isfinite(sp) or sp < min_speed:
+            break
+        dx, dy = u / sp, -v / sp
+        mx, my = x + dx * ds / 2.0, y + dy * ds / 2.0
+        u2, v2 = sample_uv(my, mx, uu, vv)
+        sp2 = math.hypot(u2, v2)
+        if not math.isfinite(sp2) or sp2 < min_speed:
+            break
+        ax, ay = dx + u2 / sp2, dy + (-v2 / sp2)
+        n = math.hypot(ax, ay)
+        if n < 1e-9:
+            break
+        ax, ay = ax / n, ay / n
+        if px is not None and (ax * px + ay * py) < 0.3:
+            break  # hairpin: noisy/convergent cells, stop the trace
+        x, y = x + ax * ds, y + ay * ds
+        if not (8 <= y < uu.shape[0] - 8 and 8 <= x < uu.shape[1] - 8):
+            break
+        path.append((y, x, ax, ay))
+        px, py = ax, ay
+    return path
+
+
+def draw_needle(d, cx, cy, dx, dy, L):
+    """One sleek needle glyph: 1 px white core + 2 px dark outline,
+    sharp ~24-deg head. (dx, dy) canvas-unit toward-vector."""
+    ang = math.atan2(dy, dx)
+    x0, y0 = cx - dx * L / 2, cy - dy * L / 2
+    x1, y1 = cx + dx * L / 2, cy + dy * L / 2
+    head = 0.45 * L
+    spread = math.pi - 0.42
+    d.line([(x0, y0), (x1, y1)], fill=(20, 20, 20, 235), width=2)
+    d.line([(x0, y0), (x1, y1)], fill=(255, 255, 255, 240), width=1)
+    for s in (1, -1):
+        ha = ang + s * spread
+        ex, ey = x1 + math.cos(ha) * head, y1 + math.sin(ha) * head
+        d.line([(x1, y1), (ex, ey)], fill=(20, 20, 20, 235), width=2)
+        d.line([(x1, y1), (ex, ey)], fill=(255, 255, 255, 240), width=1)
+
+
+def paint_flow_arrows(rgba, uu, vv, seed_step=24, river_seed_step=7,
+                      river_mask=None, ds=3.0, max_steps=24,
+                      place_offsets=(4, 16), l_min=6.5, l_max=9.5,
+                      speed_ref_cms=50.0, min_speed_cms=1.0,
+                      sep_px=10.0, river_sep_px=5.0,
+                      place_sep_px=6.0, river_place_sep_px=4.0):
+    """Arrows that ride the flow: jittered seeds (seeded RNG: deterministic
+    per source field) are advected downstream along RK2 streamlines and
+    needle glyphs are chained along each path. Position AND orientation of
+    every arrow come from integrating the filed vector field — never from
+    a preset lattice. Separation-aware seeding (Jobard-Lefer style): a
+    seed too close to an already-accepted path is skipped, so converging
+    flow cannot pile arrows into blobs. Length carries a gentle clamped
+    speed cue (l_min -> l_max at >= speed_ref_cms). Returns (rgba, n)."""
+    H, W = uu.shape
+    if river_mask is None:
+        river_mask = np.zeros((H, W), bool)
+    rng = np.random.default_rng(7)
     img = Image.fromarray(rgba, mode="RGBA")
     d = ImageDraw.Draw(img)
     n = 0
-    for r0 in range(0, H, step):
-        for c0 in range(0, W, step):
-            blk_u = uu[r0:r0 + step, c0:c0 + step]
-            blk_v = vv[r0:r0 + step, c0:c0 + step]
-            blk_f = valid_frac[r0:r0 + step, c0:c0 + step]
-            m = np.isfinite(blk_u) & np.isfinite(blk_v) & (blk_f > 0)
-            if m.sum() < max(4, int(0.2 * blk_u.size)):
+    covered = np.zeros((H, W), bool)
+    rr, cc = np.ogrid[:H, :W]
+
+    def claim(path, sep):
+        s = int(math.ceil(sep))
+        for (y, x, _ax, _ay) in path[::3]:
+            r0, r1 = max(0, int(y) - s), min(H, int(y) + s + 1)
+            c0, c1 = max(0, int(x) - s), min(W, int(x) + s + 1)
+            dy = rr[r0:r1, 0:1] - y
+            dx = cc[0:1, c0:c1] - x
+            covered[r0:r1, c0:c1][(dy * dy + dx * dx) <= sep * sep] = True
+
+    def seeds(step):
+        pts = []
+        for r0 in range(0, H, step):
+            for c0 in range(0, W, step):
+                r = r0 + step / 2.0 + (rng.random() - 0.5) * step * 0.66
+                c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.66
+                pts.append((r, c))
+        return pts
+
+    min_speed = min_speed_cms / 100.0
+    placed = np.zeros((H, W), bool)
+
+    def clear_of_glyphs(y, x, sep):
+        s = int(math.ceil(sep))
+        r0, r1 = max(0, int(y) - s), min(H, int(y) + s + 1)
+        c0, c1 = max(0, int(x) - s), min(W, int(x) + s + 1)
+        dy = rr[r0:r1, 0:1] - y
+        dx = cc[0:1, c0:c1] - x
+        win = placed[r0:r1, c0:c1]
+        hit = (dy * dy + dx * dx) <= sep * sep
+        if bool((win & hit).any()):
+            return False
+        win[hit] = True
+        return True
+
+    for step, in_river, sep, psep in (
+            (seed_step, False, sep_px, place_sep_px),
+            (river_seed_step, True, river_sep_px, river_place_sep_px)):
+        for (r, c) in seeds(step):
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
                 continue
-            mu, mv = float(np.median(blk_u[m])), float(np.median(blk_v[m]))
-            if math.hypot(mu, mv) < 0.01:  # <1 cm/s: stagnant, no arrow
+            if bool(river_mask[int(r), int(c)]) != in_river:
+                continue  # lake pass skips rivers; river pass only rivers
+            if covered[int(r), int(c)]:
+                continue  # too close to an accepted path: skip the seed
+            u0, v0 = sample_uv(r, c, uu, vv)
+            sp0 = math.hypot(u0, v0)
+            if not math.isfinite(sp0) or sp0 < min_speed:
                 continue
-            r = r0 + step // 2
-            c = c0 + step // 2
-            if not (10 <= r < H - 10 and 10 <= c < W - 10):
-                continue
-            if rgba[r, c, 3] == 0:
-                continue
-            sp = math.hypot(mu, mv)
-            dx, dy = mu / sp, -mv / sp  # east+/north-up on canvas
-            x0, y0 = c - dx * L / 2, r - dy * L / 2
-            x1, y1 = c + dx * L / 2, r + dy * L / 2
-            ang = math.atan2(dy, dx)
-            head = L / 2.0
-            for ext, w, col in ((2, 3, (20, 20, 20, 235)),
-                                (0, 1, (255, 255, 255, 240))):
-                d.line([(x0, y0), (x1, y1)], fill=col, width=2 + ext)
-                for s in (1, -1):
-                    ha = ang + s * (math.pi - 0.5)
-                    d.line([(x1, y1),
-                            (x1 + math.cos(ha) * head,
-                             y1 + math.sin(ha) * head)],
-                           fill=col, width=2 + ext)
-            n += 1
+            path = trace_streamline(r, c, uu, vv, ds=ds,
+                                    max_steps=max_steps,
+                                    min_speed=min_speed)
+            if len(path) < 6:
+                continue  # stagnant pocket: no arrows, no coverage claim
+            claim(path, sep)
+            for idx in place_offsets:
+                if idx >= len(path):
+                    continue
+                y, x, ax, ay = path[idx]
+                if rgba[int(y), int(x), 3] == 0:
+                    continue
+                if not clear_of_glyphs(y, x, psep):
+                    continue  # another glyph already owns this spot
+                u, v = sample_uv(y, x, uu, vv)
+                sp = math.hypot(u, v)
+                if not math.isfinite(sp) or sp < min_speed:
+                    continue
+                L = l_min + (l_max - l_min) * min(1.0, sp * 100.0
+                                                 / speed_ref_cms)
+                draw_needle(d, x, y, ax, ay, L)
+                n += 1
     del d
     return np.array(img), n
 
@@ -315,8 +483,8 @@ def paint_arrows(rgba, uu, vv, valid_frac, step, L=10.0):
 def paint_sample_arrow(path):
     """Paint the direction-key row onto a finished scale legend (in place).
 
-    Draws the note row itself (glyph + text) so nothing collides with the
-    source line above it.
+    Draws the note row itself (needle glyph + text) so nothing collides
+    with the source line above it. Glyph matches the raster needles.
     """
     from geospatial_utils import _legend_font
     img = Image.open(path).convert("RGBA")
@@ -324,24 +492,11 @@ def paint_sample_arrow(path):
     f_small = _legend_font(13)
     W, H = img.size
     y = H - 24
-    # sample glyph, same style as the raster arrows, smaller
-    cx, cy = 30, y + 2
-    L = 22.0
+    cx, cy = 34, y + 2
     ang = math.radians(-35.0)
-    dx, dy = math.cos(ang), math.sin(ang)
-    x0, y0 = cx - dx * L / 2, cy - dy * L / 2
-    x1, y1 = cx + dx * L / 2, cy + dy * L / 2
-    ha = math.atan2(dy, dx)
-    for ext, w, col in ((2, 3, (20, 20, 20, 235)),
-                        (0, 1, (255, 255, 255, 240))):
-        d.line([(x0, y0), (x1, y1)], fill=col, width=2 + ext)
-        for s in (1, -1):
-            a2 = ha + s * (math.pi - 0.5)
-            d.line([(x1, y1), (x1 + math.cos(a2) * 6,
-                               y1 + math.sin(a2) * 6)],
-                   fill=col, width=2 + ext)
-    d.text((52, y - 6),
-           "COLOR = speed. White arrows = flow direction.",
+    draw_needle(d, cx, cy, math.cos(ang), math.sin(ang), 22.0)
+    d.text((56, y - 6),
+           "COLOR = speed. Needles ride the flow (longer = faster).",
            font=f_small, fill=(10, 10, 10))
     img.save(path)
 
@@ -484,6 +639,15 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
           f"{n_fill} = {n_all} water vectors")
     if n_all < 5_000:
         raise ValueError(f"too few canvas vectors ({n_all})")
+    # river display smoothing: sub-pixel channels bin into harsh
+    # stair-steps; a NaN-aware 3x3 mean inside RIVER_BOXES only softens
+    # the steps (documented display resampling; arrows trace the same
+    # smoothed field so glyphs match colors).
+    _rb = river_box_mask(bounds)
+    for _grid in (spd_c, uu_c, vv_c):
+        _sm = nanmean3(_grid)
+        _use = _rb & np.isfinite(_grid) & np.isfinite(_sm)
+        _grid[_use] = _sm[_use]
     if float(np.nanmax(spd_c)) > CUR_MAX * 5:
         raise ValueError(f"implausible max speed {float(np.nanmax(spd_c)):.0f}")
 
@@ -513,44 +677,34 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
 
     # ---- render speed gradient ----
     rgba = render_rgba(spd_c, CUR_STOPS, bounds["overlay_alpha"])
-    rgba = apply_shoreline_mask(rgba)  # lake water only
+    vec_ok = np.isfinite(spd_c)  # authoritative vector present (pre-mask)
     wm = load_watermask()
-    water = wm > 0.5
-    # arrows from the combined vector field on water only
-    uu_w = np.where(water, uu_c, np.nan)
-    vv_w = np.where(water, vv_c, np.nan)
-    val_w = np.where(water & np.isfinite(uu_c), 1.0, 0.0)
-    n_arrows = 0
-    lon_ax = (bounds["lon_min"] + (np.arange(W) + 0.5) / W
-              * (bounds["lon_max"] - bounds["lon_min"]))
-    lat_ax = (bounds["lat_max"] - (np.arange(H) + 0.5) / H
-              * (bounds["lat_max"] - bounds["lat_min"]))
-    ch_mask = np.zeros((H, W), bool)
-    for x0, x1, y0, y1, _nm in CHANNEL_BOXES:
-        ch_mask |= ((lon_ax[None, :] >= x0) & (lon_ax[None, :] <= x1)
-                    & (lat_ax[:, None] >= y0) & (lat_ax[:, None] <= y1))
-    # coarse pass everywhere EXCEPT river boxes (avoids double-painted
-    # pile-ups where the dense pass lands on top of lake arrows)
-    val_lake = np.where(~ch_mask, val_w, 0.0)
-    tmp, n0 = paint_arrows(rgba, uu_w, vv_w, val_lake,
-                           CONFIG["arrow_step_px"])
-    n_arrows += n0
-    rgba = tmp
-    # dense pass inside river boxes only
-    uu_ch = np.where(ch_mask, uu_w, np.nan)
-    vv_ch = np.where(ch_mask, vv_w, np.nan)
-    val_ch = np.where(ch_mask, val_w, 0.0)
-    rgba, n1 = paint_arrows(rgba, uu_ch, vv_ch, val_ch,
-                            CONFIG["arrow_channel_step_px"], L=6.0)
-    n_arrows += n1
-    # arrows near shore can spill 1-2 px onto land: clip alpha back to
-    # the water mask (no second bleed — colors already bled once).
+    river_boxes = river_box_mask(bounds)
+    river_allow = vec_ok & river_boxes  # product-local channel water
+    # arrows ride the flow (painted BEFORE masking so river glyphs land)
+    uu_w = np.where(vec_ok, uu_c, np.nan)
+    vv_w = np.where(vec_ok, vv_c, np.nan)
+    rgba, n_arrows = paint_flow_arrows(
+        rgba, uu_w, vv_w,
+        seed_step=CONFIG["seed_step_px"],
+        river_seed_step=CONFIG["river_seed_step_px"],
+        river_mask=river_boxes,
+        ds=CONFIG["stream_ds_px"], max_steps=CONFIG["stream_max_steps"],
+        place_offsets=tuple(CONFIG["stream_place_offsets"]),
+        l_min=CONFIG["arrow_l_min"], l_max=CONFIG["arrow_l_max"],
+        speed_ref_cms=CONFIG["arrow_speed_ref_cms"],
+        min_speed_cms=CONFIG["arrow_min_speed_cms"])
+    # shoreline: shared mask everywhere, channel water restored in rivers
+    keep = np.maximum(wm, river_allow.astype(np.float32))
     rgba[:, :, 3] = np.round(
-        rgba[:, :, 3].astype(np.float32) * wm).astype(np.uint8)
+        rgba[:, :, 3].astype(np.float32) * keep).astype(np.uint8)
+    rgba = bleed_rgb_into_transparent(rgba)  # anti-fringe for GE bilinear
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     n_opaque = int((rgba[:, :, 3] > 0).sum())
-    print(f"[{PRODUCT}] opaque={n_opaque} arrows={n_arrows} "
-          f"(channels +{n1}) speed max={cur_max:.1f} med={cur_med:.1f} cm/s")
+    n_river = int((rgba[:, :, 3] > 0).sum() - (np.round(
+        rgba[:, :, 3].astype(np.float32) * wm) > 0).sum())
+    print(f"[{PRODUCT}] opaque={n_opaque} (river-restored ~{n_river}) "
+          f"arrows={n_arrows} speed max={cur_max:.1f} med={cur_med:.1f} cm/s")
     if n_opaque < 5_000:
         raise ValueError("empty raster")
     if n_arrows < CONFIG["min_arrows"]:
@@ -572,15 +726,16 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
     paint_sample_arrow(os.path.join(stage_prod, "legend.png"))
     scale_html = (
         "Surface-current speed (centimeters per second, one continuous "
-        "gradient): <b>LOWEST 0</b> dark-blue stagnant &rarr; <b>5</b> blue "
-        "&rarr; <b>10</b> teal &rarr; <b>15-20</b> green-yellow &rarr; "
-        "<b>30</b> orange &rarr; <b>50</b> red &rarr; <b>75</b> red-violet "
-        "&rarr; <b>HIGHEST+ 100 cm/s</b> dark-purple channel jets. Same "
-        "speed always shows the same color; above 100 stays dark-purple. "
-        "White arrows point where the surface water is flowing "
-        f"(filed U/V motion vector, no reversal). Now: max <b>{cur_max:.0f}"
-        f"</b>, median <b>{cur_med:.1f} cm/s</b>, median flow "
-        f"<b>{mean_hd:.0f}&deg; ({compass(mean_hd)})</b>. NO DATA stays "
+        "gradient): <b>LOWEST 0</b> dark-blue stagnant &rarr; <b>10</b> teal "
+        "&rarr; <b>20</b> yellow &rarr; <b>30</b> orange &rarr; <b>50</b> red "
+        "&rarr; <b>75</b> red-violet &rarr; <b>HIGHEST+ 100 cm/s</b> "
+        "dark-purple channel jets. Same speed always shows the same color; "
+        "above 100 stays dark-purple. Needle arrows RIDE the flow — each "
+        "sits on a short RK2 streamline integrated through the filed U/V "
+        "field, tangent to local current (gently longer when faster: "
+        "6.5 px at 0 to 9.5 px at 50+ cm/s). Now: max "
+        f"<b>{cur_max:.0f}</b>, median <b>{cur_med:.1f} cm/s</b>, median "
+        f"flow <b>{mean_hd:.0f}&deg; ({compass(mean_hd)})</b>. NO DATA stays "
         "transparent — never zero.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -607,6 +762,22 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
         "FVCOM u/v are the same eastward/northward motion components. "
         "Arrows follow (U,V) directly with no FROM->TOWARD reversal; "
         "toward-heading = atan2(U,V) clockwise from north.")
+    meta["arrow_method"] = (
+        "No preset lattice. Deterministic jittered seeds (seeded RNG) "
+        "advected downstream along RK2-midpoint streamlines (3 px steps, "
+        "up to 24 steps ≈ 72 px paths) integrated through the filed U/V "
+        "field with bilinear sampling; sleek needle glyphs chained along "
+        "each path at fixed path offsets, tangent to local flow. Traces "
+        "stop at land/no-data, stagnant water (<1 cm/s), or hairpins. "
+        "Gentle clamped length cue: 6.5 px at 0 to 9.5 px at >=50 cm/s. "
+        "Rivers: denser seeds + NaN-aware 3x3 display smoothing of "
+        "sub-pixel binning steps (glyphs trace the same field).")
+    meta["river_treatment"] = (
+        "The shared open-lake shoreline mask reads land over sub-pixel "
+        "rivers, so river alpha is restored product-locally ONLY where an "
+        "authoritative source vector exists inside the documented "
+        "RIVER_BOXES (St. Marys, St. Clair, Detroit, Niagara). Shared mask "
+        "asset untouched; no other layer affected.")
     meta["field_type"] = ("model-generated nowcast guidance (FVCOM-based "
                          "GLOFS/GLCFS), NOT direct observations")
     meta["check_interval_seconds"] = 3600

@@ -138,6 +138,14 @@ def main():
                    "aurora"):
             # basin-rectangle layers: land coverage is by design.
             _bad = True
+        elif p == "surface_currents":
+            # rivers restored product-locally inside RIVER_BOXES only.
+            from build_surface_currents import river_box_mask as _rbm2
+            _rvm = _rbm2({"canvas_width": mask.shape[1],
+                          "canvas_height": mask.shape[0],
+                          "lon_min": -93.0, "lon_max": -73.5,
+                          "lat_min": 40.5, "lat_max": 49.5})
+            _bad = ((a[:, :, 3] > 0) & (mask <= 0) & ~_rvm).sum() == 0
         else:
             _bad = ((a[:, :, 3] > 0) & (mask <= 0)).sum() == 0
         check(f"{p}-opaque-subset-of-mask", bool(_bad))
@@ -390,13 +398,16 @@ def main():
     check("wind-arrows-meta", m.get("stats", {}).get("arrows_drawn", 0) >= 50)
     check("wind-f12-color-meta", m["beaufort_table"][12]["color"] == "#3B0A54")
 
-    # ---- surface currents: TOWARD convention + arrow orientation ----
+    # ---- surface currents: TOWARD convention + streamline riding ----
     # (offline, synthetic fields; no network). u_eastward/v_northward are
-    # CF sea-water velocities = direction water moves TOWARD, so arrows
+    # CF sea-water velocities = direction water moves TOWARD, so traces
     # follow (U,V) with no reversal: +U -> east (screen right),
-    # +V -> north (screen up), -V -> south (screen down).
-    from build_surface_currents import paint_arrows as _cur_arrows
+    # +V -> north (screen up), -V -> south (screen down). Arrows sit ON
+    # integrated paths (never a preset lattice): orientation and position
+    # both come from the field.
+    from build_surface_currents import paint_flow_arrows as _cur_flow
     from build_surface_currents import speed_dir as _cur_sd
+    from build_surface_currents import trace_streamline as _trace
     _sp, _hd = _cur_sd(1.0, 0.0)
     check("cur-east-90", abs(_sp - 1.0) < 1e-9 and abs(_hd - 90.0) < 1e-9,
           (_sp, _hd))
@@ -406,23 +417,51 @@ def main():
     check("cur-south-180", abs(_hd - 180.0) < 1e-9, _hd)
     _sp, _hd = _cur_sd(-1.0, 0.0)
     check("cur-west-270", abs(_hd - 270.0) < 1e-9, _hd)
-    _cH = _cW = 120
-    _cbase = _np.zeros((_cH, _cW, 4), dtype=_np.uint8)
+    _fH = _fW = 120
+    _eau = _np.full((_fH, _fW), 1.0)    # uniform eastward 1 m/s
+    _ezv = _np.zeros((_fH, _fW))
+    _pe = _trace(60.0, 20.0, _eau, _ezv)
+    check("cur-trace-east", len(_pe) > 10
+          and all(abs(y - 60.0) < 1.5 for y, x, _dx, _dy in _pe)
+          and _pe[-1][1] > _pe[0][1] + 20, len(_pe))
+    _sou = _np.zeros((_fH, _fW))
+    _sov = _np.full((_fH, _fW), -1.0)   # uniform southward 1 m/s
+    _ps = _trace(20.0, 60.0, _sou, _sov)
+    check("cur-trace-south", len(_ps) > 10
+          and all(abs(x - 60.0) < 1.5 for y, x, _dx, _dy in _ps)
+          and _ps[-1][0] > _ps[0][0] + 20, len(_ps))
+    # solid-body rotation: the path must curve (heading changes downstream)
+    _yy, _xx = _np.mgrid[0:_fH, 0:_fW].astype(float)
+    _ru = -(_yy - 60.0) / 60.0
+    _rv = (_xx - 60.0) / 60.0
+    _pr = _trace(60.0, 90.0, _ru, _rv)
+    import math as _m2
+    _h0 = _m2.degrees(_m2.atan2(_pr[0][2], -_pr[0][3]))
+    _h1 = _m2.degrees(_m2.atan2(_pr[-1][2], -_pr[-1][3]))
+    check("cur-trace-curves", len(_pr) > 8 and abs(_h1 - _h0) > 15,
+          (len(_pr), round(_h0, 1), round(_h1, 1)))
+    # land stops traces: NaN half-plane kills the path, never crosses it
+    _lu = _np.full((_fH, _fW), 1.0)
+    _lu[:, 80:] = _np.nan
+    _lv = _np.zeros((_fH, _fW))
+    _pl = _trace(60.0, 20.0, _lu, _lv)
+    check("cur-trace-stops-at-land", 0 < len(_pl) < 24
+          and all(x < 84 for y, x, _dx, _dy in _pl), len(_pl))
+    # flow-riding arrows: chained downstream along paths (east bias in a
+    # uniform eastward field), none pointing back west
+    _cbase = _np.zeros((_fH, _fW, 4), dtype=_np.uint8)
     _cbase[:, :, 3] = 205
-    _cval = _np.ones((_cH, _cW))
-    _sou = _np.zeros((_cH, _cW))
-    _sov = _np.full((_cH, _cW), -1.0)  # uniform southward 1 m/s
-    _cs, _cn = _cur_arrows(_cbase.copy(), _sou, _sov, _cval, 20)
-    check("cur-arrows-drawn", _cn > 5, _cn)
-    check("cur-southward-tip",
-          _cs[73:80, 70, 0].max() > 200)     # white pixels below center
-    check("cur-southward-no-reversal",
-          _cs[58:63, 70, 0].max() < 200)     # none above center
-    _eau = _np.full((_cH, _cW), 1.0)         # uniform eastward 1 m/s
-    _ezv = _np.zeros((_cH, _cW))
-    _ce, _ = _cur_arrows(_cbase.copy(), _eau, _ezv, _cval, 20)
-    check("cur-eastward-shaft", _ce[70, 71:78, 0].max() > 200)
-    check("cur-eastward-no-reversal", _ce[70, 59:64, 0].max() < 200)
+    _cf, _cn = _cur_flow(_cbase.copy(), _eau, _ezv, seed_step=30)
+    check("cur-flow-arrows-drawn", _cn >= 8, _cn)
+    _ew = _cf[:, :, 0].astype(int)
+    check("cur-flow-east-bias",
+          _ew[:, 60:].sum() > _ew[:, :60].sum(),
+          (int(_ew[:, 60:].sum()), int(_ew[:, :60].sum())))
+    _cs, _csn = _cur_flow(_cbase.copy(), _sou, _sov, seed_step=30)
+    _sw = _cs[:, :, 0].astype(int)
+    check("cur-flow-south-bias",
+          _sw[60:, :].sum() > _sw[:60, :].sum(),
+          (int(_sw[60:, :].sum()), int(_sw[:60, :].sum())))
 
     # ---- game-fish model (offline, synthetic SST; no network) ----
     import gamefish_model as _gf

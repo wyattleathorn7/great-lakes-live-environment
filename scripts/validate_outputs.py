@@ -209,8 +209,19 @@ def main():
                     bleed = 0
                     what = "the shared shoreline mask"
                 else:
-                    bleed = int(((a[:, :, 3] > 0) & (mask == 0)).sum())
-                    what = "the shared shoreline mask"
+                    outside = ((a[:, :, 3] > 0) & (mask == 0))
+                    if product == "surface_currents":
+                        # product-local river water: opaque outside the
+                        # shared open-lake mask is permitted ONLY inside
+                        # the documented RIVER_BOXES (sub-pixel rivers
+                        # the shared mask reads as land).
+                        from build_surface_currents import river_box_mask \
+                            as _rbm
+                        outside = outside & ~_rbm(bounds)
+                        what = ("the shared shoreline mask or river boxes")
+                    else:
+                        what = "the shared shoreline mask"
+                    bleed = int(outside.sum())
                 if bleed > 0:
                     failures.append(f"{product}: {bleed} opaque pixels outside "
                                     f"{what}")
