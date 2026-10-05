@@ -13,11 +13,11 @@ NOWCAST analysis + NOAA/GLERL experimental GLCFS-FVCOM corridor fill:
     mih    -> lower St. Marys River reach only (restricted bbox)
 
 Gradient = CURRENT SPEED (fixed absolute 0-100 cm/s, source m/s x100).
-Arrows = CURRENT DIRECTION, rasterized INTO the PNG (zero KML Placemarks):
-NO preset lattice — jittered seeds are advected downstream along RK2
-streamlines integrated through the filed (U,V) field, and sleek needle
-glyphs are chained along each path, tangent to local flow (denser seeds
-in rivers). Every arrow position and orientation is field-derived.
+Flow marks = CURRENT DIRECTION, rasterized INTO the PNG (zero KML
+Placemarks): NO preset lattice — thousands of 1 px streamlets trace RK2
+streamlines integrated through the filed (U,V) field (brightness =
+speed), with a tiny downstream chevron on every third streamlet. Every
+mark position, path, and orientation is field-derived.
 
 Narrow rivers vs the shared open-lake shoreline mask: the mask reads
 land over sub-pixel rivers, so product-local channel water (source
@@ -367,44 +367,37 @@ def trace_streamline(sy, sx, uu, vv, ds=3.0, max_steps=24, min_speed=0.01):
     return path
 
 
-def draw_needle(d, cx, cy, dx, dy, L):
-    """One sleek needle glyph: 1 px white core + 2 px dark outline,
-    sharp ~24-deg head. (dx, dy) canvas-unit toward-vector."""
-    ang = math.atan2(dy, dx)
-    x0, y0 = cx - dx * L / 2, cy - dy * L / 2
-    x1, y1 = cx + dx * L / 2, cy + dy * L / 2
-    head = 0.45 * L
-    spread = math.pi - 0.42
-    d.line([(x0, y0), (x1, y1)], fill=(20, 20, 20, 235), width=2)
-    d.line([(x0, y0), (x1, y1)], fill=(255, 255, 255, 240), width=1)
-    for s in (1, -1):
-        ha = ang + s * spread
-        ex, ey = x1 + math.cos(ha) * head, y1 + math.sin(ha) * head
-        d.line([(x1, y1), (ex, ey)], fill=(20, 20, 20, 235), width=2)
-        d.line([(x1, y1), (ex, ey)], fill=(255, 255, 255, 240), width=1)
-
-
-def paint_flow_arrows(rgba, uu, vv, seed_step=24, river_seed_step=7,
+def paint_flow_arrows(rgba, uu, vv, seed_step=7, river_seed_step=4,
                       river_mask=None, ds=3.0, max_steps=24,
-                      place_offsets=(4, 16), l_min=6.5, l_max=9.5,
                       speed_ref_cms=50.0, min_speed_cms=1.0,
-                      sep_px=10.0, river_sep_px=5.0,
-                      place_sep_px=6.0, river_place_sep_px=4.0):
-    """Arrows that ride the flow: jittered seeds (seeded RNG: deterministic
-    per source field) are advected downstream along RK2 streamlines and
-    needle glyphs are chained along each path. Position AND orientation of
-    every arrow come from integrating the filed vector field — never from
-    a preset lattice. Separation-aware seeding (Jobard-Lefer style): a
-    seed too close to an already-accepted path is skipped, so converging
-    flow cannot pile arrows into blobs. Length carries a gentle clamped
-    speed cue (l_min -> l_max at >= speed_ref_cms). Returns (rgba, n)."""
+                      sep_px=1.5, river_sep_px=1.0,
+                      head_every=3, head_sep_px=5.0,
+                      river_head_sep_px=3.5,
+                      line_base_alpha=90,
+                      line_bright_alpha=110, head_alpha=230):
+    """Dense flow-streak field with micro direction heads, rasterized.
+
+    Jittered seeds (seeded RNG: deterministic per source field) advect
+    downstream along RK2 streamlines through the filed (U,V) field; every
+    accepted path is drawn as a 1 px streamlet, and every head_every-th
+    path gets a tiny downstream chevron. Position, orientation, AND path
+    of every mark come from integrating the vector field — never a
+    preset lattice. Separation-aware seeding (Jobard-Lefer style) keeps
+    converging flow from piling into blobs.
+    Streamlet BRIGHTNESS encodes speed (dim drift -> bright jets), the
+    background gradient carries the absolute scale. Returns
+    (rgba, n_streamlets, n_heads).
+    """
     H, W = uu.shape
     if river_mask is None:
         river_mask = np.zeros((H, W), bool)
     rng = np.random.default_rng(7)
-    img = Image.fromarray(rgba, mode="RGBA")
-    d = ImageDraw.Draw(img)
-    n = 0
+    base = Image.fromarray(rgba, mode="RGBA")
+    base_alpha = rgba[:, :, 3]
+    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(overlay)
+    n_lines = n_heads = 0
+    accepted = 0
     covered = np.zeros((H, W), bool)
     rr, cc = np.ogrid[:H, :W]
 
@@ -426,10 +419,14 @@ def paint_flow_arrows(rgba, uu, vv, seed_step=24, river_seed_step=7,
                 pts.append((r, c))
         return pts
 
+    def brightness(sp):
+        return int(round(line_base_alpha + line_bright_alpha
+                         * min(1.0, sp * 100.0 / speed_ref_cms)))
+
     min_speed = min_speed_cms / 100.0
     placed = np.zeros((H, W), bool)
 
-    def clear_of_glyphs(y, x, sep):
+    def clear_for_head(y, x, sep):
         s = int(math.ceil(sep))
         r0, r1 = max(0, int(y) - s), min(H, int(y) + s + 1)
         c0, c1 = max(0, int(x) - s), min(W, int(x) + s + 1)
@@ -442,9 +439,10 @@ def paint_flow_arrows(rgba, uu, vv, seed_step=24, river_seed_step=7,
         win[hit] = True
         return True
 
-    for step, in_river, sep, psep in (
-            (seed_step, False, sep_px, place_sep_px),
-            (river_seed_step, True, river_sep_px, river_place_sep_px)):
+    for step, in_river, sep, hsep in ((seed_step, False, sep_px,
+                                       head_sep_px),
+                                      (river_seed_step, True, river_sep_px,
+                                       river_head_sep_px)):
         for (r, c) in seeds(step):
             if not (8 <= r < H - 8 and 8 <= c < W - 8):
                 continue
@@ -460,33 +458,44 @@ def paint_flow_arrows(rgba, uu, vv, seed_step=24, river_seed_step=7,
                                     max_steps=max_steps,
                                     min_speed=min_speed)
             if len(path) < 6:
-                continue  # stagnant pocket: no arrows, no coverage claim
+                continue  # stagnant pocket: no mark, no coverage claim
             claim(path, sep)
-            for idx in place_offsets:
-                if idx >= len(path):
-                    continue
-                y, x, ax, ay = path[idx]
-                if rgba[int(y), int(x), 3] == 0:
-                    continue
-                if not clear_of_glyphs(y, x, psep):
-                    continue  # another glyph already owns this spot
-                u, v = sample_uv(y, x, uu, vv)
-                sp = math.hypot(u, v)
-                if not math.isfinite(sp) or sp < min_speed:
-                    continue
-                L = l_min + (l_max - l_min) * min(1.0, sp * 100.0
-                                                 / speed_ref_cms)
-                draw_needle(d, x, y, ax, ay, L)
-                n += 1
+            pts = [(x, y) for (y, x, _ax, _ay) in path[::2]]
+            if len(pts) < 2:
+                continue
+            if base_alpha[int(path[-1][0]), int(path[-1][1])] == 0:
+                continue  # path ran off water: no mark
+            u, v = sample_uv(path[-1][0], path[-1][1], uu, vv)
+            sp = math.hypot(u, v)
+            if not math.isfinite(sp):
+                continue
+            d.line(pts, fill=(255, 255, 255, brightness(max(sp, min_speed))),
+                   width=1)
+            n_lines += 1
+            accepted += 1
+            if accepted % head_every == 0 and len(path) >= 10:
+                y, x, ax, ay = path[-1]
+                if not clear_for_head(y, x, hsep):
+                    continue  # a head already owns this spot
+                ang = math.atan2(ay, ax)
+                hl = 3.5
+                for s in (1, -1):
+                    ha = ang + s * (math.pi - 0.6)
+                    d.line([(x, y),
+                            (x + math.cos(ha) * hl,
+                             y + math.sin(ha) * hl)],
+                           fill=(255, 255, 255, head_alpha), width=1)
+                n_heads += 1
     del d
-    return np.array(img), n
+    out = Image.alpha_composite(base, overlay)
+    return np.array(out), n_lines, n_heads
 
 
 def paint_sample_arrow(path):
     """Paint the direction-key row onto a finished scale legend (in place).
 
-    Draws the note row itself (needle glyph + text) so nothing collides
-    with the source line above it. Glyph matches the raster needles.
+    Draws the note row itself (streamlet + chevron sample, matching the
+    raster marks) so nothing collides with the source line above it.
     """
     from geospatial_utils import _legend_font
     img = Image.open(path).convert("RGBA")
@@ -494,11 +503,19 @@ def paint_sample_arrow(path):
     f_small = _legend_font(13)
     W, H = img.size
     y = H - 24
-    cx, cy = 34, y + 2
-    ang = math.radians(-35.0)
-    draw_needle(d, cx, cy, math.cos(ang), math.sin(ang), 22.0)
-    d.text((56, y - 6),
-           "COLOR = speed. Needles ride the flow (longer = faster).",
+    x0, x1 = 16, 120
+    yy = y + 2
+    # dark slate sample (the raster streaks are white-on-gradient; on the
+    # white card the same marks are shown dark for legibility)
+    d.line([(x0, yy), (x1, yy)], fill=(30, 60, 120, 255), width=2)
+    ang = 0.0
+    for s in (1, -1):
+        ha = ang + s * (math.pi - 0.6)
+        d.line([(x1, yy),
+                (x1 + math.cos(ha) * 8, yy + math.sin(ha) * 8)],
+               fill=(30, 60, 120, 255), width=2)
+    d.text((132, y - 6),
+           "COLOR = speed. Streaks ride the flow (brighter = faster).",
            font=f_small, fill=(10, 10, 10))
     img.save(path)
 
@@ -701,14 +718,12 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
     # arrows ride the flow (painted BEFORE masking so river glyphs land)
     uu_w = np.where(vec_ok, uu_c, np.nan)
     vv_w = np.where(vec_ok, vv_c, np.nan)
-    rgba, n_arrows = paint_flow_arrows(
+    rgba, n_lines, n_heads = paint_flow_arrows(
         rgba, uu_w, vv_w,
         seed_step=CONFIG["seed_step_px"],
         river_seed_step=CONFIG["river_seed_step_px"],
         river_mask=river_boxes,
         ds=CONFIG["stream_ds_px"], max_steps=CONFIG["stream_max_steps"],
-        place_offsets=tuple(CONFIG["stream_place_offsets"]),
-        l_min=CONFIG["arrow_l_min"], l_max=CONFIG["arrow_l_max"],
         speed_ref_cms=CONFIG["arrow_speed_ref_cms"],
         min_speed_cms=CONFIG["arrow_min_speed_cms"])
     # shoreline: hard clip — shared mask majority on lakes, strict
@@ -722,11 +737,14 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
     n_river = int((rgba[:, :, 3] > 0).sum() - (np.round(
         rgba[:, :, 3].astype(np.float32) * wm) > 0).sum())
     print(f"[{PRODUCT}] opaque={n_opaque} (river-restored ~{n_river}) "
-          f"arrows={n_arrows} speed max={cur_max:.1f} med={cur_med:.1f} cm/s")
+          f"streamlets={n_lines} heads={n_heads} "
+          f"speed max={cur_max:.1f} med={cur_med:.1f} cm/s")
     if n_opaque < 5_000:
         raise ValueError("empty raster")
-    if n_arrows < CONFIG["min_arrows"]:
-        raise ValueError(f"too few arrows ({n_arrows})")
+    if n_lines < CONFIG["min_streamlets"]:
+        raise ValueError(f"too few streamlets ({n_lines})")
+    if n_heads < CONFIG["min_heads"]:
+        raise ValueError(f"too few direction heads ({n_heads})")
 
     # ---- legend + metadata + KML ----
     valid_isos = [f["valid_iso"] for f in op_fields.values()]
@@ -748,10 +766,10 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
         "&rarr; <b>20</b> yellow &rarr; <b>30</b> orange &rarr; <b>50</b> red "
         "&rarr; <b>75</b> red-violet &rarr; <b>HIGHEST+ 100 cm/s</b> "
         "dark-purple channel jets. Same speed always shows the same color; "
-        "above 100 stays dark-purple. Needle arrows RIDE the flow — each "
-        "sits on a short RK2 streamline integrated through the filed U/V "
-        "field, tangent to local current (gently longer when faster: "
-        "6.5 px at 0 to 9.5 px at 50+ cm/s). Now: max "
+        "above 100 stays dark-purple. Thousands of fine white streaks RIDE "
+        "the flow — each traces a short RK2 streamline of the filed U/V "
+        "field (brighter streak = faster water), with tiny chevrons "
+        "pointing downstream. Now: max "
         f"<b>{cur_max:.0f}</b>, median <b>{cur_med:.1f} cm/s</b>, median "
         f"flow <b>{mean_hd:.0f}&deg; ({compass(mean_hd)})</b>. NO DATA stays "
         "transparent — never zero.")
@@ -784,12 +802,12 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
         "No preset lattice. Deterministic jittered seeds (seeded RNG) "
         "advected downstream along RK2-midpoint streamlines (3 px steps, "
         "up to 24 steps ≈ 72 px paths) integrated through the filed U/V "
-        "field with bilinear sampling; sleek needle glyphs chained along "
-        "each path at fixed path offsets, tangent to local flow. Traces "
-        "stop at land/no-data, stagnant water (<1 cm/s), or hairpins. "
-        "Gentle clamped length cue: 6.5 px at 0 to 9.5 px at >=50 cm/s. "
-        "Rivers: denser seeds + NaN-aware 3x3 display smoothing of "
-        "sub-pixel binning steps (glyphs trace the same field).")
+        "field with bilinear sampling; each accepted path is drawn as a "
+        "1 px streamlet, every third path carries a tiny downstream "
+        "chevron. Traces stop at land/no-data, stagnant water (<1 cm/s), "
+        "or hairpins. Streamlet brightness encodes speed (dim drift, "
+        "bright jets); rivers get denser seeds. Glyphs trace the same "
+        "field as the gradient colors.")
     meta["river_treatment"] = (
         "The shared open-lake shoreline mask reads land over sub-pixel "
         "rivers, so river alpha is restored product-locally ONLY where an "
@@ -830,7 +848,9 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
                      "median_speed_cms": round(cur_med, 2),
                      "mean_toward_heading_deg": round(mean_hd, 1),
                      "mean_compass": compass(mean_hd),
-                     "arrows_drawn": n_arrows}
+                     "streamlets_drawn": n_lines,
+                     "direction_heads_drawn": n_heads,
+                     "arrows_drawn": n_heads}
     token = meta["source_version"]
     folder_html = (
         f"<h2>{CONFIG['title']}</h2>"

@@ -559,17 +559,20 @@ def main():
     _pl = _trace(60.0, 20.0, _lu, _lv)
     check("cur-trace-stops-at-land", 0 < len(_pl) < 24
           and all(x < 84 for y, x, _dx, _dy in _pl), len(_pl))
-    # flow-riding arrows: chained downstream along paths (east bias in a
-    # uniform eastward field), none pointing back west
+    # dense streamlet field: 1 px flow streaks with micro downstream
+    # chevrons (east bias in a uniform eastward field, and vice versa —
+    # position, path, and orientation all field-derived)
     _cbase = _np.zeros((_fH, _fW, 4), dtype=_np.uint8)
     _cbase[:, :, 3] = 205
-    _cf, _cn = _cur_flow(_cbase.copy(), _eau, _ezv, seed_step=30)
-    check("cur-flow-arrows-drawn", _cn >= 8, _cn)
+    _cf, _cnl, _cnh = _cur_flow(_cbase.copy(), _eau, _ezv, seed_step=30)
+    check("cur-flow-lines-drawn", _cnl >= 8, _cnl)
+    check("cur-flow-heads-drawn", _cnh >= 2, _cnh)
     _ew = _cf[:, :, 0].astype(int)
     check("cur-flow-east-bias",
           _ew[:, 60:].sum() > _ew[:, :60].sum(),
           (int(_ew[:, 60:].sum()), int(_ew[:, :60].sum())))
-    _cs, _csn = _cur_flow(_cbase.copy(), _sou, _sov, seed_step=30)
+    _cs, _csl, _csh = _cur_flow(_cbase.copy(), _sou, _sov, seed_step=30)
+    check("cur-flow-south-lines", _csl >= 8, _csl)
     _sw = _cs[:, :, 0].astype(int)
     check("cur-flow-south-bias",
           _sw[60:, :].sum() > _sw[:60, :].sum(),

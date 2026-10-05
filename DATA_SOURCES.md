@@ -680,17 +680,21 @@ the other products and the Pages publish proceed normally.
   dark-purple jets; above 100 clamps). NO preset arrow lattice:
   deterministic jittered seeds advected downstream along RK2-midpoint
   streamlines (3 px steps, ≤24 steps ≈ 72 px) integrated through the
-  filed U/V field with bilinear sampling; sleek needle glyphs (1 px
-  white core, dark outline, sharp head) chained along each path tangent
-  to local flow — every position and orientation is field-derived.
-  Traces stop at land/no-data, stagnant water (<1 cm/s), or hairpins.
-  Gentle clamped length cue 5.5 px at 0 → 8 px at ≥50 cm/s (in legend).
-  Stagnant (<1 cm/s) skipped; ≥300 arrows required (~900–1500 typical).
-  Land/no-data transparent. Narrow rivers (St. Clair, Detroit, St. Marys,
+  filed U/V field with bilinear sampling, drawn as thousands of 1 px
+  flow streaks; streak BRIGHTNESS encodes speed (dim drift, bright
+  jets) while the gradient carries the absolute scale; every third
+  streak carries a tiny downstream chevron. Separation-aware seeding
+  (Jobard-Lefer style) keeps converging flow from piling into blobs;
+  traces stop at land/no-data, stagnant water (<1 cm/s), or hairpins.
+  Stagnant skipped; ≥1500 streaks + ≥300 chevrons required (typically
+  several thousand streaks). Land/no-data transparent under a HARD
+  shoreline clip (mask majority or strict channel water: opaque;
+  everything else alpha exactly 0 — no feathered fringe on land at
+  any zoom). Narrow rivers (St. Clair, Detroit, St. Marys,
   Niagara) read land in the shared open-lake shoreline mask, so river
-  alpha is restored product-locally ONLY where a source vector exists
-  inside documented RIVER_BOXES (shared mask asset untouched; validators
-  permit opaque-outside-mask solely there).
+  alpha is restored product-locally ONLY where a source vector strictly
+  lands inside documented RIVER_BOXES (shared mask asset untouched;
+  validators permit opaque-outside-mask solely there).
 - **Refresh:** source checked hourly (entry NetworkLink + live Icon
   `refreshInterval` 3600 s); GLOFS cycles 6-hourly, GLCFS 12-hourly, so
   most hourly checks are catalog-probe skips. All four operational
