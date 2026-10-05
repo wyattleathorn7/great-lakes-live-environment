@@ -131,12 +131,14 @@ CUR_MAX = 100.0
 
 # Narrow product-local river-water boxes. The shared NOAA shoreline mask
 # (medium-resolution, built for open-lake coastlines) reads 0 over most
-# of these sub-pixel rivers, which would erase their vectors. Pixels are
-# restored ONLY where an authoritative source actually provides a vector
-# (vec_ok) AND the pixel falls inside one of these boxes — land elsewhere
-# stays transparent exactly as for every other layer. The shared mask
-# asset itself is never touched. Validators import RIVER_BOXES and permit
-# opaque pixels outside the shared mask solely inside these boxes.
+# of these sub-pixel rivers, which would erase their vectors. Alpha is
+# restored ONLY where a source vector strictly lands (no-splat coverage)
+# inside one of these boxes — and the shoreline is a HARD clip (mask
+# majority or strict channel water: opaque; everything else alpha 0),
+# so no feathered gradient fringe survives on land at any zoom. The
+# shared mask asset itself is never touched. Validators import
+# RIVER_BOXES and permit opaque pixels outside the shared mask solely
+# inside these boxes.
 RIVER_BOXES = [
     (-84.60, -84.10, 46.15, 46.62),   # St. Marys River
     (-82.64, -82.36, 42.56, 43.02),   # St. Clair River
@@ -610,7 +612,8 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
     spd_c = np.full((H, W), np.nan)   # cm/s
     uu_c = np.full((H, W), np.nan)    # m/s east
     vv_c = np.full((H, W), np.nan)    # m/s north
-    for prefix, f in op_fields.items():
+    strict_water = np.zeros((H, W), bool)  # cells a source vector lands in
+    for prefix, f in op_fields.items():    # (no splat: hard water edge)
         rows, cols, valid = canvas_indices(f["lat"], f["lon"], bounds)
         src_ok = valid & f["ok"].ravel()
         spd = np.hypot(f["u"], f["v"]).ravel() * 100.0
@@ -621,6 +624,10 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
                                     splat_radius=2)
             fresh = np.isnan(grid) & np.isfinite(g)
             grid[fresh] = g[fresh]
+        _one = np.ones(um.size)
+        _cov, _c0 = bin_to_canvas(rows, cols, _one, src_ok, (H, W),
+                                  splat_radius=0)
+        strict_water |= _c0 > 0
     n_op = int(np.isfinite(spd_c).sum())
     op_valid = np.isfinite(spd_c).copy()  # operational-only mask for QC
     for lake_dir, f in fv_fields.items():
@@ -633,6 +640,10 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
                                     splat_radius=1)
             hole = np.isnan(grid) & np.isfinite(g)
             grid[hole] = g[hole]
+        _one = np.ones(f["u"].size)
+        _cov, _c0 = bin_to_canvas(rows, cols, _one, src_ok, (H, W),
+                                  splat_radius=0)
+        strict_water |= _c0 > 0
     n_all = int(np.isfinite(spd_c).sum())
     n_fill = n_all - n_op
     print(f"[{PRODUCT}] canvas: operational {n_op} + experimental fill "
@@ -680,7 +691,13 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
     vec_ok = np.isfinite(spd_c)  # authoritative vector present (pre-mask)
     wm = load_watermask()
     river_boxes = river_box_mask(bounds)
-    river_allow = vec_ok & river_boxes  # product-local channel water
+    # HARD shoreline: water pixels fully opaque, everything else fully
+    # transparent — no feathered fringe on land at any zoom. Open lakes
+    # follow the shared mask majority (>=0.5); rivers (sub-pixel for the
+    # mask) render only where a source vector strictly lands (no splat
+    # smear, no bleed halo).
+    river_allow = strict_water & river_boxes  # product-local channel water
+    keep = ((wm >= 0.5) | river_allow).astype(np.float32)
     # arrows ride the flow (painted BEFORE masking so river glyphs land)
     uu_w = np.where(vec_ok, uu_c, np.nan)
     vv_w = np.where(vec_ok, vv_c, np.nan)
@@ -694,10 +711,11 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
         l_min=CONFIG["arrow_l_min"], l_max=CONFIG["arrow_l_max"],
         speed_ref_cms=CONFIG["arrow_speed_ref_cms"],
         min_speed_cms=CONFIG["arrow_min_speed_cms"])
-    # shoreline: shared mask everywhere, channel water restored in rivers
-    keep = np.maximum(wm, river_allow.astype(np.float32))
-    rgba[:, :, 3] = np.round(
-        rgba[:, :, 3].astype(np.float32) * keep).astype(np.uint8)
+    # shoreline: hard clip — shared mask majority on lakes, strict
+    # channel water in rivers; land alpha is exactly 0 everywhere
+    # (keep is binary, so no feathered fringe survives on land).
+    rgba[:, :, 3] = (rgba[:, :, 3].astype(np.float32) * keep).round().astype(
+        np.uint8)
     rgba = bleed_rgb_into_transparent(rgba)  # anti-fringe for GE bilinear
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     n_opaque = int((rgba[:, :, 3] > 0).sum())
