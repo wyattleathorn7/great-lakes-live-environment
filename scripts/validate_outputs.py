@@ -356,8 +356,8 @@ def main():
             _md = json.dumps(meta)
             if "REPLACE-GITHUB-USER" in _md or "REPLACE-REPO" in _md:
                 failures.append(f"{product}: metadata contains placeholder URL")
-            if product == "water_clarity" and (lo, hi) != (0.016, 5.0):
-                failures.append(f"{product}: clarity scale must be fixed 0.016-5.0, got {lo}-{hi}")
+            if product == "water_clarity" and (lo, hi) != (0.016, 2.0):
+                failures.append(f"{product}: clarity scale must be fixed 0.016-2.0, got {lo}-{hi}")
             if product == "ice_type":
                 cats = meta.get("ice_type_categories", [])
                 codes = {c.get("code") for c in cats}

@@ -386,12 +386,12 @@ def main():
     _wvals = [v for v, _ in _wcs]
     check("clarity-ascending",
           all(_wvals[i] < _wvals[i + 1] for i in range(len(_wvals) - 1)))
-    check("clarity-range", (_wvals[0], _wvals[-1]) == (0.016, 5.0),
+    check("clarity-range", (_wvals[0], _wvals[-1]) == (0.016, 2.0),
           (_wvals[0], _wvals[-1]))
     check("clarity-clear-darkblue", _wcs[0][1] == (16, 52, 140))
     check("clarity-turbid-deeppurple", _wcs[-1][1] == (59, 10, 90))
     check("clarity-red-turbid-band",
-          any(v == 0.9 and c == (205, 30, 35) for v, c in _wcs))
+          any(v == 1.1 and c == (205, 30, 35) for v, c in _wcs))
     # floor guard: scale floor must admit the lowest valid observation.
     _cfg_cl = json.load(open(os.path.join(REPO_ROOT, "config",
                                           "water_clarity.json")))
@@ -400,21 +400,26 @@ def main():
           (_wvals[0], _lo))
     # resolution where lake water lives: open-lake values must differ.
     check("clarity-clear-end-varying",
-          _cf(0.02, _wcs) != _cf(0.06, _wcs),
-          (_cf(0.02, _wcs), _cf(0.06, _wcs)))
+          _cf(0.02, _wcs) != _cf(0.08, _wcs),
+          (_cf(0.02, _wcs), _cf(0.08, _wcs)))
     check("clarity-mid-varying",
-          _cf(0.2, _wcs) != _cf(0.45, _wcs),
-          (_cf(0.2, _wcs), _cf(0.45, _wcs)))
+          _cf(0.26, _wcs) != _cf(0.6, _wcs),
+          (_cf(0.26, _wcs), _cf(0.6, _wcs)))
     # typical lake water (0.1-0.3) must span several colors, not one flat.
     _typ = {_cf(v / 100.0, _wcs) for v in range(10, 31, 2)}
     check("clarity-typical-spans-colors", len(_typ) >= 4, len(_typ))
-    # labels pin the fixed scale incl. LOWEST/HIGHEST+ endpoints.
+    # labels pin the fixed scale incl. LOWEST/HIGHEST+ endpoints, spread
+    # evenly across the bar (no clustering).
     _td = dict(CLARITY_LABELS)
     check("clarity-labels-endpoints",
           CLARITY_LABELS[0][1].startswith("LOWEST")
           and CLARITY_LABELS[-1][1].startswith("HIGHEST+"))
     check("clarity-labels-scale",
           min(_td) == CLARITY_MIN and max(_td) == CLARITY_MAX)
+    _tpos = sorted((v - CLARITY_MIN) / (CLARITY_MAX - CLARITY_MIN)
+                   for v, _ in CLARITY_LABELS)
+    check("clarity-labels-even",
+          all(b - a > 0.15 for a, b in zip(_tpos, _tpos[1:])), _tpos)
     # synthetic raster: valid_min paints opaque; just-above-floor varies.
     _wsyn = _np4.full((20, 20), _np4.nan)
     _wsyn[5:15, 5:15] = _lo
