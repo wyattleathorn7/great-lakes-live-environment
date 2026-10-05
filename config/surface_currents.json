@@ -1,0 +1,23 @@
+{
+  "product": "surface_currents",
+  "title": "LIVE SURFACE CURRENTS",
+  "freshness_label": "LIVE / CURRENT MODEL (nowcast)",
+  "source_name": "NOAA/NOS Great Lakes Operational Forecast System (GLOFS: LSOFS/LMHOFS/LEOFS/LOOFS) surface-current nowcast + NOAA/GLERL experimental GLCFS-FVCOM Huron-Erie Corridor & lower St. Marys River nowcast fill",
+  "source_url": "https://opendap.co-ops.nos.noaa.gov/thredds/catalog.html",
+  "variable": "u_eastward / v_northward surface-layer velocity components (filed m/s, direction of water motion TOWARD); speed = sqrt(U^2+V^2), displayed in cm/s; direction arrows follow the filed (U,V) movement vector with no reversal",
+  "source_units": "m/s",
+  "display_units": "cm/s (speed gradient; arrows show toward-direction)",
+  "coverage": "Five Great Lakes + Mackinac Straits + upper St. Marys River (operational GLOFS) + St. Clair River / Lake St. Clair / Detroit River (experimental HEC FVCOM) + lower St. Marys River (experimental Michigan-Huron FVCOM). Documented gaps: St. Marys rapids/locks reach, Niagara Falls/gorge reach, other minor canals.",
+  "arrows": "Arrows show the toward-motion vector of the filed (U,V) components (CF eastward/northward sea-water velocity: no FROM/TOWARD reversal). White shaft with dark outline, uniform length; speed lives in the color gradient only.",
+  "color_min": 0.0,
+  "color_max": 100.0,
+  "color_units": "cm/s",
+  "refresh_interval_seconds": 3600,
+  "arrow_step_px": 20,
+  "arrow_channel_step_px": 8,
+  "arrow_min_speed_cms": 1.0,
+  "arrow_min_valid_frac": 0.2,
+  "min_arrows": 300,
+  "what": "How fast the surface water is moving right now (color = speed) and which way it is flowing (arrows). Covers all five Great Lakes plus the connecting rivers and channels where NOAA models provide current vectors.",
+  "why_extreme": "Open-lake drift (a few cm/s, blue) owns most of the color resolution; river/channel jets to 100+ cm/s compress into red/dark-purple."
+}

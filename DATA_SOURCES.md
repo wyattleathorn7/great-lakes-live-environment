@@ -618,6 +618,65 @@ the other products and the Pages publish proceed normally.
   7 days, then stale → NO DATA. No measurements invented between samples.
 - Freshness wording: **"SOURCE CHECKED HOURLY / LATEST VALID OBSERVATION"**.
 
+## 20. Surface currents — operational NOAA/NOS GLOFS nowcast + GLERL experimental corridor fill
+
+- **Primary (operational, preferred):** NOAA/NOS Great Lakes Operational
+  Forecast System (GLOFS) — LSOFS (Superior), LMHOFS (Michigan-Huron),
+  LEOFS (Erie), LOOFS (Ontario). FVCOM-based, 6-hourly cycles, hourly
+  nowcast hours. Machine-readable NetCDF on the CO-OPS THREDDS server
+  (`https://opendap.co-ops.nos.noaa.gov/thredds/catalog/NOAA/<MODEL>/MODELS/...`),
+  files `<model>.t<CC>z.<YYYYMMDD>.regulargrid.n<HHH>.nc` (n000–n006 =
+  nowcast). Verified live 2026-10-04/05: all four models post current
+  cycles; LEOFS grid 313×933 (~0.5 km), LMHOFS 478×837 (~1.1 km), LOOFS
+  217×757, LSOFS 529×1555 (~0.55 km).
+- **Variables:** `u_eastward` (CF `eastward_sea_water_velocity`) +
+  `v_northward` (CF `northward_sea_water_velocity`), filed **m/s**,
+  direction of water motion **TOWARD** (no FROM→TOWARD reversal);
+  surface layer = Depth index 0 (0.0 m); `_FillValue -99999`, `mask==1`
+  = water. Speed = √(U²+V²)×100 → **cm/s** display.
+- **Access:** OPeNDAP hyperslab (surface layer of U/V + lat/lon + mask +
+  Times only, ~13 MB total per rebuild — never the 75 MB full files;
+  THREDDS NCSS returns `Dimension ny does not exist` for these grids, so
+  NCSS is not used). Newest source = newest catalog (date, cycle, nowcast
+  hour); the file's own `Times` is the data valid time (never fetch time).
+- **Corridor supplement (experimental, documented as such):** GLERL
+  next-gen GLCFS FVCOM nowcast (`https://apps.glerl.noaa.gov/thredds/...
+  /glcfs/<lake>/nowcast/MMDDHH_0001.nc`, 12-hourly, 12 hourly steps,
+  current through 2026-10-04): HEC (Huron-Erie Corridor, 36k elements —
+  St. Clair River / Lake St. Clair / Detroit River, median channel flow
+  40–90 cm/s southward verified) and Michigan-Huron (lower St. Marys
+  reach only, bbox-restricted). Surface = siglay 0, last time step,
+  `wet_cells==1`. Precedence: operational wins everywhere valid;
+  experimental fills ONLY cells with no operational vector (no blending).
+- **Source-coverage audit (verified 2026-10-04 from live masks):**
+  Superior ✓ LSOFS; Michigan ✓ LMHOFS; Huron ✓ LMHOFS; Erie ✓ LEOFS;
+  Ontario ✓ LOOFS; Mackinac ✓ LMHOFS (736 cells); upper St. Marys ✓
+  LSOFS (46.42–46.60); lower St. Marys ✓ mih-exp (1214 cells);
+  St. Clair River ✓ HEC (operational has ~10 cells — unresolved);
+  Lake St. Clair ✓ HEC (operational: 0 cells); Detroit River ✓ HEC
+  (+LEOFS mouth); upper Niagara mouth ✓ LEOFS (to 42.905); lower
+  Niagara ✓ LOOFS (from 43.23). Gaps with no authoritative vectors:
+  St. Marys rapids/locks (~46.35–46.42), Niagara Falls/gorge
+  (42.905–43.23), Welland/Trent-Severn/minor canals.
+- **Rendering:** FIXED absolute 0–100 cm/s spectrum (anchors at
+  0/3/6/10/15/20/30/50/75/100: dark-blue stagnant → blue → cyan →
+  teal → yellow-green → yellow → orange → red → red-violet →
+  dark-purple jets; above 100 clamps). Uniform-length toward-motion
+  arrows (white/dark, L=10 px) from block-median resampling: 20 px step
+  on lakes, 6 px inside channel boxes; stagnant (<1 cm/s) skipped;
+  ≥300 arrows required. Land/no-data transparent (alpha clipped back
+  to the shared shoreline mask after painting).
+- **Refresh:** source checked hourly (entry NetworkLink + live Icon
+  `refreshInterval` 3600 s); GLOFS cycles 6-hourly, GLCFS 12-hourly, so
+  most hourly checks are catalog-probe skips. All four operational
+  models required per rebuild (a partial basin never ships);
+  experimental-fill failure is non-fatal (flagged in metadata).
+- Freshness wording: **"LIVE / CURRENT MODEL (nowcast)"**.
+- Rejected: S-111 (no basin-wide Great Lakes S-111 service found —
+  GLOFS regulargrid NetCDF is the machine-readable equivalent);
+  third-party current maps (not authoritative); wind-derived or
+  buoy-interpolated vectors (fabrication, forbidden).
+
 ## 13. Game-fish distribution gradients (16 species, `gamefish_<species>`)
 
 - **What:** live modeled distribution / habitat-likelihood rasters (0..1 index,

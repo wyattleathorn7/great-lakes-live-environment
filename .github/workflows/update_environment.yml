@@ -29,7 +29,7 @@ on:
                    "ice_thickness", "ice_type", "wind", "leaf_color",
                    "chlorophyll", "water_clarity", "solar_radiation",
                    "air_temperature", "snow_coverage", "uv_index",
-                   "cloud_cover", "surface_pressure", "wave_direction", "precipitation", "aurora", "bacteria", "gamefish"]
+                   "cloud_cover", "surface_pressure", "wave_direction", "surface_currents", "precipitation", "aurora", "bacteria", "gamefish"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -563,6 +563,38 @@ jobs:
             output/state/wave_direction.json
           if-no-files-found: warn
 
+  surface_currents:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'surface_currents' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update surface currents
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_surface_currents.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Surface currents source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-surface_currents
+          path: |
+            site/surface_currents
+            site/kml/Great_Lakes_Live_Surface_Currents.kml
+            site/kml/live/Great_Lakes_Live_Surface_Currents.kml
+            kml/Great_Lakes_Live_Surface_Currents.kml
+            output/state/surface_currents.json
+          if-no-files-found: warn
+
   precipitation:
     if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'precipitation' }}
     runs-on: ubuntu-24.04
@@ -712,7 +744,7 @@ jobs:
           if-no-files-found: warn
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, precipitation, aurora, bacteria, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, surface_currents, precipitation, aurora, bacteria, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

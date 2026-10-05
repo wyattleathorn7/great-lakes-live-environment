@@ -63,6 +63,8 @@ PRODUCTS = {
                          "max_opaque_min": 10_000},
     "wave_direction": {"kml": "Great_Lakes_Live_Wave_Direction.kml",
                        "max_opaque_min": 10_000},
+    "surface_currents": {"kml": "Great_Lakes_Live_Surface_Currents.kml",
+                         "max_opaque_min": 10_000},
     "aurora": {"kml": "Great_Lakes_Live_Ovation_Aurora_Forecast.kml",
                "max_opaque_min": 0},  # quiet-oval intervals => transparent OK (like clear-sky cloud)
     "bacteria": {"kml": "Great_Lakes_Live_Water_Quality.kml",
@@ -244,6 +246,8 @@ def main():
                 failures.append(f"{product}: pressure scale must be 980-1040 hPa, got {lo}-{hi}")
             if product == "wave_direction" and (lo, hi) != (0.0, 12.0):
                 failures.append(f"{product}: wave period scale must be 0-12 s, got {lo}-{hi}")
+            if product == "surface_currents" and (lo, hi) != (0.0, 100.0):
+                failures.append(f"{product}: current scale must be 0-100 cm/s, got {lo}-{hi}")
             if product == "aurora" and (lo, hi) != (0.0, 30.0):
                 failures.append(f"{product}: aurora scale must be 0-30, got {lo}-{hi}")
             if product == "bacteria" and (lo, hi) != (10.0, 5000.0):
@@ -432,6 +436,7 @@ def main():
                                "solar_radiation", "air_temperature",
                                "uv_index", "cloud_cover",
                                "surface_pressure", "wave_direction",
+                               "surface_currents",
                                "precipitation", "aurora", "bacteria"):
                     if "<Folder>" not in text:
                         failures.append(f"{product}: no product Folder in live KML")

@@ -106,6 +106,7 @@ def main():
              "chlorophyll", "water_clarity", "solar_radiation",
              "air_temperature", "snow_coverage", "uv_index",
              "cloud_cover", "surface_pressure", "wave_direction",
+             "surface_currents",
              "precipitation", "aurora", "bacteria"]
     for p in prods:
         for kf in (os.path.join(REPO_ROOT, "kml", f"Great_Lakes_Live_{_k(p)}.kml"),
@@ -389,6 +390,40 @@ def main():
     check("wind-arrows-meta", m.get("stats", {}).get("arrows_drawn", 0) >= 50)
     check("wind-f12-color-meta", m["beaufort_table"][12]["color"] == "#3B0A54")
 
+    # ---- surface currents: TOWARD convention + arrow orientation ----
+    # (offline, synthetic fields; no network). u_eastward/v_northward are
+    # CF sea-water velocities = direction water moves TOWARD, so arrows
+    # follow (U,V) with no reversal: +U -> east (screen right),
+    # +V -> north (screen up), -V -> south (screen down).
+    from build_surface_currents import paint_arrows as _cur_arrows
+    from build_surface_currents import speed_dir as _cur_sd
+    _sp, _hd = _cur_sd(1.0, 0.0)
+    check("cur-east-90", abs(_sp - 1.0) < 1e-9 and abs(_hd - 90.0) < 1e-9,
+          (_sp, _hd))
+    _sp, _hd = _cur_sd(0.0, 1.0)
+    check("cur-north-0", abs(_hd - 0.0) < 1e-9, _hd)
+    _sp, _hd = _cur_sd(0.0, -1.0)
+    check("cur-south-180", abs(_hd - 180.0) < 1e-9, _hd)
+    _sp, _hd = _cur_sd(-1.0, 0.0)
+    check("cur-west-270", abs(_hd - 270.0) < 1e-9, _hd)
+    _cH = _cW = 120
+    _cbase = _np.zeros((_cH, _cW, 4), dtype=_np.uint8)
+    _cbase[:, :, 3] = 205
+    _cval = _np.ones((_cH, _cW))
+    _sou = _np.zeros((_cH, _cW))
+    _sov = _np.full((_cH, _cW), -1.0)  # uniform southward 1 m/s
+    _cs, _cn = _cur_arrows(_cbase.copy(), _sou, _sov, _cval, 20)
+    check("cur-arrows-drawn", _cn > 5, _cn)
+    check("cur-southward-tip",
+          _cs[73:80, 70, 0].max() > 200)     # white pixels below center
+    check("cur-southward-no-reversal",
+          _cs[58:63, 70, 0].max() < 200)     # none above center
+    _eau = _np.full((_cH, _cW), 1.0)         # uniform eastward 1 m/s
+    _ezv = _np.zeros((_cH, _cW))
+    _ce, _ = _cur_arrows(_cbase.copy(), _eau, _ezv, _cval, 20)
+    check("cur-eastward-shaft", _ce[70, 71:78, 0].max() > 200)
+    check("cur-eastward-no-reversal", _ce[70, 59:64, 0].max() < 200)
+
     # ---- game-fish model (offline, synthetic SST; no network) ----
     import gamefish_model as _gf
     from datetime import datetime as _dt, timezone as _tz
@@ -455,6 +490,7 @@ def _k(p):
             "cloud_cover": "Cloud_Cover",
             "surface_pressure": "Surface_Pressure",
             "wave_direction": "Wave_Direction",
+            "surface_currents": "Surface_Currents",
             "precipitation": "Precipitation",
             "aurora": "Ovation_Aurora_Forecast",
             "bacteria": "Water_Quality"}[p]

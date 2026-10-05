@@ -1,0 +1,113 @@
+{
+  "product": "surface_currents",
+  "title": "LIVE SURFACE CURRENTS",
+  "freshness": "LIVE / CURRENT MODEL (nowcast)",
+  "noaa_source": "NOAA/NOS Great Lakes Operational Forecast System (GLOFS: LSOFS/LMHOFS/LEOFS/LOOFS) surface-current nowcast + NOAA/GLERL experimental GLCFS-FVCOM Huron-Erie Corridor & lower St. Marys River nowcast fill",
+  "product_name": "NOAA/NOS Great Lakes Operational Forecast System (GLOFS: LSOFS/LMHOFS/LEOFS/LOOFS) surface-current nowcast + NOAA/GLERL experimental GLCFS-FVCOM Huron-Erie Corridor & lower St. Marys River nowcast fill",
+  "variable": "u_eastward / v_northward surface-layer velocity components (filed m/s, direction of water motion TOWARD); speed = sqrt(U^2+V^2), displayed in cm/s; direction arrows follow the filed (U,V) movement vector with no reversal",
+  "source_url": "https://opendap.co-ops.nos.noaa.gov/thredds/catalog.html",
+  "data_time_utc": "2026-10-04 02:00 PM EDT",
+  "source_last_modified_utc": "n/a (THREDDS catalogs + OPeNDAP)",
+  "processing_time_utc": "2026-10-04 08:25 PM EDT",
+  "units": "cm/s display (source m/s x100); direction deg TOWARD",
+  "spatial_resolution_source": "operational GLOFS regular grids ~0.5-1.1 km; experimental FVCOM 30 m-2 km unstructured",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.0,
+  "color_scale_max": 100.0,
+  "color_scale_units": "cm/s",
+  "missing_data_treatment": "fill value -99999, land mask, and out-of-domain cells rendered fully transparent; experimental fill only where operational has no vector; never zero-filled.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    230
+  ],
+  "legend_scale_html": "Surface-current speed (centimeters per second, one continuous gradient): <b>LOWEST 0</b> dark-blue stagnant &rarr; <b>5</b> blue &rarr; <b>10</b> teal &rarr; <b>15-20</b> green-yellow &rarr; <b>30</b> orange &rarr; <b>50</b> red &rarr; <b>75</b> red-violet &rarr; <b>HIGHEST+ 100 cm/s</b> dark-purple channel jets. Same speed always shows the same color; above 100 stays dark-purple. White arrows point where the surface water is flowing (filed U/V motion vector, no reversal). Now: max <b>296</b>, median <b>15.1 cm/s</b>, median flow <b>161&deg; (S)</b>. NO DATA stays transparent \u2014 never zero.",
+  "source_id": "lsofs-20261004-t18z-n006+lmhofs-20261004-t18z-n006+leofs-20261004-t18z-n006+loofs-20261004-t18z-n006+hec-100412+michgan-huron-100412",
+  "source_version": "lsofs-20261004-t18z-n006-lmhofs-20261004-t18z-n006-leofs-20261004-t18z-n006-loofs-20261004-t18z-n006-hec-100412-michgan-huron-100412",
+  "direction_convention": "u_eastward = CF eastward_sea_water_velocity, v_northward = CF northward_sea_water_velocity (m/s, direction water moves TOWARD); FVCOM u/v are the same eastward/northward motion components. Arrows follow (U,V) directly with no FROM->TOWARD reversal; toward-heading = atan2(U,V) clockwise from north.",
+  "field_type": "model-generated nowcast guidance (FVCOM-based GLOFS/GLCFS), NOT direct observations",
+  "check_interval_seconds": 3600,
+  "source_cycles": {
+    "lsofs": {
+      "model": "LSOFS",
+      "role": "Lake Superior + upper St. Marys River",
+      "date": "20261004",
+      "cycle": "t18z",
+      "nowcast_hour": "n006",
+      "valid_iso_utc": "2026-10-04T18:00:00.000000",
+      "valid_detroit": "2026-10-04 02:00 PM EDT",
+      "vectors": 391914
+    },
+    "lmhofs": {
+      "model": "LMHOFS",
+      "role": "Lakes Michigan-Huron + Mackinac Straits",
+      "date": "20261004",
+      "cycle": "t18z",
+      "nowcast_hour": "n006",
+      "valid_iso_utc": "2026-10-04T18:00:00.000000",
+      "valid_detroit": "2026-10-04 02:00 PM EDT",
+      "vectors": 132338
+    },
+    "leofs": {
+      "model": "LEOFS",
+      "role": "Lake Erie + upper Niagara River mouth",
+      "date": "20261004",
+      "cycle": "t18z",
+      "nowcast_hour": "n006",
+      "valid_iso_utc": "2026-10-04T18:00:00.000000",
+      "valid_detroit": "2026-10-04 02:00 PM EDT",
+      "vectors": 111157
+    },
+    "loofs": {
+      "model": "LOOFS",
+      "role": "Lake Ontario + lower Niagara River",
+      "date": "20261004",
+      "cycle": "t18z",
+      "nowcast_hour": "n006",
+      "valid_iso_utc": "2026-10-04T18:00:00.000000",
+      "valid_detroit": "2026-10-04 02:00 PM EDT",
+      "vectors": 84232
+    }
+  },
+  "corridor_fill": {
+    "hec": {
+      "role": "St. Clair River + Lake St. Clair + Detroit River",
+      "file": "100412",
+      "valid_iso_utc": "2026-10-04T12:00:00.000000",
+      "valid_detroit": "2026-10-04 08:00 AM EDT",
+      "vectors": 36477
+    },
+    "michgan-huron": {
+      "role": "lower St. Marys River reach",
+      "file": "100412",
+      "valid_iso_utc": "2026-10-04T12:00:00.000000",
+      "valid_detroit": "2026-10-04 08:00 AM EDT",
+      "vectors": 1527
+    }
+  },
+  "coverage_gaps": [
+    "St. Marys rapids/locks reach (~46.35-46.42): no model vectors",
+    "Niagara Falls/gorge reach (~42.905-43.23): no model vectors",
+    "Welland Canal / Trent-Severn / other minor canals: no coverage"
+  ],
+  "overlap_qc": "michgan-huron: 409 overlap cells, median |dSpeed| 8.3 cm/s",
+  "stats": {
+    "canvas_vectors": 369526,
+    "operational_vectors": 367009,
+    "experimental_fill_vectors": 2517,
+    "max_speed_cms": 295.5,
+    "median_speed_cms": 15.11,
+    "mean_toward_heading_deg": 160.9,
+    "mean_compass": "S",
+    "arrows_drawn": 909
+  },
+  "folder_html": "<h2>LIVE SURFACE CURRENTS</h2><p>How fast the surface water is moving right now (color = speed) and which way it is flowing (arrows). Covers all five Great Lakes plus the connecting rivers and channels where NOAA models provide current vectors.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/surface_currents/legend.png?v=lsofs-20261004-t18z-n006-lmhofs-20261004-t18z-n006-leofs-20261004-t18z-n006-loofs-20261004-t18z-n006-hec-100412-michgan-huron-100412\" width=\"600\" alt=\"key\"></p><p>Surface-current speed (centimeters per second, one continuous gradient): <b>LOWEST 0</b> dark-blue stagnant &rarr; <b>5</b> blue &rarr; <b>10</b> teal &rarr; <b>15-20</b> green-yellow &rarr; <b>30</b> orange &rarr; <b>50</b> red &rarr; <b>75</b> red-violet &rarr; <b>HIGHEST+ 100 cm/s</b> dark-purple channel jets. Same speed always shows the same color; above 100 stays dark-purple. White arrows point where the surface water is flowing (filed U/V motion vector, no reversal). Now: max <b>296</b>, median <b>15.1 cm/s</b>, median flow <b>161&deg; (S)</b>. NO DATA stays transparent \u2014 never zero.</p><p><b>Units:</b> cm/s (speed gradient; arrows show toward-direction)<br/><b>Source:</b> NOAA/NOS Great Lakes Operational Forecast System (GLOFS: LSOFS/LMHOFS/LEOFS/LOOFS) surface-current nowcast + NOAA/GLERL experimental GLCFS-FVCOM Huron-Erie Corridor & lower St. Marys River nowcast fill<br/><b>Update:</b> GLOFS 6-hourly cycles + GLCFS 12-hourly, checked hourly<br/><b>Data time:</b> 2026-10-04 02:00 PM EDT<br/><b>Source version:</b> lsofs-20261004-t18z-n006+lmhofs-20261004-t18z-n006+leofs-20261004-t18z-n006+loofs-20261004-t18z-n006+hec-100412+michgan-huron-100412<br/><b>Processed:</b> 2026-10-04 08:25 PM EDT<br/><b>Provenance:</b> <a href=\"https://opendap.co-ops.nos.noaa.gov/thredds/catalog.html\">CO-OPS THREDDS</a> + <a href=\"https://apps.glerl.noaa.gov/thredds/catalog/glcfs/glcfs-catalog.html\">GLERL GLCFS THREDDS</a></p>"
+}
