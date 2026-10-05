@@ -66,7 +66,7 @@ def fetch_header_html(meta, refresh_interval, include_next=True):
     """Detroit-time header for the very top of descriptions.
 
     ``Time fetched`` = when this live file's data was fetched/processed
-    (Detroit wall clock, compact AM/PM). ``Next update`` = fetched +
+    (Detroit wall clock, date + compact AM/PM). ``Next update`` = fetched +
     this layer's own KML refreshInterval, i.e. the exact time Google
     Earth next re-checks the layer per the refreshMode=onInterval
     contract in this same file. That re-check moment is deterministic
@@ -95,7 +95,8 @@ def fetch_header_html(meta, refresh_interval, include_next=True):
     tzname = (raw.strip().rsplit(" ", 1)[-1] if raw else "") or "ET"
 
     def _compact(d):
-        return f"{d.hour % 12 or 12}:{d.minute:02d}{d.strftime('%p')}"
+        return (f"{d.strftime('%b')} {d.day}, {d.year} "
+                f"{d.hour % 12 or 12}:{d.minute:02d}{d.strftime('%p')}")
 
     try:
         interval = int(refresh_interval)
