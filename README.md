@@ -29,7 +29,7 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | 🌙 Live Atmospheric Visibility | NCEP HRRR `VIS` surface analysis (m → statute miles), FIXED 0–30 mi scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ♨️ Live Relative Humidity | NCEP HRRR `RH` 2 m analysis (%), FIXED 0–100 % scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ☁️ Live Precipitable Water Vapor | NCEP HRRR `PWAT` entire-atmosphere analysis (kg m⁻² = mm), FIXED 0–60 mm scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
-| 💡 Live Light Pollution | NASA VIIRS Black Marble annual nighttime-lights composite via GIBS WMTS (relative brightness index 0–100) | LATEST AVAILABLE COMPOSITE (annual, hourly check) |
+| 💡 Live Light Pollution | NASA VIIRS Black Marble annual nighttime-lights composite via GIBS WMTS, keyed on the true Bortle dark-sky scale Classes 1–9 (log-spaced index bands, approximate relative classification) | LATEST AVAILABLE COMPOSITE (annual, hourly check) |
 | 🌫️ Live Air Quality | ECMWF CAMS PM2.5 analysis via Open-Meteo (µg/m³, EPA-anchored FIXED 0–150 scale, labeled modeled) | LIVE / CURRENT MODEL (hourly check) |
 | 💦 Live Condensation | HRRR TMP+DPT+RH-derived condensation-favorability index 0–100 (**derived**, no wind/visibility inputs) | LIVE / CURRENT MODEL (derived analysis), hourly cycles |
 | 🌫️ Live Fog Risk/Active Fog | HRRR TMP+DPT+RH+10 m wind+VIS-derived fog-risk index 0–100 with active-fog visibility gate (**derived**) | LIVE / CURRENT MODEL (derived analysis), hourly cycles |

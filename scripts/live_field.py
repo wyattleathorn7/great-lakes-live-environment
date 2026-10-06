@@ -37,13 +37,13 @@ SKIP_NOTE = "Turn on/off independently of all other layers."
 # to force Google Earth clients to refetch an otherwise identical source
 # cycle after a rendering change (new ?v= without touching data or URLs).
 RENDER_TAGS = {
-    "visibility": "g2",
+    "visibility": "g3",
     "humidity": "g2",
     "precipitable_water": "g2",
-    "light_pollution": "g2",
+    "light_pollution": "g3",
     "air_quality": "g2",
     "condensation": "g2",
-    "fog": "g2",
+    "fog": "g3",
     "dew_point": "g2",
 }
 
@@ -74,6 +74,52 @@ def smooth_nan(field, radius=2, passes=2):
             mean = sv / sw
         cur = np.where(have & (sw > 0), mean, cur)
     return cur
+
+
+def draw_two_row_legend(path, title, subtitle, unit_label, stops, ticks,
+                        source_line, note=None):
+    """Two-row evenly-spaced key: values on row 1, severity words on row 2.
+
+    ticks = [(value, value_text, severity_text)] at TRUE linear scale
+    positions — callers pass evenly-stepped values so labels can never
+    pile onto each other (the failure mode of de-collided single-row
+    keys). The bar itself is painted with the SAME stops as the raster.
+    Returns (W, H).
+    """
+    from PIL import Image, ImageDraw
+    from geospatial_utils import _legend_font
+    W, H = 640, 252
+    img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
+    d = ImageDraw.Draw(img)
+    f_title, f_body, f_small = _legend_font(22), _legend_font(15), _legend_font(13)
+    d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
+    d.text((14, 8), title, font=f_title, fill=(10, 10, 10))
+    d.text((14, 36), subtitle, font=f_body, fill=(40, 40, 40))
+    bx, by, bw, bh = 14, 66, W - 28, 32
+    from gradient_scale import lut_from_stops
+    lut = lut_from_stops(stops, bw)
+    for i, c in enumerate(lut):
+        d.line([(bx + i, by), (bx + i, by + bh)], fill=tuple(c) + (255,))
+    d.rectangle([bx, by, bx + bw - 1, by + bh], outline=(40, 40, 40))
+    vmin, vmax = stops[0][0], stops[-1][0]
+    span = vmax - vmin if vmax > vmin else 1.0
+    for val, vtext, stext in ticks:
+        frac = min(max((val - vmin) / span, 0.0), 1.0)
+        x = bx + int(frac * (bw - 1))
+        tw = d.textlength(vtext, font=f_small)
+        d.text((min(max(x - tw / 2, 2), W - tw - 2), by + bh + 4),
+               vtext, font=f_small, fill=(10, 10, 10))
+        sw = d.textlength(stext, font=f_small)
+        d.text((min(max(x - sw / 2, 2), W - sw - 2), by + bh + 22),
+               stext, font=f_small, fill=(60, 60, 60))
+    d.text((bx + bw - 70, by + bh + 42), unit_label, font=f_body,
+           fill=(10, 10, 10))
+    d.text((14, H - 44), source_line, font=f_small, fill=(60, 60, 60))
+    if note:
+        d.text((14, H - 26), note, font=f_small, fill=(60, 60, 60))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    return W, H
 
 
 def should_skip(product, source_id):
@@ -134,7 +180,8 @@ def finish(product, config, kml_file, overlay_name, field, stops, labels,
            unit_label, subtitle, source_line, scale_html, folder_paras,
            meta_extra, source_id, data_time_utc, source_last_modified,
            units_desc, source_resolution, missing_treatment,
-           min_opaque=50_000, extra_meta=None, alpha=None):
+           min_opaque=50_000, extra_meta=None, alpha=None,
+           key_ticks=None, custom_legend=None):
     """Render field -> validate -> legend/metadata/KML -> promote -> state."""
     bounds = load_bounds()
     if alpha is None:
@@ -158,10 +205,18 @@ def finish(product, config, kml_file, overlay_name, field, stops, labels,
     print(f"[{product}] valid={n_valid} "
           f"range=[{cur_min:.3g},{cur_max:.3g}] {unit_label}")
 
-    lw, lh = draw_scale_legend(
-        os.path.join(stage_prod, "legend.png"), config["title"], subtitle,
-        unit_label, stops, labels, source_line,
-        note="Missing source data transparent; never zero-filled.")
+    if custom_legend is not None:
+        lw, lh = custom_legend(os.path.join(stage_prod, "legend.png"))
+    elif key_ticks is not None:
+        lw, lh = draw_two_row_legend(
+            os.path.join(stage_prod, "legend.png"), config["title"],
+            subtitle, unit_label, stops, key_ticks, source_line,
+            note="Missing source data transparent; never zero-filled.")
+    else:
+        lw, lh = draw_scale_legend(
+            os.path.join(stage_prod, "legend.png"), config["title"],
+            subtitle, unit_label, stops, labels, source_line,
+            note="Missing source data transparent; never zero-filled.")
     meta = base_metadata(
         product, config["title"], config["freshness_label"],
         config["source_name"], config["source_url"],

@@ -53,13 +53,27 @@ LABELS = [(0.0, "No risk 0"), (12.0, "Low 12"), (25.0, "Moderate 25"),
           (35.0, "High risk 35"), (50.0, "Active fog 50"),
           (65.0, "Dense fog 65"), (80.0, "Severe 80"),
           (100.0, "HIGHEST+ 100 Extreme")]
+# Two-row even key (step 20): values on row 1, severity on row 2. The
+# words walk the risk-to-fog path left to right — risk-side ticks say
+# "fog risk", fog-side ticks say "fog" — and even spacing means nothing
+# ever overlaps.
+KEY_TICKS = [
+    (0.0, "0", "No risk"),
+    (20.0, "20", "Low fog risk"),
+    (40.0, "40", "Light fog"),
+    (60.0, "60", "Moderate fog"),
+    (80.0, "80", "Dense fog"),
+    (100.0, "100", "Extreme fog"),
+]
 SCALE_HTML = ("Fog index 0-100 (DERIVED from HRRR analysis, fixed absolute "
               "scale): risk owns the first 35% — <b>LOWEST 0 No risk</b> "
-              "green &rarr; low &rarr; moderate yellow &rarr; <b>High risk "
-              "35</b> orange — then active fog by severity owns the rest: "
-              "active-fog red-orange &rarr; dense red &rarr; severe "
-              "red-violet &rarr; <b>HIGHEST+ 100 Extreme</b> dark purple. "
-              "Same index always shows the same color. Thermodynamic risk "
+              "green &rarr; low fog risk &rarr; high-risk orange at 35 — "
+              "then active fog by severity: light fog &rarr; moderate fog "
+              "&rarr; dense fog &rarr; <b>HIGHEST+ 100 Extreme fog</b> dark "
+              "purple. The key steps evenly (0/20/40/60/80/100) with "
+              "severity written under each value, walking the "
+              "fog-risk-to-active-fog path left to right. Same index always "
+              "shows the same color. Thermodynamic risk "
               "with an observed-visibility density confirmation — not a "
               "copy of the visibility layer.")
 
@@ -183,7 +197,8 @@ def _build(base, dd, cc, source_id):
         "where TMP+DPT+RH valid; full basin rectangle, no shoreline cut; "
         "missing analysis transparent; never zero-filled; corroborated "
         "visibility density outranks risk, dry-air speckles never paint "
-        "active fog.")
+        "active fog.",
+        key_ticks=KEY_TICKS)
 
 
 if __name__ == "__main__":

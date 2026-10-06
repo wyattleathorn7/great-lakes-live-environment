@@ -60,16 +60,90 @@ STOPS = [
 ]
 LABELS = [(0.0, "LOWEST 0 pristine"), (25.0, "25"), (50.0, "50"),
           (75.0, "75"), (100.0, "HIGHEST+ 100 urban")]
-SCALE_HTML = ("Artificial night-sky brightness as a relative index 0-100 "
-              "(NASA VIIRS Black Marble annual composite, fixed absolute "
-              "scale): <b>LOWEST 0</b> near-black pristine dark sky &rarr; "
-              "navy &rarr; blue rural &rarr; teal fringe &rarr; green "
-              "suburban &rarr; yellow &rarr; orange urban &rarr; "
-              "<b>HIGHEST+ 100</b> near-white urban core. Same brightness "
-              "always shows the same color. Composite visualization index — "
-              "not raw radiance units; natural sky brightness (moonlight, "
-              "airglow) is not separated per-pixel, city glow dominates the "
-              "signal.")
+# The Bortle dark-sky scale (John E. Bortle, Sky & Telescope, Feb 2001):
+# nine classes from pristine to inner-city night skies. Titles + NELM
+# (naked-eye limiting magnitude) are Bortle's own; SQM ranges are the
+# widely-circulated third-party retrofit approximations (Bortle's original
+# article contains no SQM values) — documented as approximate here and in
+# metadata, never presented as calibration.
+# Index breakpoints are log-spaced (100*(10^(k/9)-1)/9): brightness is
+# log-distributed, so uniform splits would crush every town into the
+# darkest band (the classic night-lights binning mistake). Short labels
+# are condensed Bortle titles that fit the even key cells.
+BORTLE_CLASSES = [
+    (1, "Excellent dark-sky site", "Excellent", "7.6–8.0", "21.76–22.0"),
+    (2, "Typical truly dark site", "True dark", "7.1–7.5", "21.60–21.75"),
+    (3, "Rural sky", "Rural", "6.6–7.0", "21.30–21.59"),
+    (4, "Rural/suburban transition", "Rural/sub.", "6.1–6.5", "20.40–21.29"),
+    (5, "Suburban sky", "Suburban", "5.6–6.0", "19.10–20.39"),
+    (6, "Bright suburban sky", "Bright sub.", "~5.5", "18.50–19.09"),
+    (7, "Suburban/urban transition", "Sub./urban", "5.0", "18.00–18.49"),
+    (8, "City sky", "City", "4.5", "<18.00"),
+    (9, "Inner-city sky", "Inner city", "≤4.0", "<18.00"),
+]
+
+
+def bortle_breakpoints():
+    """Log-spaced 0-100 index boundaries between the 9 Bortle classes."""
+    return [100.0 * (10.0 ** (k / 9.0) - 1.0) / 9.0 for k in range(1, 9)]
+
+
+def draw_bortle_key(path, title, subtitle, stops, source_line):
+    """Nine even cells, one per Bortle class, each painted with the
+    gradient color at its class midpoint (guaranteed raster<->key match).
+    Class numbers on row 1, condensed Bortle titles on row 2 — even
+    spacing, no overlaps. Returns (W, H)."""
+    from PIL import Image, ImageDraw
+    from geospatial_utils import _legend_font
+    from gradient_scale import color_for
+    bounds = bortle_breakpoints()
+    edges = [0.0] + bounds + [100.0]
+    W, H = 640, 252
+    img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
+    d = ImageDraw.Draw(img)
+    f_title, f_body, f_small = _legend_font(22), _legend_font(15), _legend_font(13)
+    d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
+    d.text((14, 8), title, font=f_title, fill=(10, 10, 10))
+    d.text((14, 36), subtitle, font=f_body, fill=(40, 40, 40))
+    bx, by, bw, bh = 14, 66, W - 28, 34
+    cw = bw / 9.0
+    for i, cls in enumerate(BORTLE_CLASSES):
+        lo, hi = edges[i], edges[i + 1]
+        mid = (lo + hi) / 2.0
+        rgb = color_for(mid, stops)
+        x0 = bx + i * cw
+        d.rectangle([x0, by, x0 + cw, by + bh], fill=rgb + (255,),
+                    outline=(40, 40, 40))
+        num = f"Class {cls[0]}"
+        tw = d.textlength(num, font=f_small)
+        d.text((x0 + (cw - tw) / 2, by + bh + 4), num, font=f_small,
+               fill=(10, 10, 10))
+        sw = d.textlength(cls[2], font=f_small)
+        d.text((x0 + (cw - sw) / 2, by + bh + 22), cls[2], font=f_small,
+               fill=(60, 60, 60))
+    d.text((14, H - 44), source_line, font=f_small, fill=(60, 60, 60))
+    d.text((14, H - 26), "Bortle classes: log-spaced index bands; "
+           "approximate relative classification, not SQM-measured.",
+           font=f_small, fill=(60, 60, 60))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    return W, H
+
+
+SCALE_HTML = ("Artificial night-sky brightness on the <b>Bortle dark-sky "
+              "scale Classes 1–9</b> (John E. Bortle, Sky & Telescope 2001; "
+              "keyed from the NASA VIIRS Black Marble annual composite): "
+              "<b>LOWEST Class 1 Excellent dark-sky site</b> (NELM 7.6–8.0) "
+              "&rarr; Class 2 True dark &rarr; Class 3 Rural "
+              "&rarr; Class 4 Rural/suburban transition &rarr; Class 5 "
+              "Suburban &rarr; Class 6 Bright suburban &rarr; Class 7 "
+              "Suburban/urban transition &rarr; Class 8 City sky &rarr; "
+              "<b>HIGHEST+ Class 9 Inner-city sky</b> (NELM ≤4.0). Class "
+              "boundaries are log-spaced on the brightness index (3.2 / 7.4 "
+              "/ 12.8 / 19.8 / 28.8 / 40.5 / 55.5 / 74.9), shaped like the "
+              "published SQM retrofit table — an approximate relative "
+              "classification from composite imagery, not a calibrated "
+              "SQM measurement. Same sky always shows the same class.")
 
 
 def _tile(col, row, timeout=90):
@@ -193,11 +267,18 @@ def _build(source_id, phash):
     if int(ok.sum()) < 50_000:
         raise ValueError(f"too few valid canvas cells ({int(ok.sum())})")
     data_time_utc = "2016 annual composite"
-    subtitle = (f"Artificial night brightness (index 0-100, Black Marble "
+    subtitle = (f"Night-sky brightness (Bortle Classes 1-9, Black Marble "
                 f"annual)  |  {data_time_utc}")
+
+    def _bortle_legend(legend_path):
+        return draw_bortle_key(
+            legend_path, CONFIG["title"], subtitle, STOPS,
+            f"Source: NASA VIIRS Black Marble 2016 via GIBS  |  "
+            f"Processed {now_det_str()}")
+
     return finish(
         PRODUCT, CONFIG, KML_FILE, OVERLAY_NAME, field, STOPS, LABELS,
-        "index", subtitle,
+        "Bortle class", subtitle,
         f"Source: NASA VIIRS Black Marble 2016 via GIBS  |  "
         f"Processed {now_det_str()}", SCALE_HTML,
         [CONFIG["what"], CONFIG["field"],
@@ -205,19 +286,36 @@ def _build(source_id, phash):
          "NASA publishes a newer annual composite."],
         {"model_cycle": f"Black-Marble-2016 probe {phash}",
          "stats": {"composite_year": "2016", "probe_hash": phash,
-                   "data_nature": "annual composite visualization"}},
+                   "data_nature": "annual composite visualization"},
+         "fields": {
+             "bortle_classes": [
+                 {"class": c[0], "title": c[1], "nelm": c[3],
+                  "sqm_approx": c[4]} for c in BORTLE_CLASSES],
+             "bortle_index_breakpoints": bortle_breakpoints(),
+             "bortle_methodology": (
+                 "Approximate relative Bortle classification. Class titles "
+                 "and NELM are Bortle's own (Sky & Telescope, Feb 2001); "
+                 "SQM ranges are the widely-circulated third-party retrofit "
+                 "approximations (Bortle's original contains no SQM values). "
+                 "Index breakpoints are log-spaced "
+                 "(100*(10^(k/9)-1)/9), shaped like the published SQM "
+                 "retrofit table, because night-light brightness is "
+                 "log-distributed. NOT a calibrated SQM measurement; the "
+                 "input is GIBS composite-imagery luminance, not "
+                 "nW/cm2/sr radiance.")}},
         source_id, data_time_utc, "n/a (WMTS tiles)",
         "relative brightness index 0-100 (display; tile-background floor "
         "subtraction + skyglow bloom + square-root stretch of the "
         "published composite visualization; monotonic, ordering "
         "preserved)",
-        "NASA GIBS 500m WMTS tiles (level 5) mosaicked to the common canvas",
+        "NASA GIBS 500m WMTS tiles (level 6, 4.5-degree) mosaicked to the common canvas",
         "tile-background floor subtraction, NaN-aware skyglow bloom "
         "(radius 10 x 3 passes), then square-root 100*sqrt(bloomed/ref) "
         "mapping against the 99.99th percentile (monotonic perceptual "
         "mapping so metro glow reads at basin scale); full basin "
         "rectangle, no shoreline cut; untiled canvas pixels transparent; "
-        "never zero-filled.")
+        "never zero-filled.",
+        custom_legend=_bortle_legend)
 
 
 if __name__ == "__main__":

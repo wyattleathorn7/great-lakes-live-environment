@@ -664,6 +664,31 @@ def main():
     check("fog-density-ordered",
           bool(float(_fog_d1) > float(_fog_d2) > 35.0), (_fog_d1, _fog_d2))
 
+    # ---- Bortle key breakpoints (log-spaced, 9 classes cover 0-100) ----
+    from build_light_pollution import (BORTLE_CLASSES, STOPS as _LP_STOPS,
+                                       bortle_breakpoints,
+                                       draw_bortle_key)
+    _bp = bortle_breakpoints()
+    check("bortle-8-breakpoints", len(_bp) == 8, len(_bp))
+    check("bortle-monotonic", all(b < a for b, a in zip(_bp, _bp[1:])))
+    check("bortle-covers-scale", bool(_bp[0] > 0 and _bp[-1] < 100), _bp)
+    check("bortle-9-classes", len(BORTLE_CLASSES) == 9)
+    check("bortle-dense-dark-end",
+          bool(_bp[3] < 25.0 and _bp[-1] > 70.0), (_bp[3], _bp[-1]))
+    _bw, _bh = draw_bortle_key(
+        "/tmp/bortle_key_test.png", "T", "sub", _LP_STOPS, "src")
+    check("bortle-key-size", (_bw, _bh) == (640, 252), (_bw, _bh))
+
+    # ---- two-row even legend (values over severity, no overlaps) ----
+    from live_field import draw_two_row_legend
+    _tw, _th = draw_two_row_legend(
+        "/tmp/two_row_test.png", "T", "sub", "u",
+        [(0.0, (0, 0, 0)), (100.0, (255, 255, 255))],
+        [(0.0, "0", "none"), (20.0, "20", "low"), (40.0, "40", "mid"),
+         (60.0, "60", "high"), (80.0, "80", "dense"),
+         (100.0, "100", "extreme")], "src")
+    check("two-row-key-size", (_tw, _th) == (640, 252), (_tw, _th))
+
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     return 1 if FAIL else 0
 

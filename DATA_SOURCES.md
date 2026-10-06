@@ -727,7 +727,9 @@ the other products and the Pages publish proceed normally.
   coherent fog/low-vis areas persist; statistics on raw values).
   Meteorological (human/mariner/pilot) visibility, never
   astronomical seeing. Overlay alpha 165 (slightly transparent, like
-  solar). Freshness: LIVE / CURRENT MODEL (analysis).
+  solar). Visibility and fog keys use an even two-row layout (values on
+  row 1, severity words on row 2 at true linear positions) so labels can
+  never overlap. Freshness: LIVE / CURRENT MODEL (analysis).
 - **♨️ Relative humidity — NCEP HRRR `RH` 2 m analysis (%), hourly
   cycles.** FIXED 0–100 % spectrum. Near-surface saturation percentage;
   never PWAT or dew point. Freshness: LIVE / CURRENT MODEL (analysis).

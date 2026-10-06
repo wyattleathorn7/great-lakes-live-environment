@@ -41,13 +41,26 @@ STOPS = [
 ]
 LABELS = [(0.0, "LOWEST 0"), (3.0, "3"), (10.0, "10"),
           (20.0, "20"), (30.0, "HIGHEST+ 30")]
+# Two-row even key: values evenly stepped so words never overlap;
+# severity row tells the observing-quality story underneath.
+KEY_TICKS = [
+    (0.0, "0", "Obscured"),
+    (5.0, "5", "Very poor"),
+    (10.0, "10", "Poor"),
+    (15.0, "15", "Moderate"),
+    (20.0, "20", "Good"),
+    (25.0, "25", "Very good"),
+    (30.0, "30", "Crystal clear"),
+]
 SCALE_HTML = ("Meteorological visibility in statute miles (HRRR surface "
-              "analysis, fixed absolute scale): <b>LOWEST 0</b> maroon "
-              "obscured &rarr; red &rarr; orange &rarr; yellow moderate "
-              "&rarr; green good &rarr; cyan &rarr; blue excellent &rarr; "
-              "<b>HIGHEST+ 30</b> deep-blue crystal clear. Same visibility "
-              "always shows the same color; above 30 mi clamps into deep "
-              "blue. Human-observer/mariner/pilot visibility through haze, "
+              "analysis, fixed absolute scale): <b>LOWEST 0 Obscured</b> "
+              "maroon &rarr; very poor &rarr; poor &rarr; moderate yellow "
+              "&rarr; good green &rarr; very good cyan &rarr; blue &rarr; "
+              "<b>HIGHEST+ 30 Crystal clear</b> deep blue. The key steps "
+              "evenly (0/5/10/15/20/25/30) with observing quality written "
+              "under each value. Same visibility always shows the same "
+              "color; above 30 mi clamps into deep blue. "
+              "Human-observer/mariner/pilot visibility through haze, "
               "mist, precipitation, and smoke — not astronomical seeing.")
 
 
@@ -98,10 +111,10 @@ def _build(dd, cc, source_id):
         _vals, [("VIS", "surface")], "hrrr_vis_current.grib2",
         bounds, RAW_DIR)
     from live_field import smooth_nan
-    # TV-style display smoothing (razor model-grid edges -> soft gradients;
-    # single-cell speckles dissolve, coherent fog/low-vis areas persist).
+    # Light single-pass display smoothing: softens razor model-grid edges
+    # while keeping the render crisp (a heavier blur read as low quality).
     # Statistics stay on raw values.
-    field = smooth_nan(raw)
+    field = smooth_nan(raw, passes=1)
     ok = np.isfinite(raw)
     subtitle = (f"Surface visibility (statute miles, HRRR hourly)  |  "
                 f"{data_time_utc}")
@@ -123,7 +136,7 @@ def _build(dd, cc, source_id):
         "only [0,60000] m admitted pre-conversion; values above 30 mi "
         "clamp into deep blue; full basin rectangle, no shoreline cut; "
         "missing analysis transparent; never zero-filled.",
-        alpha=165)
+        alpha=165, key_ticks=KEY_TICKS)
 
 
 if __name__ == "__main__":
