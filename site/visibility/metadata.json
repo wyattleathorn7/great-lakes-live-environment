@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3 km surface visibility analysis, hourly cycles",
   "variable": "VIS surface analysis (meteorological visibility, not astronomical seeing)",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-10-06 11:00 AM EDT",
+  "data_time_utc": "2026-10-06 04:00 PM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-10-06 12:20 PM EDT",
+  "processing_time_utc": "2026-10-06 05:37 PM EDT",
   "units": "mi, statute (display; source m / 1609.344)",
   "spatial_resolution_source": "~3 km HRRR CONUS grid, mean-binned to the common canvas, NaN-aware display smoothing",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,14 +30,14 @@
     252
   ],
   "legend_scale_html": "Meteorological visibility in statute miles (HRRR surface analysis, fixed absolute scale): <b>LOWEST 0 Obscured</b> maroon &rarr; very poor &rarr; poor &rarr; moderate yellow &rarr; good green &rarr; very good cyan &rarr; blue &rarr; <b>HIGHEST+ 30 Crystal clear</b> deep blue. The key steps evenly (0/5/10/15/20/25/30) with observing quality written under each value. Same visibility always shows the same color; above 30 mi clamps into deep blue. Human-observer/mariner/pilot visibility through haze, mist, precipitation, and smoke \u2014 not astronomical seeing.",
-  "model_cycle": "hrrr.20261006 t15z",
-  "source_id": "hrrr-hrrr.20261006-t15z-vis-anl-g3",
-  "source_version": "hrrr-hrrr.20261006-t15z-vis-anl-g3",
+  "model_cycle": "hrrr.20261006 t20z",
+  "source_id": "hrrr-hrrr.20261006-t20z-vis-anl-g3",
+  "source_version": "hrrr-hrrr.20261006-t20z-vis-anl-g3",
   "stats": {
-    "valid_cells": 2114239,
-    "current_min": 0.06213711922373339,
-    "current_max": 37.220134415016304,
+    "valid_cells": 2046009,
+    "current_min": 0.18641135767120018,
+    "current_max": 37.28227153424004,
     "display_smoothing": "NaN-aware 2-pass blur; stats on raw"
   },
-  "folder_html": "<h2>LIVE ATMOSPHERIC VISIBILITY</h2><p>Near-surface meteorological visibility from the operational HRRR analysis: how far a human observer, mariner, or pilot can distinguish surroundings through haze, mist, precipitation, and smoke. Low values flag navigation and shoreline hazards; high values mark crystal-clear Great Lakes air.</p><p>Visibility science (atmospheric optics and observing practice) quantifies horizontal contrast loss from scattering and absorption by hydrometeors and aerosols. It underpins aviation flight rules, marine navigation advisories, and air-quality perception, and is reported operationally in statute miles across the United States.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/visibility/legend.png?v=hrrr-hrrr.20261006-t15z-vis-anl-g3\" width=\"600\" alt=\"key\"><br>Meteorological visibility in statute miles (HRRR surface analysis, fixed absolute scale): <b>LOWEST 0 Obscured</b> maroon &rarr; very poor &rarr; poor &rarr; moderate yellow &rarr; good green &rarr; very good cyan &rarr; blue &rarr; <b>HIGHEST+ 30 Crystal clear</b> deep blue. The key steps evenly (0/5/10/15/20/25/30) with observing quality written under each value. Same visibility always shows the same color; above 30 mi clamps into deep blue. Human-observer/mariner/pilot visibility through haze, mist, precipitation, and smoke \u2014 not astronomical seeing.<br><b>Units:</b> mi, statute (display; source m / 1609.344)<br><b>Source:</b> NOAA/NCEP HRRR 3 km surface visibility analysis, hourly cycles<br><b>Update:</b> Checked hourly; republishes only on a newer HRRR cycle.<br><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl</a></p>"
+  "folder_html": "<h2>LIVE ATMOSPHERIC VISIBILITY</h2><p>Near-surface meteorological visibility from the operational HRRR analysis: how far a human observer, mariner, or pilot can distinguish surroundings through haze, mist, precipitation, and smoke. Low values flag navigation and shoreline hazards; high values mark crystal-clear Great Lakes air.</p><p>Visibility science (atmospheric optics and observing practice) quantifies horizontal contrast loss from scattering and absorption by hydrometeors and aerosols. It underpins aviation flight rules, marine navigation advisories, and air-quality perception, and is reported operationally in statute miles across the United States.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/visibility/legend.png?v=hrrr-hrrr.20261006-t20z-vis-anl-g3\" width=\"600\" alt=\"key\"><br>Meteorological visibility in statute miles (HRRR surface analysis, fixed absolute scale): <b>LOWEST 0 Obscured</b> maroon &rarr; very poor &rarr; poor &rarr; moderate yellow &rarr; good green &rarr; very good cyan &rarr; blue &rarr; <b>HIGHEST+ 30 Crystal clear</b> deep blue. The key steps evenly (0/5/10/15/20/25/30) with observing quality written under each value. Same visibility always shows the same color; above 30 mi clamps into deep blue. Human-observer/mariner/pilot visibility through haze, mist, precipitation, and smoke \u2014 not astronomical seeing.<br><b>Units:</b> mi, statute (display; source m / 1609.344)<br><b>Source:</b> NOAA/NCEP HRRR 3 km surface visibility analysis, hourly cycles<br><b>Update:</b> Checked hourly; republishes only on a newer HRRR cycle.<br><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl</a></p>"
 }
