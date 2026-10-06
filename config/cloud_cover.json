@@ -13,7 +13,7 @@
   "valid_min": 0.0,
   "valid_max": 100.0,
   "clear_threshold": 1.0,
-  "refresh_interval_seconds": 720,
+  "refresh_interval_seconds": 300,
   "what": "Observed cloud cover right now from the GOES-East weather satellite: the share of 2 km satellite pixels flagged cloudy around each point. Clear areas are transparent so the map underneath shows through. A direct satellite retrieval — not a weather-model estimate, so no analysis blocks.",
   "why_extreme": "Overcast (near 100%) compresses into violet/dark-purple; thin cloud owns most of the color resolution."
 }

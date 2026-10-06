@@ -50,7 +50,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_precipitation.py; rc=$?
+          rc=0; python scripts/build_precipitation.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Precipitation source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -81,7 +81,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_cloud_cover.py; rc=$?
+          rc=0; python scripts/build_cloud_cover.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Cloud source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7

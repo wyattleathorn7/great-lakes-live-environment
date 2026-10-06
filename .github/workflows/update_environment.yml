@@ -61,7 +61,7 @@ jobs:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         # Exit 2 = source unavailable/invalid -> keep previous raster, stay green.
         run: |
-          python scripts/build_wave_height.py; rc=$?
+          rc=0; python scripts/build_wave_height.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Wave source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -93,7 +93,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_water_temperature.py; rc=$?
+          rc=0; python scripts/build_water_temperature.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Temperature source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -125,7 +125,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_ice_coverage.py; rc=$?
+          rc=0; python scripts/build_ice_coverage.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Ice source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -157,7 +157,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_ice_thickness.py; rc=$?
+          rc=0; python scripts/build_ice_thickness.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Ice thickness source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -189,7 +189,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_ice_type.py; rc=$?
+          rc=0; python scripts/build_ice_type.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Ice type source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -221,7 +221,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_wind.py; rc=$?
+          rc=0; python scripts/build_wind.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Wind source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -253,7 +253,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_leaf_color.py; rc=$?
+          rc=0; python scripts/build_leaf_color.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Leaf source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -286,7 +286,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_chlorophyll.py; rc=$?
+          rc=0; python scripts/build_chlorophyll.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Chlorophyll source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -319,7 +319,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_water_clarity.py; rc=$?
+          rc=0; python scripts/build_water_clarity.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Clarity source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -352,7 +352,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_solar_radiation.py; rc=$?
+          rc=0; python scripts/build_solar_radiation.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Solar source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -385,7 +385,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_air_temperature.py; rc=$?
+          rc=0; python scripts/build_air_temperature.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Air temp source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -418,7 +418,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_snow_coverage.py; rc=$?
+          rc=0; python scripts/build_snow_coverage.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Snow source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -451,7 +451,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_uv_index.py; rc=$?
+          rc=0; python scripts/build_uv_index.py || rc=$?
           if [ $rc -eq 2 ]; then echo "UV source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -484,7 +484,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_cloud_cover.py; rc=$?
+          rc=0; python scripts/build_cloud_cover.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Cloud source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -516,7 +516,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_surface_pressure.py; rc=$?
+          rc=0; python scripts/build_surface_pressure.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Pressure source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -548,7 +548,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_wave_direction.py; rc=$?
+          rc=0; python scripts/build_wave_direction.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Wave direction source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -580,7 +580,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_surface_currents.py; rc=$?
+          rc=0; python scripts/build_surface_currents.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Surface currents source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -612,7 +612,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_precipitation.py; rc=$?
+          rc=0; python scripts/build_precipitation.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Precipitation source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -644,7 +644,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_aurora.py; rc=$?
+          rc=0; python scripts/build_aurora.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Aurora source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -676,7 +676,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_bacteria.py; rc=$?
+          rc=0; python scripts/build_bacteria.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Bacteria source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -709,7 +709,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_visibility.py; rc=$?
+          rc=0; python scripts/build_visibility.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Visibility source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -741,7 +741,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_humidity.py; rc=$?
+          rc=0; python scripts/build_humidity.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Humidity source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -773,7 +773,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_precipitable_water.py; rc=$?
+          rc=0; python scripts/build_precipitable_water.py || rc=$?
           if [ $rc -eq 2 ]; then echo "PWAT source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -805,7 +805,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_light_pollution.py; rc=$?
+          rc=0; python scripts/build_light_pollution.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Light-pollution source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -837,7 +837,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_air_quality.py; rc=$?
+          rc=0; python scripts/build_air_quality.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Air-quality source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -869,7 +869,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_condensation.py; rc=$?
+          rc=0; python scripts/build_condensation.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Condensation source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -901,7 +901,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_fog.py; rc=$?
+          rc=0; python scripts/build_fog.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Fog source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -933,7 +933,7 @@ jobs:
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          python scripts/build_dew_point.py; rc=$?
+          rc=0; python scripts/build_dew_point.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Dew-point source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
@@ -982,7 +982,7 @@ jobs:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         # Exit 2 = source unavailable/invalid -> keep previous raster, stay green.
         run: |
-          python scripts/build_gamefish.py --species ${{ matrix.species }}; rc=$?
+          rc=0; python scripts/build_gamefish.py --species ${{ matrix.species }} || rc=$?
           if [ $rc -eq 2 ]; then echo "Gamefish ${{ matrix.species }} source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - name: Resolve KML filename

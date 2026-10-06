@@ -159,12 +159,22 @@ def _build(scan_dt, source_id):
     req = urllib.request.Request(url, headers=USER_AGENT)
     with urllib.request.urlopen(req, timeout=120) as r:
         data = r.read()
-    if len(data) < 20_000:
-        raise ValueError(f"WMS download too small ({len(data)} bytes)")
+    # No byte-size gate here: on a dry/clear basin the WMS honestly
+    # returns a fully (or nearly) transparent PNG of ~12 kB, which must
+    # publish as a fresh clear-sky raster — never read as a failure.
+    # Integrity is enforced by content instead: PNG magic bytes, a full
+    # image parse, and the exact-canvas size check below. Truncated
+    # downloads fail the parse; WMS XML exceptions fail the magic check.
+    if len(data) < 8 or data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError(f"WMS response is not a PNG ({len(data)} bytes, "
+                         f"head={data[:80]!r})")
     with open(raw_path, "wb") as f:
         f.write(data)
 
-    im = Image.open(raw_path).convert("RGBA")
+    try:
+        im = Image.open(raw_path).convert("RGBA")
+    except Exception as e:
+        raise ValueError(f"WMS PNG unreadable: {e}")
     if im.size != (W, H):
         # WMS was asked for the exact canvas; resampling here would blur
         # radar edges, so a size mismatch is a hard failure (keep previous).
