@@ -679,10 +679,10 @@ the other products and the Pages publish proceed normally.
   teal → yellow-green → yellow → orange → red → red-violet →
   dark-purple jets; above 100 clamps). NO preset arrow lattice:
   deterministic jittered seeds advected downstream along RK2-midpoint
-  streamlines (3 px steps, ≤24 steps ≈ 72 px) integrated through the
-  filed U/V field with bilinear sampling, drawn as thousands of 1 px
-  flow streaks; streak BRIGHTNESS encodes speed (dim drift, bright
-  jets) while the gradient carries the absolute scale; every third
+  streamlines (3 px steps, ≤40 steps ≈ 120 px) integrated through the
+  filed U/V field with bilinear sampling, drawn as thousands of 2 px
+  flow streaks (soft white: full strength would bleach the gradient); streak BRIGHTNESS encodes speed (dim drift, bright
+  jets) while the gradient carries the absolute scale; every second
   streak carries a tiny downstream chevron. Separation-aware seeding
   (Jobard-Lefer style) keeps converging flow from piling into blobs;
   traces stop at land/no-data, stagnant water (<1 cm/s), or hairpins.

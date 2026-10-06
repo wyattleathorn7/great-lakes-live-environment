@@ -16,7 +16,7 @@ Gradient = CURRENT SPEED (fixed absolute 0-100 cm/s, source m/s x100).
 Flow marks = CURRENT DIRECTION, rasterized INTO the PNG (zero KML
 Placemarks): NO preset lattice — thousands of 1 px streamlets trace RK2
 streamlines integrated through the filed (U,V) field (brightness =
-speed), with a tiny downstream chevron on every third streamlet. Every
+speed), with a tiny downstream chevron on every second streamlet. Every
 mark position, path, and orientation is field-derived.
 
 Narrow rivers vs the shared open-lake shoreline mask: the mask reads
@@ -429,12 +429,13 @@ def trace_streamline(sy, sx, uu, vv, ds=3.0, max_steps=24, min_speed=0.01):
 
 
 def paint_flow_arrows(rgba, uu, vv, seed_step=7, river_seed_step=4,
-                      river_mask=None, ds=3.0, max_steps=24,
+                      river_mask=None, ds=3.0, max_steps=40,
                       speed_ref_cms=50.0, min_speed_cms=1.0,
                       sep_px=1.5, river_sep_px=1.0,
-                      head_every=3, head_sep_px=5.0,
+                      head_every=2, head_sep_px=5.0,
                       river_head_sep_px=3.5,
-                      line_base_alpha=90, line_bright_alpha=110,
+                      line_width=2,
+                      line_base_alpha=70, line_bright_alpha=70,
                       head_alpha=230):
     """Dense flow-streak field with micro direction heads, rasterized.
 
@@ -531,7 +532,7 @@ def paint_flow_arrows(rgba, uu, vv, seed_step=7, river_seed_step=4,
             if not math.isfinite(sp):
                 continue
             d.line(pts, fill=(255, 255, 255, brightness(max(sp, min_speed))),
-                   width=1)
+                             width=line_width)
             n_lines += 1
             accepted += 1
             if accepted % head_every == 0 and len(path) >= 10:
@@ -871,9 +872,9 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
     meta["arrow_method"] = (
         "No preset lattice. Deterministic jittered seeds (seeded RNG) "
         "advected downstream along RK2-midpoint streamlines (3 px steps, "
-        "up to 24 steps ≈ 72 px paths) integrated through the filed U/V "
+        "up to 40 steps ≈ 120 px paths) integrated through the filed U/V "
         "field with bilinear sampling; each accepted path is drawn as a "
-        "1 px streamlet, every third path carries a tiny downstream "
+        "1 px streamlet, every second path carries a tiny downstream "
         "chevron. Traces stop at land/no-data, stagnant water (<1 cm/s), "
         "or hairpins. Streamlet brightness encodes speed (dim drift, "
         "bright jets); rivers get denser seeds. Glyphs trace the same "
