@@ -104,7 +104,8 @@ def _build(dd, cc, source_id):
         "n/a (NOMADS)", "% (display; source % as filed)",
         "~3 km HRRR CONUS grid, mean-binned to the common canvas",
         "only [0,100] % admitted; full basin rectangle, no shoreline cut; "
-        "missing analysis transparent; never zero-filled.")
+        "missing analysis transparent; never zero-filled.",
+        alpha=170)
 
 
 if __name__ == "__main__":

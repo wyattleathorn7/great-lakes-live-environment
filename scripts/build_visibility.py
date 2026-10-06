@@ -92,11 +92,17 @@ def _build(dd, cc, source_id):
         ok = np.isfinite(v) & (v >= CONFIG["valid_min_m"]) & (v <= CONFIG["valid_max_m"])
         if int(ok.sum()) < 5_000:
             raise ValueError(f"too few valid source cells ({int(ok.sum())})")
-        return v * M2MI, la, lo, ddate, dtime
+        return np.where(ok, v * M2MI, np.nan), la, lo, ddate, dtime
 
-    field, data_time_utc, _dd, _cc, _base = hrrr_field(
+    raw, data_time_utc, _dd, _cc, _base = hrrr_field(
         _vals, [("VIS", "surface")], "hrrr_vis_current.grib2",
         bounds, RAW_DIR)
+    from live_field import smooth_nan
+    # TV-style display smoothing (razor model-grid edges -> soft gradients;
+    # single-cell speckles dissolve, coherent fog/low-vis areas persist).
+    # Statistics stay on raw values.
+    field = smooth_nan(raw)
+    ok = np.isfinite(raw)
     subtitle = (f"Surface visibility (statute miles, HRRR hourly)  |  "
                 f"{data_time_utc}")
     return finish(
@@ -105,13 +111,19 @@ def _build(dd, cc, source_id):
         f"Processed {now_det_str()}", SCALE_HTML,
         [CONFIG["what"], CONFIG["field"],
          "Checked hourly; republishes only on a newer HRRR cycle."],
-        {"model_cycle": f"{dd} t{cc}z"}, source_id, data_time_utc,
+        {"model_cycle": f"{dd} t{cc}z",
+         "stats": {"current_min": float(raw[ok].min()),
+                   "current_max": float(raw[ok].max()),
+                   "display_smoothing": "NaN-aware 2-pass blur; stats on raw"}},
+        source_id, data_time_utc,
         "n/a (NOMADS)",
         "mi, statute (display; source m / 1609.344)",
-        "~3 km HRRR CONUS grid, mean-binned to the common canvas",
+        "~3 km HRRR CONUS grid, mean-binned to the common canvas, "
+        "NaN-aware display smoothing",
         "only [0,60000] m admitted pre-conversion; values above 30 mi "
         "clamp into deep blue; full basin rectangle, no shoreline cut; "
-        "missing analysis transparent; never zero-filled.")
+        "missing analysis transparent; never zero-filled.",
+        alpha=165)
 
 
 if __name__ == "__main__":

@@ -144,7 +144,8 @@ def _build(base, dd, cc, source_id):
         "index computed in canvas space",
         "inputs gated to physical ranges pre-binning; index computed only "
         "where TMP+DPT+RH valid; full basin rectangle, no shoreline cut; "
-        "missing analysis transparent; never zero-filled.")
+        "missing analysis transparent; never zero-filled.",
+        alpha=165)
 
 
 if __name__ == "__main__":

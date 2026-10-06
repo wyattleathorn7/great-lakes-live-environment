@@ -642,12 +642,27 @@ def main():
     _fog_calm = _dm.fog_risk_index(12.0, 100.0, 11.5, 20000.0, 0.5)
     _fog_dry = _dm.fog_risk_index(25.0, 20.0, 5.0, 20000.0, 2.0)
     _fog_obs = _dm.fog_risk_index(12.0, 96.0, 11.0, 400.0, 8.0)
-    check("fog-calm-saturated-high", bool(float(_fog_calm) > 70.0), _fog_calm)
+    check("fog-calm-saturated-risk-zone",
+          bool(25.0 < float(_fog_calm) <= 35.0), _fog_calm)
     check("fog-dry-zero", bool(float(_fog_dry) == 0.0), _fog_dry)
     check("fog-active-gate", bool(float(_fog_obs) >= 85.0), _fog_obs)
     # visibility gate only raises: same thermodynamics, good vis <= bad vis
     _fog_clear = _dm.fog_risk_index(12.0, 100.0, 11.5, 30000.0, 0.5)
     check("fog-gate-monotone", bool(float(_fog_calm) >= float(_fog_clear)))
+    # boundary continuity: VIS=5000 gives d=0, identical to risk-only
+    _fog_edge = _dm.fog_risk_index(12.0, 100.0, 11.5, 5000.0, 0.5)
+    check("fog-boundary-continuous",
+          bool(abs(float(_fog_edge) - float(_fog_calm)) < 1e-9),
+          (_fog_edge, _fog_calm))
+    # dry air can never paint active fog, however low the visibility
+    _fog_dryvis = _dm.fog_risk_index(25.0, 50.0, 5.0, 400.0, 2.0)
+    check("fog-dry-vis-capped-at-risk",
+          bool(float(_fog_dryvis) <= 35.0), _fog_dryvis)
+    # active fog grades by density: lower VIS -> higher index
+    _fog_d1 = _dm.fog_risk_index(12.0, 98.0, 11.0, 200.0, 1.0)
+    _fog_d2 = _dm.fog_risk_index(12.0, 98.0, 11.0, 2000.0, 1.0)
+    check("fog-density-ordered",
+          bool(float(_fog_d1) > float(_fog_d2) > 35.0), (_fog_d1, _fog_d2))
 
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     return 1 if FAIL else 0

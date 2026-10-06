@@ -722,8 +722,12 @@ the other products and the Pages publish proceed normally.
   refresh logic, styling, legend, or folder description was modified.
 - **🌙 Visibility — NCEP HRRR `VIS` surface analysis (m → statute miles),
   hourly cycles.** Direct analysis field, FIXED 0–30 mi continuous
-  spectrum. Meteorological (human/mariner/pilot) visibility, never
-  astronomical seeing. Freshness: LIVE / CURRENT MODEL (analysis).
+  spectrum, NaN-aware 2-pass display smoothing (razor model-grid edges
+  render as soft TV-style gradients; single-cell speckles dissolve while
+  coherent fog/low-vis areas persist; statistics on raw values).
+  Meteorological (human/mariner/pilot) visibility, never
+  astronomical seeing. Overlay alpha 165 (slightly transparent, like
+  solar). Freshness: LIVE / CURRENT MODEL (analysis).
 - **♨️ Relative humidity — NCEP HRRR `RH` 2 m analysis (%), hourly
   cycles.** FIXED 0–100 % spectrum. Near-surface saturation percentage;
   never PWAT or dew point. Freshness: LIVE / CURRENT MODEL (analysis).
@@ -732,11 +736,15 @@ the other products and the Pages publish proceed normally.
   FIXED 0–60 mm spectrum. Freshness: LIVE / CURRENT MODEL (analysis).
 - **💡 Light pollution — NASA VIIRS Black Marble annual nighttime-lights
   composite (Suomi NPP DNB, Román et al.) via the public NASA GIBS WMTS
-  (`VIIRS_Black_Marble`, currently the 2016 annual; 8 level-5 tiles
-  mosaicked to the canvas).** Displayed as a RELATIVE brightness index
-  0–100 (linear map of the published composite visualization —
-  documented as imagery-derived, never fabricated radiance units).
-  Continuous environmental surface (no preserve points). Hourly check =
+  (`VIIRS_Black_Marble`, currently the 2016 annual; 10 level-6 tiles at
+  4.5° each mosaicked to the canvas).** Displayed as a RELATIVE brightness index
+  0–100 via a documented three-step monotonic mapping (tile-background
+  floor subtraction at the 0.5th percentile, a NaN-aware skyglow bloom
+  ~9 km sigma so point-like city cores render as the diffuse metro glow
+  every published light-pollution map shows, then a square-root
+  perceptual map against the 99.99th percentile) — documented as
+  imagery-derived, never fabricated radiance units. Continuous
+  environmental surface (no preserve points). Hourly check =
   one probe-tile content hash; rebuilds only when NASA publishes a
   newer composite. Freshness: LATEST AVAILABLE COMPOSITE. Folder text
   distinguishes dominant artificial glow from natural night-sky
@@ -754,14 +762,16 @@ the other products and the Pages publish proceed normally.
   `100×(0.65×clip((2.5−S)/2.5,0,1)^0.7 + 0.35×clip((RH−60)/40,0,1))`,
   S = TMP−DPT (°C). No wind, no visibility inputs — structurally
   distinct from fog risk, RH, and dew point. Labeled DERIVED.
-- **🌫️ Fog risk / active fog — DERIVED index 0–100 from HRRR
-  TMP+DPT+RH (2 m) + 10 m wind + VIS, hourly cycles.** Base =
-  `100×rh_factor×spread_factor×calm_factor`
-  (`clip((RH−70)/30,0,1)`, `clip((3−S)/3,0,1)`,
-  `clip((6−wspd)/6,0.35,1)`); visibility gate only RAISES the index
-  (VIS<1000 m & RH≥95 → ≥85 ACTIVE FOG; 1000–5000 m → ≥60). Calm
-  saturated air scores high before visibility collapses, so this is not
-  a copy of the visibility layer. Labeled DERIVED.
+- **🌫️ Fog risk / active fog — DERIVED index 0–100 v2 from HRRR
+  TMP+DPT+RH (2 m) + 10 m wind + VIS, hourly cycles.** Risk owns 0–35
+  (`35 × rh_factor × spread_factor × calm_factor`, same factors as v1);
+  corroborated observed density owns 35–100
+  (`35 + 65 × clip((5000−VIS)/5000,0,1)^0.8`, only where VIS<5000 m AND
+  RH≥90 — continuous at the 5000 m boundary). Index = max of the two, so
+  observed fog outranks risk but dry-air speckles can never paint active
+  fog. NaN-aware display smoothing + raw-value statistics, same contract
+  as visibility. Key labels step evenly (No/Low/Moderate/High risk, then
+  Active/Dense/Severe/Extreme fog). Labeled DERIVED.
 - **🧊 Dew point — NCEP HRRR `DPT` 2 m analysis (K → °F), hourly
   cycles.** Actual dew-point temperature, FIXED −20…90 °F spectrum;
   never depression/spread/probability/RH. Freshness: LIVE / CURRENT

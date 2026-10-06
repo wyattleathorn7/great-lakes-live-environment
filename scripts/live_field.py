@@ -33,6 +33,48 @@ from gradient_scale import draw_scale_legend, render_rgba
 
 SKIP_NOTE = "Turn on/off independently of all other layers."
 
+# Per-product render generation: bump a product's tag (and only that tag)
+# to force Google Earth clients to refetch an otherwise identical source
+# cycle after a rendering change (new ?v= without touching data or URLs).
+RENDER_TAGS = {
+    "visibility": "g2",
+    "humidity": "g2",
+    "precipitable_water": "g2",
+    "light_pollution": "g2",
+    "air_quality": "g2",
+    "condensation": "g2",
+    "fog": "g2",
+    "dew_point": "g2",
+}
+
+
+def versioned_source_id(product, source_id):
+    tag = RENDER_TAGS.get(product)
+    return f"{source_id}-{tag}" if tag else source_id
+
+
+def smooth_nan(field, radius=2, passes=2):
+    """NaN-aware box-blur smoothing for TV-style display gradients.
+
+    Softens razor-sharp model-grid edges and dissolves single-cell
+    speckles into their surroundings while coherent features persist.
+    Missing data stays missing (never zero-filled, never grown). Same
+    display-smoothing contract as the solar product; statistics stay on
+    raw values (callers override stats explicitly).
+    """
+    from gradient_scale import _box_sum
+    cur = np.asarray(field, dtype=float)
+    for _ in range(passes):
+        have = np.isfinite(cur)
+        if not have.any():
+            return cur
+        sw = _box_sum(have.astype(float), radius)
+        sv = _box_sum(np.where(have, cur, 0.0), radius)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            mean = sv / sw
+        cur = np.where(have & (sw > 0), mean, cur)
+    return cur
+
 
 def should_skip(product, source_id):
     """True when the source is unchanged and a full raster is deployed."""
@@ -92,12 +134,15 @@ def finish(product, config, kml_file, overlay_name, field, stops, labels,
            unit_label, subtitle, source_line, scale_html, folder_paras,
            meta_extra, source_id, data_time_utc, source_last_modified,
            units_desc, source_resolution, missing_treatment,
-           min_opaque=50_000, extra_meta=None):
+           min_opaque=50_000, extra_meta=None, alpha=None):
     """Render field -> validate -> legend/metadata/KML -> promote -> state."""
     bounds = load_bounds()
+    if alpha is None:
+        alpha = bounds["overlay_alpha"]
+    source_id = versioned_source_id(product, source_id)
     stage = stage_dir(product)
     stage_prod = os.path.join(stage, "site", product)
-    rgba = render_rgba(field, stops, bounds["overlay_alpha"])
+    rgba = render_rgba(field, stops, alpha)
     # Full basin rectangle (atmospheric layers are valid over land and
     # water alike, like air temperature / pressure / solar / aurora):
     # only missing source data is transparent. No shoreline cut, so no

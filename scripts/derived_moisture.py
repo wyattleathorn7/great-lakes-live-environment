@@ -25,15 +25,18 @@ Formulas (documented identically in DATA_SOURCES.md):
   now" (favorable conditions for dew/frost/film condensation on exposed
   surfaces). Independent of whether fog is actually present.
 
-  FOG RISK INDEX (0..100, adds wind + visibility confirmation):
-    rh_factor     = clip((RH - 70) / 30, 0, 1)
-    spread_factor = clip((3.0 - S) / 3.0, 0, 1)
-    calm_factor   = clip((6.0 - wspd) / 6.0, 0.35, 1.0)
-    base = 100 * rh_factor * spread_factor * calm_factor
-    active-fog gate: where VIS < 1000 m AND RH >= 95 -> risk >= 85
-                     where 1000 <= VIS < 5000 m      -> risk >= 60
-    (visibility can only RAISE the index: an observed low-visibility
-    field confirms fog the thermodynamic terms may understate.)
+  FOG RISK INDEX v2 (0..100: risk owns 0..35, active fog owns 35..100):
+    r = rh_factor * spread_factor * calm_factor  (each in [0,1], as above)
+    risk_zone = 35 * r                            (no observed fog)
+    corroborated density d (only where VIS < 5000 m AND RH >= 90):
+        d = clip((5000 - VIS) / 5000, 0, 1) ** 0.8
+    fog_zone = 35 + 65 * d                        (active fog by density)
+    index = max(risk_zone, fog_zone)
+  The scale is continuous at the boundary (VIS = 5000 m gives d = 0, so
+  fog_zone = 35 >= risk_zone). Observed reduced visibility IS fog even
+  where the thermodynamic terms understate it (e.g. advected fog), so
+  corroborated density outranks risk — but corroboration requires high
+  humidity, so dry-air model speckles can never paint active fog.
   Question answered: "is fog likely forming / already present" for
   navigation, shoreline, aviation, and nighttime monitoring.
 """
@@ -60,7 +63,8 @@ def condensation_index(tmp_c, rh, dpt_c):
 
 
 def fog_risk_index(tmp_c, rh, dpt_c, vis_m, wspd_ms):
-    """0..100 fog-risk index with active-fog visibility gate."""
+    """0..100 fog index v2: 0..35 thermodynamic risk, 35..100 active fog
+    by observed density. NaN in -> NaN out."""
     tmp_c = np.asarray(tmp_c, dtype=float)
     rh = np.asarray(rh, dtype=float)
     dpt_c = np.asarray(dpt_c, dtype=float)
@@ -71,10 +75,12 @@ def fog_risk_index(tmp_c, rh, dpt_c, vis_m, wspd_ms):
         rh_factor = _clip01((rh - 70.0) / 30.0)
         spread_factor = _clip01((3.0 - spread) / 3.0)
         calm_factor = np.clip((6.0 - wspd) / 6.0, 0.35, 1.0)
-        base = 100.0 * rh_factor * spread_factor * calm_factor
-        active = np.isfinite(vis_m) & np.isfinite(rh) & (vis_m < 1000.0) & (rh >= 95.0)
-        base = np.where(active, np.maximum(base, 85.0), base)
-        reduced = np.isfinite(vis_m) & (vis_m >= 1000.0) & (vis_m < 5000.0)
-        base = np.where(reduced & ~active, np.maximum(base, 60.0), base)
+        risk = 35.0 * rh_factor * spread_factor * calm_factor
+        corroborated = (np.isfinite(vis_m) & np.isfinite(rh)
+                        & (vis_m < 5000.0) & (rh >= 90.0))
+        density = np.where(corroborated,
+                           _clip01((5000.0 - vis_m) / 5000.0) ** 0.8, 0.0)
+        fogged = 35.0 + 65.0 * density
+        base = np.where(corroborated, np.maximum(risk, fogged), risk)
     bad = ~(np.isfinite(tmp_c) & np.isfinite(rh) & np.isfinite(dpt_c))
     return np.where(bad, np.nan, base)

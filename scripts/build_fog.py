@@ -35,25 +35,33 @@ OVERLAY_NAME = "\U0001F32B\uFE0F LIVE FOG RISK/ACTIVE FOG"
 MSGS = [("TMP", "2 m above ground"), ("DPT", "2 m above ground"),
         ("RH", "2 m above ground"), ("UGRD", "10 m above ground"),
         ("VGRD", "10 m above ground"), ("VIS", "surface")]
+# v2 scale: risk owns 35% of the gradient (green -> orange), active fog
+# by severity/density owns 65% (orange -> dark purple). Even value steps
+# carry even severity steps: no / low / moderate / high risk, then active
+# / dense / severe / extreme fog.
 STOPS = [
-    (0.0, (40, 160, 90)),     # low risk: green
-    (25.0, (240, 215, 60)),   # elevated: yellow
-    (50.0, (245, 150, 30)),   # high: orange
-    (75.0, (215, 45, 35)),    # very high: red
-    (85.0, (150, 25, 110)),   # active fog: red-violet
-    (100.0, (70, 15, 100)),   # dense active fog: deep purple
+    (0.0, (40, 160, 90)),     # no risk: green
+    (12.0, (140, 195, 80)),   # low: yellow-green
+    (25.0, (240, 215, 60)),   # moderate: yellow
+    (35.0, (245, 150, 30)),   # high risk: orange (top of risk zone)
+    (50.0, (225, 80, 25)),    # active fog: red-orange
+    (65.0, (200, 25, 40)),    # dense fog: red
+    (80.0, (150, 25, 110)),   # severe fog: red-violet
+    (100.0, (70, 15, 100)),   # extreme: dark purple
 ]
-LABELS = [(0.0, "LOWEST 0"), (25.0, "25"), (50.0, "50"),
-          (75.0, "75"), (85.0, "ACTIVE FOG 85"),
-          (100.0, "HIGHEST+ 100")]
-SCALE_HTML = ("Fog-risk index 0-100 (DERIVED from HRRR analysis, fixed "
-              "absolute scale): <b>LOWEST 0</b> green low risk &rarr; yellow "
-              "elevated &rarr; orange high &rarr; red very high &rarr; "
-              "<b>ACTIVE FOG 85+</b> red-violet into deep purple dense active "
-              "fog (visibility-confirmed) to <b>HIGHEST+ 100</b>. Same index "
-              "always shows the same "
-              "color. Thermodynamic risk with a visibility confirmation "
-              "gate — not a copy of the visibility layer.")
+LABELS = [(0.0, "No risk 0"), (12.0, "Low 12"), (25.0, "Moderate 25"),
+          (35.0, "High risk 35"), (50.0, "Active fog 50"),
+          (65.0, "Dense fog 65"), (80.0, "Severe 80"),
+          (100.0, "HIGHEST+ 100 Extreme")]
+SCALE_HTML = ("Fog index 0-100 (DERIVED from HRRR analysis, fixed absolute "
+              "scale): risk owns the first 35% — <b>LOWEST 0 No risk</b> "
+              "green &rarr; low &rarr; moderate yellow &rarr; <b>High risk "
+              "35</b> orange — then active fog by severity owns the rest: "
+              "active-fog red-orange &rarr; dense red &rarr; severe "
+              "red-violet &rarr; <b>HIGHEST+ 100 Extreme</b> dark purple. "
+              "Same index always shows the same color. Thermodynamic risk "
+              "with an observed-visibility density confirmation — not a "
+              "copy of the visibility layer.")
 
 
 def main():
@@ -143,11 +151,16 @@ def _build(base, dd, cc, source_id):
                    & (np.asarray(visv, dtype=float).ravel() >= 0))
     wspd = np.sqrt(np.where(np.isfinite(uu), uu, np.nan) ** 2
                    + np.where(np.isfinite(vv2), vv2, np.nan) ** 2)
-    field = fog_risk_index(tmp_c, rh, dpt_c, vis, wspd)
-    ok = np.isfinite(field)
+    from live_field import smooth_nan
+    raw = fog_risk_index(tmp_c, rh, dpt_c, vis, wspd)
+    ok = np.isfinite(raw)
     if int(ok.sum()) < 50_000:
         raise ValueError(f"too few valid canvas cells ({int(ok.sum())})")
-    subtitle = (f"Fog-risk index 0-100 (derived, HRRR hourly)  |  "
+    # TV-style display smoothing (razor model-grid edges -> soft gradients;
+    # single-cell speckles dissolve, coherent fog persists). Statistics stay
+    # on raw values.
+    field = smooth_nan(raw)
+    subtitle = (f"Fog index 0-100 (derived, HRRR hourly)  |  "
                 f"{data_time_utc}")
     return finish(
         PRODUCT, CONFIG, KML_FILE, OVERLAY_NAME, field, STOPS, LABELS,
@@ -158,15 +171,19 @@ def _build(base, dd, cc, source_id):
          CONFIG["field"],
          "Checked hourly; republishes only on a newer HRRR cycle."],
         {"model_cycle": f"{dd} t{cc}z",
-         "stats": {"derivation": CONFIG["derivation"]}},
+         "stats": {"derivation": CONFIG["derivation"],
+                   "current_min": float(raw[ok].min()),
+                   "current_max": float(raw[ok].max()),
+                   "display_smoothing": "NaN-aware 2-pass blur; stats on raw"}},
         source_id, data_time_utc, "n/a (NOMADS)",
-        "fog-risk index 0-100 (display; derived, see derivation)",
+        "fog index 0-100 (display; derived, see derivation)",
         "~3 km HRRR CONUS grid fields, mean-binned to the common canvas, "
-        "index computed in canvas space",
+        "index computed in canvas space, NaN-aware display smoothing",
         "inputs gated to physical ranges pre-binning; index computed only "
         "where TMP+DPT+RH valid; full basin rectangle, no shoreline cut; "
-        "missing analysis transparent; never zero-filled; visibility gate "
-        "only raises the index, never lowers it.")
+        "missing analysis transparent; never zero-filled; corroborated "
+        "visibility density outranks risk, dry-air speckles never paint "
+        "active fog.")
 
 
 if __name__ == "__main__":
