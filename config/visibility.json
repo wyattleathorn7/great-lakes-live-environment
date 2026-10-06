@@ -1,0 +1,18 @@
+{
+  "product": "visibility",
+  "title": "LIVE ATMOSPHERIC VISIBILITY",
+  "freshness_label": "LIVE / CURRENT MODEL (analysis), hourly cycles",
+  "source_name": "NOAA/NCEP HRRR 3 km surface visibility analysis, hourly cycles",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/{date_dir}/conus/hrrr.t{cycle}z.wrfsfcf00.grib2",
+  "variable": "VIS surface analysis (meteorological visibility, not astronomical seeing)",
+  "source_units": "m",
+  "display_units": "mi (statute miles)",
+  "valid_min_m": 0.0,
+  "valid_max_m": 60000.0,
+  "color_min_mi": 0.0,
+  "color_max_mi": 30.0,
+  "refresh_interval_seconds": 3600,
+  "what": "Near-surface meteorological visibility from the operational HRRR analysis: how far a human observer, mariner, or pilot can distinguish surroundings through haze, mist, precipitation, and smoke. Low values flag navigation and shoreline hazards; high values mark crystal-clear Great Lakes air.",
+  "field": "Visibility science (atmospheric optics and observing practice) quantifies horizontal contrast loss from scattering and absorption by hydrometeors and aerosols. It underpins aviation flight rules, marine navigation advisories, and air-quality perception, and is reported operationally in statute miles across the United States."
+}

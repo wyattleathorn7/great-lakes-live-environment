@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>☁️ LIVE PRECIPITABLE WATER VAPOR</name>
+    <description><![CDATA[<p><b>Time fetched:</b> Oct 5, 2026 11:05PM EDT</p><h2>LIVE PRECIPITABLE WATER VAPOR</h2><p><b>Gradient key</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/precipitable_water/legend.png" width="600" alt="gradient key"><br>Column-integrated water vapor in millimeters of equivalent liquid-water depth (HRRR PWAT analysis, fixed absolute scale): <b>LOWEST 0</b> dark-blue dry column &rarr; blue &rarr; cyan &rarr; green &rarr; yellow &rarr; orange &rarr; <b>HIGHEST+ 60</b> deep-purple very moist. Same moisture always shows the same color; above 60 mm clamps into deep purple. Total atmospheric-column moisture — not relative humidity.</p><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP HRRR 3 km precipitable water analysis, hourly cycles).</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <NetworkLink>
+      <name>☁️ LIVE PRECIPITABLE WATER VAPOR — auto-refresh</name>
+      <description><![CDATA[<p><b>Time fetched:</b> Oct 5, 2026 11:05PM EDT</p>]]></description>
+      <Link>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/Great_Lakes_Live_Precipitable_Water_Vapor.kml</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>3600</refreshInterval>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>

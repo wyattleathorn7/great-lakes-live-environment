@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>💡 LIVE LIGHT POLLUTION</name>
+    <description><![CDATA[<p><b>Time fetched:</b> Oct 5, 2026 11:10PM EDT</p><h2>LIVE LIGHT POLLUTION</h2><p><b>Gradient key</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/light_pollution/legend.png" width="600" alt="gradient key"><br>Artificial night-sky brightness as a relative index 0-100 (NASA VIIRS Black Marble annual composite, fixed absolute scale): <b>LOWEST 0</b> near-black pristine dark sky &rarr; navy &rarr; blue rural &rarr; teal fringe &rarr; green suburban &rarr; yellow &rarr; orange urban &rarr; <b>HIGHEST+ 100</b> near-white urban core. Same brightness always shows the same color. Composite visualization index — not raw radiance units; natural sky brightness (moonlight, airglow) is not separated per-pixel, city glow dominates the signal.</p><p>This entry auto-refreshes from the live overlay (source: NASA VIIRS Black Marble annual nighttime-lights composite via NASA GIBS (Román et al., Suomi NPP VIIRS Day/Night Band)).</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <NetworkLink>
+      <name>💡 LIVE LIGHT POLLUTION — auto-refresh</name>
+      <description><![CDATA[<p><b>Time fetched:</b> Oct 5, 2026 11:10PM EDT</p>]]></description>
+      <Link>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/Great_Lakes_Live_Light_Pollution.kml</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>21600</refreshInterval>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>

@@ -706,7 +706,76 @@ the other products and the Pages publish proceed normally.
   third-party current maps (not authoritative); wind-derived or
   buoy-interpolated vectors (fabrication, forbidden).
 
+## 21. Atmospheric moisture/visibility/particle/light gradients (8 products, same footprint as Leaf Color)
+
+- **Coverage inheritance (Leaf Color analyzed, never edited):** the
+  existing LIVE LEAF COLOR footprint is the whole
+  lon −93…−73.5 / lat 40.5…49.5 rectangle at 1800×1175 (WGS84), with
+  open lake water cut by the shared shoreline mask (land-only signal).
+  All eight products below read the SAME single authoritative canvas
+  (`config/great_lakes_bounds.json` via `load_bounds()`) and write the
+  SAME `LatLonBox` into every KML, so toggling any of them against Leaf
+  Color aligns exactly. Atmospheric fields are valid over land AND water
+  (like air temperature / pressure / solar / aurora), so they paint the
+  FULL basin rectangle with no shoreline cut; only missing source data
+  is transparent. No Leaf Color raster, KML, KMZ, bounds, source,
+  refresh logic, styling, legend, or folder description was modified.
+- **🌙 Visibility — NCEP HRRR `VIS` surface analysis (m → statute miles),
+  hourly cycles.** Direct analysis field, FIXED 0–30 mi continuous
+  spectrum. Meteorological (human/mariner/pilot) visibility, never
+  astronomical seeing. Freshness: LIVE / CURRENT MODEL (analysis).
+- **♨️ Relative humidity — NCEP HRRR `RH` 2 m analysis (%), hourly
+  cycles.** FIXED 0–100 % spectrum. Near-surface saturation percentage;
+  never PWAT or dew point. Freshness: LIVE / CURRENT MODEL (analysis).
+- **☁️ Precipitable water vapor — NCEP HRRR `PWAT` entire-atmosphere
+  analysis (kg m⁻² = mm), hourly cycles.** Column-integrated moisture,
+  FIXED 0–60 mm spectrum. Freshness: LIVE / CURRENT MODEL (analysis).
+- **💡 Light pollution — NASA VIIRS Black Marble annual nighttime-lights
+  composite (Suomi NPP DNB, Román et al.) via the public NASA GIBS WMTS
+  (`VIIRS_Black_Marble`, currently the 2016 annual; 8 level-5 tiles
+  mosaicked to the canvas).** Displayed as a RELATIVE brightness index
+  0–100 (linear map of the published composite visualization —
+  documented as imagery-derived, never fabricated radiance units).
+  Continuous environmental surface (no preserve points). Hourly check =
+  one probe-tile content hash; rebuilds only when NASA publishes a
+  newer composite. Freshness: LATEST AVAILABLE COMPOSITE. Folder text
+  distinguishes dominant artificial glow from natural night-sky
+  brightness (moonlight/airglow). Rejected: EOG annual downloads
+  (login-walled 302), commercial astronomy APIs.
+- **🌫️ Air quality — ECMWF CAMS PM2.5 near-surface analysis via the
+  Open-Meteo Air Quality API (free, no key), sampled on a 48×30 basin
+  grid and bilinearly resampled to the canvas.** Underlying variable
+  PM2.5 (µg/m³), EPA-breakpoint-anchored FIXED 0–150 scale; labeled
+  MODELED analysis output everywhere (never station observations, never
+  aerosol optical depth). Hourly check (single-point probe); rebuilds
+  only on a newer CAMS valid hour. Title stays LIVE AIR QUALITY.
+- **💦 Condensation — DERIVED index 0–100 from HRRR TMP+DPT+RH (2 m),
+  hourly cycles.** Formula (scripts/derived_moisture.py):
+  `100×(0.65×clip((2.5−S)/2.5,0,1)^0.7 + 0.35×clip((RH−60)/40,0,1))`,
+  S = TMP−DPT (°C). No wind, no visibility inputs — structurally
+  distinct from fog risk, RH, and dew point. Labeled DERIVED.
+- **🌫️ Fog risk / active fog — DERIVED index 0–100 from HRRR
+  TMP+DPT+RH (2 m) + 10 m wind + VIS, hourly cycles.** Base =
+  `100×rh_factor×spread_factor×calm_factor`
+  (`clip((RH−70)/30,0,1)`, `clip((3−S)/3,0,1)`,
+  `clip((6−wspd)/6,0.35,1)`); visibility gate only RAISES the index
+  (VIS<1000 m & RH≥95 → ≥85 ACTIVE FOG; 1000–5000 m → ≥60). Calm
+  saturated air scores high before visibility collapses, so this is not
+  a copy of the visibility layer. Labeled DERIVED.
+- **🧊 Dew point — NCEP HRRR `DPT` 2 m analysis (K → °F), hourly
+  cycles.** Actual dew-point temperature, FIXED −20…90 °F spectrum;
+  never depression/spread/probability/RH. Freshness: LIVE / CURRENT
+  MODEL (analysis).
+- **Refresh/skip contract (all 8):** hourly workflow jobs; deterministic
+  source-version `?v=` (HRRR cycle, CAMS hour, Black Marble probe hash);
+  skip-and-rewrite-KML when the source is unchanged; exit 2 keeps the
+  previous raster. Legends are 640×230 continuous keys painted with the
+  SAME stops as the raster; KMLs carry one GroundOverlay + entry
+  NetworkLink, zero vector geometry, zero ScreenOverlay (client-rejected;
+  legends live in descriptions + `legend.png`, per repo rule).
+
 ## 13. Game-fish distribution gradients (16 species, `gamefish_<species>`)
+
 
 - **What:** live modeled distribution / habitat-likelihood rasters (0..1 index,
   NOT fish counts) for walleye, yellow perch, lake trout, steelhead, brown

@@ -631,6 +631,24 @@ def main():
     check("gfish-meta-telemetry",
           "evidence_events" in _mw.get("telemetry", {}))
 
+    # ---- derived moisture indices (fog + condensation, offline) ----
+    import derived_moisture as _dm
+    _sat = _dm.condensation_index(15.0, 100.0, 15.0)   # saturated
+    _dry = _dm.condensation_index(25.0, 20.0, 5.0)     # dry, big spread
+    check("cond-saturated-100", bool(abs(float(_sat) - 100.0) < 1e-9), _sat)
+    check("cond-dry-low", bool(float(_dry) < 20.0), _dry)
+    check("cond-nan-in-nan-out",
+          bool(_np.isnan(_dm.condensation_index(float("nan"), 90.0, 10.0))))
+    _fog_calm = _dm.fog_risk_index(12.0, 100.0, 11.5, 20000.0, 0.5)
+    _fog_dry = _dm.fog_risk_index(25.0, 20.0, 5.0, 20000.0, 2.0)
+    _fog_obs = _dm.fog_risk_index(12.0, 96.0, 11.0, 400.0, 8.0)
+    check("fog-calm-saturated-high", bool(float(_fog_calm) > 70.0), _fog_calm)
+    check("fog-dry-zero", bool(float(_fog_dry) == 0.0), _fog_dry)
+    check("fog-active-gate", bool(float(_fog_obs) >= 85.0), _fog_obs)
+    # visibility gate only raises: same thermodynamics, good vis <= bad vis
+    _fog_clear = _dm.fog_risk_index(12.0, 100.0, 11.5, 30000.0, 0.5)
+    check("fog-gate-monotone", bool(float(_fog_calm) >= float(_fog_clear)))
+
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     return 1 if FAIL else 0
 
@@ -651,7 +669,15 @@ def _k(p):
             "surface_currents": "Surface_Currents",
             "precipitation": "Precipitation",
             "aurora": "Ovation_Aurora_Forecast",
-            "bacteria": "Water_Quality"}[p]
+            "bacteria": "Water_Quality",
+            "visibility": "Atmospheric_Visibility",
+            "humidity": "Relative_Humidity",
+            "precipitable_water": "Precipitable_Water_Vapor",
+            "light_pollution": "Light_Pollution",
+            "air_quality": "Air_Quality",
+            "condensation": "Condensation",
+            "fog": "Fog_Risk",
+            "dew_point": "Dew_Point"}[p]
 
 
 if __name__ == "__main__":

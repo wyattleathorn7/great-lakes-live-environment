@@ -1,0 +1,18 @@
+{
+  "product": "dew_point",
+  "title": "LIVE DEW POINT",
+  "freshness_label": "LIVE / CURRENT MODEL (analysis), hourly cycles",
+  "source_name": "NOAA/NCEP HRRR 3 km 2 m dew point analysis, hourly cycles",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/{date_dir}/conus/hrrr.t{cycle}z.wrfsfcf00.grib2",
+  "variable": "DPT 2 m above ground, analysis step (actual dew-point temperature, not depression/spread/probability)",
+  "source_units": "K",
+  "display_units": "degF",
+  "valid_min_c": -45.0,
+  "valid_max_c": 35.0,
+  "color_min_f": -20.0,
+  "color_max_f": 90.0,
+  "refresh_interval_seconds": 3600,
+  "what": "Near-surface (2 m) dew-point temperature from the operational HRRR analysis: the temperature to which air must cool for saturation. High dew points mark muggy, moisture-laden air masses over the lakes; low dew points mark dry continental air. Displayed in degrees Fahrenheit like the project's air-temperature layer.",
+  "field": "Dew-point science (atmospheric thermodynamics) treats dew point as the absolute moisture variable: unlike relative humidity it does not shift with temperature alone, so it tracks air-mass moisture through day and night. It sets condensation onset, fog potential, and human heat stress, and is reported here as an actual temperature in degrees Fahrenheit."
+}

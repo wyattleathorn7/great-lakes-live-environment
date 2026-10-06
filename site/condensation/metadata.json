@@ -1,0 +1,43 @@
+{
+  "product": "condensation",
+  "title": "LIVE CONDENSATION",
+  "freshness": "LIVE / CURRENT MODEL (derived HRRR analysis), hourly cycles",
+  "noaa_source": "NOAA/NCEP HRRR 3 km 2 m TMP+DPT+RH analysis, hourly cycles (derived condensation-favorability index)",
+  "product_name": "NOAA/NCEP HRRR 3 km 2 m TMP+DPT+RH analysis, hourly cycles (derived condensation-favorability index)",
+  "variable": "Derived condensation-favorability index 0-100 from dew-point depression + relative humidity (no wind, no visibility inputs)",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
+  "data_time_utc": "2026-10-05 10:00 PM EDT",
+  "source_last_modified_utc": "n/a (NOMADS)",
+  "processing_time_utc": "2026-10-05 11:05 PM EDT",
+  "units": "condensation index 0-100 (display; derived, see derivation)",
+  "spatial_resolution_source": "~3 km HRRR CONUS grid fields, mean-binned to the common canvas, index computed in canvas space",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.0,
+  "color_scale_max": 100.0,
+  "color_scale_units": "index",
+  "missing_data_treatment": "inputs gated to physical ranges pre-binning; index computed only where TMP+DPT+RH valid; full basin rectangle, no shoreline cut; missing analysis transparent; never zero-filled.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    230
+  ],
+  "legend_scale_html": "Condensation-favorability index 0-100 (DERIVED from HRRR analysis, fixed absolute scale): <b>LOWEST 0</b> tan dry &rarr; yellow &rarr; green &rarr; teal favorable &rarr; blue very favorable &rarr; <b>HIGHEST+ 100</b> deep-blue saturated. Same index always shows the same color. Saturation closeness from depression plus humidity \u2014 not relative humidity renamed, not dew point renamed, no fog visibility gate.",
+  "model_cycle": "hrrr.20261006 t02z",
+  "source_id": "hrrr-hrrr.20261006-t02z-condensation-anl",
+  "source_version": "hrrr-hrrr.20261006-t02z-condensation-anl",
+  "stats": {
+    "valid_cells": 2114386,
+    "current_min": 0.0,
+    "current_max": 93.4838008450394,
+    "derivation": "condensation = 100*(0.65*clip((2.5-S)/2.5,0,1)^0.7 + 0.35*clip((RH-60)/40,0,1)), S = TMP-DPT in C deg. Answers how close near-surface air is to saturation (dew/frost/film condensation potential). Uses no wind or visibility data, unlike fog risk; is not relative humidity or dew point itself."
+  },
+  "folder_html": "<h2>LIVE CONDENSATION</h2><p>A derived condensation-favorability index from operational HRRR temperature, dew point, and humidity analysis: where near-surface air sits closest to saturation, dew, frost, and moisture films form on boats, docks, optics, and shoreline surfaces. High values flag nights and mornings when surfaces stay wet. Derivation: condensation = 100*(0.65*clip((2.5-S)/2.5,0,1)^0.7 + 0.35*clip((RH-60)/40,0,1)), S = TMP-DPT in C deg. Answers how close near-surface air is to saturation (dew/frost/film condensation potential). Uses no wind or visibility data, unlike fog risk; is not relative humidity or dew point itself.</p><p>Condensation science (surface thermodynamics and boundary-layer meteorology) studies the phase change when humid air contacts surfaces at or below the dew point. The dew-point depression (temperature minus dew point) measures the remaining cooling needed; relative humidity weights how broadly saturated the air mass is. Together they predict dew and frost formation relevant to agriculture, infrastructure, and Great Lakes marine operations.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/condensation/legend.png?v=hrrr-hrrr.20261006-t02z-condensation-anl\" width=\"600\" alt=\"key\"><br>Condensation-favorability index 0-100 (DERIVED from HRRR analysis, fixed absolute scale): <b>LOWEST 0</b> tan dry &rarr; yellow &rarr; green &rarr; teal favorable &rarr; blue very favorable &rarr; <b>HIGHEST+ 100</b> deep-blue saturated. Same index always shows the same color. Saturation closeness from depression plus humidity \u2014 not relative humidity renamed, not dew point renamed, no fog visibility gate.<br><b>Units:</b> condensation index 0-100 (display; derived, see derivation)<br><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m TMP+DPT+RH analysis, hourly cycles (derived condensation-favorability index)<br><b>Update:</b> Checked hourly; republishes only on a newer HRRR cycle.<br><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl</a></p>"
+}

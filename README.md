@@ -1,7 +1,7 @@
 # Great Lakes Live Environment
 
-One automated GitHub system publishing **thirty-four independent live raster layers**
-for Google Earth: eighteen environmental layers from official NOAA/NASA operational
+One automated GitHub system publishing **forty-two independent live raster layers**
+for Google Earth: twenty-six environmental layers from official NOAA/NASA operational
 sources, plus **sixteen live game-fish distribution gradients** (see below).
 
 | Layer | Source | Refresh wording |
@@ -26,6 +26,14 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | 🌧️ Live Precipitation | IEM (Iowa State) CONUS NEXRAD N0Q base reflectivity from NOAA WSR-88D (dBZ, all-season rain/snow/storms), 5-min mosaic; basin rectangle, no-echo transparent | LIVE / CURRENT OBSERVATION (NEXRAD 5-min mosaic) |
 | 🌌 Live Ovation Aurora Forecast | NOAA/SWPC OVATION Prime auroral grid (`ovation_aurora_latest.json`) + hemispheric power / forecast Kp context; fixed 0–30+ intensity scale, full basin rectangle (same footprint as Leaf Color) | LIVE / CURRENT FORECAST (OVATION Prime, hourly check) |
 | 💧 Live Water Quality | USGS Water Quality Portal E. coli/enterococci/fecal coliform (7-day newest-per-station halos) under EPA BEACON + EPA 2012 RWQC & Red Book thresholds (GM/STV/BAV); transparent NO DATA where unobserved, water-only all five lakes | SOURCE CHECKED HOURLY / LATEST VALID OBSERVATION |
+| 🌙 Live Atmospheric Visibility | NCEP HRRR `VIS` surface analysis (m → statute miles), FIXED 0–30 mi scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| ♨️ Live Relative Humidity | NCEP HRRR `RH` 2 m analysis (%), FIXED 0–100 % scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| ☁️ Live Precipitable Water Vapor | NCEP HRRR `PWAT` entire-atmosphere analysis (kg m⁻² = mm), FIXED 0–60 mm scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
+| 💡 Live Light Pollution | NASA VIIRS Black Marble annual nighttime-lights composite via GIBS WMTS (relative brightness index 0–100) | LATEST AVAILABLE COMPOSITE (annual, hourly check) |
+| 🌫️ Live Air Quality | ECMWF CAMS PM2.5 analysis via Open-Meteo (µg/m³, EPA-anchored FIXED 0–150 scale, labeled modeled) | LIVE / CURRENT MODEL (hourly check) |
+| 💦 Live Condensation | HRRR TMP+DPT+RH-derived condensation-favorability index 0–100 (**derived**, no wind/visibility inputs) | LIVE / CURRENT MODEL (derived analysis), hourly cycles |
+| 🌫️ Live Fog Risk/Active Fog | HRRR TMP+DPT+RH+10 m wind+VIS-derived fog-risk index 0–100 with active-fog visibility gate (**derived**) | LIVE / CURRENT MODEL (derived analysis), hourly cycles |
+| 🧊 Live Dew Point | NCEP HRRR `DPT` 2 m analysis (K → °F), FIXED −20…90 °F scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 
 Sixteen additional **live game-fish distribution gradients** (walleye, yellow perch,
 lake trout, steelhead, brown trout, smallmouth bass, northern pike, muskellunge,
@@ -160,6 +168,14 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_precipitation.py`,
 `python scripts/build_aurora.py`,
 `python scripts/build_bacteria.py`,
+`python scripts/build_visibility.py`,
+`python scripts/build_humidity.py`,
+`python scripts/build_precipitable_water.py`,
+`python scripts/build_light_pollution.py`,
+`python scripts/build_air_quality.py`,
+`python scripts/build_condensation.py`,
+`python scripts/build_fog.py`,
+`python scripts/build_dew_point.py`,
 `python scripts/build_gamefish.py --species walleye` (16 species: walleye,
 yellow_perch, lake_trout, steelhead, brown_trout, smallmouth_bass,
 northern_pike, muskellunge, lake_sturgeon, lake_whitefish, chinook_salmon,

@@ -69,6 +69,22 @@ PRODUCTS = {
                "max_opaque_min": 0},  # quiet-oval intervals => transparent OK (like clear-sky cloud)
     "bacteria": {"kml": "Great_Lakes_Live_Water_Quality.kml",
                  "max_opaque_min": 0},  # NO DATA water is transparent; halos only where sampled
+    "visibility": {"kml": "Great_Lakes_Live_Atmospheric_Visibility.kml",
+                   "max_opaque_min": 10_000},
+    "humidity": {"kml": "Great_Lakes_Live_Relative_Humidity.kml",
+                 "max_opaque_min": 10_000},
+    "precipitable_water": {"kml": "Great_Lakes_Live_Precipitable_Water_Vapor.kml",
+                           "max_opaque_min": 10_000},
+    "light_pollution": {"kml": "Great_Lakes_Live_Light_Pollution.kml",
+                        "max_opaque_min": 10_000},
+    "air_quality": {"kml": "Great_Lakes_Live_Air_Quality.kml",
+                    "max_opaque_min": 10_000},
+    "condensation": {"kml": "Great_Lakes_Live_Condensation.kml",
+                     "max_opaque_min": 10_000},
+    "fog": {"kml": "Great_Lakes_Live_Fog_Risk.kml",
+            "max_opaque_min": 10_000},
+    "dew_point": {"kml": "Great_Lakes_Live_Dew_Point.kml",
+                  "max_opaque_min": 10_000},
     "gamefish_walleye": {"kml": "WALLEYE_LIVE.kml",
                          "max_opaque_min": 10_000},
     "gamefish_yellow_perch": {"kml": "YELLOW_PERCH_LIVE.kml",
@@ -196,7 +212,10 @@ def main():
                 elif product in ("cloud_cover", "surface_pressure",
                                    "uv_index", "air_temperature",
                                    "solar_radiation", "precipitation",
-                                   "aurora"):
+                                   "aurora", "visibility", "humidity",
+                                   "precipitable_water", "light_pollution",
+                                   "air_quality", "condensation", "fog",
+                                   "dew_point"):
                     # basin-rectangle layers (user requirement): full
                     # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
                     # (Leaf/snow stay land-cut: leaves and ground snow
@@ -263,6 +282,22 @@ def main():
                 failures.append(f"{product}: aurora scale must be 0-30, got {lo}-{hi}")
             if product == "bacteria" and (lo, hi) != (10.0, 5000.0):
                 failures.append(f"{product}: bacteria scale must be 10-5000, got {lo}-{hi}")
+            if product == "visibility" and (lo, hi) != (0.0, 30.0):
+                failures.append(f"{product}: visibility scale must be 0-30 mi, got {lo}-{hi}")
+            if product == "humidity" and (lo, hi) != (0.0, 100.0):
+                failures.append(f"{product}: humidity scale must be 0-100 %, got {lo}-{hi}")
+            if product == "precipitable_water" and (lo, hi) != (0.0, 60.0):
+                failures.append(f"{product}: PWAT scale must be 0-60 mm, got {lo}-{hi}")
+            if product == "light_pollution" and (lo, hi) != (0.0, 100.0):
+                failures.append(f"{product}: light scale must be 0-100 index, got {lo}-{hi}")
+            if product == "air_quality" and (lo, hi) != (0.0, 150.0):
+                failures.append(f"{product}: AQI scale must be 0-150 ug/m3, got {lo}-{hi}")
+            if product == "condensation" and (lo, hi) != (0.0, 100.0):
+                failures.append(f"{product}: condensation scale must be 0-100, got {lo}-{hi}")
+            if product == "fog" and (lo, hi) != (0.0, 100.0):
+                failures.append(f"{product}: fog scale must be 0-100, got {lo}-{hi}")
+            if product == "dew_point" and (lo, hi) != (-20.0, 90.0):
+                failures.append(f"{product}: dew point scale must be -20-90 F, got {lo}-{hi}")
             if product.startswith("gamefish_") and not (
                     (lo, hi) == (0.0, 1.0)):
                 failures.append(f"{product}: gamefish scale must be 0-1, got {lo}-{hi}")
@@ -452,7 +487,11 @@ def main():
                                "uv_index", "cloud_cover",
                                "surface_pressure", "wave_direction",
                                "surface_currents",
-                               "precipitation", "aurora", "bacteria"):
+                               "precipitation", "aurora", "bacteria",
+                               "visibility", "humidity",
+                               "precipitable_water", "light_pollution",
+                               "air_quality", "condensation", "fog",
+                               "dew_point"):
                     if "<Folder>" not in text:
                         failures.append(f"{product}: no product Folder in live KML")
                     for _need in ("LOWEST", "HIGHEST+", "legend.png?v="):

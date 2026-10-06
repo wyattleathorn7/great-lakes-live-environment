@@ -1,0 +1,15 @@
+{
+  "product": "light_pollution",
+  "title": "LIVE LIGHT POLLUTION",
+  "freshness_label": "LATEST AVAILABLE COMPOSITE (annual, hourly check)",
+  "source_name": "NASA VIIRS Black Marble annual nighttime-lights composite via NASA GIBS (Román et al., Suomi NPP VIIRS Day/Night Band)",
+  "source_url": "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/1.0.0/WMTSCapabilities.xml",
+  "variable": "Annual artificial nighttime brightness distribution (VIIRS DNB composite visualization, relative brightness index)",
+  "source_units": "relative brightness (composite visualization)",
+  "display_units": "relative brightness index 0-100",
+  "color_min_idx": 0.0,
+  "color_max_idx": 100.0,
+  "refresh_interval_seconds": 21600,
+  "what": "Environmental artificial night-sky brightness around the Great Lakes from NASA's VIIRS Black Marble annual composite: a continuous surface showing where city glow and development illuminate the night most strongly and where genuinely dark skies remain. Bright cores mark metropolitan light domes; dark blues mark the darkest shorelines and waters.",
+  "field": "Light-pollution science (a branch of environmental photometry and ecology) studies artificial skyglow from electric lighting: it disrupts circadian rhythms in wildlife and humans, wastes energy, and erases natural starlight. Satellite day/night-band radiometry separates artificial glow from natural night-sky brightness (moonlight, airglow, starlight), mapping an environmental pressure distinct from any single observatory or preserve boundary."
+}

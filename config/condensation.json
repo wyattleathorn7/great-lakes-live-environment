@@ -1,0 +1,17 @@
+{
+  "product": "condensation",
+  "title": "LIVE CONDENSATION",
+  "freshness_label": "LIVE / CURRENT MODEL (derived HRRR analysis), hourly cycles",
+  "source_name": "NOAA/NCEP HRRR 3 km 2 m TMP+DPT+RH analysis, hourly cycles (derived condensation-favorability index)",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/{date_dir}/conus/hrrr.t{cycle}z.wrfsfcf00.grib2",
+  "variable": "Derived condensation-favorability index 0-100 from dew-point depression + relative humidity (no wind, no visibility inputs)",
+  "source_units": "index 0-100 (derived)",
+  "display_units": "condensation index 0-100",
+  "color_min_idx": 0.0,
+  "color_max_idx": 100.0,
+  "refresh_interval_seconds": 3600,
+  "derivation": "condensation = 100*(0.65*clip((2.5-S)/2.5,0,1)^0.7 + 0.35*clip((RH-60)/40,0,1)), S = TMP-DPT in C deg. Answers how close near-surface air is to saturation (dew/frost/film condensation potential). Uses no wind or visibility data, unlike fog risk; is not relative humidity or dew point itself.",
+  "what": "A derived condensation-favorability index from operational HRRR temperature, dew point, and humidity analysis: where near-surface air sits closest to saturation, dew, frost, and moisture films form on boats, docks, optics, and shoreline surfaces. High values flag nights and mornings when surfaces stay wet.",
+  "field": "Condensation science (surface thermodynamics and boundary-layer meteorology) studies the phase change when humid air contacts surfaces at or below the dew point. The dew-point depression (temperature minus dew point) measures the remaining cooling needed; relative humidity weights how broadly saturated the air mass is. Together they predict dew and frost formation relevant to agriculture, infrastructure, and Great Lakes marine operations."
+}

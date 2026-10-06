@@ -26,10 +26,10 @@ on:
         default: "all"
         type: choice
         options: ["all", "wave_height", "water_temperature", "ice_coverage",
-                  "ice_thickness", "ice_type", "wind", "leaf_color",
-                  "chlorophyll", "water_clarity", "solar_radiation",
-                  "air_temperature", "snow_coverage", "uv_index",
-                  "cloud_cover", "surface_pressure", "wave_direction", "surface_currents", "precipitation", "aurora", "bacteria", "gamefish"]
+                   "ice_thickness", "ice_type", "wind", "leaf_color",
+                   "chlorophyll", "water_clarity", "solar_radiation",
+                   "air_temperature", "snow_coverage", "uv_index",
+                   "cloud_cover", "surface_pressure", "wave_direction", "surface_currents", "precipitation", "aurora", "bacteria", "visibility", "humidity", "precipitable_water", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -692,6 +692,262 @@ jobs:
             output/state/bacteria_stations.json
           if-no-files-found: warn
 
+  visibility:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'visibility' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update atmospheric visibility
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_visibility.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Visibility source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-visibility
+          path: |
+            site/visibility
+            site/kml/Great_Lakes_Live_Atmospheric_Visibility.kml
+            site/kml/live/Great_Lakes_Live_Atmospheric_Visibility.kml
+            kml/Great_Lakes_Live_Atmospheric_Visibility.kml
+            output/state/visibility.json
+          if-no-files-found: warn
+
+  humidity:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'humidity' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update relative humidity
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_humidity.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Humidity source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-humidity
+          path: |
+            site/humidity
+            site/kml/Great_Lakes_Live_Relative_Humidity.kml
+            site/kml/live/Great_Lakes_Live_Relative_Humidity.kml
+            kml/Great_Lakes_Live_Relative_Humidity.kml
+            output/state/humidity.json
+          if-no-files-found: warn
+
+  precipitable_water:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'precipitable_water' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update precipitable water vapor
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_precipitable_water.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "PWAT source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-precipitable_water
+          path: |
+            site/precipitable_water
+            site/kml/Great_Lakes_Live_Precipitable_Water_Vapor.kml
+            site/kml/live/Great_Lakes_Live_Precipitable_Water_Vapor.kml
+            kml/Great_Lakes_Live_Precipitable_Water_Vapor.kml
+            output/state/precipitable_water.json
+          if-no-files-found: warn
+
+  light_pollution:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'light_pollution' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update light pollution
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_light_pollution.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Light-pollution source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-light_pollution
+          path: |
+            site/light_pollution
+            site/kml/Great_Lakes_Live_Light_Pollution.kml
+            site/kml/live/Great_Lakes_Live_Light_Pollution.kml
+            kml/Great_Lakes_Live_Light_Pollution.kml
+            output/state/light_pollution.json
+          if-no-files-found: warn
+
+  air_quality:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'air_quality' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update air quality
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_air_quality.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Air-quality source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-air_quality
+          path: |
+            site/air_quality
+            site/kml/Great_Lakes_Live_Air_Quality.kml
+            site/kml/live/Great_Lakes_Live_Air_Quality.kml
+            kml/Great_Lakes_Live_Air_Quality.kml
+            output/state/air_quality.json
+          if-no-files-found: warn
+
+  condensation:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'condensation' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update condensation
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_condensation.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Condensation source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-condensation
+          path: |
+            site/condensation
+            site/kml/Great_Lakes_Live_Condensation.kml
+            site/kml/live/Great_Lakes_Live_Condensation.kml
+            kml/Great_Lakes_Live_Condensation.kml
+            output/state/condensation.json
+          if-no-files-found: warn
+
+  fog:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'fog' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update fog risk
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_fog.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Fog source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-fog
+          path: |
+            site/fog
+            site/kml/Great_Lakes_Live_Fog_Risk.kml
+            site/kml/live/Great_Lakes_Live_Fog_Risk.kml
+            kml/Great_Lakes_Live_Fog_Risk.kml
+            output/state/fog.json
+          if-no-files-found: warn
+
+  dew_point:
+    if: ${{ github.event.schedule == '15 * * * *' || inputs.product == 'all' || inputs.product == 'dew_point' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update dew point
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          python scripts/build_dew_point.py; rc=$?
+          if [ $rc -eq 2 ]; then echo "Dew-point source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-dew_point
+          path: |
+            site/dew_point
+            site/kml/Great_Lakes_Live_Dew_Point.kml
+            site/kml/live/Great_Lakes_Live_Dew_Point.kml
+            kml/Great_Lakes_Live_Dew_Point.kml
+            output/state/dew_point.json
+          if-no-files-found: warn
+
   gamefish:
     # Nine species, one matrix leg each: independent products, independent
     # failures (same failure isolation as the twelve environment products).
@@ -744,7 +1000,7 @@ jobs:
           if-no-files-found: warn
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, surface_currents, precipitation, aurora, bacteria, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, surface_currents, precipitation, aurora, bacteria, visibility, humidity, precipitable_water, light_pollution, air_quality, condensation, fog, dew_point, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

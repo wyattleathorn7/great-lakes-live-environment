@@ -1,0 +1,18 @@
+{
+  "product": "humidity",
+  "title": "LIVE RELATIVE HUMIDITY",
+  "freshness_label": "LIVE / CURRENT MODEL (analysis), hourly cycles",
+  "source_name": "NOAA/NCEP HRRR 3 km 2 m relative humidity analysis, hourly cycles",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/{date_dir}/conus/hrrr.t{cycle}z.wrfsfcf00.grib2",
+  "variable": "RH 2 m above ground, analysis step",
+  "source_units": "%",
+  "display_units": "%",
+  "valid_min_pct": 0.0,
+  "valid_max_pct": 100.0,
+  "color_min_pct": 0.0,
+  "color_max_pct": 100.0,
+  "refresh_interval_seconds": 3600,
+  "what": "Near-surface (2 m) relative humidity from the operational HRRR analysis: the percentage saturation of air with water vapor at its current temperature. High values precede fog, dew, and cloud formation; low values accompany dry air, elevated evaporation, and fire-weather concerns around the Great Lakes basin.",
+  "field": "Humidity science (atmospheric thermodynamics) studies water vapor as the fuel of weather: relative humidity governs evaporation, condensation, cloud nucleation, and atmospheric stability. It is distinct from absolute moisture measures such as precipitable water vapor and dew point, and is reported in percent."
+}

@@ -1,0 +1,45 @@
+{
+  "product": "light_pollution",
+  "title": "LIVE LIGHT POLLUTION",
+  "freshness": "LATEST AVAILABLE COMPOSITE (annual, hourly check)",
+  "noaa_source": "NASA VIIRS Black Marble annual nighttime-lights composite via NASA GIBS (Rom\u00e1n et al., Suomi NPP VIIRS Day/Night Band)",
+  "product_name": "NASA VIIRS Black Marble annual nighttime-lights composite via NASA GIBS (Rom\u00e1n et al., Suomi NPP VIIRS Day/Night Band)",
+  "variable": "Annual artificial nighttime brightness distribution (VIIRS DNB composite visualization, relative brightness index)",
+  "source_url": "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/1.0.0/WMTSCapabilities.xml",
+  "data_time_utc": "2016 annual composite",
+  "source_last_modified_utc": "n/a (WMTS tiles)",
+  "processing_time_utc": "2026-10-05 11:10 PM EDT",
+  "units": "relative brightness index 0-100 (display; linear map of the published composite visualization)",
+  "spatial_resolution_source": "NASA GIBS 500m WMTS tiles (level 5) mosaicked to the common canvas",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.0,
+  "color_scale_max": 100.0,
+  "color_scale_units": "index",
+  "missing_data_treatment": "linear 100*luminance/255 mapping of the published composite; full basin rectangle, no shoreline cut; untiled canvas pixels transparent; never zero-filled.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    230
+  ],
+  "legend_scale_html": "Artificial night-sky brightness as a relative index 0-100 (NASA VIIRS Black Marble annual composite, fixed absolute scale): <b>LOWEST 0</b> near-black pristine dark sky &rarr; navy &rarr; blue rural &rarr; teal fringe &rarr; green suburban &rarr; yellow &rarr; orange urban &rarr; <b>HIGHEST+ 100</b> near-white urban core. Same brightness always shows the same color. Composite visualization index \u2014 not raw radiance units; natural sky brightness (moonlight, airglow) is not separated per-pixel, city glow dominates the signal.",
+  "model_cycle": "Black-Marble-2016 probe a85bf00c2e78892d",
+  "source_id": "gibs-black-marble-2016-a85bf00c2e78892d",
+  "source_version": "gibs-black-marble-2016-a85bf00c2e78892d",
+  "stats": {
+    "valid_cells": 2115000,
+    "current_min": 1.9563398692810459,
+    "current_max": 99.78692810457517,
+    "composite_year": "2016",
+    "probe_hash": "a85bf00c2e78892d",
+    "data_nature": "annual composite visualization"
+  },
+  "folder_html": "<h2>LIVE LIGHT POLLUTION</h2><p>Environmental artificial night-sky brightness around the Great Lakes from NASA's VIIRS Black Marble annual composite: a continuous surface showing where city glow and development illuminate the night most strongly and where genuinely dark skies remain. Bright cores mark metropolitan light domes; dark blues mark the darkest shorelines and waters.</p><p>Light-pollution science (a branch of environmental photometry and ecology) studies artificial skyglow from electric lighting: it disrupts circadian rhythms in wildlife and humans, wastes energy, and erases natural starlight. Satellite day/night-band radiometry separates artificial glow from natural night-sky brightness (moonlight, airglow, starlight), mapping an environmental pressure distinct from any single observatory or preserve boundary.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/light_pollution/legend.png?v=gibs-black-marble-2016-a85bf00c2e78892d\" width=\"600\" alt=\"key\"><br>Artificial night-sky brightness as a relative index 0-100 (NASA VIIRS Black Marble annual composite, fixed absolute scale): <b>LOWEST 0</b> near-black pristine dark sky &rarr; navy &rarr; blue rural &rarr; teal fringe &rarr; green suburban &rarr; yellow &rarr; orange urban &rarr; <b>HIGHEST+ 100</b> near-white urban core. Same brightness always shows the same color. Composite visualization index \u2014 not raw radiance units; natural sky brightness (moonlight, airglow) is not separated per-pixel, city glow dominates the signal.<br><b>Units:</b> relative brightness index 0-100 (display; linear map of the published composite visualization)<br><b>Source:</b> NASA VIIRS Black Marble annual nighttime-lights composite via NASA GIBS (Rom\u00e1n et al., Suomi NPP VIIRS Day/Night Band)<br><b>Update:</b> Composite checked hourly via tile probe; republishes only when NASA publishes a newer annual composite.<br><b>Provenance:</b> <a href=\"https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/1.0.0/WMTSCapabilities.xml\">https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/1.0.0/WMTSCapabilities.xml</a></p>"
+}

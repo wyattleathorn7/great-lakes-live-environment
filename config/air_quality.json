@@ -1,0 +1,17 @@
+{
+  "product": "air_quality",
+  "title": "LIVE AIR QUALITY",
+  "freshness_label": "LIVE / CURRENT MODEL (CAMS analysis), hourly check",
+  "source_name": "ECMWF CAMS European air-quality analysis via Open-Meteo Air Quality API (PM2.5, no key, hourly)",
+  "source_url": "https://open-meteo.com/en/docs/air-quality-api",
+  "variable": "PM2.5 near-surface particulate concentration (CAMS model analysis; clearly identified as modeled, not observed)",
+  "source_units": "ug/m3",
+  "display_units": "ug/m3 PM2.5",
+  "valid_min": 0.0,
+  "valid_max": 500.0,
+  "color_min": 0.0,
+  "color_max": 150.0,
+  "refresh_interval_seconds": 3600,
+  "what": "Near-surface fine-particulate (PM2.5) conditions from the CAMS atmospheric-composition analysis: a continuous field flagging wildfire-smoke intrusions, urban haze, and regional pollutant transport over the Great Lakes. Low values mark clean air; orange, red, and purple mark progressively degraded, unhealthy air.",
+  "field": "Air-quality science (atmospheric chemistry and public-health exposure assessment) tracks PM2.5, particles under 2.5 micrometers that penetrate deep into lungs. Concentrations in micrograms per cubic meter map to health-based breakpoints (good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy). This layer shows modeled concentration, not aerosol optical depth, and is labeled as model output rather than station observations."
+}
