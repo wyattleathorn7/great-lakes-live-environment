@@ -57,7 +57,9 @@ STOPS = [
     (36.0, (235, 195, 55)),   # B6 bright suburban: gold
     (52.0, (240, 130, 30)),   # B7 transition: orange
     (72.0, (220, 45, 55)),    # B8 city: red
-    (100.0, (245, 245, 240)), # B9 inner city: near-white
+    (82.0, (245, 150, 120)),  # B8/B9 shoulder: salmon (fast ramp to white)
+    (90.0, (250, 232, 222)),  # B9 inner city: near-white well before the top
+    (100.0, (245, 245, 240)), # B9 extreme core: white
 ]
 LABELS = [(0.0, "LOWEST 0 pristine"), (25.0, "25"), (50.0, "50"),
           (75.0, "75"), (100.0, "HIGHEST+ 100 urban")]
