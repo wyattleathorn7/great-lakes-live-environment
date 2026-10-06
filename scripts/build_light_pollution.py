@@ -49,14 +49,15 @@ ROWS = (9, 10)
 PROBE = (21, 9)
 
 STOPS = [
-    (0.0, (5, 8, 20)),        # pristine dark: near-black
-    (10.0, (16, 52, 140)),    # dark site: navy
-    (25.0, (20, 110, 200)),   # rural: blue
-    (40.0, (40, 190, 160)),   # fringe: teal
-    (55.0, (120, 200, 90)),   # suburban: green
-    (70.0, (245, 215, 50)),   # bright suburb: yellow
-    (85.0, (245, 130, 25)),   # urban: orange
-    (100.0, (245, 245, 240)), # urban core: near-white
+    (0.0, (6, 8, 22)),        # B1 pristine: near-black
+    (5.0, (64, 70, 84)),      # B2 true dark: slate gray (reads apart from black)
+    (10.0, (30, 80, 190)),    # B3 rural: strong blue
+    (16.0, (35, 175, 135)),   # B4 transition: teal-green
+    (24.0, (150, 190, 70)),   # B5 suburban: olive yellow-green
+    (36.0, (235, 195, 55)),   # B6 bright suburban: gold
+    (52.0, (240, 130, 30)),   # B7 transition: orange
+    (72.0, (220, 45, 55)),    # B8 city: red
+    (100.0, (245, 245, 240)), # B9 inner city: near-white
 ]
 LABELS = [(0.0, "LOWEST 0 pristine"), (25.0, "25"), (50.0, "50"),
           (75.0, "75"), (100.0, "HIGHEST+ 100 urban")]
@@ -211,10 +212,12 @@ def _mosaic():
     have = np.isfinite(lum_field)
     floor = float(np.percentile(lum_field[have], 0.5)) if have.any() else 0.0
     base = np.where(have, np.maximum(lum_field - floor, 0.0), np.nan)
-    # NaN-aware broad bloom for skyglow.
+    # NaN-aware broad bloom for skyglow. Kept deliberately tight
+    # (radius 6, 2 passes, ~4 km sigma): enough to render point-like city
+    # cores as readable metro glow, small enough to stay crisp.
     cur = np.where(have, base, 0.0)
     w = have.astype(float)
-    radius, passes = 10, 3
+    radius, passes = 6, 2
     for _ in range(passes):
         sw = _box_sum(w, radius)
         sv = _box_sum(cur, radius)
