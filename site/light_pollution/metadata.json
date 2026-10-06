@@ -8,7 +8,7 @@
   "source_url": "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/1.0.0/WMTSCapabilities.xml",
   "data_time_utc": "2016 annual composite",
   "source_last_modified_utc": "n/a (WMTS tiles)",
-  "processing_time_utc": "2026-10-06 11:00 AM EDT",
+  "processing_time_utc": "2026-10-06 11:03 AM EDT",
   "units": "relative brightness index 0-100 (display; tile-background floor subtraction + skyglow bloom + square-root stretch of the published composite visualization; monotonic, ordering preserved)",
   "spatial_resolution_source": "NASA GIBS 500m WMTS tiles (level 5) mosaicked to the common canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
