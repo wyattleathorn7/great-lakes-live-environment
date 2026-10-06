@@ -518,6 +518,10 @@ def main():
     # integrated paths (never a preset lattice): orientation and position
     # both come from the field.
     from build_surface_currents import paint_flow_arrows as _cur_flow
+    from build_surface_currents import cms_to_mph as _cmph
+    check("cur-mph-10", abs(_cmph(10.0) - 0.22) < 0.005, _cmph(10.0))
+    check("cur-mph-50", abs(_cmph(50.0) - 1.12) < 0.005, _cmph(50.0))
+    check("cur-mph-100", abs(_cmph(100.0) - 2.24) < 0.005, _cmph(100.0))
     from build_surface_currents import speed_dir as _cur_sd
     from build_surface_currents import trace_streamline as _trace
     _sp, _hd = _cur_sd(1.0, 0.0)

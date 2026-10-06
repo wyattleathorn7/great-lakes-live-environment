@@ -118,16 +118,77 @@ CUR_STOPS = [
 ]
 CUR_LABELS = [
     (0.0, "LOWEST 0"),
-    (5.0, "5"),
     (10.0, "10"),
     (20.0, "20"),
     (30.0, "30"),
+    (40.0, "40"),
     (50.0, "50"),
-    (100.0, "HIGHEST+ 100"),
+    (60.0, "60"),
+    (70.0, "70"),
+    (80.0, "80"),
+    (90.0, "90"),
+    (100.0, "100+"),
 ]
-# legend tick subset: "LOWEST 0" is wide, so the 5 tick would collide
-CUR_LABELS_NO5 = [t for t in CUR_LABELS if t[0] != 5.0]
 CUR_MAX = 100.0
+
+MPH_PER_CMS = 0.0223694  # key-image only: 1 cm/s = 0.0223694 mph.
+# The SOURCE and all data/metadata stay cm/s; this converts display
+# tick labels for the legend's MPH row alone.
+
+
+def cms_to_mph(cms):
+    """Key-image display conversion (legend MPH row only)."""
+    return float(cms) * MPH_PER_CMS
+
+
+def paint_mph_row(path, stops, labels):
+    """MPH equivalents directly under each cm/s tick, key image only.
+
+    Mirrors gradient_scale.draw_scale_legend geometry + de-collision, so
+    MPH values sit under exactly the kept cm/s labels. The lone "cm/s"
+    unit caption is removed (subtitle documents both units instead).
+    """
+    from geospatial_utils import _legend_font
+    img = Image.open(path).convert("RGBA")
+    d = ImageDraw.Draw(img)
+    f_body, f_small = _legend_font(15), _legend_font(13)
+    W, H = img.size
+    bx, by, bw, bh = 14, 66, W - 28, 32
+    vmin, vmax = stops[0][0], stops[-1][0]
+    span = vmax - vmin if vmax > vmin else 1.0
+    # erase the "cm/s" unit caption (units live in the subtitle now)
+    ux, uy = bx + bw - 70, by + bh + 24
+    bb = d.textbbox((ux, uy), "cm/s", font=f_body)
+    d.rectangle([bb[0] - 2, bb[1] - 2, bb[2] + 2, bb[3] + 2],
+                fill=(255, 255, 255, 235))
+    # same de-collision as draw_scale_legend: endpoints kept, middles
+    # only when clear of kept neighbors
+    placed = []
+    for val, text in labels:
+        frac = min(max((val - vmin) / span, 0.0), 1.0)
+        x = bx + int(frac * (bw - 1))
+        tw = d.textlength(text, font=f_small)
+        placed.append((val, x, tw, text))
+
+    def _clear(c, boxes):
+        return all(c[1] - c[2] / 2 > b[1] + b[2] / 2 + 2
+                   or c[1] + c[2] / 2 < b[1] - b[2] / 2 - 2 for b in boxes)
+    kept = [placed[0]] if placed else []
+    last = placed[-1] if len(placed) > 1 else None
+    for cand in placed[1:-1]:
+        if _clear(cand, kept) and (last is None or _clear(cand, [last])):
+            kept.append(cand)
+    if last is not None:
+        kept.append(last)
+    for val, x, tw, text in kept:
+        mph = f"{cms_to_mph(val):.2f}"
+        if val >= stops[-1][0]:
+            mph += "+"  # open-ended top bin, matches the "100+" tick
+        mw = d.textlength(mph, font=f_small)
+        d.text((min(max(x - mw / 2, 2), W - mw - 2), by + bh + 19),
+               mph, font=f_small, fill=(10, 10, 10))
+    img.save(path)
+    return [v for v, _x, _tw, _t in kept]
 
 # Narrow product-local river-water boxes. The shared NOAA shoreline mask
 # (medium-resolution, built for open-lake coastlines) reads 0 over most
@@ -758,14 +819,16 @@ def _build(glofs_pick, fvcom_pick, source_id, now):
     data_iso = max(valid_isos)
     data_time_utc = valid_to_det(data_iso)
     unit = CONFIG["display_units"]
-    subtitle = (f"Speed (cm/s) + flow arrows  |  {data_time_utc}  |  "
-                f"max {cur_max:.0f}, median {cur_med:.1f} cm/s")
+    subtitle = (f"Speed: cm/s top, mph bottom  |  {data_time_utc}  |  "
+                f"max {cur_max:.0f} cm/s")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
-        "cm/s", CUR_STOPS, CUR_LABELS_NO5,
+        "cm/s", CUR_STOPS, CUR_LABELS,
         f"Source: NOAA GLOFS nowcast + GLERL corridor fill  |  "
         f"Processed {now_det_str()}",
         note=None)
+    paint_mph_row(os.path.join(stage_prod, "legend.png"),
+                  CUR_STOPS, CUR_LABELS)
     paint_sample_arrow(os.path.join(stage_prod, "legend.png"))
     scale_html = (
         "Surface-current speed (centimeters per second, one continuous "
