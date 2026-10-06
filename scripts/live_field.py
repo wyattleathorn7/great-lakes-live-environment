@@ -40,7 +40,7 @@ RENDER_TAGS = {
     "visibility": "g3",
     "humidity": "g2",
     "precipitable_water": "g2",
-    "light_pollution": "g3",
+    "light_pollution": "g4",
     "air_quality": "g2",
     "condensation": "g2",
     "fog": "g3",
