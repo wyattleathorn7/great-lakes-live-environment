@@ -434,8 +434,8 @@ def paint_flow_arrows(rgba, uu, vv, seed_step=11, river_seed_step=5,
                       sep_px=3.0, river_sep_px=2.0,
                       head_every=2, head_sep_px=5.0,
                       river_head_sep_px=3.5,
-                      line_width=4,
-                      line_base_alpha=30, line_bright_alpha=35,
+                      line_width=1,
+                      line_base_alpha=90, line_bright_alpha=110,
                       head_alpha=230, head_len=4.0):
     """Dense flow-streak field with micro direction heads, rasterized.
 
