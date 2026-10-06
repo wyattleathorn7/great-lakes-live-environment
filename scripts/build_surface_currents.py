@@ -428,15 +428,15 @@ def trace_streamline(sy, sx, uu, vv, ds=3.0, max_steps=24, min_speed=0.01):
     return path
 
 
-def paint_flow_arrows(rgba, uu, vv, seed_step=7, river_seed_step=4,
+def paint_flow_arrows(rgba, uu, vv, seed_step=11, river_seed_step=5,
                       river_mask=None, ds=3.0, max_steps=40,
                       speed_ref_cms=50.0, min_speed_cms=1.0,
-                      sep_px=1.5, river_sep_px=1.0,
+                      sep_px=3.0, river_sep_px=2.0,
                       head_every=2, head_sep_px=5.0,
                       river_head_sep_px=3.5,
-                      line_width=2,
-                      line_base_alpha=70, line_bright_alpha=70,
-                      head_alpha=230):
+                      line_width=4,
+                      line_base_alpha=30, line_bright_alpha=35,
+                      head_alpha=230, head_len=4.0):
     """Dense flow-streak field with micro direction heads, rasterized.
 
     Jittered seeds (seeded RNG: deterministic per source field) advect
@@ -540,7 +540,7 @@ def paint_flow_arrows(rgba, uu, vv, seed_step=7, river_seed_step=4,
                 if not clear_for_head(y, x, hsep):
                     continue  # a head already owns this spot
                 ang = math.atan2(ay, ax)
-                hl = 3.5
+                hl = head_len
                 for s in (1, -1):
                     ha = ang + s * (math.pi - 0.6)
                     d.line([(x, y),
