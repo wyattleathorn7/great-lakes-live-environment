@@ -127,13 +127,15 @@ def _build(dd, cc, source_id):
         {"model_cycle": f"{dd} t{cc}z",
          "stats": {"current_min": float(raw[ok].min()),
                    "current_max": float(raw[ok].max()),
-                   "display_smoothing": "NaN-aware 2-pass blur; stats on raw"}},
+                   "display_smoothing": "NaN-aware 1-pass blur; stats on raw"}},
         source_id, data_time_utc,
         "n/a (NOMADS)",
         "mi, statute (display; source m / 1609.344)",
         "~3 km HRRR CONUS grid, mean-binned to the common canvas, "
         "NaN-aware display smoothing",
-        "only [0,60000] m admitted pre-conversion; values above 30 mi "
+        "only [0,200000] m admitted pre-conversion (ultra-clear Arctic "
+        "air often exceeds 60 km; gating lower punched transparent holes "
+        "in the clearest regions); values above 30 mi "
         "clamp into deep blue; full basin rectangle, no shoreline cut; "
         "missing analysis transparent; never zero-filled.",
         alpha=165, key_ticks=KEY_TICKS)
