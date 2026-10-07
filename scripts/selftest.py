@@ -671,6 +671,20 @@ def main():
     check("gate-blanks-dry-fog", bool(_np.isnan(_g1)), _g1)
     check("gate-keeps-wet-fog", bool(float(_g2) == 0.2), _g2)
     check("gate-ignores-clear", bool(float(_g3) == 5.0), _g3)
+    # continuity fill: holes take surroundings, valid untouched,
+    # all-NaN stays all-NaN
+    from live_field import fill_missing_nearest
+    _hf = _np.array([[1.0, _np.nan, 3.0], [_np.nan, _np.nan, _np.nan],
+                     [7.0, _np.nan, 9.0]])
+    _ff, _nf = fill_missing_nearest(_hf, radius=1, passes=4)
+    check("fill-closes-holes", bool(_np.isfinite(_ff).all()), int(_nf))
+    check("fill-keeps-valid",
+          bool(_ff[0, 0] == 1.0 and _ff[0, 2] == 3.0
+               and _ff[2, 0] == 7.0 and _ff[2, 2] == 9.0),
+          float(_ff[1, 1]))
+    _ef, _en = fill_missing_nearest(_np.full((3, 3), _np.nan))
+    check("fill-all-nan-safe",
+          bool((~_np.isfinite(_ef)).all() and _en == 0), int(_en))
 
     # ---- Bortle key breakpoints (log-spaced, 9 classes cover 0-100) ----
     from build_light_pollution import (BORTLE_CLASSES, STOPS as _LP_STOPS,

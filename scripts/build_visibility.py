@@ -95,6 +95,100 @@ def run():
         return 2
 
 
+STATION_POS = {  # ASOS airports: obs reference only, never the source
+    "KORD": (-87.90, 41.97), "KDTW": (-83.35, 42.21),
+    "KDLH": (-92.18, 46.84), "KBUF": (-78.73, 42.94),
+    "KCLE": (-81.85, 41.41), "KMKE": (-87.90, 42.95),
+    "KGRB": (-88.13, 44.48), "KERI": (-80.38, 42.08),
+}
+
+
+def _metar_qc(ddate, dtime, field, bounds, H, W):
+    """Compare grid vs airport METAR visibility (Iowa State IEM ASOS
+    archive of the NOAA/NWS network — same authoritative feed family as
+    the precipitation WMS). Reference only; failures never break the
+    pipeline (exit-2 contract stays with the HRRR source)."""
+    import math
+    import urllib.request
+    from datetime import datetime, timedelta, timezone
+    from geospatial_utils import USER_AGENT
+    out = {}
+    try:
+        start = datetime(int(ddate[0:4]), int(ddate[4:6]), int(ddate[6:8]),
+                         int(dtime[0:2]), tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return {"note": "unparsable analysis timestamp; QC skipped"}
+    end = start + timedelta(hours=1)
+    s1 = start.strftime("year1=%Y&month1=%-m&day1=%-d&hour1=%-H&minute1=%M")
+    s2 = end.strftime("year2=%Y&month2=%-m&day2=%-d&hour2=%-H&minute2=%M")
+    want_hh = start.strftime("%Y-%m-%d %H:")
+    for sid, (lon, lat) in STATION_POS.items():
+        try:
+            url = ("https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py"
+                   f"?station={sid}&data=vsby&{s1}&{s2}"
+                   "&tz=Etc%2FUTC&format=onlycomma"
+                   "&latlon=yes&missing=M&trace=T")
+            req = urllib.request.Request(url, headers=USER_AGENT)
+            with urllib.request.urlopen(req, timeout=30) as r:
+                lines = r.read().decode(errors="replace").splitlines()
+            vals = []
+            header = (lines[0].split(",") if lines else [])
+            try:
+                ci_time = header.index("valid")
+                ci_vsby = header.index("vsby")
+            except ValueError:
+                ci_time, ci_vsby = 1, 2
+            for ln in lines[1:]:
+                parts = ln.split(",")
+                if len(parts) <= max(ci_time, ci_vsby):
+                    continue
+                if not parts[ci_time].startswith(want_hh):
+                    continue
+                rawv = parts[ci_vsby].strip().strip("MP")
+                try:
+                    v = float(rawv)
+                    if math.isfinite(v):
+                        vals.append(v)
+                except (TypeError, ValueError):
+                    continue
+            if not vals:
+                out[sid] = {"note": "no METAR obs this hour"}
+                continue
+            obs = sorted(vals)[len(vals) // 2]
+            col = int((lon - bounds["lon_min"])
+                      / (bounds["lon_max"] - bounds["lon_min"]) * W)
+            row = int((bounds["lat_max"] - lat)
+                      / (bounds["lat_max"] - bounds["lat_min"]) * H)
+            cell = None
+            for dr in range(-5, 6):
+                for dc in range(-5, 6):
+                    rr, cc = row + dr, col + dc
+                    if 0 <= rr < H and 0 <= cc < W \
+                            and np.isfinite(field[rr, cc]):
+                        cell = float(field[rr, cc])
+                        break
+                if cell is not None:
+                    break
+            diff = None if cell is None else round(abs(cell - obs), 2)
+            tol = CONFIG.get("metar_qc_tolerance_mi", 3.0)
+            if diff is None:
+                flag = "NO_GRID_CELL"
+            elif obs >= 10.0:
+                # METAR reports cap at 10SM ("10 or greater"): the model
+                # passes when it also shows clear air, fails only when it
+                # claims fog (CHECK) under a 10SM observation.
+                flag = "OK" if cell >= obs - tol else "CHECK"
+            else:
+                flag = ("OK" if diff <= tol else "CHECK")
+            print(f"[{PRODUCT}] METAR {sid}: obs {obs}SM grid {cell} "
+                  f"diff {diff} -> {flag}")
+            out[sid] = {"obs_SM": obs, "grid_SM": cell,
+                        "absdiff_SM": diff, "verdict": flag}
+        except Exception as e:  # QC must never break a pipeline
+            out[sid] = {"note": f"METAR fetch skipped: {str(e)[:120]}"}
+    return out
+
+
 def _build(dd, cc, source_id):
     import hrrr
     from derived_moisture import apply_fog_consistency_gate
@@ -130,19 +224,27 @@ def _build(dd, cc, source_id):
                   & (va >= CONFIG["valid_min_m"])
                   & (va <= CONFIG["valid_max_m"]))
     rh = _bin(ra, np.isfinite(ra) & (ra >= 0.0) & (ra <= 100.0))
-    # Model-consistency QC: sub-1-mile claims without saturated air are
-    # internally inconsistent (uniform 200–500 m fills over water at
-    # 80 % RH) and render as missing instead of maroon. Corroborated
-    # fog passes through untouched.
-    raw = apply_fog_consistency_gate(
+    # Model-consistency despike: sub-1-mile claims without saturated air
+    # are internally inconsistent (uniform 200–500 m fills over water at
+    # 80 % RH). Gated cells are then CONTINUITY-FILLED from surrounding
+    # valid values (leaf gap-fill family — valid pixels never altered),
+    # so the layer keeps the reference products' full-opaque basin
+    # coverage: no interior transparency means Google Earth's bilinear
+    # magnification can never blend data with transparent black (the gray
+    # rectangles / yellow fringe failure). Corroborated fog cores persist.
+    gated = apply_fog_consistency_gate(
         vis_mi, rh, mi_threshold=1.0,
         rh_min=CONFIG.get("corroboration_rh_min", 90.0))
-    from live_field import smooth_nan
+    n_gated = int(np.isfinite(vis_mi).sum() - np.isfinite(gated).sum())
+    from live_field import fill_missing_nearest, smooth_nan
+    filled, n_filled = fill_missing_nearest(gated)
     # Light single-pass display smoothing: softens razor model-grid edges
     # while keeping the render crisp (a heavier blur read as low quality).
     # Statistics stay on raw values.
-    field = smooth_nan(raw, passes=1)
-    ok = np.isfinite(raw)
+    field = smooth_nan(filled, passes=1)
+    ok = np.isfinite(vis_mi)
+    # ---- METAR QC (airport obs reference only; never alters the grid) ----
+    metar_qc = _metar_qc(ddate, dtime, field, bounds, H, W)
     subtitle = (f"Surface visibility (statute miles, HRRR hourly)  |  "
                 f"{data_time_utc}")
     return finish(
@@ -152,23 +254,27 @@ def _build(dd, cc, source_id):
         [CONFIG["what"], CONFIG["field"],
          "Checked hourly; republishes only on a newer HRRR cycle."],
         {"model_cycle": f"{dd} t{cc}z",
-         "stats": {"current_min": float(raw[ok].min()),
-                   "current_max": float(raw[ok].max()),
-                   "display_smoothing": "NaN-aware 1-pass blur; stats on raw"}},
+         "stats": {"current_min": float(vis_mi[ok].min()),
+                   "current_max": float(vis_mi[ok].max()),
+                   "n_gated_cells": n_gated,
+                   "n_continuity_filled": n_filled,
+                   "display_smoothing": "NaN-aware 1-pass blur; stats on raw"},
+         "fields": {"metar_qc": metar_qc}},
         source_id, data_time_utc,
         "n/a (NOMADS)",
         "mi, statute (display; source m / 1609.344)",
         "~3 km HRRR CONUS grid, mean-binned to the common canvas, "
-        "NaN-aware display smoothing",
+        "despike-gated, continuity-filled, NaN-aware display smoothing",
         "only [0,200000] m admitted pre-conversion (ultra-clear Arctic "
         "air often exceeds 60 km; gating lower punched transparent holes "
         "in the clearest regions); sub-1-mile claims require RH>=90% "
-        "(model-consistency QC: dense fog inside dry air is internally "
-        "inconsistent fill, rendered missing instead of maroon); values "
-        "above 30 mi "
+        "(model-consistency despike); gated cells continuity-filled from "
+        "surrounding valid values (valid pixels never altered; fraction "
+        "in metadata); values above 30 mi "
         "clamp into deep blue; full basin rectangle, no shoreline cut; "
-        "missing analysis transparent; never zero-filled.",
-        alpha=165, key_ticks=KEY_TICKS)
+        "residual edge no-data transparent with anti-fringe RGB bleed; "
+        "never zero-filled.",
+        alpha=165, key_ticks=KEY_TICKS, edge_bleed=True)
 
 
 if __name__ == "__main__":

@@ -6,12 +6,12 @@
   "source_url": "https://open-meteo.com/en/docs/air-quality-api",
   "variable": "PM2.5 near-surface particulate concentration (CAMS model analysis; clearly identified as modeled, not observed)",
   "source_units": "ug/m3",
-  "display_units": "ug/m3 PM2.5",
+  "display_units": "AQI",
   "valid_min": 0.0,
   "valid_max": 500.0,
   "color_min": 0.0,
-  "color_max": 150.0,
+  "color_max": 500.0,
   "refresh_interval_seconds": 3600,
   "what": "Near-surface fine-particulate (PM2.5) conditions from the CAMS atmospheric-composition analysis: a continuous field flagging wildfire-smoke intrusions, urban haze, and regional pollutant transport over the Great Lakes. Low values mark clean air; orange, red, and purple mark progressively degraded, unhealthy air.",
-  "field": "Air-quality science (atmospheric chemistry and public-health exposure assessment) tracks PM2.5, particles under 2.5 micrometers that penetrate deep into lungs. Concentrations in micrograms per cubic meter map to health-based breakpoints (good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy). This layer shows modeled concentration, not aerosol optical depth, and is labeled as model output rather than station observations."
+  "field": "Air-quality science (atmospheric chemistry and public-health exposure assessment) tracks PM2.5, particles under 2.5 micrometers that penetrate deep into lungs. The US EPA Air Quality Index converts PM2.5 concentrations to health-based breakpoints (good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, hazardous) on a fixed 0-500 scale. This layer shows the AQI computed from modeled CAMS concentration, not aerosol optical depth, and is labeled as model output rather than station observations."
 }

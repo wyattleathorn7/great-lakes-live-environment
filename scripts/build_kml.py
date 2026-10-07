@@ -137,15 +137,15 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     ``cache_token`` MUST be the deterministic source version
     (``source_token(...)`` of the source observation/cycle id), never a
     processing timestamp or random value. ``out_dirs`` selects where the
-    live file goes; the default is the deployed live path. When ``meta``
-    is given, the Time-fetched/Next-update header is prepended to the
-    main description (the Folder description when present, else the
-    Document description).
+    live file goes; the default is the deployed live path. Descriptions
+    carry NO timestamps and NEVER repeat the folder title: the Folder name
+    already titles the layer, so both Document and Folder descriptions
+    lead with the Legend block.
     """
     bounds = load_bounds()
     base = pages_base()
     png_url = f"{base}/{png_path}?v={cache_token}"
-    header = fetch_header_html(meta, refresh_interval) if meta else ""
+    header = ""
 
     doc = _q("kml")
     document = _q("Document")
@@ -199,19 +199,9 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
     Users add this file to Google Earth once. It never carries a version
     token, so it stays byte-stable across rebuilds (no commit churn) while
     its NetworkLink poll discovers each newly published live file.
-
-    The NetworkLink itself carries the Time-fetched line: in Google Earth
-    the clickable layer item IS the link (its own description is what the
-    panel shows), while the Document description one level up is never
-    surfaced. The line is extracted from the entry description's leading
-    paragraph, so every product gets it with no call-site changes; if a
-    product ever stops leading with the fetch fact, its link simply has
-    no description (status quo, never a crash).
+    Descriptions carry no timestamps and never repeat the layer title.
     """
-    import re as _re_link
-    _m = _re_link.match(r"\s*(<p><b>Time fetched:</b>.*?</p>)",
-                        entry_description_html or "", _re_link.DOTALL)
-    link_header = _m.group(1) if _m else ""
+    link_header = ""
 
     base = pages_base()
     live_url = f"{base}/kml/live/{kml_filename}"
@@ -252,9 +242,11 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
 
 
 def entry_description_html(title, meta, note):
-    # Entry files are what users add first, so they carry the gradient key
+    # Entry files are what users add first, so they carry the legend
     # image too (unversioned legend URL: entries must stay byte-stable and
     # version-free, and legends are fixed-scale so they rarely change).
+    # No title repeat (the Document/NetworkLink names already title the
+    # layer), no timestamps: Legend first, image directly underneath.
     legend_html = ""
     try:
         product = meta.get("product")
@@ -262,18 +254,13 @@ def entry_description_html(title, meta, note):
         if product and scale_html:
             base = pages_base()
             legend_html = (
-                f"<p><b>Gradient key</b><br>"
+                f"<p><b>Legend</b><br>"
                 f"<img src=\"{base}/{product}/legend.png\" width=\"600\" "
-                f"alt=\"gradient key\"><br>{scale_html}</p>"
+                f"alt=\"legend\"><br>{scale_html}</p>"
             )
     except Exception:
         legend_html = ""
-    # Lead with the fetch fact: the entry is the first item opened, so the
-    # time must read here too. No prediction line (frozen file honesty).
-    fetched = fetch_header_html(meta, 0, include_next=False)
     return (
-        f"{fetched}"
-        f"<h2>{title}</h2>"
         f"{legend_html}"
         f"<p>This entry auto-refreshes from the live overlay "
         f"(source: {meta.get('noaa_source')}).</p>"
@@ -284,10 +271,12 @@ def entry_description_html(title, meta, note):
 
 
 def description_html(title, meta, kml_self_hint, legend_html=""):
+    # No title repeat, no timestamps: Legend block first, image directly
+    # underneath, then status/source. The Folder/Document name already
+    # titles the layer.
     return (
-        f"<h2>{title}</h2>"
-        f"<p><b>Status:</b> {meta.get('freshness')}</p>"
         f"{legend_html}"
+        f"<p><b>Status:</b> {meta.get('freshness')}</p>"
         f"<p><b>Source:</b> {meta.get('noaa_source')}<br/>"
         f"<a href=\"{meta.get('source_url')}\">{meta.get('source_url')}</a></p>"
         f"<p>Transparent outside valid water data so existing project layers "
@@ -300,21 +289,24 @@ def description_html(title, meta, kml_self_hint, legend_html=""):
 import re as _re
 
 _STAMP_RE = _re.compile(
-    r"<b>(Data time|Source updated|Source version|Processed):</b>"
+    r"<b>(Data time|Source updated|Source version|Processed|Time fetched|Next update):</b>"
     r"[^<]*(?:<br\s*/>)?")
+
+_TITLE_RE = _re.compile(r"\s*<h2>.*?</h2>\s*", _re.DOTALL)
 
 
 def strip_old_stamps(html):
-    """Remove legacy timestamp lines from a stored folder description.
+    """Remove legacy title repeats + timestamp lines from stored descriptions.
 
-    The Time-fetched/Next-update header (prepended separately) is now the
-    only clock in live descriptions; older Data-time/Processed/etc. lines
-    would contradict it once cached. Values never contain tags, so the
-    label-anchored match is exact. Cleans up dangling breaks.
+    Folder names already title the layer, so a leading <h2> repeat is
+    stripped; Time-fetched/Next-update/Data-time/Processed lines are
+    removed (descriptions carry no clocks). Values never contain tags,
+    so the label-anchored match is exact. Cleans up dangling breaks.
     """
     if not html:
         return html
-    out = _STAMP_RE.sub("", html)
+    out = _TITLE_RE.sub("", html, count=1)
+    out = _STAMP_RE.sub("", out)
     out = out.replace("<p><br/>", "<p>").replace("<p> <br/>", "<p>")
     return out
 

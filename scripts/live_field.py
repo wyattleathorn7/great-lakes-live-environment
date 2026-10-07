@@ -26,8 +26,9 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
                               base_metadata, bin_to_canvas, canvas_indices,
-                              load_bounds, now_det_str, promote_stage,
-                              read_state, save_png, source_token, stage_dir,
+                              bleed_rgb_into_transparent, load_bounds,
+                              now_det_str, promote_stage, read_state,
+                              save_png, source_token, stage_dir,
                               write_metadata, write_state)
 from gradient_scale import draw_scale_legend, render_rgba
 
@@ -37,10 +38,10 @@ SKIP_NOTE = "Turn on/off independently of all other layers."
 # to force Google Earth clients to refetch an otherwise identical source
 # cycle after a rendering change (new ?v= without touching data or URLs).
 RENDER_TAGS = {
-    "visibility": "g5",
+    "visibility": "g6",
     "humidity": "g2",
     "light_pollution": "g4",
-    "air_quality": "g2",
+    "air_quality": "g3",
     "condensation": "g2",
     "fog": "g3",
     "dew_point": "g2",
@@ -73,6 +74,40 @@ def smooth_nan(field, radius=2, passes=2):
             mean = sv / sw
         cur = np.where(have & (sw > 0), mean, cur)
     return cur
+
+
+def fill_missing_nearest(field, radius=6, passes=40):
+    """Grow valid data into missing (NaN) holes by iterative NaN-aware
+    box-mean filling (leaf gap-fill family; solar flood-fill philosophy).
+
+    Only NaN pixels change — valid source values are never altered. Holes
+    fill inward from their edges, so small despeckle-gated patches take
+    their surroundings' values while vast no-data regions stay missing
+    (never zero-filled, never invented from nothing). Returns
+    (filled_field, n_filled). Callers record the filled fraction in
+    metadata (display continuity, flagged honestly).
+    """
+    from gradient_scale import _box_sum
+    cur = np.asarray(field, dtype=float).copy()
+    have0 = np.isfinite(cur)
+    n0 = int((~have0).sum()
+             ) if have0.any() else int(cur.size)
+    if n0 == 0:
+        return cur, 0
+    for _ in range(passes):
+        have = np.isfinite(cur)
+        if have.all():
+            break
+        sw = _box_sum(have.astype(float), radius)
+        sv = _box_sum(np.where(have, cur, 0.0), radius)
+        with np.errstate(invalid="ignore", divide="ignore"):
+            mean = sv / np.where(sw > 0, sw, 1.0)
+        grow = (~have) & (sw > 0)
+        if not grow.any():
+            break
+        cur[grow] = mean[grow]
+    n_filled = int(((~have0) & np.isfinite(cur)).sum())
+    return cur, n_filled
 
 
 def draw_two_row_legend(path, title, subtitle, unit_label, stops, ticks,
@@ -153,15 +188,19 @@ def refresh_kml(product, kml_file, overlay_name, title, refresh_interval):
 def folder_html_3para(title, para_gradient, para_field, scale_html,
                       legend_src, source_name, source_url, update_line,
                       units_line):
-    """Exactly 3 paragraphs: (1) gradient, (2) field of study, (3) key +
-    scale + source/update/units. No volatile fetch timestamps."""
+    """Folder description: Legend first (no title repeat, no timestamps).
+
+    The Folder name already titles the layer, so the description leads
+    with <b>Legend</b> + image directly underneath + scale, then the
+    gradient / field-of-study paragraphs, then source/cadence/units.
+    Exactly 3 paragraphs after the legend block."""
     return (
-        f"<h2>{title}</h2>"
+        f"<p><b>Legend</b><br>"
+        f"<img src=\"{legend_src}\" width=\"600\" alt=\"legend\"><br>"
+        f"{scale_html}</p>"
         f"<p>{para_gradient}</p>"
         f"<p>{para_field}</p>"
-        f"<p><img src=\"{legend_src}\" width=\"600\" alt=\"key\"><br>"
-        f"{scale_html}<br>"
-        f"<b>Units:</b> {units_line}<br>"
+        f"<p><b>Units:</b> {units_line}<br>"
         f"<b>Source:</b> {source_name}<br>"
         f"<b>Update:</b> {update_line}<br>"
         f"<b>Provenance:</b> <a href=\"{source_url}\">{source_url}</a></p>"
@@ -180,7 +219,7 @@ def finish(product, config, kml_file, overlay_name, field, stops, labels,
            meta_extra, source_id, data_time_utc, source_last_modified,
            units_desc, source_resolution, missing_treatment,
            min_opaque=50_000, extra_meta=None, alpha=None,
-           key_ticks=None, custom_legend=None):
+           key_ticks=None, custom_legend=None, edge_bleed=False):
     """Render field -> validate -> legend/metadata/KML -> promote -> state."""
     bounds = load_bounds()
     if alpha is None:
@@ -189,6 +228,12 @@ def finish(product, config, kml_file, overlay_name, field, stops, labels,
     stage = stage_dir(product)
     stage_prod = os.path.join(stage, "site", product)
     rgba = render_rgba(field, stops, alpha)
+    if edge_bleed:
+        # Anti-fringe for bilinear clients (Google Earth magnification):
+        # paint near-edge transparent RGB with neighboring data colors so
+        # opaque data is never interpolated against transparent black
+        # (the gray-rectangle / yellow-fringe failure). Alpha untouched.
+        rgba = bleed_rgb_into_transparent(rgba)
     # Full basin rectangle (atmospheric layers are valid over land and
     # water alike, like air temperature / pressure / solar / aurora):
     # only missing source data is transparent. No shoreline cut, so no

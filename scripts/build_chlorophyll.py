@@ -58,50 +58,78 @@ STRIDE = 1  # Full ERDDAP source resolution (0.0833 deg): stride 2 threw
             # away 3/4 of the cells and rendered real gradients as 18 km
             # tall stripes/blocks. Fetches stay small (~109x235 x 7 days).
 
-# Fixed absolute chlorophyll scale, built the same way as the other
-# working products (cf. UV_STOPS, P_STOPS, CLARITY_STOPS): hand-placed
-# anchors in the preserved master blue->purple family, tuned to where lake
-# water actually lives (background ~0.5-3 owns blue through green, blooms
-# own yellow through red, rare >32 extremes own violet/deep-purple).
-# Chlorophyll spans orders of magnitude, so anchors are EVEN in log10
-# (each half-decade owns 1/10 of the color: a steady slider) while every
-# displayed value stays the true measured concentration (no value is
-# altered for color). Same value -> same color, always. The legend labels
-# sit at even bar positions (0/20/40/60/80/100%) with truthful raw-unit
-# text. Stops live in log10 space; the field is carried there to match.
-# The floor (0.001 = valid_min) admits every valid observation, so no
-# valid water can ever clamp into the floor color.
-CHL_STOPS = [  # (log10 mg/m^3, rgb)
-    (-3.0, (16, 52, 140)),     # 0.001 clearest: dark blue
-    (-2.5, (19, 93, 183)),     # 0.0032 blue
-    (-2.0, (20, 144, 200)),    # 0.01 cyan-blue
-    (-1.5, (30, 190, 183)),    # 0.032 cyan
-    (-1.0, (80, 190, 97)),     # 0.1 green
-    (-0.5, (179, 204, 63)),    # 0.32 yellow-green
-    (0.0, (243, 187, 42)),     # 1.0 yellow
-    (0.5, (234, 113, 27)),     # 3.2 orange
-    (1.0, (205, 30, 35)),      # 10 red: bloom
-    (1.5, (150, 25, 110)),     # 32 red-violet
-    (2.0, (70, 15, 100)),      # 100 HIGHEST+ deep purple (100+ clamps here)
+# Fixed Carlson Trophic State Index scale (field-of-study standard for
+# chlorophyll-a). User-supplied TSI->chlorophyll->color table (TSI 0-100
+# even steps of 5, each with measured chl-a ug/L, trophic class, hex):
+# the color domain is TSI 0-100 LINEAR (every TSI unit owns an equal
+# share of the color — evenly distributed values), painted with the
+# table's hex colors verbatim. The satellite field (chl-a mg/m^3 =
+# ug/L) is converted pixel-wise via Carlson's equation
+# TSI = 9.81 * ln(chl-a) + 30.6, clamped 0-100; displayed legend values
+# are TSI with chl-a equivalents. Same TSI always shows the same color.
+def _hex_rgb(h):
+    h = h.lstrip("#")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+CHL_TSI_TABLE = [  # (TSI, chl-a ug/L, trophic, hex)
+    (0, 0.04, "Oligotrophic", "#123B8C"),
+    (5, 0.07, "Oligotrophic", "#145DB3"),
+    (10, 0.12, "Oligotrophic", "#167FC8"),
+    (15, 0.22, "Oligotrophic", "#18A9D1"),
+    (20, 0.34, "Oligotrophic", "#19C4C7"),
+    (25, 0.58, "Oligotrophic", "#28C58F"),
+    (30, 0.94, "Oligotrophic", "#55C45A"),
+    (35, 1.62, "Oligotrophic", "#8FC32F"),
+    (40, 2.6, "Mesotrophic", "#B9C52B"),
+    (45, 4.1, "Mesotrophic", "#D2C32A"),
+    (50, 6.4, "Eutrophic", "#E6AB27"),
+    (55, 10.0, "Eutrophic", "#EE8225"),
+    (60, 20, "Eutrophic", "#E95728"),
+    (65, 31, "Hypereutrophic", "#D83B35"),
+    (70, 56, "Hypereutrophic", "#C62A4D"),
+    (75, 87, "Hypereutrophic", "#AE2868"),
+    (80, 154, "Hypereutrophic", "#922580"),
+    (85, 247, "Hypereutrophic", "#74218C"),
+    (90, 427, "Hypereutrophic", "#561B82"),
+    (95, 718, "Hypereutrophic", "#3B155F"),
+    (100, 1183, "Hypereutrophic", "#250D42"),
 ]
-CHL_MIN = 0.001
+CHL_STOPS = [(tsi, _hex_rgb(hx)) for tsi, _chl, _tr, hx in CHL_TSI_TABLE]
+CHL_MIN = 0.0
 CHL_MAX = 100.0
-CHL_LABELS = [  # (log10 value, text); even bar positions, truthful units
-    (-3.0, "LOWEST 0.001"),
-    (-2.0, "0.01"),
-    (-1.0, "0.1"),
-    (0.0, "1.0"),
-    (1.0, "10 bloom"),
-    (2.0, "HIGHEST+ 100"),
+CHL_LABELS = [  # even TSI positions; truthful TSI + chl-a equivalents
+    (0.0, "0 (0.04)"),
+    (10.0, "10 (0.12)"),
+    (20.0, "20 (0.34)"),
+    (30.0, "30 (0.94)"),
+    (40.0, "40 (2.6)"),
+    (50.0, "50 (6.4)"),
+    (60.0, "60 (20)"),
+    (70.0, "70 (56)"),
+    (80.0, "80 (154)"),
+    (90.0, "90 (427)"),
+    (100.0, "100 (1183)"),
 ]
-# Never-again guards (mirror the validate_outputs fixed-scale check):
-# the scale floor must admit the lowest valid observation, and anchors
-# must stay evenly spaced in log10 (a steady slider).
-assert CHL_STOPS[0][0] <= math.log10(float(CONFIG["valid_min"])), \
-    "chlorophyll floor above valid_min would re-create floor-color holes"
+# Never-again guards: TSI domain fixed 0-100, stops strictly increasing
+# in even 5-unit steps (a steady slider across the trophic scale).
+assert CHL_STOPS[0][0] == 0.0 and CHL_STOPS[-1][0] == 100.0, \
+    "chlorophyll TSI scale must span exactly 0-100"
 assert all(CHL_STOPS[i][0] < CHL_STOPS[i + 1][0]
            for i in range(len(CHL_STOPS) - 1)), \
     "chlorophyll stops must strictly increase"
+
+
+def chl_to_tsi(chl):
+    """Carlson TSI from chlorophyll-a (ug/L = mg/m^3); clamps 0-100."""
+    import math as _m
+    try:
+        c = float(chl)
+    except (TypeError, ValueError):
+        return float("nan")
+    if not _m.isfinite(c) or c <= 0:
+        return float("nan")
+    return min(max(9.81 * _m.log(c) + 30.6, 0.0), 100.0)
 
 
 def main():
@@ -153,7 +181,7 @@ def run():
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
     # v5 marker forces one rebuild to deploy the fixed-scale rendering.
-    source_id = f"{dataset}-v5-{times[0][:10]}"
+    source_id = f"{dataset}-v6-{times[0][:10]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
@@ -248,17 +276,16 @@ def _build(bounds, times, dataset):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    # Fixed absolute scale (same pattern as UV/pressure/clarity): raw
-    # concentrations render through CHL_STOPS with no per-run rescaling.
-    # The field is carried in log10 (ocean-color standard: concentrations
-    # span orders of magnitude) to match the log10 stops; every displayed
-    # value stays the true measured concentration.
+    # Carlson TSI scale: chl-a field -> TSI 0-100 via Carlson's equation,
+    # rendered through the even 5-step TSI stops. Display smoothing first
+    # (raw chl-a), then convert — history keeps true observed chl-a.
     stops = CHL_STOPS
     field = _display_smooth(field)
     with np.errstate(invalid="ignore", divide="ignore"):
-        logfield = np.where(np.isfinite(field) & (field > 0),
-                            np.log10(np.maximum(field, lo)), np.nan)
-    rgba = render_rgba(logfield, stops, bounds["overlay_alpha"])
+        vec_tsi = np.vectorize(chl_to_tsi, otypes=[float])
+        tsifield = np.where(np.isfinite(field) & (field > 0),
+                            vec_tsi(np.maximum(field, lo)), np.nan)
+    rgba = render_rgba(tsifield, stops, bounds["overlay_alpha"])
     # Chlorophyll-only shoreline treatment: ocean-color pixels adjacent
     # to land (and sub-cell inland ponds) are land-contaminated by the
     # sensor's footprint, so the shared mask is eroded one canvas pixel
@@ -275,34 +302,35 @@ def _build(bounds, times, dataset):
         return 2
 
     p = rec["percentiles"]
-    unit = CONFIG["display_units"]
+    unit = "TSI"
     labels = CHL_LABELS
-    subtitle = (f"Chlorophyll-a ({unit})  |  {times[0][:10]} (7-day median mosaic)")
+    subtitle = (f"Carlson TSI (chlorophyll-a {times[0][:10]}, 7-day median mosaic)")
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
-        f"Source: NOAA CoastWatch VIIRS chlorophyll  |  Processed {now_det_str()}",
+        "Source: NOAA CoastWatch VIIRS chlorophyll",
         note="Transparent = land/cloud/missing. Not a toxin measurement.")
-    scale_html = (f"Chlorophyll-a concentration ({unit}), FIXED absolute "
-                  f"scale <b>LOWEST 0.001</b> (dark blue) → 0.01 → 0.1 → "
-                  f"<b>1.0</b> → <b>10 bloom</b> (red) → "
-                  f"<b>HIGHEST+ 100</b> (deep purple). "
-                  f"Each half-decade owns an equal share of the color; "
-                  f"displayed values are true concentrations, never "
-                  f"altered. High values indicate biomass/activity, "
-                  f"not toxins.")
+    scale_html = ("Carlson Trophic State Index from chlorophyll-a (fixed "
+                  "0-100 scale, even 5-unit steps): <b>0-35</b> Oligotrophic "
+                  "(deep blue&rarr;green, chl 0.04-1.62) &rarr; <b>40-45</b> "
+                  "Mesotrophic (yellow-green, chl 2.6-4.1) &rarr; <b>50-60</b> "
+                  "Eutrophic (gold&rarr;red-orange, chl 6.4-20) &rarr; "
+                  "<b>65-100</b> Hypereutrophic (red&rarr;violet&rarr;dark, "
+                  "chl 31-1183). Legend labels show TSI (chl-a ug/L). Same "
+                  "TSI always shows the same color. High TSI = biomass / "
+                  "activity, not toxins.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"],
         CONFIG["variable"] + f"; mosaic {times[0][:10]}..{times[-1][:10]}",
         data_time_utc=f"{iso_to_det(times[0])} (7-day median mosaic ending {times[0][:10]})",
         source_last_modified_utc="n/a (ERDDAP)",
-        units=f"{unit} (display); source mg m^-3",
+        units="TSI 0-100 (display; source mg m^-3 chlorophyll-a)",
         source_resolution="~9 km VIIRS NRT (0.0833 deg), 7-day median mosaic, NaN-aware display smoothing",
         color_min=CHL_MIN, color_max=CHL_MAX, color_units=unit,
         missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
                                 f"[{lo},{hi}] values admitted; never interpolated; "
-                                "colors follow log10(concentration), values shown raw."))
+                                "colors follow Carlson TSI(chl-a), values shown as TSI."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["historical"] = {"low": rec["hist_min"], "high": rec["hist_max"],
@@ -313,25 +341,22 @@ def _build(bounds, times, dataset):
     meta["dataset"] = dataset
     meta["mosaic_sources"] = day_sources
     meta["mosaic_method"] = f"per-pixel median of {len(stack)} daily composites"
-    # v5 = fixed absolute scale with tuned log10 anchors (same-value-
-    # same-color, 0.001-100, even half-decade steps; floor admits every
-    # valid observation so low-clamp holes are impossible). One-time
-    # rotation to deploy the fixed rendering; afterwards the id tracks
+    # v6 = Carlson TSI 0-100 scale (even 5-unit steps, user table colors;
+    # same-TSI-same-color; legend labels TSI + chl-a equivalents). One-time
+    # rotation to deploy the TSI rendering; afterwards the id tracks
     # source dataset+date only.
-    source_id = f"{dataset}-v5-{times[0][:10]}"
+    source_id = f"{dataset}-v6-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]
     folder_html = (
-        f"<h2>{CONFIG['title']}</h2>"
+        f"<p><b>Legend</b><br>"
+        f"<img src=\"{legend_block_src(PRODUCT, token)}\" width=\"600\" "
+        f"alt=\"legend\"><br>{scale_html}</p>"
         f"<p>{CONFIG['what']}</p>"
-        f"<p><img src=\"{legend_block_src(PRODUCT, token)}\" width=\"600\" "
-        f"alt=\"key\"></p>"
-        f"<p>{scale_html}</p>"
-        f"<p><b>Units:</b> {unit}<br/><b>Source:</b> {CONFIG['source_name']}<br/>"
+        f"<p><b>Units:</b> {unit} (Carlson TSI from chlorophyll-a)<br/>"
+        f"<b>Source:</b> {CONFIG['source_name']}<br/>"
         f"<b>Update:</b> daily composites<br/>"
-        f"<b>Data time:</b> {iso_to_det(times[0])} (7-day median mosaic)<br/>"
-        f"<b>Processed:</b> {meta['processing_time_utc']}<br/>"
         f"<b>Why high values turn red/purple:</b> {CONFIG['why_extreme']}<br/>"
         f"<b>Provenance:</b> <a href=\"{CONFIG['source_url']}\">ERDDAP dataset</a></p>")
     meta["folder_html"] = folder_html

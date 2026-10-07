@@ -8,8 +8,9 @@ resampled onto the common canvas. The underlying variable is PM2.5
 legend and metadata while the displayed title stays "LIVE AIR QUALITY".
 CAMS output is MODEL analysis output, labeled as such everywhere; it is
 never presented as station observations and never confused with aerosol
-optical depth. FIXED EPA-breakpoint-anchored 0-150 ug/m3 continuous
-spectrum -> FULL BASIN RECTANGLE (lon -93..-73.5, lat 40.5..49.5, the
+ optical depth. FIXED US EPA Air Quality Index 0-500 continuous
+ spectrum (PM2.5 -> AQI via EPA breakpoints; muted professional palette)
+ -> FULL BASIN RECTANGLE (lon -93..-73.5, lat 40.5..49.5, the
 exact LIVE LEAF COLOR footprint) -> key + metadata -> Folder live KML +
 stable entry KML. Hourly check; rebuild only when CAMS publishes a newer
 valid hour. Exit 0/2/1 per contract.
@@ -34,25 +35,68 @@ KML_FILE = "Great_Lakes_Live_Air_Quality.kml"
 OVERLAY_NAME = "\U0001F32B\uFE0F LIVE AIR QUALITY"
 
 API = "https://air-quality-api.open-meteo.com/v1/air-quality"
-# EPA PM2.5 breakpoints anchor the continuous scale (good 0-12, moderate
-# 12.1-35.4, USG 35.5-55.4, unhealthy 55.5-150.4, very unhealthy above).
+# US EPA Air Quality Index (AirNow, 40 CFR Part 58) — the widely accepted
+# professional standard for US public air-quality reporting. The source
+# variable stays CAMS PM2.5 (ug/m3); it is converted to AQI via the EPA
+# PM2.5 breakpoint table so the SAME index the public sees on AirNow is
+# what the gradient paints. Fixed linear 0-500 scale, stops at the true
+# category boundaries (evenly distributed in AQI value space).
+# Muted professional palette: same general hue per category as the EPA
+# wall (green/yellow/orange/red/purple/maroon) but desaturated — never
+# the neon pure-green/yellow/red of the raw-data era.
+AQI_GOOD = (106, 168, 111)      # muted sage green (was neon green)
+AQI_MODERATE = (217, 200, 78)   # muted goldenrod (was neon yellow)
+AQI_USG = (208, 138, 62)        # muted orange
+AQI_UNHEALTHY = (193, 75, 72)   # muted brick red
+AQI_VERY = (138, 90, 160)       # muted purple
+AQI_HAZ = (126, 47, 60)         # muted maroon
 STOPS = [
-    (0.0, (60, 180, 80)),      # good: green
-    (12.0, (245, 215, 50)),    # moderate: yellow
-    (35.4, (245, 150, 30)),    # USG: orange
-    (55.4, (215, 45, 35)),     # unhealthy: red
-    (150.0, (150, 25, 110)),   # very unhealthy: purple
+    (0.0, AQI_GOOD),
+    (50.0, AQI_GOOD),
+    (100.0, AQI_MODERATE),
+    (150.0, AQI_USG),
+    (200.0, AQI_UNHEALTHY),
+    (300.0, AQI_VERY),
+    (500.0, AQI_HAZ),
 ]
-LABELS = [(0.0, "LOWEST 0"), (12.0, "12 moderate"), (35.4, "35.4 USG"),
-          (55.4, "55.4 unhealthy"), (150.0, "HIGHEST+ 150")]
-SCALE_HTML = ("PM2.5 concentration in micrograms per cubic meter (CAMS model "
-              "analysis, fixed EPA-anchored scale): <b>LOWEST 0</b> green "
-              "good &rarr; <b>12 moderate</b> yellow &rarr; <b>35.4 "
-              "unhealthy for sensitive groups</b> orange &rarr; <b>55.4 "
-              "unhealthy</b> red &rarr; <b>HIGHEST+ 150</b> purple very "
-              "unhealthy (above clamps into purple). Same concentration "
-              "always shows the same color. Modeled PM2.5 — not aerosol "
-              "optical depth, not station observations.")
+LABELS = [(0.0, "0 Good"), (50.0, "50 Good"), (100.0, "100 Moderate"),
+          (150.0, "150 USG"), (200.0, "200 Unhealthy"),
+          (300.0, "300 Very unhealthy"), (500.0, "500 Hazardous")]
+KEY_TICKS = [(0.0, "0", "Good"), (50.0, "50", "Good"),
+             (100.0, "100", "Moderate"), (150.0, "150", "USG"),
+             (200.0, "200", "Unhealthy"), (300.0, "300", "Very unhealthy"),
+             (500.0, "500", "Hazardous")]
+SCALE_HTML = ("US EPA Air Quality Index (AQI, PM2.5-based, fixed 0-500 "
+              "scale): <b>0-50</b> Good (green) &rarr; <b>51-100</b> "
+              "Moderate (yellow) &rarr; <b>101-150</b> Unhealthy for "
+              "Sensitive Groups (orange) &rarr; <b>151-200</b> Unhealthy "
+              "(red) &rarr; <b>201-300</b> Very unhealthy (purple) &rarr; "
+              "<b>301-500</b> Hazardous (maroon). Same AQI always shows "
+              "the same color. CAMS PM2.5 model analysis converted via "
+              "EPA PM2.5 breakpoints — not station observations.")
+# EPA PM2.5 (ug/m3, 24-hr) -> AQI breakpoints: (c_lo, c_hi, aqi_lo, aqi_hi)
+PM25_AQI_BP = [
+    (0.0, 12.0, 0, 50),
+    (12.1, 35.4, 51, 100),
+    (35.5, 55.4, 101, 150),
+    (55.5, 150.4, 151, 200),
+    (150.5, 250.4, 201, 300),
+    (250.5, 500.4, 301, 500),
+]
+
+
+def pm25_to_aqi(c):
+    """EPA piecewise-linear PM2.5 (ug/m3) -> AQI. Above 500.4 clamps 500."""
+    import math as _m
+    if c is None or (isinstance(c, float) and not _m.isfinite(c)):
+        return float("nan")
+    c = float(c)
+    if c < 0:
+        return float("nan")
+    for c_lo, c_hi, a_lo, a_hi in PM25_AQI_BP:
+        if c <= c_hi:
+            return (a_lo + (c - c_lo) / (c_hi - c_lo) * (a_hi - a_lo))
+    return 500.0
 
 GRID_NLON, GRID_NLAT = 48, 30
 BATCH = 100
@@ -175,28 +219,33 @@ def _build(source_id):
         data_time_utc = fmt_det(dt)
     except (TypeError, ValueError):
         data_time_utc = f"{hour} UTC"
-    subtitle = (f"PM2.5 (ug/m3, CAMS analysis)  |  {data_time_utc}")
+    subtitle = (f"US EPA Air Quality Index (AQI, PM2.5-based)  |  {data_time_utc}")
+    aqi_field = np.vectorize(pm25_to_aqi, otypes=[float])(field)
     return finish(
-        PRODUCT, CONFIG, KML_FILE, OVERLAY_NAME, field, STOPS, LABELS,
-        "ug/m3", subtitle,
+        PRODUCT, CONFIG, KML_FILE, OVERLAY_NAME, aqi_field, STOPS, LABELS,
+        "AQI", subtitle,
         f"Source: CAMS via Open-Meteo ({hour} UTC analysis)  |  "
         f"Processed {now_det_str()}", SCALE_HTML,
-        [CONFIG["what"] + " The underlying variable is PM2.5, identified "
-         "as modeled output (CAMS analysis), not station observations.",
+        [CONFIG["what"] + " The underlying variable is CAMS PM2.5, "
+         "converted to the US EPA Air Quality Index via EPA PM2.5 "
+         "breakpoints and identified as modeled output (CAMS analysis), "
+         "not station observations.",
          CONFIG["field"],
          "Checked hourly; republishes only when CAMS publishes a newer "
          "valid hour."],
         {"model_cycle": f"CAMS {hour} UTC",
          "stats": {"cams_hour": hour,
-                   "data_nature": "modeled analysis, not observed"}},
+                   "data_nature": "modeled analysis, not observed",
+                   "index": "US EPA AQI (PM2.5-based, 0-500)"}},
         source_id, data_time_utc, "n/a (API)",
-        "ug/m3 PM2.5 (display; source ug/m3 as filed)",
-        f"CAMS analysis sampled on a {GRID_NLON}x{GRID_NLAT} basin grid, "
-        "bilinearly resampled to the common canvas",
-        "only [0,500] ug/m3 admitted; values above 150 clamp into purple; "
+        "AQI index 0-500 (display; source ug/m3 PM2.5 as filed)",
+        f"CAMS PM2.5 analysis sampled on a {GRID_NLON}x{GRID_NLAT} basin grid, "
+        "bilinearly resampled to the common canvas, converted PM2.5->AQI",
+        "only [0,500.4] ug/m3 admitted; AQI above 500 clamps into maroon; "
         "full basin rectangle, no shoreline cut; missing grid cells "
         "transparent; never zero-filled; modeled output, never labeled "
-        "observed.")
+        "observed.",
+        key_ticks=KEY_TICKS)
 
 
 if __name__ == "__main__":
