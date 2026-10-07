@@ -1,6 +1,6 @@
 {
-  "model_cycle": "CAMS 2026-10-07T04:00 UTC",
-  "source_id": "cams-pm25-2026-10-07T04:00-g2",
+  "model_cycle": "CAMS 2026-10-07T05:00 UTC",
+  "source_id": "cams-pm25-2026-10-07T05:00-g2",
   "render_version": 3,
-  "processing_time_utc": "2026-10-07 12:34 AM EDT"
+  "processing_time_utc": "2026-10-07 01:04 AM EDT"
 }
