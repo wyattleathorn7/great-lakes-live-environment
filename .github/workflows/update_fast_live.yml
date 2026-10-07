@@ -80,10 +80,10 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      # Slim deps: the GOES fetcher needs h5netcdf + pyproj on top of
-      # numpy/PIL (see note on the precipitation job above).
+      # Slim deps: the GOES fetcher needs h5netcdf (+ its h5py backend)
+      # and pyproj on top of numpy/PIL (see note on precipitation above).
       - name: Install dependencies
-        run: pip install "numpy>=1.26" "pillow>=10.1" "h5netcdf>=1.0" "pyproj>=3.6"
+        run: pip install "numpy>=1.26" "pillow>=10.1" "h5netcdf>=1.0" "h5py>=3.0" "pyproj>=3.6"
       - name: Update cloud cover
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
