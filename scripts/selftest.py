@@ -663,6 +663,14 @@ def main():
     _fog_d2 = _dm.fog_risk_index(12.0, 98.0, 11.0, 2000.0, 1.0)
     check("fog-density-ordered",
           bool(float(_fog_d1) > float(_fog_d2) > 35.0), (_fog_d1, _fog_d2))
+    # visibility consistency gate: dry-air dense-fog claims blanked,
+    # corroborated fog passes through, clear air untouched
+    _g1 = _dm.apply_fog_consistency_gate(0.2, 80.0)
+    _g2 = _dm.apply_fog_consistency_gate(0.2, 96.0)
+    _g3 = _dm.apply_fog_consistency_gate(5.0, 80.0)
+    check("gate-blanks-dry-fog", bool(_np.isnan(_g1)), _g1)
+    check("gate-keeps-wet-fog", bool(float(_g2) == 0.2), _g2)
+    check("gate-ignores-clear", bool(float(_g3) == 5.0), _g3)
 
     # ---- Bortle key breakpoints (log-spaced, 9 classes cover 0-100) ----
     from build_light_pollution import (BORTLE_CLASSES, STOPS as _LP_STOPS,

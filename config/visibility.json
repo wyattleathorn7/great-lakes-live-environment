@@ -10,6 +10,7 @@
   "display_units": "mi (statute miles)",
   "valid_min_m": 0.0,
   "valid_max_m": 200000.0,
+  "corroboration_rh_min": 90.0,
   "color_min_mi": 0.0,
   "color_max_mi": 30.0,
   "refresh_interval_seconds": 3600,

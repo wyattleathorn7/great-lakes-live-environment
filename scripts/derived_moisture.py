@@ -62,6 +62,24 @@ def condensation_index(tmp_c, rh, dpt_c):
     return np.where(bad, np.nan, out)
 
 
+def apply_fog_consistency_gate(vis_mi, rh, mi_threshold=1.0,
+                              rh_min=90.0):
+    """Blank physically-impossible dense-fog claims (model speckles/fills).
+
+    Real sub-1-mile fog requires near-saturated air; when the model claims
+    dense fog inside dry air (e.g. uniform 300 m fills over water at
+    80 % RH), the claim is internally inconsistent and treated as missing
+    (transparent) rather than rendered as maroon. Corroborated fog passes
+    through untouched. NaN in -> NaN out.
+    """
+    vis_mi = np.asarray(vis_mi, dtype=float)
+    rh = np.asarray(rh, dtype=float)
+    with np.errstate(invalid="ignore"):
+        suspect = (np.isfinite(vis_mi) & np.isfinite(rh)
+                   & (vis_mi < mi_threshold) & (rh < rh_min))
+    return np.where(suspect, np.nan, vis_mi)
+
+
 def fog_risk_index(tmp_c, rh, dpt_c, vis_m, wspd_ms):
     """0..100 fog index v2: 0..35 thermodynamic risk, 35..100 active fog
     by observed density. NaN in -> NaN out."""

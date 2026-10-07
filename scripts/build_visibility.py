@@ -18,8 +18,7 @@ import traceback
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from live_field import (SKIP_NOTE, finish, hrrr_field, refresh_kml,
-                        should_skip)
+from live_field import (SKIP_NOTE, finish, refresh_kml, should_skip)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, load_bounds, now_det_str)
 
 PRODUCT = "visibility"
@@ -97,19 +96,47 @@ def run():
 
 
 def _build(dd, cc, source_id):
+    import hrrr
+    from derived_moisture import apply_fog_consistency_gate
+    from geospatial_utils import (bin_to_canvas, canvas_indices,
+                                  grib_stamp_to_det)
     bounds = load_bounds()
+    H, W = bounds["canvas_height"], bounds["canvas_width"]
+    base, _dd, _cc = hrrr.latest_cycle(30)
+    raw_path = os.path.join(RAW_DIR, "hrrr_vis_current.grib2")
+    hrrr.fetch_messages(base, raw_path,
+                        [("VIS", "surface"), ("RH", "2 m above ground")])
+    got = hrrr.read_messages(raw_path, {"VIS": 1, "RH": 1})
+    vv, la, lo, ddate, dtime = got["VIS"]
+    rhv = got["RH"][0]
+    data_time_utc = grib_stamp_to_det(ddate, dtime)
 
-    def _vals(got):
-        v, la, lo, ddate, dtime = got["VIS"]
-        v = np.asarray(v, dtype=float).ravel()
-        ok = np.isfinite(v) & (v >= CONFIG["valid_min_m"]) & (v <= CONFIG["valid_max_m"])
-        if int(ok.sum()) < 5_000:
-            raise ValueError(f"too few valid source cells ({int(ok.sum())})")
-        return np.where(ok, v * M2MI, np.nan), la, lo, ddate, dtime
+    def _bin(vals, ok):
+        v = np.asarray(vals, dtype=float).ravel()
+        la1 = np.asarray(la, dtype=float).ravel()
+        lo1 = (((np.asarray(lo, dtype=float).ravel() + 180) % 360) - 180)
+        rows, cols, _v = canvas_indices(la1, lo1, bounds)
+        inside = (np.isfinite(la1) & np.isfinite(lo1)
+                  & (la1 >= bounds["lat_min"]) & (la1 <= bounds["lat_max"])
+                  & (lo1 >= bounds["lon_min"]) & (lo1 <= bounds["lon_max"]))
+        field, _c = bin_to_canvas(rows, cols, np.where(ok, v, np.nan),
+                                  inside & np.isfinite(np.where(ok, v, np.nan)),
+                                  (H, W), splat_radius=2)
+        return field
 
-    raw, data_time_utc, _dd, _cc, _base = hrrr_field(
-        _vals, [("VIS", "surface")], "hrrr_vis_current.grib2",
-        bounds, RAW_DIR)
+    va = np.asarray(vv, dtype=float).ravel()
+    ra = np.asarray(rhv, dtype=float).ravel()
+    vis_mi = _bin(va * M2MI, np.isfinite(va)
+                  & (va >= CONFIG["valid_min_m"])
+                  & (va <= CONFIG["valid_max_m"]))
+    rh = _bin(ra, np.isfinite(ra) & (ra >= 0.0) & (ra <= 100.0))
+    # Model-consistency QC: sub-1-mile claims without saturated air are
+    # internally inconsistent (uniform 200–500 m fills over water at
+    # 80 % RH) and render as missing instead of maroon. Corroborated
+    # fog passes through untouched.
+    raw = apply_fog_consistency_gate(
+        vis_mi, rh, mi_threshold=1.0,
+        rh_min=CONFIG.get("corroboration_rh_min", 90.0))
     from live_field import smooth_nan
     # Light single-pass display smoothing: softens razor model-grid edges
     # while keeping the render crisp (a heavier blur read as low quality).
@@ -135,7 +162,10 @@ def _build(dd, cc, source_id):
         "NaN-aware display smoothing",
         "only [0,200000] m admitted pre-conversion (ultra-clear Arctic "
         "air often exceeds 60 km; gating lower punched transparent holes "
-        "in the clearest regions); values above 30 mi "
+        "in the clearest regions); sub-1-mile claims require RH>=90% "
+        "(model-consistency QC: dense fog inside dry air is internally "
+        "inconsistent fill, rendered missing instead of maroon); values "
+        "above 30 mi "
         "clamp into deep blue; full basin rectangle, no shoreline cut; "
         "missing analysis transparent; never zero-filled.",
         alpha=165, key_ticks=KEY_TICKS)

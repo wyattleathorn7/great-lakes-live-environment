@@ -726,7 +726,11 @@ the other products and the Pages publish proceed normally.
   render as soft TV-style gradients; single-cell speckles dissolve while
   coherent fog/low-vis areas persist; statistics on raw values).
   Meteorological (human/mariner/pilot) visibility, never
-  astronomical seeing. Overlay alpha 165 (slightly transparent, like
+  astronomical seeing. Model-consistency QC: sub-1-mile claims require
+  RH >= 90% — dense fog inside dry air is an internally inconsistent
+  model fill (uniform 200–500 m values, 68% uncorroborated basin-wide),
+  rendered missing instead of maroon; corroborated fog passes through.
+  Overlay alpha 165 (slightly transparent, like
   solar). Visibility and fog keys use an even two-row layout (values on
   row 1, severity words on row 2 at true linear positions) so labels can
   never overlap. Freshness: LIVE / CURRENT MODEL (analysis).
