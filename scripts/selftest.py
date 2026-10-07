@@ -683,6 +683,45 @@ def main():
     check("fill-all-nan-safe",
           bool((~_np.isfinite(_ef)).all() and _en == 0), int(_en))
 
+    # ---- air quality audit: EPA PM2.5 -> AQI conversion (offline) ----
+    # Every EPA breakpoint must convert exactly; above-range clamps;
+    # negative/NaN stay missing; the ramp must be strictly increasing so
+    # real basin variation can never render as one flat color.
+    from build_air_quality import (KEY_TICKS as _AQ_TICKS,
+                                   STOPS as _AQ_STOPS, pm25_to_aqi as _aqi)
+    _aq_cases = [(0.0, 0.0), (12.0, 50.0), (12.1, 51.0), (35.4, 100.0),
+                 (35.5, 101.0), (55.4, 150.0), (55.5, 151.0),
+                 (100.0, 174.0), (150.4, 200.0), (150.5, 201.0),
+                 (250.4, 300.0), (250.5, 301.0), (500.4, 500.0)]
+    for _c, _e in _aq_cases:
+        check(f"aqi-bp-{_c}",
+              bool(abs(float(_aqi(_c)) - _e) < 0.6), float(_aqi(_c)))
+    check("aqi-clamps-high", bool(float(_aqi(900.0)) == 500.0))
+    check("aqi-nan-in-nan-out", bool(_np.isnan(_aqi(float("nan")))))
+    check("aqi-negative-missing", bool(_np.isnan(_aqi(-1.0))))
+    _aq_vs = [float(_aqi(c)) for c in
+              [0, 3, 6, 9, 12, 15, 25, 35.4, 40, 55.4, 60, 100, 200, 400]]
+    check("aqi-monotonic",
+          all(b > a for a, b in zip(_aq_vs, _aq_vs[1:])))
+    _aq_vals = [v for v, _ in _AQ_STOPS]
+    check("aqi-scale-0-500",
+          bool(_aq_vals[0] == 0.0 and _aq_vals[-1] == 500.0),
+          (_aq_vals[0], _aq_vals[-1]))
+    check("aqi-scale-ascending",
+          all(b > a for a, b in zip(_aq_vals, _aq_vals[1:])))
+    # every category boundary owns a distinct color (no flat band can
+    # hide basin variation); Good band ramps pale -> green
+    from gradient_scale import color_for as _cf_aq
+    _aq_band = [_cf_aq(v, _AQ_STOPS) for v in
+                [0.0, 50.0, 100.0, 150.0, 200.0, 300.0, 500.0]]
+    check("aqi-bands-distinct", len(set(_aq_band)) == 7, len(set(_aq_band)))
+    check("aqi-good-ramps",
+          bool(_cf_aq(0.0, _AQ_STOPS) != _cf_aq(50.0, _AQ_STOPS)))
+    _aq_words = " ".join(w for _, _, w in _AQ_TICKS)
+    for _w in ("Good", "Moderate", "USG", "Unhealthy", "Very unhealthy",
+               "Hazardous"):
+        check(f"aqi-word-{_w}", _w in _aq_words)
+
     # ---- Bortle key breakpoints (log-spaced, 9 classes cover 0-100) ----
     from build_light_pollution import (BORTLE_CLASSES, STOPS as _LP_STOPS,
                                        bortle_breakpoints,

@@ -288,6 +288,26 @@ def main():
                 failures.append(f"{product}: light scale must be 0-100 index, got {lo}-{hi}")
             if product == "air_quality" and (lo, hi) != (0.0, 500.0):
                 failures.append(f"{product}: AQI scale must be 0-500 AQI, got {lo}-{hi}")
+            if product == "air_quality":
+                # audit: deployed readings must be finite, in-scale, and
+                # render as more than one color when they vary (a flat
+                # band once hid the whole basin behind a single green).
+                _st = meta.get("stats", {})
+                _mn, _mx = _st.get("current_min"), _st.get("current_max")
+                import math as _m3
+                if not (isinstance(_mn, (int, float))
+                        and isinstance(_mx, (int, float))
+                        and _m3.isfinite(_mn) and _m3.isfinite(_mx)
+                        and 0 <= _mn <= _mx <= 500):
+                    failures.append(
+                        f"{product}: stats range invalid [{_mn},{_mx}]")
+                elif _mx > _mn:
+                    from gradient_scale import color_for as _cf_v
+                    from build_air_quality import STOPS as _aq_stops_v
+                    if _cf_v(_mn, _aq_stops_v) == _cf_v(_mx, _aq_stops_v):
+                        failures.append(
+                            f"{product}: data spans [{_mn},{_mx}] but "
+                            "renders one flat color")
             if product == "condensation" and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: condensation scale must be 0-100, got {lo}-{hi}")
             if product == "fog" and (lo, hi) != (0.0, 100.0):

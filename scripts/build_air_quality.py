@@ -44,6 +44,11 @@ API = "https://air-quality-api.open-meteo.com/v1/air-quality"
 # Muted professional palette: same general hue per category as the EPA
 # wall (green/yellow/orange/red/purple/maroon) but desaturated — never
 # the neon pure-green/yellow/red of the raw-data era.
+AQI_GOOD_PALE = (184, 214, 187)  # cleanest: pale green (audit fix —
+                                # the old 0->50 flat-good segment rendered
+                                # every real basin reading one identical
+                                # green; the Good band is now a continuous
+                                # pale->green ramp so true variation shows)
 AQI_GOOD = (106, 168, 111)      # muted sage green (was neon green)
 AQI_MODERATE = (217, 200, 78)   # muted goldenrod (was neon yellow)
 AQI_USG = (208, 138, 62)        # muted orange
@@ -51,7 +56,7 @@ AQI_UNHEALTHY = (193, 75, 72)   # muted brick red
 AQI_VERY = (138, 90, 160)       # muted purple
 AQI_HAZ = (126, 47, 60)         # muted maroon
 STOPS = [
-    (0.0, AQI_GOOD),
+    (0.0, AQI_GOOD_PALE),
     (50.0, AQI_GOOD),
     (100.0, AQI_MODERATE),
     (150.0, AQI_USG),
@@ -67,7 +72,8 @@ KEY_TICKS = [(0.0, "0", "Good"), (50.0, "50", "Good"),
              (200.0, "200", "Unhealthy"), (300.0, "300", "Very unhealthy"),
              (500.0, "500", "Hazardous")]
 SCALE_HTML = ("US EPA Air Quality Index (AQI, PM2.5-based, fixed 0-500 "
-              "scale): <b>0-50</b> Good (green) &rarr; <b>51-100</b> "
+              "scale): <b>0-50</b> Good (pale green at 0 deepening to "
+              "green at 50) &rarr; <b>51-100</b> "
               "Moderate (yellow) &rarr; <b>101-150</b> Unhealthy for "
               "Sensitive Groups (orange) &rarr; <b>151-200</b> Unhealthy "
               "(red) &rarr; <b>201-300</b> Very unhealthy (purple) &rarr; "
