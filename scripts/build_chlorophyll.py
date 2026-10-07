@@ -73,27 +73,29 @@ def _hex_rgb(h):
 
 
 CHL_TSI_TABLE = [  # (TSI, chl-a ug/L, trophic, hex)
-    (0, 0.04, "Oligotrophic", "#123B8C"),
-    (5, 0.07, "Oligotrophic", "#145DB3"),
-    (10, 0.12, "Oligotrophic", "#167FC8"),
-    (15, 0.22, "Oligotrophic", "#18A9D1"),
-    (20, 0.34, "Oligotrophic", "#19C4C7"),
-    (25, 0.58, "Oligotrophic", "#28C58F"),
-    (30, 0.94, "Oligotrophic", "#55C45A"),
-    (35, 1.62, "Oligotrophic", "#8FC32F"),
-    (40, 2.6, "Mesotrophic", "#B9C52B"),
-    (45, 4.1, "Mesotrophic", "#D2C32A"),
-    (50, 6.4, "Eutrophic", "#E6AB27"),
-    (55, 10.0, "Eutrophic", "#EE8225"),
-    (60, 20, "Eutrophic", "#E95728"),
-    (65, 31, "Hypereutrophic", "#D83B35"),
-    (70, 56, "Hypereutrophic", "#C62A4D"),
-    (75, 87, "Hypereutrophic", "#AE2868"),
-    (80, 154, "Hypereutrophic", "#922580"),
-    (85, 247, "Hypereutrophic", "#74218C"),
-    (90, 427, "Hypereutrophic", "#561B82"),
-    (95, 718, "Hypereutrophic", "#3B155F"),
-    (100, 1183, "Hypereutrophic", "#250D42"),
+    # Hexes are the user-supplied trophic table with saturation enhanced
+    # (+45%, hue and order preserved) for a more vivid gradient.
+    (0, 0.04, "Oligotrophic", "#00359E"),
+    (5, 0.07, "Oligotrophic", "#005BC7"),
+    (10, 0.12, "Oligotrophic", "#0083DE"),
+    (15, 0.22, "Oligotrophic", "#00B7E9"),
+    (20, 0.34, "Oligotrophic", "#00DCE0"),
+    (25, 0.58, "Oligotrophic", "#05E89A"),
+    (30, 0.94, "Oligotrophic", "#3CDD43"),
+    (35, 1.62, "Oligotrophic", "#99E40E"),
+    (40, 2.6, "Mesotrophic", "#D6E808"),
+    (45, 4.1, "Mesotrophic", "#F8E204"),
+    (50, 6.4, "Eutrophic", "#FFB50E"),
+    (55, 10.0, "Eutrophic", "#FF8114"),
+    (60, 20, "Eutrophic", "#FF4C12"),
+    (65, 31, "Hypereutrophic", "#FD1910"),
+    (70, 56, "Hypereutrophic", "#E9073A"),
+    (75, 87, "Hypereutrophic", "#CC0A67"),
+    (80, 154, "Hypereutrophic", "#AB0C90"),
+    (85, 247, "Hypereutrophic", "#8109A4"),
+    (90, 427, "Hypereutrophic", "#590499"),
+    (95, 718, "Hypereutrophic", "#3B0470"),
+    (100, 1183, "Hypereutrophic", "#24014E"),
 ]
 CHL_STOPS = [(tsi, _hex_rgb(hx)) for tsi, _chl, _tr, hx in CHL_TSI_TABLE]
 CHL_MIN = 0.0
@@ -181,7 +183,7 @@ def run():
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
     # v5 marker forces one rebuild to deploy the fixed-scale rendering.
-    source_id = f"{dataset}-v6-{times[0][:10]}"
+    source_id = f"{dataset}-v7-{times[0][:10]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
@@ -341,11 +343,10 @@ def _build(bounds, times, dataset):
     meta["dataset"] = dataset
     meta["mosaic_sources"] = day_sources
     meta["mosaic_method"] = f"per-pixel median of {len(stack)} daily composites"
-    # v6 = Carlson TSI 0-100 scale (even 5-unit steps, user table colors;
-    # same-TSI-same-color; legend labels TSI + chl-a equivalents). One-time
-    # rotation to deploy the TSI rendering; afterwards the id tracks
-    # source dataset+date only.
-    source_id = f"{dataset}-v6-{times[0][:10]}"
+    # v7 = saturation-enhanced TSI trophic colors (+45%, hue/order
+    # preserved). One-time rotation to deploy the vivid rendering;
+    # afterwards the id tracks source dataset+date only.
+    source_id = f"{dataset}-v7-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]

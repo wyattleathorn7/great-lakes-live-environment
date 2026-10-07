@@ -450,8 +450,8 @@ def main():
     _cgaps = [_cvals[i + 1] - _cvals[i] for i in range(len(_cvals) - 1)]
     check("chl-even-5-steps", max(_cgaps) - min(_cgaps) < 1e-9,
           _cgaps[0])
-    check("chl-oligo-deepblue", _cs[0][1] == (18, 59, 140))
-    check("chl-hyper-deep", _cs[-1][1] == (37, 13, 66))
+    check("chl-oligo-deepblue", _cs[0][1] == (0, 53, 158))
+    check("chl-hyper-deep", _cs[-1][1] == (36, 1, 78))
     check("chl-tsi-converts",
           abs(chl_to_tsi(0.94) - 30.0) < 0.1
           and abs(chl_to_tsi(154.0) - 80.0) < 0.1

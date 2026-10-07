@@ -36,13 +36,13 @@ M2MI = 1.0 / 1609.344
 # 30 (display max). Muted professional palette in the existing hue
 # family (maroon->red->orange->gold->green->teal->deep blue), never neon.
 STOPS = [
-    (0.0, (126, 47, 60)),     # dense fog: maroon (NWS <= 1/4 mi)
-    (0.25, (178, 60, 60)),    # LIFR boundary: red
-    (1.0, (208, 138, 62)),    # IFR boundary (FAA): orange
-    (3.0, (217, 200, 78)),    # MVFR boundary (FAA): gold
-    (5.0, (106, 168, 111)),   # VFR boundary (FAA): sage green
-    (10.0, (70, 170, 175)),   # VFR at METAR 10SM cap: teal-cyan
-    (30.0, (22, 60, 140)),    # VFR, model resolves past 10SM: deep blue
+    (0.0, (144, 29, 48)),     # dense fog: maroon (NWS <= 1/4 mi)
+    (0.25, (205, 33, 33)),    # LIFR boundary: red
+    (1.0, (241, 139, 29)),    # IFR boundary (FAA): orange
+    (3.0, (248, 224, 47)),    # MVFR boundary (FAA): gold
+    (5.0, (92, 182, 99)),     # VFR boundary (FAA): green
+    (10.0, (46, 191, 199)),   # VFR at METAR 10SM cap: cyan
+    (30.0, (0, 52, 162)),     # VFR, model resolves past 10SM: deep blue
 ]
 LABELS = [(0.0, "0 Dense fog"), (0.25, "0.25 LIFR"), (1.0, "1 IFR"),
           (3.0, "3 MVFR"), (5.0, "5 VFR"), (10.0, "10 VFR 10SM"),

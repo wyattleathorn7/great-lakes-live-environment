@@ -40,12 +40,12 @@ MSGS = [("TMP", "2 m above ground"), ("DPT", "2 m above ground"),
 # saturation (100). No invented severity system ("slight / moderate /
 # favorable" retired). Muted palette in the existing hue family.
 STOPS = [
-    (0.0, (190, 170, 120)),   # no condensation: tan
-    (20.0, (217, 200, 78)),   # relative humidity: muted gold
-    (40.0, (110, 175, 95)),   # dew-point depression: muted green
-    (60.0, (45, 165, 165)),   # dew-point depression: muted teal
-    (80.0, (50, 110, 190)),   # surfaces stay wet: steel blue
-    (100.0, (25, 40, 140)),   # saturation: deep blue
+    (0.0, (206, 177, 104)),   # no condensation: tan
+    (20.0, (248, 224, 47)),   # relative humidity: gold
+    (40.0, (99, 193, 77)),    # dew-point depression: green
+    (60.0, (18, 192, 192)),   # dew-point depression: teal
+    (80.0, (19, 105, 221)),   # surfaces stay wet: blue
+    (100.0, (0, 22, 165)),    # saturation: deep blue
 ]
 LABELS = [(0.0, "0"), (20.0, "20"), (40.0, "40"),
           (60.0, "60"), (80.0, "80"), (100.0, "100")]

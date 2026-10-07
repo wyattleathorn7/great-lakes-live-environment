@@ -43,12 +43,12 @@ MSGS = [("TMP", "2 m above ground"), ("DPT", "2 m above ground"),
 # severity system ("low/moderate/dense/extreme" retired). Muted palette
 # in the existing hue family, never neon.
 STOPS = [
-    (0.0, (106, 168, 111)),    # no observed fog: sage green
-    (20.0, (183, 194, 90)),    # fog risk: yellow-green
-    (40.0, (217, 160, 60)),    # active fog: gold
-    (60.0, (193, 75, 72)),     # active fog: brick red
-    (80.0, (138, 59, 110)),    # active fog: violet
-    (100.0, (59, 30, 80)),     # active fog: deep purple
+    (0.0, (92, 182, 99)),      # no observed fog: green
+    (20.0, (201, 217, 67)),    # fog risk: yellow-green
+    (40.0, (252, 170, 25)),    # active fog: gold
+    (60.0, (220, 49, 45)),     # active fog: red
+    (80.0, (156, 41, 115)),   # active fog: violet
+    (100.0, (61, 19, 91)),     # active fog: deep purple
 ]
 LABELS = [(0.0, "0"), (20.0, "20"), (40.0, "40"),
           (60.0, "60"), (80.0, "80"), (100.0, "100")]
