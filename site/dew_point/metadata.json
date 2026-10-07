@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
   "data_time_utc": "2026-10-06 10:00 PM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-10-06 11:01 PM EDT",
+  "processing_time_utc": "2026-10-06 11:31 PM EDT",
   "units": "degF (display; source K)",
   "spatial_resolution_source": "~3 km HRRR CONUS grid, mean-binned to the common canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
