@@ -4,11 +4,11 @@
   "freshness": "LATEST AVAILABLE (daily composite)",
   "noaa_source": "NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)",
   "product_name": "NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)",
-  "variable": "chlor_a (Chlorophyll Concentration, OC3 Algorithm); mosaic 2026-09-27..2026-09-21",
+  "variable": "chlor_a (Chlorophyll Concentration, OC3 Algorithm); mosaic 2026-10-05..2026-09-29",
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html",
-  "data_time_utc": "2026-09-27 08:00 AM EDT (7-day median mosaic ending 2026-09-27)",
+  "data_time_utc": "2026-10-05 08:00 AM EDT (7-day median mosaic ending 2026-10-05)",
   "source_last_modified_utc": "n/a (ERDDAP)",
-  "processing_time_utc": "2026-10-07 05:03 PM EDT",
+  "processing_time_utc": "2026-10-07 06:32 PM EDT",
   "units": "TSI 0-100 (display; source mg m^-3 chlorophyll-a)",
   "spatial_resolution_source": "~9 km VIIRS NRT (0.0833 deg), 7-day median mosaic, NaN-aware display smoothing",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -34,14 +34,14 @@
     "low": 0.07920839,
     "high": 99.92819,
     "percentiles": {
-      "p5": 0.5422579917549863,
-      "p25": 0.7398286312818527,
-      "p50": 1.1921453130085813,
-      "p75": 3.761912910730444,
-      "p95": 26.283932113647452,
-      "p99": 42.608004531860146
+      "p5": 0.5655897229909896,
+      "p25": 0.8018210530281067,
+      "p50": 1.3506011881514173,
+      "p75": 7.3313772381699245,
+      "p95": 30.06717628128351,
+      "p99": 46.376983642578125
     },
-    "n_obs": 610487,
+    "n_obs": 630487,
     "extends": [
       {
         "at": "2026-09-22 04:20 UTC",
@@ -54,22 +54,22 @@
     ]
   },
   "stats": {
-    "valid_cells": 17687,
-    "current_min": 0.4130792988425573,
-    "current_max": 65.46642585636714
+    "valid_cells": 10590,
+    "current_min": 0.2740774362992402,
+    "current_max": 94.59650456735916
   },
-  "dataset": "nesdisVHNSQchlaDaily",
+  "dataset": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
   "mosaic_sources": {
-    "2026-09-27T12:00:00Z": "nesdisVHNSQchlaDaily",
-    "2026-09-26T12:00:00Z": "nesdisVHNSQchlaDaily",
-    "2026-09-25T12:00:00Z": "nesdisVHNSQchlaDaily",
-    "2026-09-24T12:00:00Z": "nesdisVHNSQchlaDaily",
-    "2026-09-23T12:00:00Z": "nesdisVHNSQchlaDaily",
-    "2026-09-22T12:00:00Z": "nesdisVHNSQchlaDaily",
-    "2026-09-21T12:00:00Z": "nesdisVHNSQchlaDaily"
+    "2026-10-05T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-04T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-03T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-02T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-01T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-09-30T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-09-29T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily"
   },
   "mosaic_method": "per-pixel median of 7 daily composites",
-  "source_id": "nesdisVHNSQchlaDaily-v7-2026-09-27",
-  "source_version": "nesdisVHNSQchlaDaily-v7-2026-09-27",
-  "folder_html": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/legend.png?v=nesdisVHNSQchlaDaily-v7-2026-09-27\" width=\"600\" alt=\"legend\"><br>Carlson Trophic State Index from chlorophyll-a (fixed 0-100 scale, even 5-unit steps): <b>0-35</b> Oligotrophic (deep blue&rarr;green, chl 0.04-1.62) &rarr; <b>40-45</b> Mesotrophic (yellow-green, chl 2.6-4.1) &rarr; <b>50-60</b> Eutrophic (gold&rarr;red-orange, chl 6.4-20) &rarr; <b>65-100</b> Hypereutrophic (red&rarr;violet&rarr;dark, chl 31-1183). Legend labels show TSI (chl-a ug/L). Same TSI always shows the same color. High TSI = biomass / activity, not toxins.</p><p>Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass, shown on the Carlson Trophic State Index 0-100. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.</p><p><b>Units:</b> TSI (Carlson TSI from chlorophyll-a)<br/><b>Source:</b> NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)<br/><b>Update:</b> daily composites<br/><b>Why high values turn red/purple:</b> Carlson TSI trophic scale: oligotrophic blues through mesotrophic yellows and eutrophic oranges, with only hypereutrophic water reaching red-violet/deep-purple.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html\">ERDDAP dataset</a></p>"
+  "source_id": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v7-2026-10-05",
+  "source_version": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v7-2026-10-05",
+  "folder_html": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/legend.png?v=nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v7-2026-10-05\" width=\"600\" alt=\"legend\"><br>Carlson Trophic State Index from chlorophyll-a (fixed 0-100 scale, even 5-unit steps): <b>0-35</b> Oligotrophic (deep blue&rarr;green, chl 0.04-1.62) &rarr; <b>40-45</b> Mesotrophic (yellow-green, chl 2.6-4.1) &rarr; <b>50-60</b> Eutrophic (gold&rarr;red-orange, chl 6.4-20) &rarr; <b>65-100</b> Hypereutrophic (red&rarr;violet&rarr;dark, chl 31-1183). Legend labels show TSI (chl-a ug/L). Same TSI always shows the same color. High TSI = biomass / activity, not toxins.</p><p>Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass, shown on the Carlson Trophic State Index 0-100. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.</p><p><b>Units:</b> TSI (Carlson TSI from chlorophyll-a)<br/><b>Source:</b> NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)<br/><b>Update:</b> daily composites<br/><b>Why high values turn red/purple:</b> Carlson TSI trophic scale: oligotrophic blues through mesotrophic yellows and eutrophic oranges, with only hypereutrophic water reaching red-violet/deep-purple.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html\">ERDDAP dataset</a></p>"
 }
