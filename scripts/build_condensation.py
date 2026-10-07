@@ -32,24 +32,46 @@ OVERLAY_NAME = "💦 LIVE CONDENSATION"
 
 MSGS = [("TMP", "2 m above ground"), ("DPT", "2 m above ground"),
         ("RH", "2 m above ground")]
+# Fixed 0-100 scale in the derivation's own vocabulary
+# (config/condensation.json derivation, scripts/derived_moisture.py):
+# even value steps carry the source's own nouns — relative humidity
+# (whose term alone reaches exactly 35), dew-point depression (needed
+# past 35; alone reaches exactly 65), surfaces stay wet (high values),
+# saturation (100). No invented severity system ("slight / moderate /
+# favorable" retired). Muted palette in the existing hue family.
 STOPS = [
-    (0.0, (190, 170, 120)),   # dry: tan
-    (20.0, (240, 215, 60)),   # slight: yellow
-    (40.0, (120, 200, 90)),   # moderate: green
-    (60.0, (40, 180, 180)),   # favorable: teal
-    (80.0, (30, 110, 210)),   # very favorable: blue
-    (100.0, (25, 40, 140)),   # saturated: deep blue
+    (0.0, (190, 170, 120)),   # no condensation: tan
+    (20.0, (217, 200, 78)),   # relative humidity: muted gold
+    (40.0, (110, 175, 95)),   # dew-point depression: muted green
+    (60.0, (45, 165, 165)),   # dew-point depression: muted teal
+    (80.0, (50, 110, 190)),   # surfaces stay wet: steel blue
+    (100.0, (25, 40, 140)),   # saturation: deep blue
 ]
-LABELS = [(0.0, "LOWEST 0"), (25.0, "25"), (50.0, "50"),
-          (75.0, "75"), (100.0, "HIGHEST+ 100")]
+LABELS = [(0.0, "0"), (20.0, "20"), (40.0, "40"),
+          (60.0, "60"), (80.0, "80"), (100.0, "100")]
+# Two-row even key (step 20): values on row 1, the source's own nouns on
+# row 2. Formula landmarks (35 = humidity term alone; 65 = depression
+# term alone) live in the scale text so ticks stay even.
+KEY_TICKS = [
+    (0.0, "0", "No condensation"),
+    (20.0, "20", "Relative humidity"),
+    (40.0, "40", "Dew-point depression"),
+    (60.0, "60", "Dew-point depression"),
+    (80.0, "80", "Surfaces stay wet"),
+    (100.0, "100", "Saturation"),
+]
 SCALE_HTML = ("Condensation-favorability index 0-100 (DERIVED from HRRR "
-              "analysis, fixed absolute scale): <b>LOWEST 0</b> tan dry "
-              "&rarr; yellow &rarr; green &rarr; teal favorable &rarr; blue "
-              "very favorable &rarr; <b>HIGHEST+ 100</b> deep-blue "
-              "saturated. Same index always shows the same color. "
-              "Saturation closeness from depression plus humidity — not "
-              "relative humidity renamed, not dew point renamed, no fog "
-              "visibility gate.")
+              "analysis, fixed absolute scale): <b>0 No condensation</b> "
+              "tan (dew-point depression at/above 2.5 C with RH at/below "
+              "60%) &rarr; <b>20 Relative humidity</b> gold &rarr; <b>40 "
+              "Dew-point depression</b> green &rarr; <b>60 Dew-point "
+              "depression</b> teal &rarr; <b>80 Surfaces stay wet</b> "
+              "steel blue &rarr; <b>100 Saturation</b> deep blue (spread "
+              "at/below 0 C with RH 100%). Relative humidity alone "
+              "reaches 35; the depression term alone reaches 65; both "
+              "together reach saturation. Same index always shows the "
+              "same color — not relative humidity renamed, not dew point "
+              "renamed, no fog visibility gate.")
 
 
 def main():
@@ -145,7 +167,7 @@ def _build(base, dd, cc, source_id):
         "inputs gated to physical ranges pre-binning; index computed only "
         "where TMP+DPT+RH valid; full basin rectangle, no shoreline cut; "
         "missing analysis transparent; never zero-filled.",
-        alpha=165)
+        alpha=165, key_ticks=KEY_TICKS)
 
 
 if __name__ == "__main__":

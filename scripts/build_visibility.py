@@ -25,39 +25,45 @@ PRODUCT = "visibility"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "Great_Lakes_Live_Atmospheric_Visibility.kml"
-OVERLAY_NAME = "\U0001F319 LIVE ATMOSPHERIC VISIBILITY"
+OVERLAY_NAME = "🌤️ LIVE VISIBILITY"
 
 M2MI = 1.0 / 1609.344
+# FAA flight-category scale (AIM 7-1-7) + NWS Dense Fog Advisory + METAR
+# 10SM reporting cap — the field's own professional standard, in the
+# source's own units (statute miles). Render stops sit at the exact
+# standard boundaries (true linear positions): 0 / 0.25 (NWS dense-fog
+# advisory) / 1 (LIFR) / 3 (IFR) / 5 (MVFR) / 10 (VFR at the METAR cap) /
+# 30 (display max). Muted professional palette in the existing hue
+# family (maroon->red->orange->gold->green->teal->deep blue), never neon.
 STOPS = [
-    (0.0, (60, 10, 20)),     # obscured: maroon
-    (1.0, (190, 25, 25)),    # dense fog/haze: red
-    (3.0, (235, 90, 20)),    # poor: orange
-    (5.0, (240, 200, 40)),    # moderate: yellow
-    (10.0, (90, 190, 80)),   # good: green
-    (15.0, (20, 190, 200)),   # very good: cyan
-    (20.0, (20, 110, 200)),   # excellent: blue
-    (30.0, (16, 52, 140)),    # crystal clear: deep blue
+    (0.0, (126, 47, 60)),     # dense fog: maroon (NWS <= 1/4 mi)
+    (0.25, (178, 60, 60)),    # LIFR boundary: red
+    (1.0, (208, 138, 62)),    # IFR boundary (FAA): orange
+    (3.0, (217, 200, 78)),    # MVFR boundary (FAA): gold
+    (5.0, (106, 168, 111)),   # VFR boundary (FAA): sage green
+    (10.0, (70, 170, 175)),   # VFR at METAR 10SM cap: teal-cyan
+    (30.0, (22, 60, 140)),    # VFR, model resolves past 10SM: deep blue
 ]
-LABELS = [(0.0, "LOWEST 0"), (3.0, "3"), (10.0, "10"),
-          (20.0, "20"), (30.0, "HIGHEST+ 30")]
-# Two-row even key: values evenly stepped so words never overlap;
-# severity row tells the observing-quality story underneath.
-KEY_TICKS = [
-    (0.0, "0", "Obscured"),
-    (5.0, "5", "Very poor"),
-    (10.0, "10", "Poor"),
-    (15.0, "15", "Moderate"),
-    (20.0, "20", "Good"),
-    (25.0, "25", "Very good"),
-    (30.0, "30", "Crystal clear"),
+LABELS = [(0.0, "0 Dense fog"), (0.25, "0.25 LIFR"), (1.0, "1 IFR"),
+          (3.0, "3 MVFR"), (5.0, "5 VFR"), (10.0, "10 VFR 10SM"),
+          (30.0, "30 VFR")]
+# FAA-chart-style band key (custom legend): one row per source category,
+# swatch sampled at the band midpoint so it equals the raster color.
+VIS_BANDS = [  # (lo_mi, hi_mi, row label)
+    (0.0, 0.25, "0\u20130.25 Dense fog (NWS advisory \u22641/4 mi)"),
+    (0.25, 1.0, "0.25\u20131 LIFR (FAA)"),
+    (1.0, 3.0, "1\u20133 IFR (FAA)"),
+    (3.0, 5.0, "3\u20135 MVFR (FAA)"),
+    (5.0, 10.0, "5\u201310 VFR (FAA; 10SM METAR cap)"),
+    (10.0, 30.0, "10\u201330 VFR (model resolves past 10SM)"),
 ]
 SCALE_HTML = ("Meteorological visibility in statute miles (HRRR surface "
-              "analysis, fixed absolute scale): <b>LOWEST 0 Obscured</b> "
-              "maroon &rarr; very poor &rarr; poor &rarr; moderate yellow "
-              "&rarr; good green &rarr; very good cyan &rarr; blue &rarr; "
-              "<b>HIGHEST+ 30 Crystal clear</b> deep blue. The key steps "
-              "evenly (0/5/10/15/20/25/30) with observing quality written "
-              "under each value. Same visibility always shows the same "
+              "analysis, FAA flight-category scale): <b>0-0.25 Dense "
+              "fog</b> maroon (NWS Dense Fog Advisory, 1/4 mi or less) "
+              "&rarr; <b>0.25-1 LIFR</b> red &rarr; <b>1-3 IFR</b> orange "
+              "&rarr; <b>3-5 MVFR</b> gold &rarr; <b>5-30 VFR</b> green to "
+              "deep blue (10SM is the METAR reporting cap; the model "
+              "resolves past it). Same visibility always shows the same "
               "color; above 30 mi clamps into deep blue. "
               "Human-observer/mariner/pilot visibility through haze, "
               "mist, precipitation, and smoke — not astronomical seeing.")
@@ -247,6 +253,18 @@ def _build(dd, cc, source_id):
     metar_qc = _metar_qc(ddate, dtime, field, bounds, H, W)
     subtitle = (f"Surface visibility (statute miles, HRRR hourly)  |  "
                 f"{data_time_utc}")
+
+    def _visibility_legend(legend_path):
+        from geospatial_utils import draw_category_legend
+        from gradient_scale import color_for
+        rows = [(color_for((lo + hi) / 2.0, STOPS), label)
+                for lo, hi, label in VIS_BANDS]
+        return draw_category_legend(
+            legend_path, CONFIG["title"], subtitle, rows,
+            "Source: NOAA HRRR surface visibility analysis (FAA AIM 7-1-7 "
+            "flight categories; NWS Dense Fog Advisory \u22641/4 mi)",
+            note="Missing source data transparent; never zero-filled.")
+
     return finish(
         PRODUCT, CONFIG, KML_FILE, OVERLAY_NAME, field, STOPS, LABELS, "mi", subtitle,
         f"Source: NOAA HRRR {dd} t{cc}z (analysis)  |  "
@@ -274,7 +292,7 @@ def _build(dd, cc, source_id):
         "clamp into deep blue; full basin rectangle, no shoreline cut; "
         "residual edge no-data transparent with anti-fringe RGB bleed; "
         "never zero-filled.",
-        alpha=165, key_ticks=KEY_TICKS, edge_bleed=True)
+        alpha=165, edge_bleed=True, custom_legend=_visibility_legend)
 
 
 if __name__ == "__main__":

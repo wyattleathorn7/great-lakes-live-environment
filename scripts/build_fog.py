@@ -35,47 +35,46 @@ OVERLAY_NAME = "\U0001F32B\uFE0F LIVE FOG RISK/ACTIVE FOG"
 MSGS = [("TMP", "2 m above ground"), ("DPT", "2 m above ground"),
         ("RH", "2 m above ground"), ("UGRD", "10 m above ground"),
         ("VGRD", "10 m above ground"), ("VIS", "surface")]
-# v2 scale: risk owns 35% of the gradient (green -> orange), active fog
-# by severity/density owns 65% (orange -> dark purple). Even value steps
-# carry even severity steps: no / low / moderate / high risk, then active
-# / dense / severe / extreme fog.
+# v2 scale in the derivation's own vocabulary: risk owns 0-35, active
+# fog by density owns 35-100 (config/fog.json derivation,
+# scripts/derived_moisture.py). Even value steps carry the source's own
+# zone words — "no observed fog" / "fog risk" on the risk side, "active
+# fog" wherever the corroborated-visibility gate holds — so no invented
+# severity system ("low/moderate/dense/extreme" retired). Muted palette
+# in the existing hue family, never neon.
 STOPS = [
-    (0.0, (40, 160, 90)),     # no risk: green
-    (12.0, (140, 195, 80)),   # low: yellow-green
-    (25.0, (240, 215, 60)),   # moderate: yellow
-    (35.0, (245, 150, 30)),   # high risk: orange (top of risk zone)
-    (50.0, (225, 80, 25)),    # active fog: red-orange
-    (65.0, (200, 25, 40)),    # dense fog: red
-    (80.0, (150, 25, 110)),   # severe fog: red-violet
-    (100.0, (70, 15, 100)),   # extreme: dark purple
+    (0.0, (106, 168, 111)),    # no observed fog: sage green
+    (20.0, (183, 194, 90)),    # fog risk: yellow-green
+    (40.0, (217, 160, 60)),    # active fog: gold
+    (60.0, (193, 75, 72)),     # active fog: brick red
+    (80.0, (138, 59, 110)),    # active fog: violet
+    (100.0, (59, 30, 80)),     # active fog: deep purple
 ]
-LABELS = [(0.0, "No risk 0"), (12.0, "Low 12"), (25.0, "Moderate 25"),
-          (35.0, "High risk 35"), (50.0, "Active fog 50"),
-          (65.0, "Dense fog 65"), (80.0, "Severe 80"),
-          (100.0, "HIGHEST+ 100 Extreme")]
-# Two-row even key (step 20): values on row 1, severity on row 2. The
-# words walk the risk-to-fog path left to right — risk-side ticks say
-# "fog risk", fog-side ticks say "fog" — and even spacing means nothing
-# ever overlaps.
+LABELS = [(0.0, "0"), (20.0, "20"), (40.0, "40"),
+          (60.0, "60"), (80.0, "80"), (100.0, "100")]
+# Two-row even key (step 20): values on row 1, the source's own zone
+# words on row 2. Fog-side ticks resolve to their exact source
+# visibilities in the scale text (fog_zone = 35+65*d).
 KEY_TICKS = [
-    (0.0, "0", "No risk"),
-    (20.0, "20", "Low fog risk"),
-    (40.0, "40", "Light fog"),
-    (60.0, "60", "Moderate fog"),
-    (80.0, "80", "Dense fog"),
-    (100.0, "100", "Extreme fog"),
+    (0.0, "0", "No observed fog"),
+    (20.0, "20", "Fog risk"),
+    (40.0, "40", "Active fog"),
+    (60.0, "60", "Active fog"),
+    (80.0, "80", "Active fog"),
+    (100.0, "100", "Active fog"),
 ]
 SCALE_HTML = ("Fog index 0-100 (DERIVED from HRRR analysis, fixed absolute "
-              "scale): risk owns the first 35% — <b>LOWEST 0 No risk</b> "
-              "green &rarr; low fog risk &rarr; high-risk orange at 35 — "
-              "then active fog by severity: light fog &rarr; moderate fog "
-              "&rarr; dense fog &rarr; <b>HIGHEST+ 100 Extreme fog</b> dark "
-              "purple. The key steps evenly (0/20/40/60/80/100) with "
-              "severity written under each value, walking the "
-              "fog-risk-to-active-fog path left to right. Same index always "
-              "shows the same color. Thermodynamic risk "
-              "with an observed-visibility density confirmation — not a "
-              "copy of the visibility layer.")
+              "scale): <b>0 No observed fog</b> sage green &rarr; <b>20 "
+              "Fog risk</b> yellow-green (risk owns 0-35: thermodynamic "
+              "base x calm-air factor) &rarr; <b>40 Active fog</b> gold "
+              "(VIS 4797 m / 2.98 mi) &rarr; <b>60 Active fog</b> brick "
+              "red (VIS 3486 m / 2.17 mi) &rarr; <b>80 Active fog</b> "
+              "violet (VIS 1842 m / 1.14 mi) &rarr; <b>100 Active fog</b> "
+              "deep purple (VIS 0 m). Active fog by corroborated density "
+              "owns 35-100 (gate: VIS below 5000 m with RH at/above 90%); "
+              "dry-air speckles can never paint active fog. Same index "
+              "always shows the same color — not a copy of the visibility "
+              "layer.")
 
 
 def main():

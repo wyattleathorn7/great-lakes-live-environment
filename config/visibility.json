@@ -1,6 +1,6 @@
 {
   "product": "visibility",
-  "title": "LIVE ATMOSPHERIC VISIBILITY",
+  "title": "LIVE VISIBILITY",
   "freshness_label": "LIVE / CURRENT MODEL (analysis), hourly cycles",
   "source_name": "NOAA/NCEP HRRR 3 km surface visibility analysis, hourly cycles",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",

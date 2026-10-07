@@ -38,12 +38,12 @@ SKIP_NOTE = "Turn on/off independently of all other layers."
 # to force Google Earth clients to refetch an otherwise identical source
 # cycle after a rendering change (new ?v= without touching data or URLs).
 RENDER_TAGS = {
-    "visibility": "g6",
+    "visibility": "g7",
     "humidity": "g2",
     "light_pollution": "g4",
     "air_quality": "g3",
-    "condensation": "g2",
-    "fog": "g3",
+    "condensation": "g3",
+    "fog": "g4",
     "dew_point": "g2",
 }
 
