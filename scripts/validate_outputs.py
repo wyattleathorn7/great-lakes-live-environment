@@ -73,8 +73,6 @@ PRODUCTS = {
                    "max_opaque_min": 10_000},
     "humidity": {"kml": "Great_Lakes_Live_Relative_Humidity.kml",
                  "max_opaque_min": 10_000},
-    "precipitable_water": {"kml": "Great_Lakes_Live_Precipitable_Water_Vapor.kml",
-                           "max_opaque_min": 10_000},
     "light_pollution": {"kml": "Great_Lakes_Live_Light_Pollution.kml",
                         "max_opaque_min": 10_000},
     "air_quality": {"kml": "Great_Lakes_Live_Air_Quality.kml",
@@ -213,7 +211,7 @@ def main():
                                    "uv_index", "air_temperature",
                                    "solar_radiation", "precipitation",
                                    "aurora", "visibility", "humidity",
-                                   "precipitable_water", "light_pollution",
+                                   "light_pollution",
                                    "air_quality", "condensation", "fog",
                                    "dew_point"):
                     # basin-rectangle layers (user requirement): full
@@ -286,8 +284,6 @@ def main():
                 failures.append(f"{product}: visibility scale must be 0-30 mi, got {lo}-{hi}")
             if product == "humidity" and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: humidity scale must be 0-100 %, got {lo}-{hi}")
-            if product == "precipitable_water" and (lo, hi) != (0.0, 60.0):
-                failures.append(f"{product}: PWAT scale must be 0-60 mm, got {lo}-{hi}")
             if product == "light_pollution" and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: light scale must be 0-100 index, got {lo}-{hi}")
             if product == "air_quality" and (lo, hi) != (0.0, 150.0):
@@ -489,7 +485,7 @@ def main():
                                "surface_currents",
                                "precipitation", "aurora", "bacteria",
                                "visibility", "humidity",
-                               "precipitable_water", "light_pollution",
+                               "light_pollution",
                                "air_quality", "condensation", "fog",
                                "dew_point"):
                     if "<Folder>" not in text:

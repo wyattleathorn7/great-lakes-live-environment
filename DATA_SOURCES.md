@@ -733,9 +733,6 @@ the other products and the Pages publish proceed normally.
 - **♨️ Relative humidity — NCEP HRRR `RH` 2 m analysis (%), hourly
   cycles.** FIXED 0–100 % spectrum. Near-surface saturation percentage;
   never PWAT or dew point. Freshness: LIVE / CURRENT MODEL (analysis).
-- **☁️ Precipitable water vapor — NCEP HRRR `PWAT` entire-atmosphere
-  analysis (kg m⁻² = mm), hourly cycles.** Column-integrated moisture,
-  FIXED 0–60 mm spectrum. Freshness: LIVE / CURRENT MODEL (analysis).
 - **💡 Light pollution — NASA VIIRS Black Marble annual nighttime-lights
   composite (Suomi NPP DNB, Román et al.) via the public NASA GIBS WMTS
   (`VIIRS_Black_Marble`, currently the 2016 annual; 10 level-6 tiles at

@@ -712,7 +712,6 @@ def _k(p):
             "bacteria": "Water_Quality",
             "visibility": "Atmospheric_Visibility",
             "humidity": "Relative_Humidity",
-            "precipitable_water": "Precipitable_Water_Vapor",
             "light_pollution": "Light_Pollution",
             "air_quality": "Air_Quality",
             "condensation": "Condensation",

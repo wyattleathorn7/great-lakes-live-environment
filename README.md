@@ -1,7 +1,7 @@
 # Great Lakes Live Environment
 
-One automated GitHub system publishing **forty-two independent live raster layers**
-for Google Earth: twenty-six environmental layers from official NOAA/NASA operational
+One automated GitHub system publishing **forty-one independent live raster layers**
+for Google Earth: twenty-five environmental layers from official NOAA/NASA operational
 sources, plus **sixteen live game-fish distribution gradients** (see below).
 
 | Layer | Source | Refresh wording |
@@ -28,7 +28,6 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | 💧 Live Water Quality | USGS Water Quality Portal E. coli/enterococci/fecal coliform (7-day newest-per-station halos) under EPA BEACON + EPA 2012 RWQC & Red Book thresholds (GM/STV/BAV); transparent NO DATA where unobserved, water-only all five lakes | SOURCE CHECKED HOURLY / LATEST VALID OBSERVATION |
 | 🌙 Live Atmospheric Visibility | NCEP HRRR `VIS` surface analysis (m → statute miles), FIXED 0–30 mi scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ♨️ Live Relative Humidity | NCEP HRRR `RH` 2 m analysis (%), FIXED 0–100 % scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
-| ☁️ Live Precipitable Water Vapor | NCEP HRRR `PWAT` entire-atmosphere analysis (kg m⁻² = mm), FIXED 0–60 mm scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | 💡 Live Light Pollution | NASA VIIRS Black Marble annual nighttime-lights composite via GIBS WMTS, keyed on the true Bortle dark-sky scale Classes 1–9 (log-spaced index bands, approximate relative classification) | LATEST AVAILABLE COMPOSITE (annual, hourly check) |
 | 🌫️ Live Air Quality | ECMWF CAMS PM2.5 analysis via Open-Meteo (µg/m³, EPA-anchored FIXED 0–150 scale, labeled modeled) | LIVE / CURRENT MODEL (hourly check) |
 | 💦 Live Condensation | HRRR TMP+DPT+RH-derived condensation-favorability index 0–100 (**derived**, no wind/visibility inputs) | LIVE / CURRENT MODEL (derived analysis), hourly cycles |
@@ -170,7 +169,6 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_bacteria.py`,
 `python scripts/build_visibility.py`,
 `python scripts/build_humidity.py`,
-`python scripts/build_precipitable_water.py`,
 `python scripts/build_light_pollution.py`,
 `python scripts/build_air_quality.py`,
 `python scripts/build_condensation.py`,

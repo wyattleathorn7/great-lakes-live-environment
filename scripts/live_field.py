@@ -39,7 +39,6 @@ SKIP_NOTE = "Turn on/off independently of all other layers."
 RENDER_TAGS = {
     "visibility": "g3",
     "humidity": "g2",
-    "precipitable_water": "g2",
     "light_pollution": "g4",
     "air_quality": "g2",
     "condensation": "g2",
