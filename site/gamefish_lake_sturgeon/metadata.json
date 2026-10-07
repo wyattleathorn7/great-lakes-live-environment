@@ -8,7 +8,7 @@
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
   "data_time_utc": "2026-10-06 02:51 AM EDT",
   "source_last_modified_utc": "2026-10-06 02:51 AM EDT",
-  "processing_time_utc": "2026-10-06 12:20 PM EDT",
+  "processing_time_utc": "2026-10-06 08:02 PM EDT",
   "units": "modeled index 0..1",
   "spatial_resolution_source": "~1.8 km GLSEA SST binned to shared canvas; telemetry evidence splatted",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,8 +25,8 @@
   "missing_data_treatment": "land and missing SST fully transparent; near-zero index suppressed to transparent (no fake coverage).",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "source_id": "gfish-2026-10-06-glsea-Tue, 06 Oct 2026 06:51:05 GMT-14ba1c6097b5-m1.1.0-r3",
-  "source_version": "gfish-2026-10-06-glsea-Tue-06-Oct-2026-06-51-05-GMT-14ba1c6097b5-m1.1.0-r3",
+  "source_id": "gfish-2026-10-07-glsea-Tue, 06 Oct 2026 06:51:05 GMT-37aa2d24469e-m1.1.0-r3",
+  "source_version": "gfish-2026-10-07-glsea-Tue-06-Oct-2026-06-51-05-GMT-37aa2d24469e-m1.1.0-r3",
   "legend_size": [
     640,
     300
@@ -44,16 +44,16 @@
     ]
   },
   "diel": {
-    "phase": "day",
-    "solar_elev": 38.6,
-    "night_factor": 0.0
+    "phase": "crepuscular",
+    "solar_elev": -10.4,
+    "night_factor": 0.928
   },
-  "confidence": 0.694,
+  "confidence": 0.605,
   "component_means": {
     "T": 0.0061,
     "M": 0.2177,
     "TH": 0.8014,
-    "D": 0.5091,
+    "D": 0.4428,
     "H": 0.6018,
     "C": 0.0139
   },
@@ -61,9 +61,9 @@
     "no current resolved telemetry for this species; behavioral priors + environment carry the layer."
   ],
   "stats": {
-    "mean_index": 0.3051,
-    "p95_index": 0.3647,
-    "max_index": 0.6961
+    "mean_index": 0.3018,
+    "p95_index": 0.3655,
+    "max_index": 0.7012
   },
-  "legend_scale_html": "Modeled distribution / habitat index: LOW <b>0</b> (transparent) &rarr; HIGH <b>1</b>. Current mean: <b>0.3051</b>, p95: <b>0.3647</b>, confidence/support: <b>0.694</b>. Telemetry events: <b>0</b> (+869 behavioral-prior receivers). Transparency marks low confidence or water outside the modeled domain."
+  "legend_scale_html": "Modeled distribution / habitat index: LOW <b>0</b> (transparent) &rarr; HIGH <b>1</b>. Current mean: <b>0.3018</b>, p95: <b>0.3655</b>, confidence/support: <b>0.605</b>. Telemetry events: <b>0</b> (+869 behavioral-prior receivers). Transparency marks low confidence or water outside the modeled domain."
 }
