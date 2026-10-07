@@ -39,47 +39,64 @@ API = "https://air-quality-api.open-meteo.com/v1/air-quality"
 # professional standard for US public air-quality reporting. The source
 # variable stays CAMS PM2.5 (ug/m3); it is converted to AQI via the EPA
 # PM2.5 breakpoint table so the SAME index the public sees on AirNow is
-# what the gradient paints. Fixed linear 0-500 scale, stops at the true
-# category boundaries (evenly distributed in AQI value space).
-# Muted professional palette: same general hue per category as the EPA
-# wall (green/yellow/orange/red/purple/maroon) but desaturated — never
-# the neon pure-green/yellow/red of the raw-data era.
-AQI_GOOD_PALE = (184, 214, 187)  # cleanest: pale green (audit fix —
-                                # the old 0->50 flat-good segment rendered
-                                # every real basin reading one identical
-                                # green; the Good band is now a continuous
-                                # pale->green ramp so true variation shows)
-AQI_GOOD = (106, 168, 111)      # muted sage green (was neon green)
-AQI_MODERATE = (217, 200, 78)   # muted goldenrod (was neon yellow)
-AQI_USG = (208, 138, 62)        # muted orange
-AQI_UNHEALTHY = (193, 75, 72)   # muted brick red
-AQI_VERY = (138, 90, 160)       # muted purple
-AQI_HAZ = (126, 47, 60)         # muted maroon
-STOPS = [
-    (0.0, AQI_GOOD_PALE),
-    (50.0, AQI_GOOD),
-    (100.0, AQI_MODERATE),
-    (150.0, AQI_USG),
-    (200.0, AQI_UNHEALTHY),
-    (300.0, AQI_VERY),
-    (500.0, AQI_HAZ),
+# what the gradient paints. PRESET discrete bands (wind-style): each AQI
+# category is one flat official EPA color with hard boundaries — no
+# continuous slide for neighboring values to blur together.
+AQI_BANDS = [  # (lo, hi, rep, name, official EPA rgb)
+    (0.0, 50.0, 25.0, "Good", (0, 228, 0)),
+    (51.0, 100.0, 75.0, "Moderate", (255, 255, 0)),
+    (101.0, 150.0, 125.0, "Unhealthy for Sensitive Groups", (255, 126, 0)),
+    (151.0, 200.0, 175.0, "Unhealthy", (255, 0, 0)),
+    (201.0, 300.0, 250.0, "Very Unhealthy", (143, 63, 151)),
+    (301.0, 500.0, 400.0, "Hazardous", (126, 0, 35)),
 ]
-LABELS = [(0.0, "0 Good"), (50.0, "50 Good"), (100.0, "100 Moderate"),
-          (150.0, "150 USG"), (200.0, "200 Unhealthy"),
-          (300.0, "300 Very unhealthy"), (500.0, "500 Hazardous")]
+STOPS = [(rep, rgb) for _, _, rep, _, rgb in AQI_BANDS]
+
+
+def aqi_band_rep(aqi):
+    """Quantize an AQI value to its preset band representative value.
+
+    Every pixel renders its band's exact official color (the field only
+    ever holds the six rep values, so the LUT interpolator can never
+    blend bands). Above 500 clamps Hazardous; NaN stays missing."""
+    import math as _m
+    try:
+        v = float(aqi)
+    except (TypeError, ValueError):
+        return float("nan")
+    if not _m.isfinite(v) or v < 0:
+        return float("nan")
+    for lo, hi, rep, _, _ in AQI_BANDS:
+        if v <= hi:
+            return rep
+    return AQI_BANDS[-1][2]
+
+
+AQ_BAND_ROWS = [  # (color, legend row label) — wind-style category key
+    ((0, 228, 0), "0\u201350 Good"),
+    ((255, 255, 0), "51\u2013100 Moderate"),
+    ((255, 126, 0), "101\u2013150 Unhealthy for Sensitive Groups"),
+    ((255, 0, 0), "151\u2013200 Unhealthy"),
+    ((143, 63, 151), "201\u2013300 Very Unhealthy"),
+    ((126, 0, 35), "301\u2013500 Hazardous"),
+]
+LABELS = [(25.0, "25 Good"), (75.0, "75 Moderate"),
+          (125.0, "125 USG"), (175.0, "175 Unhealthy"),
+          (250.0, "250 Very unhealthy"), (400.0, "400 Hazardous")]
 KEY_TICKS = [(0.0, "0", "Good"), (50.0, "50", "Good"),
              (100.0, "100", "Moderate"), (150.0, "150", "USG"),
              (200.0, "200", "Unhealthy"), (300.0, "300", "Very unhealthy"),
              (500.0, "500", "Hazardous")]
-SCALE_HTML = ("US EPA Air Quality Index (AQI, PM2.5-based, fixed 0-500 "
-              "scale): <b>0-50</b> Good (pale green at 0 deepening to "
-              "green at 50) &rarr; <b>51-100</b> "
-              "Moderate (yellow) &rarr; <b>101-150</b> Unhealthy for "
-              "Sensitive Groups (orange) &rarr; <b>151-200</b> Unhealthy "
-              "(red) &rarr; <b>201-300</b> Very unhealthy (purple) &rarr; "
-              "<b>301-500</b> Hazardous (maroon). Same AQI always shows "
-              "the same color. CAMS PM2.5 model analysis converted via "
-              "EPA PM2.5 breakpoints — not station observations.")
+SCALE_HTML = ("US EPA Air Quality Index (AQI, PM2.5-based): six preset "
+              "official bands with hard boundaries — <b>0-50 Good</b> "
+              "green &rarr; <b>51-100 Moderate</b> yellow &rarr; "
+              "<b>101-150 Unhealthy for Sensitive Groups</b> orange "
+              "&rarr; <b>151-200 Unhealthy</b> red &rarr; <b>201-300 Very "
+              "Unhealthy</b> purple &rarr; <b>301-500 Hazardous</b> "
+              "maroon. Every pixel shows its band's exact color; no "
+              "blending between bands. CAMS PM2.5 model analysis "
+              "converted via EPA PM2.5 breakpoints — not station "
+              "observations.")
 # EPA PM2.5 (ug/m3, 24-hr) -> AQI breakpoints: (c_lo, c_hi, aqi_lo, aqi_hi)
 PM25_AQI_BP = [
     (0.0, 12.0, 0, 50),
@@ -227,8 +244,17 @@ def _build(source_id):
         data_time_utc = f"{hour} UTC"
     subtitle = (f"US EPA Air Quality Index (AQI, PM2.5-based)  |  {data_time_utc}")
     aqi_field = np.vectorize(pm25_to_aqi, otypes=[float])(field)
+    band_field = np.vectorize(aqi_band_rep, otypes=[float])(aqi_field)
+
+    def _aq_legend(legend_path):
+        from geospatial_utils import draw_category_legend
+        return draw_category_legend(
+            legend_path, CONFIG["title"], subtitle, AQ_BAND_ROWS,
+            "Source: CAMS via Open-Meteo, US EPA AQI bands (official colors)",
+            note="Missing source data transparent; never zero-filled.")
+
     return finish(
-        PRODUCT, CONFIG, KML_FILE, OVERLAY_NAME, aqi_field, STOPS, LABELS,
+        PRODUCT, CONFIG, KML_FILE, OVERLAY_NAME, band_field, STOPS, LABELS,
         "AQI", subtitle,
         f"Source: CAMS via Open-Meteo ({hour} UTC analysis)  |  "
         f"Processed {now_det_str()}", SCALE_HTML,
@@ -240,18 +266,21 @@ def _build(source_id):
          "Checked hourly; republishes only when CAMS publishes a newer "
          "valid hour."],
         {"model_cycle": f"CAMS {hour} UTC",
-         "stats": {"cams_hour": hour,
-                   "data_nature": "modeled analysis, not observed",
-                   "index": "US EPA AQI (PM2.5-based, 0-500)"}},
+          "stats": {"cams_hour": hour,
+                    "data_nature": "modeled analysis, not observed",
+                    "index": "US EPA AQI (PM2.5-based, 0-500)",
+                    "aqi_min": float(np.nanmin(aqi_field)),
+                    "aqi_max": float(np.nanmax(aqi_field))}},
         source_id, data_time_utc, "n/a (API)",
         "AQI index 0-500 (display; source ug/m3 PM2.5 as filed)",
         f"CAMS PM2.5 analysis sampled on a {GRID_NLON}x{GRID_NLAT} basin grid, "
         "bilinearly resampled to the common canvas, converted PM2.5->AQI",
         "only [0,500.4] ug/m3 admitted; AQI above 500 clamps into maroon; "
+        "pixels quantized to preset EPA bands (no inter-band blending); "
         "full basin rectangle, no shoreline cut; missing grid cells "
         "transparent; never zero-filled; modeled output, never labeled "
         "observed.",
-        key_ticks=KEY_TICKS)
+        custom_legend=_aq_legend)
 
 
 if __name__ == "__main__":

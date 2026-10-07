@@ -704,9 +704,9 @@ def main():
     check("aqi-monotonic",
           all(b > a for a, b in zip(_aq_vs, _aq_vs[1:])))
     _aq_vals = [v for v, _ in _AQ_STOPS]
-    check("aqi-scale-0-500",
-          bool(_aq_vals[0] == 0.0 and _aq_vals[-1] == 500.0),
-          (_aq_vals[0], _aq_vals[-1]))
+    check("aqi-scale-band-reps",
+          bool(_aq_vals == [25.0, 75.0, 125.0, 175.0, 250.0, 400.0]),
+          _aq_vals)
     check("aqi-scale-ascending",
           all(b > a for a, b in zip(_aq_vals, _aq_vals[1:])))
     # every category boundary owns a distinct color (no flat band can
@@ -717,6 +717,24 @@ def main():
     check("aqi-bands-distinct", len(set(_aq_band)) == 7, len(set(_aq_band)))
     check("aqi-good-ramps",
           bool(_cf_aq(0.0, _AQ_STOPS) != _cf_aq(50.0, _AQ_STOPS)))
+    # preset bands: official EPA colors, hard reps, quantized field
+    from build_air_quality import aqi_band_rep as _aqrep
+    check("aqi-band-colors",
+          bool([c for _, c in _AQ_STOPS]
+                == [(0, 228, 0), (255, 255, 0), (255, 126, 0),
+                    (255, 0, 0), (143, 63, 151), (126, 0, 35)]))
+    for _v, _r in [(0.0, 25.0), (50.0, 25.0), (51.0, 75.0),
+                   (100.0, 75.0), (101.0, 125.0), (200.0, 175.0),
+                   (300.0, 250.0), (500.0, 400.0), (900.0, 400.0)]:
+        check(f"aqi-rep-{_v}", bool(float(_aqrep(_v)) == _r),
+              float(_aqrep(_v)))
+    check("aqi-rep-nan", bool(_np.isnan(_aqrep(float("nan")))))
+    check("aqi-rep-negative", bool(_np.isnan(_aqrep(-5.0))))
+    for _rep, _rgb in zip([25.0, 75.0, 125.0, 175.0, 250.0, 400.0],
+                          [(0, 228, 0), (255, 255, 0), (255, 126, 0),
+                           (255, 0, 0), (143, 63, 151), (126, 0, 35)]):
+        check(f"aqi-rep-exact-{_rep}",
+              bool(_cf_aq(_rep, _AQ_STOPS) == _rgb))
     _aq_words = " ".join(w for _, _, w in _AQ_TICKS)
     for _w in ("Good", "Moderate", "USG", "Unhealthy", "Very unhealthy",
                "Hazardous"):

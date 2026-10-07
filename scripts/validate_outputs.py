@@ -286,8 +286,8 @@ def main():
                 failures.append(f"{product}: humidity scale must be 0-100 %, got {lo}-{hi}")
             if product == "light_pollution" and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: light scale must be 0-100 index, got {lo}-{hi}")
-            if product == "air_quality" and (lo, hi) != (0.0, 500.0):
-                failures.append(f"{product}: AQI scale must be 0-500 AQI, got {lo}-{hi}")
+            if product == "air_quality" and (lo, hi) != (25.0, 400.0):
+                failures.append(f"{product}: AQI preset band reps must be 25-400, got {lo}-{hi}")
             if product == "air_quality":
                 # audit: deployed readings must be finite, in-scale, and
                 # render as more than one color when they vary (a flat
