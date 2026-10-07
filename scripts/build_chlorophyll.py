@@ -6,9 +6,9 @@ OC3 algorithm), fallback SQ Daily -> validate -> 7-day MEDIAN mosaic of
 the latest daily composites (daily ocean color is cloud-sparse and single
 days carry row striping, so each pixel shows the median valid observation
 within the window, which cancels day-calibration steps and swath seams)
--> clip to Great Lakes -> fixed absolute chlorophyll scale (same pattern
-as the other working products: tuned anchors where lake water lives, raw
-values rendered directly, no per-run rescaling) -> light display smoothing
+-> clip to Great Lakes -> Carlson Trophic State Index 0-100 scale
+(chl-a converts via TSI = 9.81*ln(chl)+30.6; even 5-unit steps with the
+trophic color table, same TSI always the same color) -> light display smoothing
 (NaN-aware local mean, valid pixels only, same documented treatment as
 the live wind splat) -> transparent PNG (water only, shared shoreline
 mask) -> key image + metadata -> Folder KML.

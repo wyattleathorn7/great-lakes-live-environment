@@ -13,7 +13,7 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | 🧊 Live Ice Type | USNIC NAIS daily SIGRID-3 shapefile → predominant WMO stage (**analyzed**, 17 categories + unknown) | LATEST AVAILABLE (seasonal) |
 | 💨 Live Wind | NCEP GLWU `UGRD/VGRD` surface analysis → knots → **Beaufort Force 0–12** + direction arrows | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 | 🍂 Live Leaf Color | NASA MODIS Aqua MYD13A1/MYD09A1 global 500 m via Planetary Computer (NDVI trajectory + reflectance + NDSI snow) → circular phenology phase, basin-wide land (open water transparent) | LATEST AVAILABLE COMPOSITE |
-| 🦠 Live Chlorophyll | NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP); newest-valid 7-day mosaic; balanced linear scale, water-only | LATEST AVAILABLE (daily composite) |
+| 🦠 Live Chlorophyll | NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP); newest-valid 7-day mosaic; Carlson TSI 0–100 trophic scale, water-only | LATEST AVAILABLE (daily composite) |
 | 🌫️ Live Water Clarity | NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, NRT, Global 4 km, Daily (ERDDAP); newest-valid 7-day mosaic; balanced linear scale, water-only | LATEST AVAILABLE (daily composite) |
 | ☀️ Live Solar Radiation | NOAA/NCEP RAP hourly DSWRF surface flux (incoming sunlight W/m²; not a UV Index), value valid for the current hour; fixed sequential scale, full basin rectangle | LIVE / CURRENT MODEL (hourly RAP cycle) |
 | 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles; FIXED brightened banded 5°F key (-60..150 °F, blue-white → royal freeze wall → yellows → scorching pink/reds), full basin rectangle | LIVE / CURRENT MODEL (analysis), hourly cycles |
@@ -29,9 +29,9 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | 🌤️ Live Visibility | NCEP HRRR `VIS` surface analysis (m → statute miles), FAA flight-category scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | ♨️ Live Relative Humidity | NCEP HRRR `RH` 2 m analysis (%), FIXED 0–100 % scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 | 💡 Live Light Pollution | NASA VIIRS Black Marble annual nighttime-lights composite via GIBS WMTS, keyed on the true Bortle dark-sky scale Classes 1–9 (log-spaced index bands, approximate relative classification) | LATEST AVAILABLE COMPOSITE (annual, yearly check) |
-| 🌫️ Live Air Quality | ECMWF CAMS PM2.5 analysis via Open-Meteo (µg/m³, EPA-anchored FIXED 0–150 scale, labeled modeled) | LIVE / CURRENT MODEL (hourly check) |
-| 💦 Live Condensation | HRRR TMP+DPT+RH-derived condensation-favorability index 0–100 (**derived**, no wind/visibility inputs) | LIVE / CURRENT MODEL (derived analysis), hourly cycles |
-| 🌫️ Live Fog Risk/Active Fog | HRRR TMP+DPT+RH+10 m wind+VIS-derived fog-risk index 0–100 with active-fog visibility gate (**derived**) | LIVE / CURRENT MODEL (derived analysis), hourly cycles |
+| 🌫️ Live Air Quality | ECMWF CAMS PM2.5 analysis via Open-Meteo converted to US EPA AQI 0–500 (muted EPA palette, labeled modeled) | LIVE / CURRENT MODEL (hourly check) |
+| 💦 Live Condensation | HRRR TMP+DPT+RH-derived condensation-favorability index 0–100 in the derivation's own terms (relative humidity / dew-point depression / saturation) | LIVE / CURRENT MODEL (derived analysis), hourly cycles |
+| 🌫️ Live Fog Risk/Active Fog | HRRR TMP+DPT+RH+10 m wind+VIS-derived fog index 0–100 in the derivation's own words (no observed fog / fog risk / active fog) with exact source-visibility equivalents | LIVE / CURRENT MODEL (derived analysis), hourly cycles |
 | 🧊 Live Dew Point | NCEP HRRR `DPT` 2 m analysis (K → °F), FIXED −20…90 °F scale | LIVE / CURRENT MODEL (analysis), hourly cycles |
 
 Sixteen additional **live game-fish distribution gradients** (walleye, yellow perch,

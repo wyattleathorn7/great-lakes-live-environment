@@ -261,13 +261,12 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
    color is cloud-sparse; ERDDAP stride-2 fetch, canvas upscales).
    Balanced LINEAR color scale. The gapfilled NRT stream also removes the
    scan-line gaps of the old SQ-only mosaic.
-- **Display scale (v5):** FIXED absolute 0.001–100 mg/m³, built like the
-  other working products (UV/pressure/clarity style): hand-placed anchors
-  in the preserved blue->purple family, evenly spaced in log10 so each
-  half-decade owns an equal share of the color and the legend labels sit
-  evenly (0/20/40/60/80/100% of the bar). The floor equals valid_min, so
-  no valid observation can clamp into the floor color. Values shown
-  exactly as observed; 100+ clamps into deep purple as honest extremes.
+- **Display scale (v6):** Carlson Trophic State Index 0–100
+  (TSI = 9.81·ln(chl-a)+30.6, clamped 0–100), even 5-unit steps with the
+  trophic color table (oligotrophic blues → mesotrophic yellows →
+  eutrophic oranges → hypereutrophic red-violet/deep-purple). Legend
+  labels show TSI (chl-a µg/L equivalents). Same TSI always shows the
+  same color; high TSI marks biomass/activity, never toxins.
 - Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
 
 ## 7. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (SQ, daily)
@@ -720,9 +719,12 @@ the other products and the Pages publish proceed normally.
   FULL basin rectangle with no shoreline cut; only missing source data
   is transparent. No Leaf Color raster, KML, KMZ, bounds, source,
   refresh logic, styling, legend, or folder description was modified.
-- **🌙 Visibility — NCEP HRRR `VIS` surface analysis (m → statute miles),
-  hourly cycles.** Direct analysis field, FIXED 0–30 mi continuous
-  spectrum, NaN-aware 2-pass display smoothing (razor model-grid edges
+- **🌤️ Visibility — NCEP HRRR `VIS` surface analysis (m → statute miles),
+  hourly cycles.** Direct analysis field on the FAA flight-category
+  scale (AIM 7-1-7): 0–0.25 Dense fog (NWS advisory ≤¼ mi), 0.25–1
+  LIFR, 1–3 IFR, 3–5 MVFR, 5–30 VFR (10SM METAR reporting cap), stops
+  at the exact standard boundaries with a per-category band key.
+  NaN-aware 2-pass display smoothing (razor model-grid edges
   render as soft TV-style gradients; single-cell speckles dissolve while
   coherent fog/low-vis areas persist; statistics on raw values).
   Meteorological (human/mariner/pilot) visibility, never
@@ -731,9 +733,7 @@ the other products and the Pages publish proceed normally.
   model fill (uniform 200–500 m values, 68% uncorroborated basin-wide),
   rendered missing instead of maroon; corroborated fog passes through.
   Overlay alpha 165 (slightly transparent, like
-  solar). Visibility and fog keys use an even two-row layout (values on
-  row 1, severity words on row 2 at true linear positions) so labels can
-  never overlap. Freshness: LIVE / CURRENT MODEL (analysis).
+  solar). Freshness: LIVE / CURRENT MODEL (analysis).
 - **♨️ Relative humidity — NCEP HRRR `RH` 2 m analysis (%), hourly
   cycles.** FIXED 0–100 % spectrum. Near-surface saturation percentage;
   never PWAT or dew point. Freshness: LIVE / CURRENT MODEL (analysis).
@@ -756,8 +756,11 @@ the other products and the Pages publish proceed normally.
 - **🌫️ Air quality — ECMWF CAMS PM2.5 near-surface analysis via the
   Open-Meteo Air Quality API (free, no key), sampled on a 48×30 basin
   grid and bilinearly resampled to the canvas.** Underlying variable
-  PM2.5 (µg/m³), EPA-breakpoint-anchored FIXED 0–150 scale; labeled
-  MODELED analysis output everywhere (never station observations, never
+  PM2.5 (µg/m³), converted pixel-wise to the US EPA Air Quality Index
+  (AirNow) via EPA PM2.5 breakpoints on a FIXED linear 0–500 scale
+  (0–50 Good, 51–100 Moderate, 101–150 USG, 151–200 Unhealthy,
+  201–300 Very unhealthy, 301–500 Hazardous) in a muted EPA palette;
+  labeled MODELED analysis output everywhere (never station observations, never
   aerosol optical depth). Hourly check (single-point probe); rebuilds
   only on a newer CAMS valid hour. Title stays LIVE AIR QUALITY.
 - **💦 Condensation — DERIVED index 0–100 from HRRR TMP+DPT+RH (2 m),
@@ -773,8 +776,8 @@ the other products and the Pages publish proceed normally.
   RH≥90 — continuous at the 5000 m boundary). Index = max of the two, so
   observed fog outranks risk but dry-air speckles can never paint active
   fog. NaN-aware display smoothing + raw-value statistics, same contract
-  as visibility. Key labels step evenly (No/Low/Moderate/High risk, then
-  Active/Dense/Severe/Extreme fog). Labeled DERIVED.
+  as visibility. Key labels step evenly (No observed fog, Fog risk, then
+  Active fog with exact source-visibility equivalents). Labeled DERIVED.
 - **🧊 Dew point — NCEP HRRR `DPT` 2 m analysis (K → °F), hourly
   cycles.** Actual dew-point temperature, FIXED −20…90 °F spectrum;
   never depression/spread/probability/RH. Freshness: LIVE / CURRENT

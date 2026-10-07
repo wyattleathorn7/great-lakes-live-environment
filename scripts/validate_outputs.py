@@ -286,8 +286,8 @@ def main():
                 failures.append(f"{product}: humidity scale must be 0-100 %, got {lo}-{hi}")
             if product == "light_pollution" and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: light scale must be 0-100 index, got {lo}-{hi}")
-            if product == "air_quality" and (lo, hi) != (0.0, 150.0):
-                failures.append(f"{product}: AQI scale must be 0-150 ug/m3, got {lo}-{hi}")
+            if product == "air_quality" and (lo, hi) != (0.0, 500.0):
+                failures.append(f"{product}: AQI scale must be 0-500 AQI, got {lo}-{hi}")
             if product == "condensation" and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: condensation scale must be 0-100, got {lo}-{hi}")
             if product == "fog" and (lo, hi) != (0.0, 100.0):
@@ -389,8 +389,8 @@ def main():
                 failures.append(f"{product}: metadata contains placeholder URL")
             if product == "water_clarity" and (lo, hi) != (0.016, 2.0):
                 failures.append(f"{product}: clarity scale must be fixed 0.016-2.0, got {lo}-{hi}")
-            if product == "chlorophyll" and (lo, hi) != (0.001, 100.0):
-                failures.append(f"{product}: chlorophyll scale must be fixed 0.001-100.0, got {lo}-{hi}")
+            if product == "chlorophyll" and (lo, hi) != (0.0, 100.0):
+                failures.append(f"{product}: chlorophyll scale must be fixed Carlson TSI 0-100, got {lo}-{hi}")
             if product == "ice_type":
                 cats = meta.get("ice_type_categories", [])
                 codes = {c.get("code") for c in cats}
@@ -490,7 +490,23 @@ def main():
                                "dew_point"):
                     if "<Folder>" not in text:
                         failures.append(f"{product}: no product Folder in live KML")
-                    for _need in ("LOWEST", "HIGHEST+", "legend.png?v="):
+                    for _need in (("LOWEST", "HIGHEST+", "legend.png?v=")
+                                  if product not in (
+                                      "air_quality", "chlorophyll",
+                                      "visibility", "fog", "condensation")
+                                  else {
+                                      "air_quality": (
+                                          "US EPA Air Quality Index",
+                                          "legend.png?v="),
+                                      "chlorophyll": (
+                                          "Carlson", "legend.png?v="),
+                                      "visibility": (
+                                          "LIFR", "legend.png?v="),
+                                      "fog": (
+                                          "Active fog", "legend.png?v="),
+                                      "condensation": (
+                                          "Saturation", "legend.png?v="),
+                                  }[product]):
                         if _need not in text:
                             failures.append(f"{product}: live folder description "
                                             f"missing '{_need}'")

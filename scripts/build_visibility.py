@@ -1,4 +1,4 @@
-"""Pipeline V1 — LIVE ATMOSPHERIC VISIBILITY (independent).
+"""Pipeline V1 — LIVE VISIBILITY (independent).
 
 NOAA/NCEP HRRR 3 km surface visibility (VIS) analysis, hourly cycles,
 metres -> statute miles -> FIXED absolute 0-30 mi continuous spectrum ->

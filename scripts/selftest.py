@@ -433,54 +433,51 @@ def main():
     _uc2 = len(_np4.unique(_wrgba2[5:15, :, :3].reshape(-1, 3), axis=0))
     check("clarity-raster-clear-vs-mid-differ", _uc2 >= 2, _uc2)
 
-    # ---- chlorophyll: working-product pattern (fixed tuned log scale) ----
-    # Same rebuild as clarity: fixed absolute anchors in the preserved
-    # blue->purple family, even half-decade steps, even legend, floor at
-    # valid_min. No per-run rescaling, no drifting record-driven colors.
-    from build_chlorophyll import (CHL_LABELS, CHL_MAX, CHL_MIN, CHL_STOPS)
+    # ---- chlorophyll: Carlson TSI scale (field-of-study standard) ----
+    # Fixed absolute TSI 0-100 anchors in even 5-unit steps with the
+    # user-supplied trophic colors; the chl-a field converts via
+    # TSI = 9.81*ln(chl)+30.6. No per-run rescaling, no drifting colors.
+    from build_chlorophyll import (CHL_LABELS, CHL_MAX, CHL_MIN, CHL_STOPS,
+                                   chl_to_tsi)
     from gradient_scale import color_for as _cf2
-    import math as _math2
     _cs = CHL_STOPS
-    check("chl-11-stops", len(_cs) == 11, len(_cs))
+    check("chl-21-stops", len(_cs) == 21, len(_cs))
     _cvals = [v for v, _ in _cs]
     check("chl-ascending",
           all(_cvals[i] < _cvals[i + 1] for i in range(len(_cvals) - 1)))
-    check("chl-range-log", (_cvals[0], _cvals[-1]) == (-3.0, 2.0),
+    check("chl-range-tsi", (_cvals[0], _cvals[-1]) == (0.0, 100.0),
           (_cvals[0], _cvals[-1]))
     _cgaps = [_cvals[i + 1] - _cvals[i] for i in range(len(_cvals) - 1)]
-    check("chl-even-half-decades", max(_cgaps) - min(_cgaps) < 1e-9,
+    check("chl-even-5-steps", max(_cgaps) - min(_cgaps) < 1e-9,
           _cgaps[0])
-    check("chl-clear-darkblue", _cs[0][1] == (16, 52, 140))
-    check("chl-bloom-deeppurple", _cs[-1][1] == (70, 15, 100))
-    check("chl-red-bloom-band",
-          any(v == 1.0 and c == (205, 30, 35) for v, c in _cs))
-    _cfg_chl = json.load(open(os.path.join(REPO_ROOT, "config",
-                                           "chlorophyll.json")))
-    check("chl-floor-admits-valid",
-          _cvals[0] <= _math2.log10(float(_cfg_chl["valid_min"])),
-          (_cvals[0], _cfg_chl["valid_min"]))
+    check("chl-oligo-deepblue", _cs[0][1] == (18, 59, 140))
+    check("chl-hyper-deep", _cs[-1][1] == (37, 13, 66))
+    check("chl-tsi-converts",
+          abs(chl_to_tsi(0.94) - 30.0) < 0.1
+          and abs(chl_to_tsi(154.0) - 80.0) < 0.1
+          and chl_to_tsi(0.0) != chl_to_tsi(0.0),
+          (chl_to_tsi(0.94), chl_to_tsi(154.0)))
     # background vs bloom must differ; typical band spans many colors.
     check("chl-background-vs-bloom-varying",
-          _cf2(-2.0, _cs) != _cf2(1.0, _cs))
-    _ctyp = {_cf2(v / 10.0, _cs) for v in range(-20, 16, 4)}
+          _cf2(20.0, _cs) != _cf2(80.0, _cs))
+    _ctyp = {_cf2(float(v), _cs) for v in range(0, 101, 10)}
     check("chl-typical-spans-colors", len(_ctyp) >= 4, len(_ctyp))
     _chd = dict(CHL_LABELS)
     check("chl-labels-endpoints",
-          CHL_LABELS[0][1].startswith("LOWEST")
-          and CHL_LABELS[-1][1].startswith("HIGHEST+"))
+          CHL_LABELS[0][0] == 0.0 and CHL_LABELS[-1][0] == 100.0)
     _ctpos = sorted((v - _cvals[0]) / (_cvals[-1] - _cvals[0])
                     for v, _ in CHL_LABELS)
     check("chl-labels-even",
-          all(b - a > 0.15 for a, b in zip(_ctpos, _ctpos[1:])), _ctpos)
-    # synthetic raster in log space: floor paints opaque, bands differ.
+          all(b - a > 0.05 for a, b in zip(_ctpos, _ctpos[1:])), _ctpos)
+    # synthetic raster in TSI space: floor paints opaque, bands differ.
     _csyn = _np4.full((20, 20), _np4.nan)
-    _csyn[5:15, 5:15] = -3.0
+    _csyn[5:15, 5:15] = 0.0
     _crgba = _rr(_csyn, _cs, 205)
     check("chl-raster-opaque-at-floor",
           bool((_crgba[5:15, 5:15, 3] > 0).all()))
     _csyn2 = _np4.full((20, 20), _np4.nan)
-    _csyn2[5:15, :10] = -2.0
-    _csyn2[5:15, 10:] = 0.5
+    _csyn2[5:15, :10] = 20.0
+    _csyn2[5:15, 10:] = 80.0
     _crgba2 = _rr(_csyn2, _cs, 205)
     _cuc2 = len(_np4.unique(_crgba2[5:15, :, :3].reshape(-1, 3), axis=0))
     check("chl-raster-background-vs-active-differ", _cuc2 >= 2, _cuc2)
