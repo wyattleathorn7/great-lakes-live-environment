@@ -20,6 +20,12 @@ on:
     #   composite phenology — neither needs daily rebuilds). Fired reliably
     #   by the external pinger (product=weekly); the in-repo cron is backup.
     - cron: "35 7 * * 0"
+    # - Yearly (Jan 2): light pollution only (NASA VIIRS Black Marble is an
+    #   ANNUAL composite with a content-hash source id — it rebuilds only
+    #   when NASA ships a new year, so hourly/30-min triggers were ~17k
+    #   no-op job runs a year. Fired by the pinger (product=yearly); the
+    #   in-repo cron is backup.
+    - cron: "35 7 2 1 *"
   workflow_dispatch:
     inputs:
       product:
@@ -27,7 +33,7 @@ on:
         required: false
         default: "all"
         type: choice
-        options: ["all", "environmental", "weekly", "wave_height", "water_temperature", "ice_coverage",
+        options: ["all", "environmental", "weekly", "yearly", "wave_height", "water_temperature", "ice_coverage",
                    "ice_thickness", "ice_type", "wind", "leaf_color",
                    "chlorophyll", "water_clarity", "solar_radiation",
                    "air_temperature", "snow_coverage", "uv_index",
@@ -759,7 +765,7 @@ jobs:
           if-no-files-found: warn
 
   light_pollution:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'light_pollution' }}
+    if: ${{ github.event.schedule == '35 7 2 1 *' || (inputs.product == 'all' || inputs.product == 'yearly') || inputs.product == 'light_pollution' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
