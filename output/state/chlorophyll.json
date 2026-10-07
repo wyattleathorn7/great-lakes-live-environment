@@ -1,24 +1,24 @@
 {
   "data_times": [
-    "2026-10-05T12:00:00Z",
-    "2026-10-04T12:00:00Z",
-    "2026-10-03T12:00:00Z",
-    "2026-10-02T12:00:00Z",
-    "2026-10-01T12:00:00Z",
-    "2026-09-30T12:00:00Z",
-    "2026-09-29T12:00:00Z"
+    "2026-09-27T12:00:00Z",
+    "2026-09-26T12:00:00Z",
+    "2026-09-25T12:00:00Z",
+    "2026-09-24T12:00:00Z",
+    "2026-09-23T12:00:00Z",
+    "2026-09-22T12:00:00Z",
+    "2026-09-21T12:00:00Z"
   ],
-  "dataset": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+  "dataset": "nesdisVHNSQchlaDaily",
   "mosaic_sources": {
-    "2026-10-05T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-04T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-03T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-02T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-01T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-09-30T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-09-29T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily"
+    "2026-09-27T12:00:00Z": "nesdisVHNSQchlaDaily",
+    "2026-09-26T12:00:00Z": "nesdisVHNSQchlaDaily",
+    "2026-09-25T12:00:00Z": "nesdisVHNSQchlaDaily",
+    "2026-09-24T12:00:00Z": "nesdisVHNSQchlaDaily",
+    "2026-09-23T12:00:00Z": "nesdisVHNSQchlaDaily",
+    "2026-09-22T12:00:00Z": "nesdisVHNSQchlaDaily",
+    "2026-09-21T12:00:00Z": "nesdisVHNSQchlaDaily"
   },
-  "source_id": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v7-2026-10-05",
+  "source_id": "nesdisVHNSQchlaDaily-v7-2026-09-27",
   "render_version": 3,
-  "processing_time_utc": "2026-10-07 06:32 PM EDT"
+  "processing_time_utc": "2026-10-07 07:01 PM EDT"
 }
