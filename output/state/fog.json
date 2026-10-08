@@ -1,6 +1,6 @@
 {
-  "model_cycle": "hrrr.20261008 t13z",
-  "source_id": "hrrr-hrrr.20261008-t13z-fog-anl-g5",
+  "model_cycle": "hrrr.20261008 t14z",
+  "source_id": "hrrr-hrrr.20261008-t14z-fog-anl-g5",
   "render_version": 3,
-  "processing_time_utc": "2026-10-08 10:30 AM EDT"
+  "processing_time_utc": "2026-10-08 11:00 AM EDT"
 }
