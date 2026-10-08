@@ -68,7 +68,11 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
 # Full-basin render generation: bump to force one redeploy of the expanded
 # (GLWU+HRRR, no shoreline cut) raster even when the GLWU cycle is unchanged.
 # Afterwards the source id tracks both model cycles.
-RENDER_TAG = "fullbasin-g1"
+RENDER_TAG = "fullbasin-g2"
+
+# Semi-transparent fill so the base-map land stays visible underneath the
+# gradient (arrows paint at their own near-opaque alphas and stay legible).
+WIND_ALPHA = 140
 
 HRRR_MSGS = [("UGRD", "10 m above ground"), ("VGRD", "10 m above ground")]
 CANVAS_ARROW_STEP_PX = 45  # canvas-space sampling for land+water arrows
@@ -408,7 +412,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
     ook = np.isfinite(field)
     fi = np.clip(np.round(field[ook]).astype(int), 0, 12)
     rgba[ook, 0:3] = lut[fi]
-    rgba[ook, 3] = bounds["overlay_alpha"]
+    rgba[ook, 3] = WIND_ALPHA
 
     rgba, n_arrows = paint_arrows(
         rgba, arrow_points_canvas(comb_u, comb_v, CANVAS_ARROW_STEP_PX))
