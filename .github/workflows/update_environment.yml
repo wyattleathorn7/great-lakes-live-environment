@@ -954,6 +954,30 @@ jobs:
             kml/${{ env.KMLFILE }}
           if-no-files-found: warn
 
+  notify-noaa:
+    # Chain the NOAA buoys repo into the 30-minute cadence: cron-job.org
+    # fires product=halfhourly here; this forwards a repository_dispatch
+    # so NOAA-Great-Lakes-Data-8-27-26 rebuilds on the same timer (its own
+    # GitHub schedules are disabled). Standalone + best-effort: never in
+    # publish's needs, never fails the run.
+    if: ${{ inputs.product == 'halfhourly' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Dispatch NOAA buoys rebuild
+        env:
+          TOKEN: ${{ secrets.NOAA_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "NOAA_DISPATCH_TOKEN not set; skipping NOAA chain."; exit 0; fi
+          code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/wyattleathorn7/NOAA-Great-Lakes-Data-8-27-26/dispatches \
+            -d '{"event_type":"halfhourly"}') || code="000"
+          echo "NOAA dispatch HTTP $code"
+          [ "$code" = "204" ] || echo "::warning::NOAA chain dispatch returned $code (expected 204)"
+
   publish:
     needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, surface_currents, precipitation, aurora, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
