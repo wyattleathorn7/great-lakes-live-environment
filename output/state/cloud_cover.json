@@ -1,6 +1,6 @@
 {
-  "model_cycle": "GOES-19 scan 2026-10-08 10:21Z",
-  "source_id": "goes19-acmc-20261008-1021",
+  "model_cycle": "GOES-19 scan 2026-10-08 10:51Z",
+  "source_id": "goes19-acmc-20261008-1051",
   "render_version": 3,
-  "processing_time_utc": "2026-10-08 06:30 AM EDT"
+  "processing_time_utc": "2026-10-08 07:00 AM EDT"
 }
