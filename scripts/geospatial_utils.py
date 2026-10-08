@@ -165,7 +165,7 @@ def utcnow_iso():
 # Render generation: bump to force every product through one full rebuild
 # (legends/KMLs bake display text in at build time). Skip logic also keys
 # on the source id, so this only ever causes a single extra build.
-RENDER_VERSION = 9
+RENDER_VERSION = 10
 
 
 def detroit_tz():

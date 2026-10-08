@@ -131,14 +131,7 @@ def build_scale_html(run_max):
     """Legend description HTML: fixed-bin list, unwritten rules, buoy
     pointer + how buoys measure wave height. Shared by the builder and
     any offline re-render so the text can never drift between them."""
-    return (f"Wave height (feet, 18 fixed colors): <b>0 ft</b> → "
-            f"<b>0.5 ft</b> → <b>1-2 ft</b> → <b>3-4 ft</b> → "
-            f"<b>4-5 ft</b> → <b>6-7 ft</b> → <b>8-9 ft</b> → "
-            f"<b>10-11 ft</b> → <b>12-13 ft</b> → <b>14-15 ft</b> → "
-            f"<b>16-17 ft</b> → <b>18-19 ft</b> → <b>20-21 ft</b> → "
-            f"<b>22-23 ft</b> → <b>24-25 ft</b> → <b>26-27 ft</b> → "
-            f"<b>28-29 ft</b> → <b>30+ ft</b> (white). Every pixel "
-            f"shows its bin's exact color; the legend is the full "
+    return (f"Every pixel shows its bin's exact color; the legend is the full "
             f"table. Unwritten rules: <b>0 and 0.1 ft</b> show as "
             f"<b>0 ft</b>; <b>0.2 to 0.6 ft</b> "
             f"show as <b>0.5 ft</b>; <b>0.7 to 1 ft"
