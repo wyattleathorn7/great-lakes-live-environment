@@ -213,7 +213,7 @@ def main():
                                    "aurora", "visibility", "humidity",
                                    "light_pollution",
                                    "air_quality", "condensation", "fog",
-                                   "dew_point"):
+                                   "dew_point", "wind"):
                     # basin-rectangle layers (user requirement): full
                     # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
                     # (Leaf/snow stay land-cut: leaves and ground snow

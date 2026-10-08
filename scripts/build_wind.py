@@ -1,10 +1,19 @@
 """Pipeline F — LIVE WIND (independent).
 
 NCEP GLWU GRIB2 UGRD/VGRD surface analysis (same operational files as the
-wave product, wind fields only) -> validate -> speed = sqrt(U^2+V^2) ->
-Beaufort Force 0-12 -> blue->...->red->dark-purple(F12) gradient with
-tiny movement-direction arrows rendered INTO the raster -> transparent PNG
-(shared GSHHG shoreline mask) -> metadata -> KML.
+wave product, wind fields only) OVER WATER + NOAA/NCEP HRRR 3 km 10 m
+UGRD/VGRD analysis as the land/background fill -> validate ->
+speed = sqrt(U^2+V^2) -> Beaufort Force 0-12 -> blue->...->red->
+dark-purple(F12) gradient with tiny movement-direction arrows rendered
+INTO the raster -> transparent PNG (FULL BASIN RECTANGLE lon -93..-73.5 /
+lat 40.5..49.5, the exact LIVE LEAF COLOR footprint; only missing data
+is transparent, no shoreline cut) -> metadata -> KML.
+
+GLWU has no valid values over land by design (off-water grid points file
+as missing), so land would stay transparent on GLWU alone. HRRR fills
+every GLWU gap (land + canvas edges beyond the GLWU mesh), giving the
+wind layer the same geographic coverage as the leaf layer. Where both
+are valid (open water) GLWU wins at its native ~2.5 km lake resolution.
 
 Direction convention (critical): GRIB U/V components point in the direction
 the air moves TOWARD (U eastward, V northward), unlike the meteorological
@@ -33,12 +42,13 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        live_out_dirs, refresh_kml_base_url)
 from build_wave_height import cycle_source_id, newest_available_cycle
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
-                              apply_shoreline_mask,
-                              base_metadata, download, draw_category_legend,
-                              fetch_buoy_obs, load_bounds,
-                              grib_stamp_to_det, now_det_str, promote_stage,
-                              read_state, save_png, source_token, stage_dir,
-                              utcnow_iso, write_metadata, write_state)
+                               base_metadata, bin_to_canvas, canvas_indices,
+                               bleed_rgb_into_transparent,
+                               download, draw_category_legend,
+                               fetch_buoy_obs, load_bounds,
+                               grib_stamp_to_det, now_det_str, promote_stage,
+                               read_state, save_png, source_token, stage_dir,
+                               utcnow_iso, write_metadata, write_state)
 
 PRODUCT = "wind"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -54,6 +64,14 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
     "45012": (-77.383, 43.619),
     "45005": (-82.398, 41.677),
 }
+
+# Full-basin render generation: bump to force one redeploy of the expanded
+# (GLWU+HRRR, no shoreline cut) raster even when the GLWU cycle is unchanged.
+# Afterwards the source id tracks both model cycles.
+RENDER_TAG = "fullbasin-g1"
+
+HRRR_MSGS = [("UGRD", "10 m above ground"), ("VGRD", "10 m above ground")]
+CANVAS_ARROW_STEP_PX = 45  # canvas-space sampling for land+water arrows
 
 
 def _rgb(h):
@@ -154,6 +172,45 @@ def draw_arrows(rgba, uu, vv, valid_src, rows, cols, bounds, step):
     return paint_arrows(rgba, arrow_points(uu, vv, valid_src, rows, cols, step))
 
 
+def arrow_points_canvas(uu_canvas, vv_canvas, step_px):
+    """Sample (row, col, u, v) movement vectors on a uniform canvas lattice.
+
+    Full-basin coverage needs arrows over land too, so sampling happens in
+    canvas space on the combined (GLWU-over-water + HRRR fill) UV field
+    instead of on either source grid.
+    """
+    pts = []
+    H, W = np.shape(uu_canvas)[:2]
+    for r in range(0, H, step_px):
+        for c in range(0, W, step_px):
+            u, v = float(uu_canvas[r, c]), float(vv_canvas[r, c])
+            if not (math.isfinite(u) and math.isfinite(v)):
+                continue
+            if math.hypot(u, v) < 0.5:
+                continue  # calm: no arrow
+            pts.append((r, c, u, v))
+    return pts
+
+
+def fetch_hrrr_uv():
+    """Latest HRRR 10 m U/V analysis binned helpers.
+
+    Returns (u_vals, v_vals, lats, lons, dd, cc, data_date, data_time)
+    on the native HRRR grid (1-D raveled values + lat/lon). Raises on any
+    fetch/decode failure (caller keeps the previous raster via exit 2).
+    """
+    import hrrr
+    base, dd, cc = hrrr.latest_cycle()
+    raw_hrrr = os.path.join(RAW_DIR, "hrrr_wind_current.grib2")
+    hrrr.fetch_messages(base, raw_hrrr, HRRR_MSGS)
+    got = hrrr.read_messages(raw_hrrr, {"UGRD": 1, "VGRD": 1})
+    (u_vals, u_lats, u_lons, u_date, u_time) = got["UGRD"]
+    (v_vals, _v_lats, _v_lons, _v_date, _v_time) = got["VGRD"]
+    return (np.asarray(u_vals, dtype=float), np.asarray(v_vals, dtype=float),
+            np.asarray(u_lats, dtype=float), np.asarray(u_lons, dtype=float),
+            dd, cc, u_date, u_time)
+
+
 def main():
     try:
         return run()
@@ -174,7 +231,17 @@ def run():
         print(f"[{PRODUCT}] NO CYCLE AVAILABLE (keeping previous).")
         return 2
     url, datestr, cycle, stamp = pick
-    source_id = cycle_source_id(stamp)
+    # Combined source id: the raster now depends on BOTH cycles (GLWU over
+    # water + HRRR land fill), so a roll of either must rebuild. The
+    # RENDER_TAG forces one redeploy of the expanded full-basin raster.
+    try:
+        import hrrr as _hrrr_probe
+        _hbase, _hdd, _hcc = _hrrr_probe.latest_cycle()
+        hrrr_tag = f"hrrr-{_hdd}-t{_hcc}z"
+    except Exception as e:
+        print(f"[{PRODUCT}] HRRR PROBE FAILED (keeping previous): {str(e)[:140]}")
+        return 2
+    source_id = f"{cycle_source_id(stamp)}+{hrrr_tag}-{RENDER_TAG}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
@@ -215,9 +282,19 @@ def _build(got, used_url, datestr, cycle, raw_path):
 
     u_ms, v_ms, lats, lons, gnx, gny, data_date, data_time = \
         extract_uv_analysis(raw_path)
-    # Source-aware gate (same rule as wave height): the GRIB analysis stamp
-    # controls regeneration, never the workflow run time.
-    source_id = f"glwu-{data_date}-{data_time}Z"
+    # HRRR land/background fill (full-basin coverage). Required: without it
+    # land has no wind data (GLWU off-water points file as missing), so a
+    # failed HRRR fetch keeps the previous raster instead of regressing.
+    try:
+        (hrrr_u, hrrr_v, hlats, hlons,
+         hrrr_dd, hrrr_cc, hrrr_date, hrrr_time) = fetch_hrrr_uv()
+    except Exception as e:
+        print(f"[{PRODUCT}] HRRR FILL FAILED (keeping previous): {e}")
+        return 2
+    # Source-aware gate (both model stamps control regeneration, never the
+    # workflow run time) + one-time full-basin render tag.
+    source_id = (f"glwu-{data_date}-{data_time}Z"
+                 f"+hrrr-{hrrr_dd}-t{hrrr_cc}z-{RENDER_TAG}")
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
@@ -263,39 +340,86 @@ def _build(got, used_url, datestr, cycle, raw_path):
 
     # force field: mean per canvas pixel (forces are stepwise constant),
     # splat-filled like the wave layer (2.5 km source vs ~0.85 km pixels)
-    from geospatial_utils import bin_to_canvas
     ffield, _cnt = bin_to_canvas(rows, cols, forces.ravel(), inside & valid,
                                  (H, W), splat_radius=2)
+    # GLWU UV on the canvas grid (for the combined arrow field below)
+    gu_canvas, _ = bin_to_canvas(rows, cols, np.asarray(u_ms).ravel(),
+                                 inside & valid, (H, W), splat_radius=2)
+    gv_canvas, _ = bin_to_canvas(rows, cols, np.asarray(v_ms).ravel(),
+                                 inside & valid, (H, W), splat_radius=2)
+    n_glwu_canvas = int(np.isfinite(ffield).sum())
+    print(f"[{PRODUCT}] GLWU canvas cells: {n_glwu_canvas}")
 
-    # UV on source grid (for arrows): reshape to grid form
-    ny, nx = gny, gnx
-    if ny * nx != u_ms.size:
-        raise ValueError(f"UV grid shape {nx}x{ny} != {u_ms.size} points")
-    uu = np.where(valid, u_ms, np.nan).reshape(ny, nx)
-    vv = np.where(valid, v_ms, np.nan).reshape(ny, nx)
-    okg = valid.reshape(ny, nx)
-    rgrid = rows.reshape(ny, nx)
-    cgrid = cols.reshape(ny, nx)
+    # HRRR 10 m fill binned onto the same canvas (full CONUS coverage:
+    # land + water + canvas edges beyond the GLWU mesh)
+    hrrr_time_utc = grib_stamp_to_det(hrrr_date, hrrr_time)
+    h_lons = ((np.asarray(hlons).ravel() + 180) % 360) - 180
+    h_lats = np.asarray(hlats).ravel()
+    h_u = np.asarray(hrrr_u).ravel()
+    h_v = np.asarray(hrrr_v).ravel()
+    h_ok_src = (np.isfinite(h_u) & np.isfinite(h_v)
+                & (np.abs(h_u) < 75) & (np.abs(h_v) < 75))
+    h_rows, h_cols, _hv = canvas_indices(h_lats, h_lons, bounds)
+    h_inside = (np.isfinite(h_lats) & np.isfinite(h_lons)
+                & (h_lats >= lat_min) & (h_lats <= lat_max)
+                & (h_lons >= lon_min) & (h_lons <= lon_max))
+    h_spd = np.hypot(np.where(h_ok_src, h_u, np.nan),
+                     np.where(h_ok_src, h_v, np.nan))
+    h_kt = h_spd * MS_TO_KT
+    h_forces = np.full(h_kt.shape, np.nan)
+    h_forces[h_ok_src] = fvec(h_kt[h_ok_src])
+    h_ffield, _hcnt = bin_to_canvas(h_rows, h_cols, h_forces,
+                                    h_inside & h_ok_src, (H, W),
+                                    splat_radius=2)
+    hu_canvas, _ = bin_to_canvas(h_rows, h_cols, h_u,
+                                 h_inside & h_ok_src, (H, W), splat_radius=2)
+    hv_canvas, _ = bin_to_canvas(h_rows, h_cols, h_v,
+                                 h_inside & h_ok_src, (H, W), splat_radius=2)
+    n_hrrr_canvas = int(np.isfinite(h_ffield).sum())
+    print(f"[{PRODUCT}] HRRR {hrrr_dd} t{hrrr_cc}z canvas cells: {n_hrrr_canvas}")
+    if n_hrrr_canvas < 50_000:
+        print(f"[{PRODUCT}] VALIDATION FAILED: too few HRRR fill cells. "
+              f"Keeping previous.")
+        return 2
+    hrrr_max_kt = float(np.nanmax(h_kt[h_ok_src])) if int(h_ok_src.sum()) else 0.0
+
+    # Composite (same Beaufort colors, wider footprint): GLWU wins wherever
+    # it is valid (open water at lake resolution); HRRR fills everything
+    # else (land + GLWU gaps + canvas edges). Same leaf-color footprint.
+    glwu_ok = np.isfinite(ffield)
+    field = np.where(glwu_ok, ffield, h_ffield)
+    comb_u = np.where(glwu_ok, gu_canvas, hu_canvas)
+    comb_v = np.where(glwu_ok, gv_canvas, hv_canvas)
+    n_combined = int(np.isfinite(field).sum())
+    n_fill = int((~glwu_ok & np.isfinite(field)).sum())
+    print(f"[{PRODUCT}] combined canvas cells: {n_combined} "
+          f"(GLWU {n_glwu_canvas} + HRRR fill {n_fill})")
+    if n_combined < 50_000:
+        print(f"[{PRODUCT}] VALIDATION FAILED: too few combined cells. "
+              f"Keeping previous.")
+        return 2
+    fmax_fill = int(np.nanmax(field))
 
     # colors: continuous LUT over force 0..12 (dark purple ONLY at force 12)
     lut = np.zeros((13, 3), dtype=np.uint8)
     for f in range(13):
         lut[f] = _rgb(FORCE_COLORS[f])
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    ook = np.isfinite(ffield)
-    fi = np.clip(np.round(ffield[ook]).astype(int), 0, 12)
+    ook = np.isfinite(field)
+    fi = np.clip(np.round(field[ook]).astype(int), 0, 12)
     rgba[ook, 0:3] = lut[fi]
     rgba[ook, 3] = bounds["overlay_alpha"]
 
-    rgba, n_arrows = draw_arrows(rgba, uu, vv,
-                                 okg & inside.reshape(ny, nx),
-                                 rgrid, cgrid, bounds,
-                                 CONFIG["arrow_subsample"])
+    rgba, n_arrows = paint_arrows(
+        rgba, arrow_points_canvas(comb_u, comb_v, CANVAS_ARROW_STEP_PX))
     print(f"[{PRODUCT}] arrows drawn: {n_arrows}")
     if n_arrows < 50:
         print(f"[{PRODUCT}] VALIDATION FAILED: too few arrows. Keeping previous.")
         return 2
-    rgba = apply_shoreline_mask(rgba)  # one shared GSHHG shoreline for all
+    # Full basin rectangle (atmospheric layer, like leaf footprint): only
+    # missing source data is transparent — no shoreline cut. RGB bleed keeps
+    # the anti-fringe contract for bilinear clients (Google Earth).
+    rgba = bleed_rgb_into_transparent(rgba)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
 
@@ -305,30 +429,40 @@ def _build(got, used_url, datestr, cycle, raw_path):
         [(f, force_name(f), force_range_text(f)) for f, _, _, _ in BEAUFORT])
     scale_html = (f"WIND — BEAUFORT SCALE (colors follow force, dark purple = "
                   f"Force 12 only):<br/>{beaufort_rows}"
-                  f"Maximum this run: <b>{float(spd_kt[valid].max()):.0f} kt</b> "
-                  f"(Beaufort {fmax}). Arrows point where the air moves.")
+                  f"Maximum this run: <b>{max(float(spd_kt[valid].max()), hrrr_max_kt):.0f} kt</b> "
+                  f"(Beaufort {max(fmax, fmax_fill)}). Full basin coverage: "
+                  f"GLWU over water, HRRR 10 m fill over land. "
+                  f"Arrows point where the air moves.")
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"],
-        f"{CONFIG['freshness_label']}  |  Model time: {data_time_utc}",
+        f"{CONFIG['freshness_label']}  |  Water: {data_time_utc}  |  "
+        f"Land fill: {hrrr_time_utc}",
         [(FORCE_COLORS[f], f"F{f} — {force_name(f)} ({force_range_text(f)})")
          for f in range(13)],
-        f"Source: NCEP GLWU v2.1 U/V analysis {datestr} t{cycle}z  |  "
+        f"Source: GLWU v2.1 U/V {datestr} t{cycle}z (water) + HRRR 10 m "
+        f"{hrrr_dd} t{hrrr_cc}z (land fill)  |  "
         f"Processed {now_det_str()}",
         note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY.")
 
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], used_url, CONFIG["variable"],
-        data_time_utc=data_time_utc,
+        data_time_utc=f"GLWU {data_time_utc} (water); HRRR {hrrr_time_utc} "
+                      f"(land fill)",
         source_last_modified_utc=got.get("http_last_modified") or "n/a (NOMADS)",
         units="kt + Beaufort Force 0-12 (display); source m/s",
-        source_resolution="~2.5 km NCEP GLWU Lambert grid (581x361)",
+        source_resolution=("~2.5 km NCEP GLWU Lambert grid (581x361) over "
+                           "water + ~3 km NCEP HRRR CONUS grid as land fill"),
         color_min=0, color_max=12, color_units="Beaufort Force",
-        missing_data_treatment=("GRIB2 missing value 9999 and off-water grid "
-                                "points rendered fully transparent; never zero-filled."))
+        missing_data_treatment=("full basin rectangle lon -93..-73.5 / lat "
+                                "40.5..49.5 (same footprint as Live Leaf "
+                                "Color): GLWU over water, HRRR 10 m wind "
+                                "fills land + GLWU gaps + canvas edges; "
+                                "transparent only where both sources lack "
+                                "data; never zero-filled."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
-    meta["model_cycle"] = f"{datestr} t{cycle}z"
+    meta["model_cycle"] = f"{datestr} t{cycle}z + {hrrr_dd} t{hrrr_cc}z"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["beaufort_table"] = [
@@ -336,19 +470,28 @@ def _build(got, used_url, datestr, cycle, raw_path):
          "color": FORCE_COLORS[f]} for f in range(13)]
     meta["methodology"] = (
         "Wind speed = sqrt(U^2+V^2) from GLWU UGRD/VGRD surface analysis "
-        "(m/s, direction of motion), x1.94384 -> knots, mapped to WMO Beaufort "
-        "Force 0-12 with unmodified thresholds. Arrows point along the (U,V) "
-        "movement vector (no FROM->TOWARD reversal needed for GRIB components); "
-        "calm (<0.5 m/s) gets no arrow. Overlay alpha cut by the shared GSHHG "
-        "shoreline mask.")
+        "over water (m/s, direction of motion) + HRRR UGRD/VGRD 10 m "
+        "analysis as the land/background fill (same formula), x1.94384 -> "
+        "knots, mapped to WMO Beaufort Force 0-12 with unmodified "
+        "thresholds; GLWU wins wherever valid, HRRR fills land + GLWU "
+        "gaps + canvas edges. Arrows point along the (U,V) movement "
+        "vector (no FROM->TOWARD reversal needed for GRIB components); "
+        "calm (<0.5 m/s) gets no arrow. Full basin rectangle "
+        "(lon -93..-73.5, lat 40.5..49.5, the Live Leaf Color footprint): "
+        "no shoreline cut; edge RGB bled into transparent pixels "
+        "(anti-fringe for bilinear clients).")
     meta["stats"] = {
-        "valid_cells": n_valid,
+        "valid_cells": n_combined,
+        "glwu_canvas_cells": n_glwu_canvas,
+        "hrrr_fill_cells": n_fill,
+        "hrrr_cycle": f"{hrrr_dd} t{hrrr_cc}z",
         "max_kt": round(float(spd_kt[valid].max()), 1),
         "max_beaufort": fmax,
+        "max_beaufort_combined": fmax_fill,
         "arrows_drawn": n_arrows,
     }
 
-    field = ffield  # for buoy QC sampling below
+    field = field  # combined GLWU+HRRR force grid for buoy QC sampling below
     # ---- buoy QC: WSPD (reference only) ----
     qc = fetch_buoy_obs(CONFIG["buoys"])
     for bid, pos in BUOY_POS.items():

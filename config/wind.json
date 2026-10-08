@@ -1,8 +1,8 @@
 {
   "product": "wind",
-  "title": "LIVE WIND \u2014 BEAUFORT SCALE",
+  "title": "LIVE WIND — BEAUFORT SCALE",
   "freshness_label": "LIVE / CURRENT MODEL (analysis)",
-  "source_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 UGRD/VGRD surface analysis",
+  "source_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) — UGRD/VGRD surface analysis over water + NOAA/NCEP HRRR 3 km 10 m wind analysis as land/background fill (full basin rectangle, same footprint as Live Leaf Color)",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
   "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/{date_dir}/glwu.grlc_2p5km.t{cycle}z.grib2",
   "cycles_try_order": [
@@ -11,7 +11,7 @@
     "07",
     "01"
   ],
-  "variable": "UGRD/VGRD surface wind components, analysis step; speed = sqrt(U^2+V^2), visualized as Beaufort Force 0-12",
+  "variable": "UGRD/VGRD surface wind components, analysis step; GLWU over water with HRRR 10 m fill over land/gaps; speed = sqrt(U^2+V^2), visualized as Beaufort Force 0-12",
   "source_units": "m/s",
   "display_units": "kt (Beaufort Force 0-12)",
   "refresh_interval_seconds": 900,

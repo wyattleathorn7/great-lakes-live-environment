@@ -135,7 +135,7 @@ def main():
             _bad = ((a[:, :, 3] > 0) & (mask > 250 / 255)).sum() == 0
         elif p in ("cloud_cover", "surface_pressure", "uv_index",
                    "air_temperature", "solar_radiation", "precipitation",
-                   "aurora"):
+                   "aurora", "wind"):
             # basin-rectangle layers: land coverage is by design.
             _bad = True
         elif p == "surface_currents":
