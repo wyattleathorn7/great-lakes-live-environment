@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261008/glwu.grlc_2p5km.t13z.grib2",
   "data_time_utc": "GLWU 2026-10-08 09:00 AM EDT (water); HRRR 2026-10-08 11:00 AM EDT (land fill)",
   "source_last_modified_utc": "Thu, 08 Oct 2026 13:28:43 GMT",
-  "processing_time_utc": "2026-10-08 12:24 PM EDT",
+  "processing_time_utc": "2026-10-08 12:27 PM EDT",
   "units": "kt + Beaufort Force 0-12 (display); source m/s",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361) over water + ~3 km NCEP HRRR CONUS grid as land fill",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -31,8 +31,8 @@
   ],
   "legend_scale_html": "WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only):<br/><b>F0</b> \u2014 Calm (0\u20130.99 kt)<br/><b>F1</b> \u2014 Light air (1\u20133 kt)<br/><b>F2</b> \u2014 Light breeze (4\u20136 kt)<br/><b>F3</b> \u2014 Gentle breeze (7\u201310 kt)<br/><b>F4</b> \u2014 Moderate breeze (11\u201316 kt)<br/><b>F5</b> \u2014 Fresh breeze (17\u201321 kt)<br/><b>F6</b> \u2014 Strong breeze (22\u201327 kt)<br/><b>F7</b> \u2014 High wind (28\u201333 kt)<br/><b>F8</b> \u2014 Gale (34\u201340 kt)<br/><b>F9</b> \u2014 Strong gale (41\u201347 kt)<br/><b>F10</b> \u2014 Storm (48\u201355 kt)<br/><b>F11</b> \u2014 Violent storm (56\u201363 kt)<br/><b>F12</b> \u2014 Hurricane-force (\u226564 kt)<br/>Maximum this run: <b>44 kt</b> (Beaufort 6). Full basin coverage: GLWU over water, HRRR 10 m fill over land. Arrows point where the air moves.",
   "model_cycle": "20261008 t13z + hrrr.20261008 t15z",
-  "source_id": "glwu-20261008-1300Z+hrrr-hrrr.20261008-t15z-fullbasin-g3",
-  "source_version": "glwu-20261008-1300Z-hrrr-hrrr.20261008-t15z-fullbasin-g3",
+  "source_id": "glwu-20261008-1300Z+hrrr-hrrr.20261008-t15z-fullbasin-g4",
+  "source_version": "glwu-20261008-1300Z-hrrr-hrrr.20261008-t15z-fullbasin-g4",
   "beaufort_table": [
     {
       "force": 0,
@@ -113,7 +113,7 @@
       "color": "#3B0A54"
     }
   ],
-  "methodology": "Wind speed = sqrt(U^2+V^2) from GLWU UGRD/VGRD surface analysis over water (m/s, direction of motion) + HRRR UGRD/VGRD 10 m analysis as the land/background fill (same formula), x1.94384 -> knots, mapped to WMO Beaufort Force 0-12 with unmodified thresholds; GLWU wins wherever valid, HRRR fills land + GLWU gaps + canvas edges. Arrows point along the (U,V) movement vector (no FROM->TOWARD reversal needed for GRIB components); calm (<0.5 m/s) gets no arrow. Full basin rectangle (lon -93..-73.5, lat 40.5..49.5, the Live Leaf Color footprint) with dual opacity from the shared NOAA shoreline mask: open water ~80% (alpha 205, the original lakes look), land ~55% (alpha 140) so terrain shows through; edge RGB bled into transparent pixels (anti-fringe for bilinear clients).",
+  "methodology": "Wind speed = sqrt(U^2+V^2) from GLWU UGRD/VGRD surface analysis over water (m/s, direction of motion) + HRRR UGRD/VGRD 10 m analysis as the land/background fill (same formula), x1.94384 -> knots, mapped to WMO Beaufort Force 0-12 with unmodified thresholds; GLWU wins wherever valid, HRRR fills land + GLWU gaps + canvas edges. Arrows point along the (U,V) movement vector (no FROM->TOWARD reversal needed for GRIB components); calm (<0.5 m/s) gets no arrow. Full basin rectangle (lon -93..-73.5, lat 40.5..49.5, the Live Leaf Color footprint) with dual opacity from the shared NOAA shoreline mask: open water ~80% (alpha 205, the original lakes look) with the exact Beaufort table colors, land ~55% (alpha 140) with saturation-boosted twins of the same hues so each force reads the same through the extra transparency (single legend, no second key); edge RGB bled into transparent pixels (anti-fringe for bilinear clients).",
   "stats": {
     "valid_cells": 2114386,
     "glwu_canvas_cells": 366108,
@@ -147,18 +147,18 @@
       "obs_time": "2026-10-08 16:00 UTC"
     },
     "45012": {
-      "obs_kt": 17.5,
+      "obs_kt": 19.4,
       "grid_kt_approx": 19.0,
-      "absdiff_kt": 1.5,
+      "absdiff_kt": 0.4,
       "verdict": "OK",
-      "obs_time": "2026-10-08 15:50 UTC"
+      "obs_time": "2026-10-08 16:00 UTC"
     },
     "45005": {
       "obs_kt": 11.7,
       "grid_kt_approx": 13.5,
       "absdiff_kt": 1.8,
       "verdict": "OK",
-      "obs_time": "2026-10-08 15:50 UTC"
+      "obs_time": "2026-10-08 16:00 UTC"
     }
   }
 }

@@ -68,7 +68,7 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
 # Full-basin render generation: bump to force one redeploy of the expanded
 # (GLWU+HRRR, no shoreline cut) raster even when the GLWU cycle is unchanged.
 # Afterwards the source id tracks both model cycles.
-RENDER_TAG = "fullbasin-g3"
+RENDER_TAG = "fullbasin-g4"
 
 # Dual-opacity finish: open-water pixels render at the original ~80% lake
 # opacity; land pixels stay semi-transparent so the base-map terrain shows
@@ -83,6 +83,23 @@ CANVAS_ARROW_STEP_PX = 45  # canvas-space sampling for land+water arrows
 def _rgb(h):
     h = h.lstrip("#")
     return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def _vivid_for_land(h):
+    """Saturation-boosted twin of a water hex for the semi-transparent land.
+
+    Land pixels paint at alpha 140 over bright terrain, which washes the
+    fill toward gray-green; pre-intensifying (same hue, higher saturation,
+    slight value lift) makes the perceived land color match the water
+    color at alpha 205. Single legend still applies (it shows the water
+    colors) — no second key is created.
+    """
+    import colorsys
+    r, g, b = (int(h.lstrip("#")[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
+    hh, s, v = colorsys.rgb_to_hsv(r, g, b)
+    r2, g2, b2 = colorsys.hsv_to_rgb(
+        hh, min(1.0, s * 1.4), min(1.0, v * 1.08 + 0.03))
+    return (round(r2 * 255), round(g2 * 255), round(b2 * 255))
 
 
 def ff(x):
@@ -406,14 +423,21 @@ def _build(got, used_url, datestr, cycle, raw_path):
         return 2
     fmax_fill = int(np.nanmax(field))
 
-    # colors: continuous LUT over force 0..12 (dark purple ONLY at force 12)
-    lut = np.zeros((13, 3), dtype=np.uint8)
+    # colors: water LUT is the exact Beaufort table (dark purple ONLY at
+    # force 12); land LUT is the saturation-boosted twin so the same force
+    # reads the same through the extra land transparency. One legend.
+    from geospatial_utils import load_watermask
+    _wm = load_watermask()
+    lut_water = np.zeros((13, 3), dtype=np.uint8)
+    lut_land = np.zeros((13, 3), dtype=np.uint8)
     for f in range(13):
-        lut[f] = _rgb(FORCE_COLORS[f])
+        lut_water[f] = _rgb(FORCE_COLORS[f])
+        lut_land[f] = _vivid_for_land(FORCE_COLORS[f])
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
     ook = np.isfinite(field)
     fi = np.clip(np.round(field[ook]).astype(int), 0, 12)
-    rgba[ook, 0:3] = lut[fi]
+    _is_water = (_wm >= 0.5)[ook]
+    rgba[ook, 0:3] = np.where(_is_water[:, None], lut_water[fi], lut_land[fi])
     rgba[ook, 3] = WIND_ALPHA_LAND
 
     rgba, n_arrows = paint_arrows(
@@ -426,8 +450,6 @@ def _build(got, used_url, datestr, cycle, raw_path):
     # lakes, see-through over land): the shared NOAA shoreline mask drives
     # per-pixel alpha — 205 over open water, 140 over land, antialiased
     # blend along the shore. Arrows keep their own near-opaque alphas.
-    from geospatial_utils import load_watermask
-    _wm = load_watermask()
     _dual = np.round(WIND_ALPHA_LAND + (WIND_ALPHA_WATER - WIND_ALPHA_LAND)
                      * _wm).astype(np.uint8)
     _painted = rgba[:, :, 3] > 0
@@ -459,7 +481,8 @@ def _build(got, used_url, datestr, cycle, raw_path):
         f"{hrrr_dd} t{hrrr_cc}z (land fill)  |  "
         f"Processed {now_det_str()}",
         note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY. "
-             "Lakes ~80% opacity; land ~55% so terrain shows through.")
+             "Lakes ~80% opacity; land ~55% with intensified colors so the "
+             "same force reads the same (single key).")
 
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -498,9 +521,11 @@ def _build(got, used_url, datestr, cycle, raw_path):
         "calm (<0.5 m/s) gets no arrow. Full basin rectangle "
         "(lon -93..-73.5, lat 40.5..49.5, the Live Leaf Color footprint) "
         "with dual opacity from the shared NOAA shoreline mask: open water "
-        "~80% (alpha 205, the original lakes look), land ~55% (alpha 140) "
-        "so terrain shows through; edge RGB bled into transparent pixels "
-        "(anti-fringe for bilinear clients).")
+        "~80% (alpha 205, the original lakes look) with the exact Beaufort "
+        "table colors, land ~55% (alpha 140) with saturation-boosted twins "
+        "of the same hues so each force reads the same through the extra "
+        "transparency (single legend, no second key); edge RGB bled into "
+        "transparent pixels (anti-fringe for bilinear clients).")
     meta["stats"] = {
         "valid_cells": n_combined,
         "glwu_canvas_cells": n_glwu_canvas,
