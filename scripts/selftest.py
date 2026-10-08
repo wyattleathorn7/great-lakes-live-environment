@@ -451,6 +451,15 @@ def main():
     _got_hexes = ["#%02X%02X%02X" % c for _, c in _cs]
     check("chl-user-hexes-verbatim", _got_hexes == _chl_hexes,
           _got_hexes[:3])
+    # preset rows: every rendered value snaps to a table row (nearest 5)
+    from build_chlorophyll import tsi_table_rep as _trep
+    for _t, _r in [(0.0, 0.0), (2.4, 0.0), (2.5, 5.0), (47.3, 45.0),
+                   (48.0, 50.0), (97.6, 100.0), (100.0, 100.0),
+                   (150.0, 100.0)]:
+        check(f"chl-rep-{_t}", bool(float(_trep(_t)) == _r),
+              float(_trep(_t)))
+    check("chl-rep-nan", bool(_np.isnan(_trep(float("nan")))))
+    check("chl-rep-negative", bool(float(_trep(-3.0)) == 0.0))
     _cvals = [v for v, _ in _cs]
     check("chl-ascending",
           all(_cvals[i] < _cvals[i + 1] for i in range(len(_cvals) - 1)))

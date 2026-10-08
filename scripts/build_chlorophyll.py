@@ -37,8 +37,7 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, load_bounds, load_watermask, promote_stage,
                               RENDER_VERSION, iso_to_det, read_state, save_png, source_token, stage_dir,
                               now_det_str, utcnow_iso, write_metadata, write_state)
-from gradient_scale import (draw_scale_legend, fmt_val, load_record,
-                            render_rgba, save_record, update_record)
+from gradient_scale import (load_record, save_record, update_record)
 
 PRODUCT = "chlorophyll"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -86,8 +85,8 @@ def _hex_rgb(h):
 
 CHL_TSI_TABLE = [  # (TSI, chl-a ug/L, trophic, hex)
     # Hexes are the user-supplied trophic table VERBATIM: the raster is
-    # a continuous gradient through these fixed stops, and the legend
-    # bar is painted from the same stops. Never recolor.
+    # quantized to these 21 fixed rows (exact render, never blended) and
+    # the legend is the table itself. Never recolor.
     (0, 0.04, "Oligotrophic", "#123B8C"),
     (5, 0.07, "Oligotrophic", "#145DB3"),
     (10, 0.12, "Oligotrophic", "#167FC8"),
@@ -147,6 +146,78 @@ def chl_to_tsi(chl):
     return min(max(9.81 * _m.log(c) + 30.6, 0.0), 100.0)
 
 
+# Display strings exactly as the user table (no markdown, no hex text —
+# the legend shows the real colors as swatches).
+CHL_DISP = ["0.04", "0.07", "0.12", "0.22", "0.34", "0.58", "0.94",
+            "1.62", "2.6", "4.1", "6.4", "10.0", "20", "31", "56",
+            "87", "154", "247", "427", "718", "1,183"]
+
+
+def tsi_table_rep(tsi):
+    """Snap a TSI value to its table row (nearest 5). Every rendered
+    pixel then wears exactly one of the 21 fixed table colors."""
+    import math as _m
+    try:
+        v = float(tsi)
+    except (TypeError, ValueError):
+        return float("nan")
+    if not _m.isfinite(v):
+        return float("nan")
+    v = min(max(v, 0.0), 100.0)
+    return float(int(_m.floor(v / 5.0 + 0.5)) * 5)
+
+
+def draw_chlorophyll_table(path, title, subtitle, source_line, note=None):
+    """Legend as the 21-row table itself: Carlson TSI | Chlorophyll-a
+    (ug/L) | Trophic State Classification | actual Color swatch.
+    No gradient slider, no hex text. Returns (W, H)."""
+    from PIL import Image, ImageDraw
+    from geospatial_utils import _legend_font
+    f_title, f_body, f_small = _legend_font(22), _legend_font(15), _legend_font(13)
+    pad, row_h, head_h = 14, 24, 30
+    W = 640
+    y_top = 64
+    y_src = y_top + head_h + row_h * len(CHL_TSI_TABLE)
+    H = y_src + (58 if note else 40)
+    img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
+    d.text((pad, 8), title, font=f_title, fill=(10, 10, 10))
+    d.text((pad, 36), subtitle, font=f_body, fill=(40, 40, 40))
+    # header
+    y = y_top
+    d.rectangle([pad, y, W - pad, y + head_h], fill=(235, 235, 235, 255),
+                outline=(40, 40, 40))
+    d.text((pad + 6, y + 5), "Carlson TSI", font=f_body, fill=(10, 10, 10))
+    d.text((110, y + 5), "Chlorophyll-a (ug/L)", font=f_body,
+           fill=(10, 10, 10))
+    d.text((300, y + 5), "Trophic State Classification", font=f_body,
+           fill=(10, 10, 10))
+    d.text((540, y + 5), "Color", font=f_body, fill=(10, 10, 10))
+    y += head_h
+    for i, ((tsi, _chl, trophic, hx), disp) in enumerate(
+            zip(CHL_TSI_TABLE, CHL_DISP)):
+        if i % 2 == 1:
+            d.rectangle([pad, y, W - pad, y + row_h],
+                        fill=(245, 245, 245, 255))
+        d.text((pad + 6, y + 3), str(tsi), font=f_body, fill=(10, 10, 10))
+        d.text((110, y + 3), disp, font=f_body, fill=(10, 10, 10))
+        d.text((300, y + 3), trophic, font=f_body, fill=(10, 10, 10))
+        h = hx.lstrip("#")
+        rgb = tuple(int(h[j:j + 2], 16) for j in (0, 2, 4))
+        d.rectangle([520, y + 2, W - pad - 2, y + row_h - 2],
+                    fill=rgb + (255,), outline=(40, 40, 40))
+        d.line([(pad, y), (W - pad, y)], fill=(200, 200, 200, 255))
+        y += row_h
+    d.rectangle([pad, y_top, W - pad, y], outline=(40, 40, 40))
+    d.text((pad, y + 6), source_line, font=f_small, fill=(60, 60, 60))
+    if note:
+        d.text((pad, y + 24), note, font=f_small, fill=(60, 60, 60))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    return W, H
+
+
 def main():
     try:
         return run()
@@ -199,9 +270,9 @@ def run():
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
     hostkey, _, dataset, _, _ = cand
-    # v8 marker forces one rebuild to deploy the verbatim user-table
-    # colors (replaces the v7 saturation enhancement).
-    source_id = f"{hostkey}-{dataset}-v8-{times[0][:10]}"
+    # v9 marker forces one rebuild to deploy the preset table colors
+    # (replaces the v8 continuous ramp through the same hexes).
+    source_id = f"{hostkey}-{dataset}-v9-{times[0][:10]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
@@ -301,16 +372,35 @@ def _build(bounds, times, cand):
     rec, res = update_record(rec, res, sample)
     if not (lo <= rec["hist_min"] and rec["hist_max"] <= hi):
         raise ValueError("record extrema outside source valid range")
-    # Carlson TSI scale: chl-a field -> TSI 0-100 via Carlson's equation,
-    # rendered through the even 5-step TSI stops. Display smoothing first
-    # (raw chl-a), then convert — history keeps true observed chl-a.
-    stops = CHL_STOPS
+    # Carlson TSI table: chl-a field -> TSI 0-100 via Carlson's equation,
+    # then snapped to the nearest table row so every pixel wears exactly
+    # one of the 21 fixed table colors (wind-style presets, no blending).
+    # Display smoothing first (raw chl-a), then convert — history keeps
+    # true observed chl-a.
     field = _display_smooth(field)
     with np.errstate(invalid="ignore", divide="ignore"):
         vec_tsi = np.vectorize(chl_to_tsi, otypes=[float])
         tsifield = np.where(np.isfinite(field) & (field > 0),
                             vec_tsi(np.maximum(field, lo)), np.nan)
-    rgba = render_rgba(tsifield, stops, bounds["overlay_alpha"])
+        vec_rep = np.vectorize(tsi_table_rep, otypes=[float])
+        tsifield = vec_rep(tsifield)
+    # Exact preset render (NOT the 256-entry interpolated LUT: its uniform
+    # sampling cannot land on 5-unit stops, which re-tinted 15 of the 21
+    # rows). Every pixel takes its table row's verbatim hex.
+    import math as _m2
+    rep_to_rgb = {float(tsi): _hex_rgb(hx)
+                  for tsi, _c, _t, hx in CHL_TSI_TABLE}
+    lut101 = np.zeros((101, 3), dtype=np.uint8)
+    for _t in range(101):
+        _r = float(int(_m2.floor(_t / 5.0 + 0.5)) * 5)
+        lut101[_t] = rep_to_rgb[_r]
+    Hc, Wc = tsifield.shape
+    rgba = np.zeros((Hc, Wc, 4), dtype=np.uint8)
+    _ok = np.isfinite(tsifield)
+    if _ok.any():
+        _idx = np.clip(np.rint(tsifield[_ok]), 0, 100).astype(int)
+        rgba[_ok, 0:3] = lut101[_idx]
+        rgba[_ok, 3] = bounds["overlay_alpha"]
     # Chlorophyll-only shoreline treatment: ocean-color pixels adjacent
     # to land (and sub-cell inland ponds) are land-contaminated by the
     # sensor's footprint, so the shared mask is eroded one canvas pixel
@@ -328,21 +418,18 @@ def _build(bounds, times, cand):
 
     p = rec["percentiles"]
     unit = "TSI"
-    labels = CHL_LABELS
     subtitle = (f"Carlson TSI (chlorophyll-a {times[0][:10]}, 7-day median mosaic)")
-    lw, lh = draw_scale_legend(
+    lw, lh = draw_chlorophyll_table(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
-        unit, stops, labels,
         "Source: NOAA CoastWatch VIIRS chlorophyll",
         note="Transparent = land/cloud/missing. Not a toxin measurement.")
-    scale_html = ("Carlson Trophic State Index from chlorophyll-a (fixed "
-                  "0-100 scale, even 5-unit steps): <b>0-35</b> Oligotrophic "
-                  "(deep blue&rarr;green, chl 0.04-1.62) &rarr; <b>40-45</b> "
-                  "Mesotrophic (yellow-green, chl 2.6-4.1) &rarr; <b>50-60</b> "
-                  "Eutrophic (gold&rarr;red-orange, chl 6.4-20) &rarr; "
-                  "<b>65-100</b> Hypereutrophic (red&rarr;violet&rarr;dark, "
-                  "chl 31-1183). Legend labels show TSI (chl-a ug/L). Same "
-                  "TSI always shows the same color. High TSI = biomass / "
+    scale_html = ("Carlson Trophic State Index from chlorophyll-a: 21 "
+                  "fixed preset table colors — <b>0-35 Oligotrophic</b> "
+                  "(chl 0.04-1.62) &rarr; <b>40-45 Mesotrophic</b> (chl "
+                  "2.6-4.1) &rarr; <b>50-60 Eutrophic</b> (chl 6.4-20) "
+                  "&rarr; <b>65-100 Hypereutrophic</b> (chl 31-1,183). "
+                  "Every pixel shows its table row's exact color; the "
+                  "legend is the full table. High TSI = biomass / "
                   "activity, not toxins.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -369,10 +456,10 @@ def _build(bounds, times, cand):
     meta["mosaic_sources"] = day_sources
     meta["mosaic_method"] = (f"per-pixel median of {len(stack)} daily "
                              "composites")
-    # v8 = verbatim user-table colors with host-qualified source ids
-    # (pfeg/central fallback). One-time rotation to deploy the exact
-    # table; afterwards the id tracks source host+dataset+date only.
-    source_id = f"{hostkey}-{dataset}-v8-{times[0][:10]}"
+    # v9 = 21 fixed preset table colors (quantized raster) + table-image
+    # legend. One-time rotation to deploy the presets; afterwards the id
+    # tracks source host+dataset+date only.
+    source_id = f"{hostkey}-{dataset}-v9-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]

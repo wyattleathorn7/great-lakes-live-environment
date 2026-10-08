@@ -268,11 +268,11 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
    Balanced LINEAR color scale. The gapfilled NRT stream also removes the
    scan-line gaps of the old SQ-only mosaic.
 - **Display scale (v6):** Carlson Trophic State Index 0–100
-  (TSI = 9.81·ln(chl-a)+30.6, clamped 0–100), even 5-unit steps with the
-  trophic color table (oligotrophic blues → mesotrophic yellows →
-  eutrophic oranges → hypereutrophic red-violet/deep-purple). Legend
-  labels show TSI (chl-a µg/L equivalents). Same TSI always shows the
-  same color; high TSI marks biomass/activity, never toxins.
+  (TSI = 9.81·ln(chl-a)+30.6, clamped 0–100) as 21 fixed preset table
+  colors (nearest 5 TSI units; verbatim user hexes, never blended).
+  The legend is the table itself: Carlson TSI | Chlorophyll-a (ug/L) |
+  Trophic State Classification | actual Color swatch. Same row always
+  shows the same color; high TSI marks biomass/activity, never toxins.
 - Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
 
 ## 7. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (SQ, daily)
