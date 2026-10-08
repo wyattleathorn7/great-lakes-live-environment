@@ -68,7 +68,20 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
 # Full-basin render generation: bump to force one redeploy of the expanded
 # (GLWU+HRRR, no shoreline cut) raster even when the GLWU cycle is unchanged.
 # Afterwards the source id tracks both model cycles.
-RENDER_TAG = "fullbasin-g4"
+RENDER_TAG = "fullbasin-g5"
+
+# Inland lakes that read as LAND in the shared NOAA shoreline mask (which
+# covers the five Great Lakes) but get the full 80% water treatment here:
+# (name, lon_min, lon_max, lat_min, lat_max). Lake pixels are identified by
+# the committed landcover water class (code 9) inside each box — surrounding
+# land is never affected. GLWU has no valid mesh cells here, so the HRRR
+# fill supplies the (live) values; only the opacity + palette follow water.
+INLAND_LAKES = [
+    ("nipigon", -89.2, -87.9, 49.0, 49.5),
+    ("nipissing", -80.4, -79.3, 46.15, 46.45),
+    ("simcoe", -79.7, -79.1, 44.15, 44.65),
+    ("winnebago", -88.8, -88.2, 43.7, 44.3),
+]
 
 # Dual-opacity finish: open-water pixels render at the original ~80% lake
 # opacity; land pixels stay semi-transparent so the base-map terrain shows
@@ -98,8 +111,38 @@ def _vivid_for_land(h):
     r, g, b = (int(h.lstrip("#")[i:i + 2], 16) / 255.0 for i in (0, 2, 4))
     hh, s, v = colorsys.rgb_to_hsv(r, g, b)
     r2, g2, b2 = colorsys.hsv_to_rgb(
-        hh, min(1.0, s * 1.4), min(1.0, v * 1.08 + 0.03))
+        hh, min(1.0, s * 1.3), min(1.0, v * 1.10 + 0.02))
     return (round(r2 * 255), round(g2 * 255), round(b2 * 255))
+
+
+def inland_lake_mask(bounds, shape):
+    """Bool canvas mask of the INLAND_LAKES water surfaces (wind-local).
+
+    The shared NOAA shoreline mask excludes these lakes, so this draws on
+    the committed landcover water class (code 9 = open water) clipped to
+    tight per-lake boxes. Raises on missing/wrong-sized asset (loud
+    failure; previous raster kept via exit codes).
+    """
+    import numpy as _np
+    from PIL import Image as _Im
+    from geospatial_utils import REPO_ROOT as _RR
+    H, W = shape
+    p = os.path.join(_RR, "assets", "leaf_landcover.png")
+    lc = _np.array(_Im.open(p).convert("L"))
+    if lc.shape != (H, W):
+        raise ValueError(f"landcover shape {lc.shape} != canvas {(H, W)}")
+    out = _np.zeros((H, W), dtype=bool)
+    for _name, lo0, lo1, la0, la1 in INLAND_LAKES:
+        c0 = max(int((lo0 - bounds["lon_min"])
+                     / (bounds["lon_max"] - bounds["lon_min"]) * W), 0)
+        c1 = min(int((lo1 - bounds["lon_min"])
+                     / (bounds["lon_max"] - bounds["lon_min"]) * W) + 1, W)
+        r0 = max(int((bounds["lat_max"] - la1)
+                     / (bounds["lat_max"] - bounds["lat_min"]) * H), 0)
+        r1 = min(int((bounds["lat_max"] - la0)
+                     / (bounds["lat_max"] - bounds["lat_min"]) * H) + 1, H)
+        out[r0:r1, c0:c1] |= (lc[r0:r1, c0:c1] == 9)
+    return out
 
 
 def ff(x):
@@ -428,6 +471,11 @@ def _build(got, used_url, datestr, cycle, raw_path):
     # reads the same through the extra land transparency. One legend.
     from geospatial_utils import load_watermask
     _wm = load_watermask()
+    _lake = inland_lake_mask(bounds, (H, W))
+    _water = (_wm >= 0.5) | _lake
+    n_inland = int((_lake & np.isfinite(field)).sum())
+    print(f"[{PRODUCT}] inland-lake water cells "
+          f"(nipigon/nipissing/simcoe/winnebago): {n_inland}")
     lut_water = np.zeros((13, 3), dtype=np.uint8)
     lut_land = np.zeros((13, 3), dtype=np.uint8)
     for f in range(13):
@@ -436,7 +484,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
     ook = np.isfinite(field)
     fi = np.clip(np.round(field[ook]).astype(int), 0, 12)
-    _is_water = (_wm >= 0.5)[ook]
+    _is_water = _water[ook]
     rgba[ook, 0:3] = np.where(_is_water[:, None], lut_water[fi], lut_land[fi])
     rgba[ook, 3] = WIND_ALPHA_LAND
 
@@ -450,8 +498,11 @@ def _build(got, used_url, datestr, cycle, raw_path):
     # lakes, see-through over land): the shared NOAA shoreline mask drives
     # per-pixel alpha — 205 over open water, 140 over land, antialiased
     # blend along the shore. Arrows keep their own near-opaque alphas.
+    # Inland lakes (nipigon/nipissing/simcoe/winnebago) join the 205 group
+    # via the combined water test below.
+    _wfrac = np.maximum(_wm, _lake.astype(float))
     _dual = np.round(WIND_ALPHA_LAND + (WIND_ALPHA_WATER - WIND_ALPHA_LAND)
-                     * _wm).astype(np.uint8)
+                     * _wfrac).astype(np.uint8)
     _painted = rgba[:, :, 3] > 0
     rgba[_painted, 3] = _dual[_painted]
     # Full basin rectangle (atmospheric layer, like leaf footprint): only
@@ -500,8 +551,11 @@ def _build(got, used_url, datestr, cycle, raw_path):
                                 "fills land + GLWU gaps + canvas edges; "
                                 "dual opacity from the shared NOAA shoreline "
                                 "mask (water alpha 205 ~80%, land alpha 140 "
-                                "~55%); transparent only where both sources "
-                                "lack data; never zero-filled."))
+                                "~55%) with inland lakes nipigon/nipissing/"
+                                "simcoe/winnebago (landcover water class, "
+                                "wind-local boxes) at full water opacity; "
+                                "transparent only where both sources lack "
+                                "data; never zero-filled."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["model_cycle"] = f"{datestr} t{cycle}z + {hrrr_dd} t{hrrr_cc}z"
@@ -524,12 +578,15 @@ def _build(got, used_url, datestr, cycle, raw_path):
         "~80% (alpha 205, the original lakes look) with the exact Beaufort "
         "table colors, land ~55% (alpha 140) with saturation-boosted twins "
         "of the same hues so each force reads the same through the extra "
-        "transparency (single legend, no second key); edge RGB bled into "
+        "transparency (single legend, no second key); inland lakes "
+        "nipigon/nipissing/simcoe/winnebago render at full water opacity "
+        "via the wind-local landcover water mask; edge RGB bled into "
         "transparent pixels (anti-fringe for bilinear clients).")
     meta["stats"] = {
         "valid_cells": n_combined,
         "glwu_canvas_cells": n_glwu_canvas,
         "hrrr_fill_cells": n_fill,
+        "inland_lake_cells": n_inland,
         "hrrr_cycle": f"{hrrr_dd} t{hrrr_cc}z",
         "max_kt": round(float(spd_kt[valid].max()), 1),
         "max_beaufort": fmax,
