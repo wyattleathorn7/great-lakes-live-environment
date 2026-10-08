@@ -68,11 +68,13 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
 # Full-basin render generation: bump to force one redeploy of the expanded
 # (GLWU+HRRR, no shoreline cut) raster even when the GLWU cycle is unchanged.
 # Afterwards the source id tracks both model cycles.
-RENDER_TAG = "fullbasin-g2"
+RENDER_TAG = "fullbasin-g3"
 
-# Semi-transparent fill so the base-map land stays visible underneath the
-# gradient (arrows paint at their own near-opaque alphas and stay legible).
-WIND_ALPHA = 140
+# Dual-opacity finish: open-water pixels render at the original ~80% lake
+# opacity; land pixels stay semi-transparent so the base-map terrain shows
+# through (arrows paint at their own near-opaque alphas and stay legible).
+WIND_ALPHA_WATER = 205
+WIND_ALPHA_LAND = 140
 
 HRRR_MSGS = [("UGRD", "10 m above ground"), ("VGRD", "10 m above ground")]
 CANVAS_ARROW_STEP_PX = 45  # canvas-space sampling for land+water arrows
@@ -412,7 +414,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
     ook = np.isfinite(field)
     fi = np.clip(np.round(field[ook]).astype(int), 0, 12)
     rgba[ook, 0:3] = lut[fi]
-    rgba[ook, 3] = WIND_ALPHA
+    rgba[ook, 3] = WIND_ALPHA_LAND
 
     rgba, n_arrows = paint_arrows(
         rgba, arrow_points_canvas(comb_u, comb_v, CANVAS_ARROW_STEP_PX))
@@ -420,8 +422,18 @@ def _build(got, used_url, datestr, cycle, raw_path):
     if n_arrows < 50:
         print(f"[{PRODUCT}] VALIDATION FAILED: too few arrows. Keeping previous.")
         return 2
+    # Dual-opacity shoreline merge (the original water-only look over the
+    # lakes, see-through over land): the shared NOAA shoreline mask drives
+    # per-pixel alpha — 205 over open water, 140 over land, antialiased
+    # blend along the shore. Arrows keep their own near-opaque alphas.
+    from geospatial_utils import load_watermask
+    _wm = load_watermask()
+    _dual = np.round(WIND_ALPHA_LAND + (WIND_ALPHA_WATER - WIND_ALPHA_LAND)
+                     * _wm).astype(np.uint8)
+    _painted = rgba[:, :, 3] > 0
+    rgba[_painted, 3] = _dual[_painted]
     # Full basin rectangle (atmospheric layer, like leaf footprint): only
-    # missing source data is transparent — no shoreline cut. RGB bleed keeps
+    # missing source data is transparent. RGB bleed keeps
     # the anti-fringe contract for bilinear clients (Google Earth).
     rgba = bleed_rgb_into_transparent(rgba)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
@@ -446,7 +458,8 @@ def _build(got, used_url, datestr, cycle, raw_path):
         f"Source: GLWU v2.1 U/V {datestr} t{cycle}z (water) + HRRR 10 m "
         f"{hrrr_dd} t{hrrr_cc}z (land fill)  |  "
         f"Processed {now_det_str()}",
-        note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY.")
+        note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY. "
+             "Lakes ~80% opacity; land ~55% so terrain shows through.")
 
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -462,8 +475,10 @@ def _build(got, used_url, datestr, cycle, raw_path):
                                 "40.5..49.5 (same footprint as Live Leaf "
                                 "Color): GLWU over water, HRRR 10 m wind "
                                 "fills land + GLWU gaps + canvas edges; "
-                                "transparent only where both sources lack "
-                                "data; never zero-filled."))
+                                "dual opacity from the shared NOAA shoreline "
+                                "mask (water alpha 205 ~80%, land alpha 140 "
+                                "~55%); transparent only where both sources "
+                                "lack data; never zero-filled."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["model_cycle"] = f"{datestr} t{cycle}z + {hrrr_dd} t{hrrr_cc}z"
@@ -481,8 +496,10 @@ def _build(got, used_url, datestr, cycle, raw_path):
         "gaps + canvas edges. Arrows point along the (U,V) movement "
         "vector (no FROM->TOWARD reversal needed for GRIB components); "
         "calm (<0.5 m/s) gets no arrow. Full basin rectangle "
-        "(lon -93..-73.5, lat 40.5..49.5, the Live Leaf Color footprint): "
-        "no shoreline cut; edge RGB bled into transparent pixels "
+        "(lon -93..-73.5, lat 40.5..49.5, the Live Leaf Color footprint) "
+        "with dual opacity from the shared NOAA shoreline mask: open water "
+        "~80% (alpha 205, the original lakes look), land ~55% (alpha 140) "
+        "so terrain shows through; edge RGB bled into transparent pixels "
         "(anti-fringe for bilinear clients).")
     meta["stats"] = {
         "valid_cells": n_combined,
