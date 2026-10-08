@@ -2,7 +2,7 @@
   "product": "chlorophyll",
   "title": "LIVE CHLOROPHYLL / ALGAL ACTIVITY",
   "freshness_label": "LATEST AVAILABLE (daily composite)",
-  "source_name": "NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily)",
+  "source_name": "NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily); host fallback NOAA-20 VIIRS chlorophyll Daily on the CoastWatch Central hub (noaacwN20VIIRSchlaDaily, same chlor_a OC3 variable)",
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html",
   "variable": "chlor_a (Chlorophyll Concentration, OC3 Algorithm)",
   "source_units": "mg m^-3",

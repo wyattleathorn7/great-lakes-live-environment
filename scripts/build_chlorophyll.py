@@ -30,7 +30,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from erddap_coastwatch import fetch_csv, latest_time
+from erddap_coastwatch import (BASE as PFEG_BASE,
+                                BASE_CENTRAL as CENTRAL_BASE, fetch_csv,
+                                latest_time)
 from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, load_bounds, load_watermask, promote_stage,
                               RENDER_VERSION, iso_to_det, read_state, save_png, source_token, stage_dir,
@@ -46,17 +48,27 @@ CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
 # (newest 2026-09-13, ~10 d production latency). NOAA-21 is not yet in
 # CoastWatch ERDDAP; the S-NPP+NOAA-20 NRT stream is the operational
 # coverage until it is (no fabricated NOAA-21 data).
-DATASETS = ["nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-            "nesdisVHNSQchlaDaily"]
-VARS = {"nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily": "chlor_a",
-        "nesdisVHNSQchlaDaily": "chlor_a"}
+# 2026-10-07: PFEG West Coast node unreachable (DNS resolves, TCP 443
+# times out — server-side outage, not seasonal), so a third candidate
+# joins the rotation: NOAA-20 VIIRS chlorophyll Daily on the CoastWatch
+# Central hub (verified same variable: chlor_a, OC3, mg/m^3, valid
+# 0.001-1000; 0.0375 deg grid so stride 2 matches PFEG fetch sizes).
+CANDIDATES = [  # (host key, base URL, dataset, var, stride)
+    ("pfeg", PFEG_BASE, "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+     "chlor_a", 1),
+    ("pfeg", PFEG_BASE, "nesdisVHNSQchlaDaily", "chlor_a", 1),
+    ("central", CENTRAL_BASE, "noaacwN20VIIRSchlaDaily", "chlor_a", 2),
+]
+DATASETS = [c[2] for c in CANDIDATES]
+VARS = {c[2]: c[3] for c in CANDIDATES}
 KML_FILE = "Great_Lakes_Live_Chlorophyll.kml"
 OVERLAY_NAME = "\U0001F33F LIVE CHLOROPHYLL / ALGAL ACTIVITY"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 MOSAIC_DAYS = 7
-STRIDE = 1  # Full ERDDAP source resolution (0.0833 deg): stride 2 threw
-            # away 3/4 of the cells and rendered real gradients as 18 km
-            # tall stripes/blocks. Fetches stay small (~109x235 x 7 days).
+# Stride lives per-candidate (0.0833 deg PFEG stride 1; 0.0375 deg
+# Central stride 2 gives matching fetch sizes). Stride 2 on PFEG threw
+# away 3/4 of the cells and rendered real gradients as 18 km tall
+# stripes/blocks, so PFEG stays full resolution.
 
 # Fixed Carlson Trophic State Index scale (field-of-study standard for
 # chlorophyll-a). User-supplied TSI->chlorophyll->color table (TSI 0-100
@@ -145,31 +157,34 @@ def main():
 
 
 def recent_times(n):
-    """Newest n daily timestamps (ISO) + the dataset that owns the newest.
+    """Newest n daily timestamps (ISO) + the candidate that owns the newest.
 
-    Newest-wins across DATASETS: every candidate's time axis is probed and
-    the freshest end date wins, so the mosaic can never strand on a stale
-    primary while a fallback has newer data. Unreachable candidates are
-    skipped; per-day gaps fall back across datasets in _build.
+    Newest-wins across CANDIDATES (both ERDDAP hosts): every candidate's
+    time axis is probed and the freshest end date wins, so the mosaic can
+    never strand on a stale primary while a fallback has newer data.
+    Unreachable candidates are skipped; per-day gaps fall back across
+    candidates in _build.
     """
     import datetime as dt
-    best = None  # (end_dt, dataset)
+    best = None  # (end_dt, candidate tuple)
     errors = []
-    for cand in DATASETS:
+    for cand in CANDIDATES:
+        _hostkey, _base, _ds, _var, _st = cand
         try:
-            end = latest_time(cand)
+            end = latest_time(_ds, base=_base)
             end_dt = dt.datetime.fromisoformat(end.replace("Z", "+00:00"))
             if best is None or end_dt > best[0]:
                 best = (end_dt, cand)
         except Exception as e:
-            print(f"[{PRODUCT}] dataset {cand} time-axis probe failed: "
+            print(f"[{PRODUCT}] {_hostkey}:{_ds} time-axis probe failed: "
                   f"{str(e)[:100]}")
             errors.append(e)
     if best is None:
         raise errors[0] if errors else RuntimeError(
             "no chlorophyll dataset reachable")
     base, dataset = best
-    print(f"[{PRODUCT}] freshest source: {dataset} "
+    _hostkey, _, _ds, _, _ = dataset
+    print(f"[{PRODUCT}] freshest source: {_hostkey}:{_ds} "
           f"({base.strftime('%Y-%m-%dT12:00:00Z')})")
     return ([((base - dt.timedelta(days=i)).strftime("%Y-%m-%dT12:00:00Z"))
              for i in range(n)], dataset)
@@ -178,25 +193,27 @@ def recent_times(n):
 def run():
     bounds = load_bounds()
     try:
-        times, dataset = recent_times(MOSAIC_DAYS)
+        times, cand = recent_times(MOSAIC_DAYS)
     except Exception as e:
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
-    # v5 marker forces one rebuild to deploy the fixed-scale rendering.
-    source_id = f"{dataset}-v7-{times[0][:10]}"
+    hostkey, _, dataset, _, _ = cand
+    # v7 marker forces one rebuild to deploy the TSI rendering.
+    source_id = f"{hostkey}-{dataset}-v7-{times[0][:10]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
             and prev.get("data_times") == times \
             and prev.get("dataset") == dataset \
+            and prev.get("hostkey", "pfeg") == hostkey \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
             and os.path.exists(os.path.join(
                 SITE_DIR, "kml", "live", KML_FILE)):
-        print(f"[{PRODUCT}] source unchanged ({dataset} {times[0]}); "
-              f"keeping current raster.")
+        print(f"[{PRODUCT}] source unchanged ({hostkey}:{dataset} "
+              f"{times[0]}); keeping current raster.")
         return _refresh_kml()
     try:
-        return _build(bounds, times, dataset)
+        return _build(bounds, times, cand)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -215,7 +232,8 @@ def _refresh_kml():
     return 0
 
 
-def _build(bounds, times, dataset):
+def _build(bounds, times, cand):
+    hostkey, _, dataset, _, _ = cand
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     W, H = bounds["canvas_width"], bounds["canvas_height"]
@@ -228,23 +246,26 @@ def _build(bounds, times, dataset):
     import warnings as _warnings
     stack = []
     day_sources = {}
-    # Newest dataset first, then the rest: a day missing on the primary is
-    # filled from whichever candidate has it (cloud gaps / short outages).
-    order = [dataset] + [d for d in DATASETS if d != dataset]
+    # Newest candidate first, then the rest: a day missing on the primary
+    # is filled from whichever candidate has it (cloud gaps, short
+    # outages, or a whole unreachable host).
+    order = [cand] + [c for c in CANDIDATES if c != cand]
     for t in times:
         g = None
-        for ds in order:
+        for _hk, _base, ds, var, st in order:
             try:
-                la, lo_n, g = fetch_csv(ds, VARS[ds], t, bounds["lat_min"],
+                la, lo_n, g = fetch_csv(ds, var, t, bounds["lat_min"],
                                          bounds["lat_max"], bounds["lon_min"],
-                                         bounds["lon_max"], stride=STRIDE)
-                day_sources[t] = ds
+                                         bounds["lon_max"], stride=st,
+                                         base=_base)
+                day_sources[t] = f"{_hk}:{ds}"
                 if ds != dataset:
-                    print(f"[{PRODUCT}] {t} filled from fallback {ds}")
+                    print(f"[{PRODUCT}] {t} filled from fallback "
+                          f"{_hk}:{ds}")
                 break
             except Exception as e:
-                print(f"[{PRODUCT}] WARNING: {t} on {ds} unavailable: "
-                      f"{str(e)[:120]}")
+                print(f"[{PRODUCT}] WARNING: {t} on {_hk}:{ds} "
+                      f"unavailable: {str(e)[:120]}")
         if g is None:
             continue
         v = np.where((g >= lo) & (g <= hi), g, np.nan)
@@ -328,7 +349,9 @@ def _build(bounds, times, dataset):
         data_time_utc=f"{iso_to_det(times[0])} (7-day median mosaic ending {times[0][:10]})",
         source_last_modified_utc="n/a (ERDDAP)",
         units="TSI 0-100 (display; source mg m^-3 chlorophyll-a)",
-        source_resolution="~9 km VIIRS NRT (0.0833 deg), 7-day median mosaic, NaN-aware display smoothing",
+        source_resolution=("~9 km VIIRS (0.0833 deg PFEG) or ~4 km VIIRS "
+                             "(0.0375 deg Central fallback), 7-day median "
+                             "mosaic, NaN-aware display smoothing"),
         color_min=CHL_MIN, color_max=CHL_MAX, color_units=unit,
         missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
                                 f"[{lo},{hi}] values admitted; never interpolated; "
@@ -340,13 +363,15 @@ def _build(bounds, times, dataset):
                           "extends": rec.get("extends", [])}
     meta["stats"] = {"valid_cells": n_valid, "current_min": cur_min,
                      "current_max": cur_max}
-    meta["dataset"] = dataset
+    meta["dataset"] = f"{hostkey}:{dataset}"
     meta["mosaic_sources"] = day_sources
-    meta["mosaic_method"] = f"per-pixel median of {len(stack)} daily composites"
+    meta["mosaic_method"] = (f"per-pixel median of {len(stack)} daily "
+                             "composites")
     # v7 = saturation-enhanced TSI trophic colors (+45%, hue/order
-    # preserved). One-time rotation to deploy the vivid rendering;
-    # afterwards the id tracks source dataset+date only.
-    source_id = f"{dataset}-v7-{times[0][:10]}"
+    # preserved) with host-qualified source ids (pfeg/central fallback).
+    # One-time rotation to deploy the vivid rendering; afterwards the id
+    # tracks source host+dataset+date only.
+    source_id = f"{hostkey}-{dataset}-v7-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]
@@ -381,11 +406,12 @@ def _build(bounds, times, dataset):
     save_record(PRODUCT, rec, res)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"data_times": times,
-                          "dataset": dataset,
-                          "mosaic_sources": day_sources,
-                          "source_id": source_id,
-                          "render_version": RENDER_VERSION,
-                          "processing_time_utc": meta["processing_time_utc"]})
+                           "hostkey": hostkey,
+                           "dataset": dataset,
+                           "mosaic_sources": day_sources,
+                           "source_id": source_id,
+                           "render_version": RENDER_VERSION,
+                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0
 

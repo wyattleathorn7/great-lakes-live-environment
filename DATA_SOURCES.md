@@ -257,6 +257,12 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   2026-08-25), `nesdisVHNnoaa20chlaDaily` (stale at 2026-09-02). NOAA-21
   is not yet in CoastWatch ERDDAP, so no NOAA-21 chlorophyll is
   fabricated; the S-NPP+NOAA-20 NRT stream is the operational coverage.
+  2026-10-07 host fallback: the PFEG West Coast ERDDAP node went
+  unreachable (DNS resolves, TCP 443 times out — server-side outage,
+  not a seasonal data gap), so `noaacwN20VIIRSchlaDaily` (NOAA-20 VIIRS
+  chlorophyll Daily) on the CoastWatch Central hub joins the rotation
+  (verified same `chlor_a` OC3 variable, mg m⁻³, valid 0.001–1000,
+  data current). Newest-wins across hosts; per-day fallback fills gaps.
   Rendered as a newest-valid mosaic of the latest 7 dailies (daily ocean
    color is cloud-sparse; ERDDAP stride-2 fetch, canvas upscales).
    Balanced LINEAR color scale. The gapfilled NRT stream also removes the

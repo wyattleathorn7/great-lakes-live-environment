@@ -8,17 +8,18 @@
     "2026-10-01T12:00:00Z",
     "2026-09-30T12:00:00Z"
   ],
+  "hostkey": "pfeg",
   "dataset": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
   "mosaic_sources": {
-    "2026-10-06T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-05T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-04T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-03T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-02T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-01T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-09-30T12:00:00Z": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily"
+    "2026-10-06T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-05T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-04T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-03T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-02T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-01T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-09-30T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily"
   },
-  "source_id": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v7-2026-10-06",
+  "source_id": "pfeg-nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v7-2026-10-06",
   "render_version": 3,
-  "processing_time_utc": "2026-10-07 11:01 PM EDT"
+  "processing_time_utc": "2026-10-08 09:54 AM EDT"
 }
