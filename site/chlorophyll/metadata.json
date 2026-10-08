@@ -4,11 +4,11 @@
   "freshness": "LATEST AVAILABLE (daily composite)",
   "noaa_source": "NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily); host fallback NOAA-20 VIIRS chlorophyll Daily on the CoastWatch Central hub (noaacwN20VIIRSchlaDaily, same chlor_a OC3 variable)",
   "product_name": "NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily); host fallback NOAA-20 VIIRS chlorophyll Daily on the CoastWatch Central hub (noaacwN20VIIRSchlaDaily, same chlor_a OC3 variable)",
-  "variable": "chlor_a (Chlorophyll Concentration, OC3 Algorithm); mosaic 2026-10-06..2026-09-30",
+  "variable": "chlor_a (Chlorophyll Concentration, OC3 Algorithm); mosaic 2026-10-04..2026-09-28",
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html",
-  "data_time_utc": "2026-10-06 08:00 AM EDT (7-day median mosaic ending 2026-10-06)",
+  "data_time_utc": "2026-10-04 08:00 AM EDT (7-day median mosaic ending 2026-10-04)",
   "source_last_modified_utc": "n/a (ERDDAP)",
-  "processing_time_utc": "2026-10-08 09:54 AM EDT",
+  "processing_time_utc": "2026-10-08 10:05 AM EDT",
   "units": "TSI 0-100 (display; source mg m^-3 chlorophyll-a)",
   "spatial_resolution_source": "~9 km VIIRS (0.0833 deg PFEG) or ~4 km VIIRS (0.0375 deg Central fallback), 7-day median mosaic, NaN-aware display smoothing",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -32,16 +32,16 @@
   "legend_scale_html": "Carlson Trophic State Index from chlorophyll-a (fixed 0-100 scale, even 5-unit steps): <b>0-35</b> Oligotrophic (deep blue&rarr;green, chl 0.04-1.62) &rarr; <b>40-45</b> Mesotrophic (yellow-green, chl 2.6-4.1) &rarr; <b>50-60</b> Eutrophic (gold&rarr;red-orange, chl 6.4-20) &rarr; <b>65-100</b> Hypereutrophic (red&rarr;violet&rarr;dark, chl 31-1183). Legend labels show TSI (chl-a ug/L). Same TSI always shows the same color. High TSI = biomass / activity, not toxins.",
   "historical": {
     "low": 0.07920839,
-    "high": 99.92819,
+    "high": 211.11685422129142,
     "percentiles": {
-      "p5": 0.5944295321092092,
-      "p25": 0.9283150754148185,
-      "p50": 1.7109118669496843,
-      "p75": 13.802098280469682,
-      "p95": 33.56393620122534,
-      "p99": 49.90152938842762
+      "p5": 0.4821177745948341,
+      "p25": 0.7373884044406998,
+      "p50": 1.1757640838623047,
+      "p75": 3.5723832845687866,
+      "p95": 27.186966323852538,
+      "p99": 45.44588584899898
     },
-    "n_obs": 610487,
+    "n_obs": 630487,
     "extends": [
       {
         "at": "2026-09-22 04:20 UTC",
@@ -50,26 +50,30 @@
       {
         "at": "2026-09-23 01:33 UTC",
         "kind": "low"
+      },
+      {
+        "at": "2026-10-08 14:05 UTC",
+        "kind": "high"
       }
     ]
   },
   "stats": {
-    "valid_cells": 10590,
-    "current_min": 0.2765914065052247,
-    "current_max": 94.27726128327163
+    "valid_cells": 6465,
+    "current_min": 0.0855173975012256,
+    "current_max": 322.75181729492726
   },
-  "dataset": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+  "dataset": "central:noaacwN20VIIRSchlaDaily",
   "mosaic_sources": {
-    "2026-10-06T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-05T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-04T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-03T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-02T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-10-01T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
-    "2026-09-30T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily"
+    "2026-10-04T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
+    "2026-10-03T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
+    "2026-10-02T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
+    "2026-10-01T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
+    "2026-09-30T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
+    "2026-09-29T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
+    "2026-09-28T12:00:00Z": "central:noaacwN20VIIRSchlaDaily"
   },
   "mosaic_method": "per-pixel median of 7 daily composites",
-  "source_id": "pfeg-nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v7-2026-10-06",
-  "source_version": "pfeg-nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v7-2026-10-06",
-  "folder_html": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/legend.png?v=pfeg-nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v7-2026-10-06\" width=\"600\" alt=\"legend\"><br>Carlson Trophic State Index from chlorophyll-a (fixed 0-100 scale, even 5-unit steps): <b>0-35</b> Oligotrophic (deep blue&rarr;green, chl 0.04-1.62) &rarr; <b>40-45</b> Mesotrophic (yellow-green, chl 2.6-4.1) &rarr; <b>50-60</b> Eutrophic (gold&rarr;red-orange, chl 6.4-20) &rarr; <b>65-100</b> Hypereutrophic (red&rarr;violet&rarr;dark, chl 31-1183). Legend labels show TSI (chl-a ug/L). Same TSI always shows the same color. High TSI = biomass / activity, not toxins.</p><p>Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass, shown on the Carlson Trophic State Index 0-100. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.</p><p><b>Units:</b> TSI (Carlson TSI from chlorophyll-a)<br/><b>Source:</b> NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily); host fallback NOAA-20 VIIRS chlorophyll Daily on the CoastWatch Central hub (noaacwN20VIIRSchlaDaily, same chlor_a OC3 variable)<br/><b>Update:</b> daily composites<br/><b>Why high values turn red/purple:</b> Carlson TSI trophic scale: oligotrophic blues through mesotrophic yellows and eutrophic oranges, with only hypereutrophic water reaching red-violet/deep-purple.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html\">ERDDAP dataset</a></p>"
+  "source_id": "central-noaacwN20VIIRSchlaDaily-v7-2026-10-04",
+  "source_version": "central-noaacwN20VIIRSchlaDaily-v7-2026-10-04",
+  "folder_html": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/chlorophyll/legend.png?v=central-noaacwN20VIIRSchlaDaily-v7-2026-10-04\" width=\"600\" alt=\"legend\"><br>Carlson Trophic State Index from chlorophyll-a (fixed 0-100 scale, even 5-unit steps): <b>0-35</b> Oligotrophic (deep blue&rarr;green, chl 0.04-1.62) &rarr; <b>40-45</b> Mesotrophic (yellow-green, chl 2.6-4.1) &rarr; <b>50-60</b> Eutrophic (gold&rarr;red-orange, chl 6.4-20) &rarr; <b>65-100</b> Hypereutrophic (red&rarr;violet&rarr;dark, chl 31-1183). Legend labels show TSI (chl-a ug/L). Same TSI always shows the same color. High TSI = biomass / activity, not toxins.</p><p>Chlorophyll-a concentration at the lake surface, a proxy for phytoplankton abundance/biomass, shown on the Carlson Trophic State Index 0-100. NOT a toxin measurement and NOT a harmful-algal-bloom diagnosis.</p><p><b>Units:</b> TSI (Carlson TSI from chlorophyll-a)<br/><b>Source:</b> NOAA CoastWatch S-NPP+NOAA-20 VIIRS chlorophyll-a NRT gapfilled Daily (ERDDAP nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily), fallback SQ Daily (nesdisVHNSQchlaDaily); host fallback NOAA-20 VIIRS chlorophyll Daily on the CoastWatch Central hub (noaacwN20VIIRSchlaDaily, same chlor_a OC3 variable)<br/><b>Update:</b> daily composites<br/><b>Why high values turn red/purple:</b> Carlson TSI trophic scale: oligotrophic blues through mesotrophic yellows and eutrophic oranges, with only hypereutrophic water reaching red-violet/deep-purple.<br/><b>Provenance:</b> <a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html\">ERDDAP dataset</a></p>"
 }

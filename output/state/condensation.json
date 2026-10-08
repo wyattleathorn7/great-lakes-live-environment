@@ -1,6 +1,6 @@
 {
-  "model_cycle": "hrrr.20261008 t12z",
-  "source_id": "hrrr-hrrr.20261008-t12z-condensation-anl-g4",
+  "model_cycle": "hrrr.20261008 t13z",
+  "source_id": "hrrr-hrrr.20261008-t13z-condensation-anl-g4",
   "render_version": 3,
-  "processing_time_utc": "2026-10-08 09:30 AM EDT"
+  "processing_time_utc": "2026-10-08 10:01 AM EDT"
 }
