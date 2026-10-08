@@ -27,7 +27,7 @@
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "model_cycle": "20261008 t13z",
   "source_id": "glwu-20261008-1300Z",
-  "source_version": "glwu-20261008-1300Z-r11",
+  "source_version": "glwu-20261008-1300Z-r12",
   "stats": {
     "valid_cells": 44863,
     "max_ft": 7.58,
