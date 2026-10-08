@@ -78,7 +78,7 @@ WAVE_FIXED_BINS = [
     ("20-21 ft", "#693D8C", 20.0, 22.0),
     ("22-23 ft", "#4F3475", 22.0, 24.0),
     ("24-25 ft", "#75344F", 24.0, 26.0),
-    ("26-27 ft", "#713A2F", 26.0, 28.0),
+    ("26-27 ft", "#542C27", 26.0, 28.0),
     ("28-29 ft", "#A05F45", 28.0, 30.0),
     ("30+ ft", "#FFFFFF", 30.0, float("inf")),
 ]
@@ -90,7 +90,7 @@ WAVE_FIXED_RGB = [_hex_rgb(hx) for _, hx, _, _ in WAVE_FIXED_BINS]
 assert [hx for _, hx, _, _ in WAVE_FIXED_BINS] == [
     "#3156A0", "#2675B8", "#20A5C2", "#32B878", "#55A83A", "#D6C43A",
     "#D0A83A", "#E07832", "#C9573C", "#C6283D", "#9F3F68", "#8E3FB3",
-    "#693D8C", "#4F3475", "#75344F", "#713A2F", "#A05F45", "#FFFFFF"], \
+    "#693D8C", "#4F3475", "#75344F", "#542C27", "#A05F45", "#FFFFFF"], \
     "wave-height fixed hexes must match the user table verbatim"
 assert all(WAVE_FIXED_BINS[i][2] < WAVE_FIXED_BINS[i][3]
            and WAVE_FIXED_BINS[i][3] == WAVE_FIXED_BINS[i + 1][2]

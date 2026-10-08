@@ -18,7 +18,7 @@
     "min": 0.0,
     "max": 30.0,
     "units": "ft",
-    "note": "18 fixed discrete bins with user hexes verbatim: 0 ft #3156A0, 0.5 ft #2675B8, 1-2 ft #20A5C2, 3-4 ft #32B878, 4-5 ft #55A83A, 6-7 ft #D6C43A, 8-9 ft #D0A83A, 10-11 ft #E07832, 12-13 ft #C9573C, 14-15 ft #C6283D, 16-17 ft #9F3F68, 18-19 ft #8E3FB3, 20-21 ft #693D8C, 22-23 ft #4F3475, 24-25 ft #75344F, 26-27 ft #713A2F, 28-29 ft #A05F45, 30+ ft #FFFFFF; low-end rule: [0,0.2) shows 0 ft, [0.2,0.7) shows 0.5 ft, [0.7,3.0) shows 1-2 ft; higher bins tile [3,30) with no gaps ([4,6), [6,8), ... up to next row edge); every pixel wears its bin's exact color, never blended; values above 30 ft clamp to white"
+    "note": "18 fixed discrete bins with user hexes verbatim: 0 ft #3156A0, 0.5 ft #2675B8, 1-2 ft #20A5C2, 3-4 ft #32B878, 4-5 ft #55A83A, 6-7 ft #D6C43A, 8-9 ft #D0A83A, 10-11 ft #E07832, 12-13 ft #C9573C, 14-15 ft #C6283D, 16-17 ft #9F3F68, 18-19 ft #8E3FB3, 20-21 ft #693D8C, 22-23 ft #4F3475, 24-25 ft #75344F, 26-27 ft #542C27, 28-29 ft #A05F45, 30+ ft #FFFFFF; low-end rule: [0,0.2) shows 0 ft, [0.2,0.7) shows 0.5 ft, [0.7,3.0) shows 1-2 ft; higher bins tile [3,30) with no gaps ([4,6), [6,8), ... up to next row edge); every pixel wears its bin's exact color, never blended; values above 30 ft clamp to white"
   },
   "refresh_interval_seconds": 900,
   "buoys": [
