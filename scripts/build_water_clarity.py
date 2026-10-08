@@ -32,7 +32,8 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        live_out_dirs, refresh_kml_base_url)
 from erddap_coastwatch import fetch_csv, latest_time
 from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
-                              base_metadata, load_bounds, promote_stage,
+                              base_metadata, load_bounds, load_watermask,
+                              promote_stage,
                               RENDER_VERSION, iso_to_det, read_state, save_png, source_token, stage_dir,
                               now_det_str, utcnow_iso, write_metadata, write_state)
 from gradient_scale import (draw_scale_legend, load_record, render_rgba,
@@ -40,6 +41,9 @@ from gradient_scale import (draw_scale_legend, load_record, render_rgba,
 
 PRODUCT = "water_clarity"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+# Isolated No-data grey (standalone swatch + missing-water paint; NEVER
+# a scale stop). Only chlorophyll + water clarity carry it.
+NO_DATA_GREY = (138, 143, 148)  # #8A8F94
 # Live source candidates (verified 2026-09-28): the legacy NRT id is back
 # online (newest 2026-09-21) and currently FRESHER than the Science Quality
 # daily (newest 2026-09-18, ~10 d production latency). Selection is
@@ -98,6 +102,36 @@ assert CLARITY_STOPS[0][0] <= float(CONFIG["valid_min"]), \
 assert all(CLARITY_STOPS[i][0] < CLARITY_STOPS[i + 1][0]
            for i in range(len(CLARITY_STOPS) - 1)), \
     "clarity stops must strictly increase"
+
+
+def draw_clarity_legend(path, title, subtitle, unit, stops, labels,
+                        source_line, note=None):
+    """Standard scale-bar legend plus an isolated No-data grey swatch row
+    underneath (standalone — never a scale stop). Returns (W, H)."""
+    from PIL import Image, ImageDraw
+    from geospatial_utils import _legend_font
+    tmp = path + ".bar.tmp.png"
+    lw, lh = draw_scale_legend(tmp, title, subtitle, unit,
+                               stops, labels, source_line, note=None)
+    bar = Image.open(tmp).convert("RGBA")
+    W, H = bar.size
+    extra = 40
+    img = Image.new("RGBA", (W, H + extra), (255, 255, 255, 235))
+    img.paste(bar, (0, 0))
+    d = ImageDraw.Draw(img)
+    f_body, f_small = _legend_font(15), _legend_font(13)
+    d.rectangle([0, 0, W - 1, H + extra - 1], outline=(60, 60, 60), width=2)
+    d.rectangle([14, H + 6, 44, H + 30], fill=NO_DATA_GREY + (255,),
+                outline=(40, 40, 40))
+    d.text((54, H + 8), "No data — cloud gaps with no observation",
+           font=f_body, fill=(10, 10, 10))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    try:
+        os.remove(tmp)
+    except OSError:
+        pass
+    return W, H + extra
 
 
 def main():
@@ -267,8 +301,18 @@ def _build(bounds, times, dataset):
     # Hard shoreline clip: majority-land pixels go fully transparent so no
     # fringe blocks sit on shore at high zoom (water-only product).
     rgba = apply_shoreline_mask(rgba, hard_cut=True)  # water-only product
+    n_data = int((rgba[:, :, 3] > 0).sum())
+    # No-data water (water pixels with no valid observation on any mosaic
+    # day — cloud gaps) paints isolated No-data grey. Land stays
+    # transparent. Grey is standalone, never in the KdPAR scale.
+    _water = load_watermask() >= 0.5
+    _nogrey = _water & (rgba[:, :, 3] == 0)
+    if _nogrey.any():
+        rgba[_nogrey, 0:3] = NO_DATA_GREY
+        rgba[_nogrey, 3] = bounds["overlay_alpha"]
+        print(f"[{PRODUCT}] no-data water cells: {int(_nogrey.sum())}")
     save_png(rgba, os.path.join(stage_prod, "current.png"))
-    if int((rgba[:, :, 3] > 0).sum()) < 100:
+    if n_data < 100:
         print(f"[{PRODUCT}] VALIDATION FAILED: empty raster. Keeping previous.")
         return 2
 
@@ -277,16 +321,16 @@ def _build(bounds, times, dataset):
     labels = CLARITY_LABELS
     subtitle = (f"Kd(PAR) ({unit}) — larger = more turbid  |  "
                 f"{eff_newest[:10]} (+{MOSAIC_DAYS - 1}d mosaic)")
-    lw, lh = draw_scale_legend(
+    lw, lh = draw_clarity_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         unit, stops, labels,
-        f"Source: NOAA CoastWatch VIIRS KdPAR  |  "
-        f"Processed {now_det_str()}",
-        note="Transparent = land/cloud/missing.")
+        f"Source: NOAA CoastWatch VIIRS KdPAR",
+        note="Grey = no observation (cloud gaps); transparent = land.")
     scale_html = (f"Diffuse attenuation coefficient for PAR ({unit}), "
                   f"FIXED absolute scale <b>LOWEST 0.016</b> "
                   f"clearest (dark blue) → 0.5 → <b>1.0</b> turbid (red) → 1.5 → "
-                  f"<b>HIGHEST+ 2</b> most turbid (deep purple). "
+                  f"<b>HIGHEST+ 2</b> most turbid (deep purple), plus an "
+                  f"isolated grey No-data swatch for cloud gaps. "
                   f"Larger values always mean murkier water; "
                   f"source values are never altered.")
     meta = base_metadata(
@@ -298,7 +342,9 @@ def _build(bounds, times, dataset):
         units=f"{unit} (display); source m^-1",
         source_resolution="~4 km VIIRS L3, bilinear-resampled to canvas",
         color_min=CLARITY_MIN, color_max=CLARITY_MAX, color_units=unit,
-        missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
+        missing_data_treatment=("water missing on all mosaic days paints "
+                                "isolated No-data grey #8A8F94; land "
+                                "transparent; only "
                                 f"[{lo},{hi}] values admitted; never interpolated."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
@@ -310,26 +356,23 @@ def _build(bounds, times, dataset):
     meta["dataset"] = eff_owner
     meta["mosaic_sources"] = day_sources
     meta["mosaic_variables"] = day_vars
-    # v6 = even-legend domain 0.016-2.0 (labels at 0/24/50/75/100% of the
-    # bar), floor == valid_min so low-clamp holes are impossible. Forces
-    # one clean redeploy.
+    # v7 = isolated No-data grey (missing-water paint + legend swatch).
+    # One-time rotation; afterwards the id tracks the newest real-data
+    # day and its owner only.
     # The id tracks the newest day ACTUALLY present and its owner, so it
     # advances exactly when real data does (never on empty anchor days).
-    source_id = f"{eff_owner}-v6-{eff_newest[:10]}"
+    source_id = f"{eff_owner}-v7-{eff_newest[:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]
     folder_html = (
-        f"<h2>{CONFIG['title']}</h2>"
+        f"<p><b>Legend</b><br>"
+        f"<img src=\"{legend_block_src(PRODUCT, token)}\" width=\"600\" "
+        f"alt=\"legend\"><br>{scale_html}</p>"
         f"<p>{CONFIG['what']}</p>"
-        f"<p><img src=\"{legend_block_src(PRODUCT, token)}\" width=\"600\" "
-        f"alt=\"key\"></p>"
-        f"<p>{scale_html}</p>"
         f"<p><b>Exact variable:</b> {CONFIG['variable']}<br/>"
         f"<b>Units:</b> {unit}<br/><b>Source:</b> {CONFIG['source_name']}<br/>"
         f"<b>Update:</b> daily composites<br/>"
-        f"<b>Data time:</b> {iso_to_det(eff_newest)} (mosaic {eff_newest[:10]}..{times[-1][:10]})<br/>"
-        f"<b>Processed:</b> {meta['processing_time_utc']}<br/>"
         f"<b>Why turbid water turns red/purple:</b> {CONFIG['why_extreme']}<br/>"
         f"<b>Provenance:</b> <a href=\"{CONFIG['source_url']}\">ERDDAP dataset</a></p>")
     meta["folder_html"] = folder_html

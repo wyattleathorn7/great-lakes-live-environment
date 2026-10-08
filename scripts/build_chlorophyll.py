@@ -41,6 +41,9 @@ from gradient_scale import (load_record, save_record, update_record)
 
 PRODUCT = "chlorophyll"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+# Isolated No-data grey (standalone swatch + missing-water paint; NEVER
+# a TSI scale stop). Only chlorophyll + water clarity carry it.
+NO_DATA_GREY = (138, 143, 148)  # #8A8F94
 # Live source priority (verified 2026-09-23): the NRT gapfilled
 # S-NPP+NOAA-20 daily product is the freshest operational stream
 # (newest 2026-09-20); the Science Quality daily is the slower fallback
@@ -178,7 +181,7 @@ def draw_chlorophyll_table(path, title, subtitle, source_line, note=None):
     W = 640
     y_top = 64
     y_src = y_top + head_h + row_h * len(CHL_TSI_TABLE)
-    H = y_src + (58 if note else 40)
+    H = y_src + (58 if note else 40) + row_h + 16  # + isolated No-data row
     img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
     d = ImageDraw.Draw(img)
     d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
@@ -210,6 +213,14 @@ def draw_chlorophyll_table(path, title, subtitle, source_line, note=None):
         d.line([(pad, y), (W - pad, y)], fill=(200, 200, 200, 255))
         y += row_h
     d.rectangle([pad, y_top, W - pad, y], outline=(40, 40, 40))
+    # Isolated No-data swatch: standalone, never a table row color.
+    y += 10
+    d.rectangle([520, y + 2, W - pad - 2, y + row_h - 2],
+                fill=NO_DATA_GREY + (255,), outline=(40, 40, 40))
+    d.text((pad + 6, y + 3), "No data", font=f_body, fill=(10, 10, 10))
+    d.text((110, y + 3), "cloud gaps with no observation", font=f_body,
+           fill=(60, 60, 60))
+    y += row_h + 6
     d.text((pad, y + 6), source_line, font=f_small, fill=(60, 60, 60))
     if note:
         d.text((pad, y + 24), note, font=f_small, fill=(60, 60, 60))
@@ -270,9 +281,8 @@ def run():
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
     hostkey, _, dataset, _, _ = cand
-    # v9 marker forces one rebuild to deploy the preset table colors
-    # (replaces the v8 continuous ramp through the same hexes).
-    source_id = f"{hostkey}-{dataset}-v9-{times[0][:10]}"
+    # v10 marker forces one rebuild to deploy the No-data grey.
+    source_id = f"{hostkey}-{dataset}-v10-{times[0][:10]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
@@ -411,8 +421,17 @@ def _build(bounds, times, cand):
     # Hard shoreline clip: majority-land pixels go fully transparent so no
     # fringe blocks sit on shore at high zoom (water-only product).
     rgba = apply_shoreline_mask(rgba, hard_cut=True)
+    n_data = int((rgba[:, :, 3] > 0).sum())
+    # No-data water (eroded-water pixels with no valid observation on any
+    # mosaic day — cloud gaps) paints isolated No-data grey. Land stays
+    # transparent. Grey is standalone, never in the TSI scale.
+    _nogrey = _eroded_water_mask() & (rgba[:, :, 3] == 0)
+    if _nogrey.any():
+        rgba[_nogrey, 0:3] = NO_DATA_GREY
+        rgba[_nogrey, 3] = bounds["overlay_alpha"]
+        print(f"[{PRODUCT}] no-data water cells: {int(_nogrey.sum())}")
     save_png(rgba, os.path.join(stage_prod, "current.png"))
-    if int((rgba[:, :, 3] > 0).sum()) < 100:
+    if n_data < 100:
         print(f"[{PRODUCT}] VALIDATION FAILED: empty raster. Keeping previous.")
         return 2
 
@@ -422,14 +441,16 @@ def _build(bounds, times, cand):
     lw, lh = draw_chlorophyll_table(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         "Source: NOAA CoastWatch VIIRS chlorophyll",
-        note="Transparent = land/cloud/missing. Not a toxin measurement.")
+        note="Grey = no observation (cloud gaps); transparent = land. "
+             "Not a toxin measurement.")
     scale_html = ("Carlson Trophic State Index from chlorophyll-a: 21 "
                   "fixed preset table colors — <b>0-35 Oligotrophic</b> "
                   "(chl 0.04-1.62) &rarr; <b>40-45 Mesotrophic</b> (chl "
                   "2.6-4.1) &rarr; <b>50-60 Eutrophic</b> (chl 6.4-20) "
                   "&rarr; <b>65-100 Hypereutrophic</b> (chl 31-1,183). "
                   "Every pixel shows its table row's exact color; the "
-                  "legend is the full table. High TSI = biomass / "
+                  "legend is the full table plus an isolated grey No-data "
+                  "swatch for cloud gaps. High TSI = biomass / "
                   "activity, not toxins.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -442,7 +463,9 @@ def _build(bounds, times, cand):
                              "(0.0375 deg Central fallback), 7-day median "
                              "mosaic, NaN-aware display smoothing"),
         color_min=CHL_MIN, color_max=CHL_MAX, color_units=unit,
-        missing_data_treatment=("cloud/land/fill (NaN) transparent; only "
+        missing_data_treatment=("water missing on all mosaic days paints "
+                                "isolated No-data grey #8A8F94; land "
+                                "transparent; only "
                                 f"[{lo},{hi}] values admitted; never interpolated; "
                                 "colors follow Carlson TSI(chl-a), values shown as TSI."))
     meta["legend_size"] = [lw, lh]
@@ -456,10 +479,10 @@ def _build(bounds, times, cand):
     meta["mosaic_sources"] = day_sources
     meta["mosaic_method"] = (f"per-pixel median of {len(stack)} daily "
                              "composites")
-    # v9 = 21 fixed preset table colors (quantized raster) + table-image
-    # legend. One-time rotation to deploy the presets; afterwards the id
-    # tracks source host+dataset+date only.
-    source_id = f"{hostkey}-{dataset}-v9-{times[0][:10]}"
+    # v10 = isolated No-data grey (missing-water paint + legend swatch).
+    # One-time rotation; afterwards the id tracks source host+dataset+date
+    # only.
+    source_id = f"{hostkey}-{dataset}-v10-{times[0][:10]}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]

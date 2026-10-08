@@ -414,6 +414,27 @@ def main():
     check("clarity-labels-endpoints",
           CLARITY_LABELS[0][1].startswith("LOWEST")
           and CLARITY_LABELS[-1][1].startswith("HIGHEST+"))
+    # isolated No-data grey: exact shade, in builder + deployed legend,
+    # never among the scale stops.
+    from build_water_clarity import NO_DATA_GREY as _cl_grey
+    from build_chlorophyll import NO_DATA_GREY as _ch_grey
+    check("nodata-grey-shade",
+          bool(_cl_grey == (138, 143, 148) and _ch_grey == (138, 143, 148)),
+          (_cl_grey, _ch_grey))
+    from build_water_clarity import CLARITY_STOPS as _wcs2
+    check("nodata-grey-not-in-clarity-scale",
+          bool(_cl_grey not in [c for _, c in _wcs2]))
+    from build_chlorophyll import CHL_STOPS as _ccs2
+    check("nodata-grey-not-in-chl-scale",
+          bool(_ch_grey not in [c for _, c in _ccs2]))
+    from PIL import Image as _ImN
+    for _pp, _pn in (("chlorophyll", "chlorophyll"),
+                     ("water_clarity", "water_clarity")):
+        _leg = _np4.array(_ImN.open(os.path.join(
+            SITE_DIR, _pp, "legend.png")).convert("RGB"))
+        check(f"nodata-grey-in-{_pn}-legend",
+              bool((((_leg.astype(int) - _np4.array(_cl_grey)) ** 2
+                      ).sum(axis=2) == 0).any()))
     check("clarity-labels-scale",
           min(_td) == CLARITY_MIN and max(_td) == CLARITY_MAX)
     _tpos = sorted((v - CLARITY_MIN) / (CLARITY_MAX - CLARITY_MIN)
