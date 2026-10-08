@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
   "data_time_utc": "2026-10-08 01:00 PM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-10-08 02:00 PM EDT",
+  "processing_time_utc": "2026-10-08 02:30 PM EDT",
   "units": "mi, statute (display; source m / 1609.344)",
   "spatial_resolution_source": "~3 km HRRR CONUS grid, mean-binned to the common canvas, despike-gated, continuity-filled, NaN-aware display smoothing",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -43,28 +43,52 @@
   },
   "metar_qc": {
     "KORD": {
-      "note": "no METAR obs this hour"
+      "obs_SM": 10.0,
+      "grid_SM": 33.9771981626749,
+      "absdiff_SM": 23.98,
+      "verdict": "OK"
     },
     "KDTW": {
-      "note": "no METAR obs this hour"
+      "obs_SM": 10.0,
+      "grid_SM": 33.318337574899196,
+      "absdiff_SM": 23.32,
+      "verdict": "OK"
     },
     "KDLH": {
-      "note": "no METAR obs this hour"
+      "obs_SM": 10.0,
+      "grid_SM": 20.85570269625634,
+      "absdiff_SM": 10.86,
+      "verdict": "OK"
     },
     "KBUF": {
-      "note": "no METAR obs this hour"
+      "obs_SM": 10.0,
+      "grid_SM": 28.21812282949686,
+      "absdiff_SM": 18.22,
+      "verdict": "OK"
     },
     "KCLE": {
-      "note": "no METAR obs this hour"
+      "obs_SM": 10.0,
+      "grid_SM": 36.12631399273872,
+      "absdiff_SM": 26.13,
+      "verdict": "OK"
     },
     "KMKE": {
-      "note": "no METAR obs this hour"
+      "obs_SM": 10.0,
+      "grid_SM": 29.67358128540218,
+      "absdiff_SM": 19.67,
+      "verdict": "OK"
     },
     "KGRB": {
-      "note": "no METAR obs this hour"
+      "obs_SM": 10.0,
+      "grid_SM": 30.373245247714223,
+      "absdiff_SM": 20.37,
+      "verdict": "OK"
     },
     "KERI": {
-      "note": "no METAR obs this hour"
+      "obs_SM": 10.0,
+      "grid_SM": 26.829151090979575,
+      "absdiff_SM": 16.83,
+      "verdict": "OK"
     }
   },
   "folder_html": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/visibility/legend.png?v=hrrr-hrrr.20261008-t17z-vis-anl-g8\" width=\"600\" alt=\"legend\"><br>Meteorological visibility in statute miles (HRRR surface analysis, FAA flight-category scale): <b>0-0.25 Dense fog</b> maroon (NWS Dense Fog Advisory, 1/4 mi or less) &rarr; <b>0.25-1 LIFR</b> red &rarr; <b>1-3 IFR</b> orange &rarr; <b>3-5 MVFR</b> gold &rarr; <b>5-30 VFR</b> green to deep blue (10SM is the METAR reporting cap; the model resolves past it). Same visibility always shows the same color; above 30 mi clamps into deep blue. Human-observer/mariner/pilot visibility through haze, mist, precipitation, and smoke \u2014 not astronomical seeing.</p><p>Near-surface meteorological visibility from the operational HRRR analysis: how far a human observer, mariner, or pilot can distinguish surroundings through haze, mist, precipitation, and smoke. Low values flag navigation and shoreline hazards; high values mark crystal-clear Great Lakes air.</p><p>Visibility science (atmospheric optics and observing practice) quantifies horizontal contrast loss from scattering and absorption by hydrometeors and aerosols. It underpins aviation flight rules, marine navigation advisories, and air-quality perception, and is reported operationally in statute miles across the United States.</p><p><b>Units:</b> mi, statute (display; source m / 1609.344)<br><b>Source:</b> NOAA/NCEP HRRR 3 km surface visibility analysis, hourly cycles<br><b>Update:</b> Checked hourly; republishes only on a newer HRRR cycle.<br><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl</a></p>"
