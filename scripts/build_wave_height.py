@@ -398,7 +398,11 @@ def _build(got, used_url, datestr, cycle, raw_path):
                                 "points rendered fully transparent; never zero-filled."))
     meta["model_cycle"] = f"{datestr} t{cycle}z"
     meta["source_id"] = source_id
-    meta["source_version"] = source_token(source_id)
+    # Cache-buster carries the render generation (same pattern as
+    # live_field RENDER_TAGS): identical source re-rendered with new
+    # colors/legend/description must change the ?v= token, or Google
+    # Earth and browsers keep showing the stale cached PNGs.
+    meta["source_version"] = source_token(f"{source_id}-r{RENDER_VERSION}")
     meta["stats"] = {
         "valid_cells": n_valid,
         "max_ft": round(float(vals_ft[valid].max()), 2),
