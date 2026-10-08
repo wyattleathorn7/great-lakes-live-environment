@@ -442,6 +442,15 @@ def main():
     from gradient_scale import color_for as _cf2
     _cs = CHL_STOPS
     check("chl-21-stops", len(_cs) == 21, len(_cs))
+    # user table verbatim: exact hexes in exact TSI order (never recolor)
+    _chl_hexes = ["#123B8C", "#145DB3", "#167FC8", "#18A9D1", "#19C4C7",
+                  "#28C58F", "#55C45A", "#8FC32F", "#B9C52B", "#D2C32A",
+                  "#E6AB27", "#EE8225", "#E95728", "#D83B35", "#C62A4D",
+                  "#AE2868", "#922580", "#74218C", "#561B82", "#3B155F",
+                  "#250D42"]
+    _got_hexes = ["#%02X%02X%02X" % c for _, c in _cs]
+    check("chl-user-hexes-verbatim", _got_hexes == _chl_hexes,
+          _got_hexes[:3])
     _cvals = [v for v, _ in _cs]
     check("chl-ascending",
           all(_cvals[i] < _cvals[i + 1] for i in range(len(_cvals) - 1)))
@@ -450,8 +459,8 @@ def main():
     _cgaps = [_cvals[i + 1] - _cvals[i] for i in range(len(_cvals) - 1)]
     check("chl-even-5-steps", max(_cgaps) - min(_cgaps) < 1e-9,
           _cgaps[0])
-    check("chl-oligo-deepblue", _cs[0][1] == (0, 53, 158))
-    check("chl-hyper-deep", _cs[-1][1] == (36, 1, 78))
+    check("chl-oligo-deepblue", _cs[0][1] == (18, 59, 140))
+    check("chl-hyper-deep", _cs[-1][1] == (37, 13, 66))
     check("chl-tsi-converts",
           abs(chl_to_tsi(0.94) - 30.0) < 0.1
           and abs(chl_to_tsi(154.0) - 80.0) < 0.1
@@ -704,37 +713,26 @@ def main():
     check("aqi-monotonic",
           all(b > a for a, b in zip(_aq_vs, _aq_vs[1:])))
     _aq_vals = [v for v, _ in _AQ_STOPS]
-    check("aqi-scale-band-reps",
-          bool(_aq_vals == [25.0, 75.0, 125.0, 175.0, 250.0, 400.0]),
+    check("aqi-scale-0-500",
+          bool(_aq_vals == [0.0, 50.0, 100.0, 150.0, 200.0, 300.0,
+                            500.0]),
           _aq_vals)
     check("aqi-scale-ascending",
           all(b > a for a, b in zip(_aq_vals, _aq_vals[1:])))
-    # every category boundary owns a distinct color (no flat band can
-    # hide basin variation); Good band ramps pale -> green
+    # steady gradual ramp: every category boundary owns a distinct
+    # balanced color (no flat segment can hide basin variation, no neon)
     from gradient_scale import color_for as _cf_aq
     _aq_band = [_cf_aq(v, _AQ_STOPS) for v in
                 [0.0, 50.0, 100.0, 150.0, 200.0, 300.0, 500.0]]
     check("aqi-bands-distinct", len(set(_aq_band)) == 7, len(set(_aq_band)))
     check("aqi-good-ramps",
-          bool(_cf_aq(0.0, _AQ_STOPS) != _cf_aq(50.0, _AQ_STOPS)))
-    # preset bands: official EPA colors, hard reps, quantized field
-    from build_air_quality import aqi_band_rep as _aqrep
-    check("aqi-band-colors",
-          bool([c for _, c in _AQ_STOPS]
-                == [(0, 228, 0), (255, 255, 0), (255, 126, 0),
-                    (255, 0, 0), (143, 63, 151), (126, 0, 35)]))
-    for _v, _r in [(0.0, 25.0), (50.0, 25.0), (51.0, 75.0),
-                   (100.0, 75.0), (101.0, 125.0), (200.0, 175.0),
-                   (300.0, 250.0), (500.0, 400.0), (900.0, 400.0)]:
-        check(f"aqi-rep-{_v}", bool(float(_aqrep(_v)) == _r),
-              float(_aqrep(_v)))
-    check("aqi-rep-nan", bool(_np.isnan(_aqrep(float("nan")))))
-    check("aqi-rep-negative", bool(_np.isnan(_aqrep(-5.0))))
-    for _rep, _rgb in zip([25.0, 75.0, 125.0, 175.0, 250.0, 400.0],
-                          [(0, 228, 0), (255, 255, 0), (255, 126, 0),
-                           (255, 0, 0), (143, 63, 151), (126, 0, 35)]):
-        check(f"aqi-rep-exact-{_rep}",
-              bool(_cf_aq(_rep, _AQ_STOPS) == _rgb))
+          bool(_cf_aq(0.0, _AQ_STOPS) != _cf_aq(25.0, _AQ_STOPS)
+                != _cf_aq(50.0, _AQ_STOPS)))
+    check("aqi-balanced-not-neon",
+          bool(all(max(c) - min(c) < 255 for c in _aq_band)
+                and (0, 228, 0) not in _aq_band
+                and (255, 255, 0) not in _aq_band
+                and (255, 0, 0) not in _aq_band))
     _aq_words = " ".join(w for _, _, w in _AQ_TICKS)
     for _w in ("Good", "Moderate", "USG", "Unhealthy", "Very unhealthy",
                "Hazardous"):
