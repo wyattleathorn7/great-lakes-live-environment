@@ -58,10 +58,14 @@ def _hex_rgb(h):
 # (its 2-ft step up to the next row's lower edge), so values such as
 # 5.5 ft, 7.5 ft, etc. always land in exactly one fixed color. Every
 # rendered pixel wears its bin's exact hex -- never blended.
+# Low-end unwritten rule: [0, 0.2) shows the "0 ft" color (covers 0
+# and 0.1); [0.2, 0.7) shows the "0.5 ft" color (covers the 0.2-0.6
+# rule); [0.7, 3.0) shows the "1-2 ft" color (covers the 0.7-1.0 rule,
+# then the whole step up to 3 ft).
 WAVE_FIXED_BINS = [
-    ("0 ft", "#3156A0", 0.0, 0.5),
-    ("0.5 ft", "#2675B8", 0.5, 1.0),
-    ("1-2 ft", "#20A5C2", 1.0, 3.0),
+    ("0 ft", "#3156A0", 0.0, 0.2),
+    ("0.5 ft", "#2675B8", 0.2, 0.7),
+    ("1-2 ft", "#20A5C2", 0.7, 3.0),
     ("3-4 ft", "#32B878", 3.0, 4.0),
     ("4-5 ft", "#55A83A", 4.0, 6.0),
     ("6-7 ft", "#D6C43A", 6.0, 8.0),
@@ -74,7 +78,7 @@ WAVE_FIXED_BINS = [
     ("20-21 ft", "#693D8C", 20.0, 22.0),
     ("22-23 ft", "#4F3475", 22.0, 24.0),
     ("24-25 ft", "#75344F", 24.0, 26.0),
-    ("26-27 ft", "#8A4934", 26.0, 28.0),
+    ("26-27 ft", "#713A2F", 26.0, 28.0),
     ("28-29 ft", "#A05F45", 28.0, 30.0),
     ("30+ ft", "#FFFFFF", 30.0, float("inf")),
 ]
@@ -86,7 +90,7 @@ WAVE_FIXED_RGB = [_hex_rgb(hx) for _, hx, _, _ in WAVE_FIXED_BINS]
 assert [hx for _, hx, _, _ in WAVE_FIXED_BINS] == [
     "#3156A0", "#2675B8", "#20A5C2", "#32B878", "#55A83A", "#D6C43A",
     "#D0A83A", "#E07832", "#C9573C", "#C6283D", "#9F3F68", "#8E3FB3",
-    "#693D8C", "#4F3475", "#75344F", "#8A4934", "#A05F45", "#FFFFFF"], \
+    "#693D8C", "#4F3475", "#75344F", "#713A2F", "#A05F45", "#FFFFFF"], \
     "wave-height fixed hexes must match the user table verbatim"
 assert all(WAVE_FIXED_BINS[i][2] < WAVE_FIXED_BINS[i][3]
            and WAVE_FIXED_BINS[i][3] == WAVE_FIXED_BINS[i + 1][2]
@@ -99,7 +103,7 @@ def wave_bin_index(values_ft):
     import numpy as _np
     v = _np.asarray(values_ft, dtype=float)
     idx = _np.searchsorted(
-        _np.array([0.5, 1.0, 3.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0,
+        _np.array([0.2, 0.7, 3.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0,
                    16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 30.0]),
         v, side="right")
     idx = _np.clip(idx, 0, 17).astype(int)
@@ -121,6 +125,41 @@ def render_wave_fixed(field, alpha):
     rgba[ok, 0:3] = lut[idx[ok]]
     rgba[ok, 3] = alpha
     return rgba
+
+
+def build_scale_html(run_max):
+    """Legend description HTML: fixed-bin list, unwritten rules, buoy
+    pointer + how buoys measure wave height. Shared by the builder and
+    any offline re-render so the text can never drift between them."""
+    return (f"Wave height (feet, 18 fixed colors): <b>0 ft</b> → "
+            f"<b>0.5 ft</b> → <b>1-2 ft</b> → <b>3-4 ft</b> → "
+            f"<b>4-5 ft</b> → <b>6-7 ft</b> → <b>8-9 ft</b> → "
+            f"<b>10-11 ft</b> → <b>12-13 ft</b> → <b>14-15 ft</b> → "
+            f"<b>16-17 ft</b> → <b>18-19 ft</b> → <b>20-21 ft</b> → "
+            f"<b>22-23 ft</b> → <b>24-25 ft</b> → <b>26-27 ft</b> → "
+            f"<b>28-29 ft</b> → <b>30+ ft</b> (white). Every pixel "
+            f"shows its bin's exact color; the legend is the full "
+            f"table. Unwritten rules: <b>0 and 0.1 ft</b> show as "
+            f"<b>0 ft</b>; <b>0.2 to 0.6 ft</b> "
+            f"show as <b>0.5 ft</b>; <b>0.7 to 1 ft"
+            f"</b> show as <b>1-2 ft</b>. Each 2-ft "
+            f"label covers its full step up to the next row (e.g. the "
+            f"4-5 ft color covers 4 up to 6 ft), so every value lands "
+            f"in exactly one color. Model maximum this run: "
+            f"<b>{run_max} ft</b>. Values above 30 ft stay white. "
+            f"Significant height = average of highest third of waves. "
+            f"For more precise wave height data, turn on the NOAA Great "
+            f"Lakes Observation Network layer: its buoys report observed "
+            f"wave height at their exact locations, while this layer shows "
+            f"the wave model everywhere. How the buoys measure it: "
+            f"significant wave height (WVHT) is the average of the highest "
+            f"one-third of the waves recorded during a 20-minute sampling "
+            f"period each hour. Accelerometers on the hull "
+            f"record its heave motion, an onboard FFT converts that motion "
+            f"into a wave-energy spectrum, and the height is derived from "
+            f"that spectrum; buoy reports cover combined wind waves and "
+            f"swell. Great Lakes buoys are seasonal and are hauled out "
+            f"before ice season, so winter gaps are normal.")
 
 
 def draw_wave_height_table(path, title, subtitle, source_line, note=None):
@@ -423,17 +462,7 @@ def _build(got, used_url, datestr, cycle, raw_path):
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values_ft)
-    scale_html = (f"Wave height (feet, 18 fixed colors): <b>0 ft</b> → "
-                  f"<b>0.5 ft</b> → <b>1-2 ft</b> → <b>3-4 ft</b> → "
-                  f"<b>4-5 ft</b> → <b>6-7 ft</b> → <b>8-9 ft</b> → "
-                  f"<b>10-11 ft</b> → <b>12-13 ft</b> → <b>14-15 ft</b> → "
-                  f"<b>16-17 ft</b> → <b>18-19 ft</b> → <b>20-21 ft</b> → "
-                  f"<b>22-23 ft</b> → <b>24-25 ft</b> → <b>26-27 ft</b> → "
-                  f"<b>28-29 ft</b> → <b>30+ ft</b> (white). Every pixel "
-                  f"shows its bin's exact color; the legend is the full "
-                  f"table. Model maximum this run: <b>{run_max} ft</b>. "
-                  f"Values above 30 ft stay white. "
-                  f"Significant height = average of highest third of waves.")
+    scale_html = build_scale_html(run_max)
     meta["legend_scale_html"] = scale_html
     write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text
 
