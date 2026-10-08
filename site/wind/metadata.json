@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261008/glwu.grlc_2p5km.t13z.grib2",
   "data_time_utc": "GLWU 2026-10-08 09:00 AM EDT (water); HRRR 2026-10-08 12:00 PM EDT (land fill)",
   "source_last_modified_utc": "Thu, 08 Oct 2026 13:28:43 GMT",
-  "processing_time_utc": "2026-10-08 01:01 PM EDT",
+  "processing_time_utc": "2026-10-08 01:30 PM EDT",
   "units": "kt + Beaufort Force 0-12 (display); source m/s",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361) over water + ~3 km NCEP HRRR CONUS grid as land fill",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -131,35 +131,35 @@
       "grid_kt_approx": 19.0,
       "absdiff_kt": 1.5,
       "verdict": "OK",
-      "obs_time": "2026-10-08 16:30 UTC"
+      "obs_time": "2026-10-08 17:00 UTC"
     },
     "45002": {
       "obs_kt": 15.6,
       "grid_kt_approx": 13.5,
       "absdiff_kt": 2.1,
       "verdict": "OK",
-      "obs_time": "2026-10-08 16:30 UTC"
+      "obs_time": "2026-10-08 17:00 UTC"
     },
     "45132": {
-      "obs_kt": 17.5,
+      "obs_kt": 15.6,
       "grid_kt_approx": 13.5,
-      "absdiff_kt": 4.0,
+      "absdiff_kt": 2.1,
       "verdict": "OK",
-      "obs_time": "2026-10-08 16:00 UTC"
+      "obs_time": "2026-10-08 17:00 UTC"
     },
     "45012": {
-      "obs_kt": 17.5,
+      "obs_kt": 19.4,
       "grid_kt_approx": 19.0,
-      "absdiff_kt": 1.5,
+      "absdiff_kt": 0.4,
       "verdict": "OK",
-      "obs_time": "2026-10-08 16:30 UTC"
+      "obs_time": "2026-10-08 17:00 UTC"
     },
     "45005": {
       "obs_kt": 11.7,
       "grid_kt_approx": 13.5,
       "absdiff_kt": 1.8,
       "verdict": "OK",
-      "obs_time": "2026-10-08 16:30 UTC"
+      "obs_time": "2026-10-08 17:00 UTC"
     }
   }
 }

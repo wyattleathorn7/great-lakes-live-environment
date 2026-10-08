@@ -8,7 +8,7 @@
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
   "data_time_utc": "2026-10-08 02:51 AM EDT",
   "source_last_modified_utc": "2026-10-08 02:51 AM EDT",
-  "processing_time_utc": "2026-10-08 03:00 AM EDT",
+  "processing_time_utc": "2026-10-08 01:30 PM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -41,42 +41,42 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 52.34,
+      "obs_F": 51.98,
       "grid_F": 53.312,
-      "absdiff_F": 0.97,
+      "absdiff_F": 1.33,
       "verdict": "OK",
-      "obs_time": "2026-10-08 06:30 UTC"
+      "obs_time": "2026-10-08 17:00 UTC"
     },
     "45002": {
-      "obs_F": 60.62,
+      "obs_F": 59.72,
       "grid_F": 62.1815,
-      "absdiff_F": 1.56,
+      "absdiff_F": 2.46,
       "verdict": "OK",
-      "obs_time": "2026-10-08 06:30 UTC"
+      "obs_time": "2026-10-08 17:00 UTC"
     },
     "45132": {
-      "obs_F": 64.4,
+      "obs_F": 64.58,
       "grid_F": 65.4665,
-      "absdiff_F": 1.07,
+      "absdiff_F": 0.89,
       "verdict": "OK",
-      "obs_time": "2026-10-08 06:00 UTC"
+      "obs_time": "2026-10-08 17:00 UTC"
     },
     "45012": {
-      "obs_F": 60.8,
+      "obs_F": 60.44,
       "grid_F": 63.216499999999996,
-      "absdiff_F": 2.42,
+      "absdiff_F": 2.78,
       "verdict": "OK",
-      "obs_time": "2026-10-08 06:30 UTC"
+      "obs_time": "2026-10-08 17:00 UTC"
     },
     "45005": {
-      "time_utc": "2026-10-08 06:30 UTC",
-      "WDIR_deg": 260.0,
-      "WSPD_ms": 7.0,
+      "time_utc": "2026-10-08 17:00 UTC",
+      "WDIR_deg": 250.0,
+      "WSPD_ms": 6.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
       "WTMP_C": null,
-      "ATMP_C": 18.9,
+      "ATMP_C": 17.5,
       "note": "no WTMP obs"
     }
   },
