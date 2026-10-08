@@ -165,7 +165,7 @@ def utcnow_iso():
 # Render generation: bump to force every product through one full rebuild
 # (legends/KMLs bake display text in at build time). Skip logic also keys
 # on the source id, so this only ever causes a single extra build.
-RENDER_VERSION = 3
+RENDER_VERSION = 4
 
 
 def detroit_tz():
@@ -431,7 +431,10 @@ def _lut(stops, n=256):
     return [_interp_stops(stops, i / (n - 1)) for i in range(n)]
 
 
-WAVE_STOPS = [  # continuous anchor gradient, ft -> color (piecewise-linear).
+WAVE_STOPS = [  # LEGACY continuous anchor gradient (pre-fixed-bins).
+    # Wave height now renders through the 18-bin discrete table in
+    # build_wave_height.py (WAVE_FIXED_BINS, user hexes verbatim); this
+    # continuous table is kept only for reference / backward compat.
     # Anchors bunch toward low values, so each successive range gets
     # progressively less color resolution (0-9 highest, 27-30+ compressed).
     # Values above 30 ft clamp into the dark-purple extreme end.

@@ -36,7 +36,7 @@
   },
   "legend_size": [
     640,
-    210
+    592
   ],
   "rendered_nontransparent_pixels": 331380,
   "rendered_canvas_pixels": 2115000,
@@ -93,5 +93,5 @@
       "note": "no WVHT obs"
     }
   },
-  "legend_scale_html": "Wave height (feet, one continuous gradient): <b>0</b> dark blue \u2192 <b>2</b> blue/cyan \u2192 <b>5</b> cyan/green \u2192 <b>9</b> green/yellow \u2192 <b>12\u201315</b> yellow-orange \u2192 orange \u2192 <b>20</b> red \u2192 <b>23\u201326</b> red-violet \u2192 violet \u2192 <b>30+</b> dark purple extreme. Model maximum this run: <b>7.6 ft</b>. Values above 30 ft stay dark purple. Significant height = average of highest third of waves."
+  "legend_scale_html": "Wave height (feet, 18 fixed colors): <b>0 ft</b> \u2192 <b>0.5 ft</b> \u2192 <b>1-2 ft</b> \u2192 <b>3-4 ft</b> \u2192 <b>4-5 ft</b> \u2192 <b>6-7 ft</b> \u2192 <b>8-9 ft</b> \u2192 <b>10-11 ft</b> \u2192 <b>12-13 ft</b> \u2192 <b>14-15 ft</b> \u2192 <b>16-17 ft</b> \u2192 <b>18-19 ft</b> \u2192 <b>20-21 ft</b> \u2192 <b>22-23 ft</b> \u2192 <b>24-25 ft</b> \u2192 <b>26-27 ft</b> \u2192 <b>28-29 ft</b> \u2192 <b>30+ ft</b> (white). Every pixel shows its bin's exact color; the legend is the full table. Model maximum this run: <b>7.8 ft</b>. Values above 30 ft stay white. Significant height = average of highest third of waves."
 }

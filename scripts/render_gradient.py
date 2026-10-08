@@ -30,7 +30,9 @@ RENDER_SPECS = {
 
 def render_field(product, lats, lons, values_display, vmin, vmax, meta_extra,
                  title, subtitle, source_line, unit_label, transparent_value,
-                 fmt, splat_radius=1, product_dir=None, tick_labels=None):
+                 fmt, splat_radius=1, product_dir=None, tick_labels=None,
+                 discrete_bins=None, discrete_render=None,
+                 discrete_legend=None):
     bounds = load_bounds()
     rows, cols, valid = canvas_indices(lats, lons, bounds)
     field, counts = bin_to_canvas(
@@ -38,21 +40,32 @@ def render_field(product, lats, lons, values_display, vmin, vmax, meta_extra,
         (bounds["canvas_height"], bounds["canvas_width"]),
         splat_radius=splat_radius)
     spec = RENDER_SPECS[product]
-    rgba = apply_colormap(field, vmin, vmax, spec["stops"],
-                          bounds["overlay_alpha"], transparent_value)
+    if discrete_render is not None:
+        # Fixed-bin discrete scale (e.g. wave height 18 bins): exact
+        # preset colors, no interpolation between bins.
+        rgba = discrete_render(field, bounds["overlay_alpha"])
+    else:
+        rgba = apply_colormap(field, vmin, vmax, spec["stops"],
+                              bounds["overlay_alpha"], transparent_value)
     rgba = apply_shoreline_mask(rgba)  # one shared GSHHG shoreline for all
     if product_dir is None:
         product_dir = os.path.join(SITE_DIR, product)
     save_png(rgba, os.path.join(product_dir, "current.png"))
-    draw_legend(os.path.join(product_dir, "legend.png"), title, subtitle,
-                unit_label, vmin, vmax, spec["stops"], source_line,
-                fmt=fmt, tick_labels=tick_labels,
-                transparent_note="Transparent outside valid water data.")
+    if discrete_legend is not None:
+        lw, lh = discrete_legend(
+            os.path.join(product_dir, "legend.png"), title, subtitle,
+            source_line,
+            note="Transparent outside valid water data.")
+    else:
+        lw, lh = draw_legend(os.path.join(product_dir, "legend.png"), title, subtitle,
+                    unit_label, vmin, vmax, spec["stops"], source_line,
+                    fmt=fmt, tick_labels=tick_labels,
+                    transparent_note="Transparent outside valid water data.")
     meta = dict(meta_extra)
     meta["color_scale_min"] = vmin
     meta["color_scale_max"] = vmax
     meta["color_scale_units"] = spec["unit"]
-    meta["legend_size"] = [LEGEND_W, LEGEND_H]
+    meta["legend_size"] = [lw, lh]
     meta["rendered_nontransparent_pixels"] = int((rgba[:, :, 3] > 0).sum())
     meta["rendered_canvas_pixels"] = int(rgba.shape[0] * rgba.shape[1])
     write_metadata(product_dir, meta)

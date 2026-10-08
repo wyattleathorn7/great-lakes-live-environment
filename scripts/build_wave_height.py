@@ -23,10 +23,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, WAVE_TICKS,
-                              base_metadata, download, fetch_buoy_obs,
-                              grib_stamp_to_det, now_det_str,
-                              promote_stage, read_state, source_token,
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
+                              apply_shoreline_mask, base_metadata,
+                              bin_to_canvas, canvas_indices, download,
+                              fetch_buoy_obs, grib_stamp_to_det,
+                              load_bounds, now_det_str, promote_stage,
+                              read_state, save_png, source_token,
                               stage_dir, utcnow_iso, write_metadata,
                               write_state)
 from render_gradient import render_field
@@ -43,6 +45,126 @@ BUOY_POS = {
     "45012": (-77.383, 43.619),
     "45005": (-82.398, 41.677),
 }
+
+
+def _hex_rgb(h):
+    h = h.lstrip("#")
+    return (int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16))
+
+
+# Fixed 18-bin discrete wave-height scale (user-supplied hexes VERBATIM).
+# Each row is (label, hex, lo_inclusive_ft, hi_exclusive_ft). Bin edges
+# partition [0, +inf) with no gaps: a label like "4-5 ft" covers [4, 6)
+# (its 2-ft step up to the next row's lower edge), so values such as
+# 5.5 ft, 7.5 ft, etc. always land in exactly one fixed color. Every
+# rendered pixel wears its bin's exact hex -- never blended.
+WAVE_FIXED_BINS = [
+    ("0 ft", "#3156A0", 0.0, 0.5),
+    ("0.5 ft", "#2675B8", 0.5, 1.0),
+    ("1-2 ft", "#20A5C2", 1.0, 3.0),
+    ("3-4 ft", "#32B878", 3.0, 4.0),
+    ("4-5 ft", "#55A83A", 4.0, 6.0),
+    ("6-7 ft", "#D6C43A", 6.0, 8.0),
+    ("8-9 ft", "#D0A83A", 8.0, 10.0),
+    ("10-11 ft", "#E07832", 10.0, 12.0),
+    ("12-13 ft", "#C9573C", 12.0, 14.0),
+    ("14-15 ft", "#C6283D", 14.0, 16.0),
+    ("16-17 ft", "#9F3F68", 16.0, 18.0),
+    ("18-19 ft", "#8E3FB3", 18.0, 20.0),
+    ("20-21 ft", "#693D8C", 20.0, 22.0),
+    ("22-23 ft", "#4F3475", 22.0, 24.0),
+    ("24-25 ft", "#75344F", 24.0, 26.0),
+    ("26-27 ft", "#8A4934", 26.0, 28.0),
+    ("28-29 ft", "#A05F45", 28.0, 30.0),
+    ("30+ ft", "#FFFFFF", 30.0, float("inf")),
+]
+WAVE_FIXED_MIN = 0.0
+WAVE_FIXED_MAX = 30.0
+WAVE_FIXED_EDGES = [b[2] for b in WAVE_FIXED_BINS[1:]] + [30.0]
+WAVE_FIXED_RGB = [_hex_rgb(hx) for _, hx, _, _ in WAVE_FIXED_BINS]
+# Never-again guards: user hexes verbatim, edges gap-free and increasing.
+assert [hx for _, hx, _, _ in WAVE_FIXED_BINS] == [
+    "#3156A0", "#2675B8", "#20A5C2", "#32B878", "#55A83A", "#D6C43A",
+    "#D0A83A", "#E07832", "#C9573C", "#C6283D", "#9F3F68", "#8E3FB3",
+    "#693D8C", "#4F3475", "#75344F", "#8A4934", "#A05F45", "#FFFFFF"], \
+    "wave-height fixed hexes must match the user table verbatim"
+assert all(WAVE_FIXED_BINS[i][2] < WAVE_FIXED_BINS[i][3]
+           and WAVE_FIXED_BINS[i][3] == WAVE_FIXED_BINS[i + 1][2]
+           for i in range(len(WAVE_FIXED_BINS) - 2)), \
+    "wave-height bins must tile [0, 30) with no gaps or overlaps"
+
+
+def wave_bin_index(values_ft):
+    """Bin index 0..17 for each value; NaN/negative -> -1 (transparent)."""
+    import numpy as _np
+    v = _np.asarray(values_ft, dtype=float)
+    idx = _np.searchsorted(
+        _np.array([0.5, 1.0, 3.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0,
+                   16.0, 18.0, 20.0, 22.0, 24.0, 26.0, 28.0, 30.0]),
+        v, side="right")
+    idx = _np.clip(idx, 0, 17).astype(int)
+    bad = ~( _np.isfinite(v) & (v >= 0))
+    idx = _np.where(bad, -1, idx)
+    return idx
+
+
+def render_wave_fixed(field, alpha):
+    """Exact preset render: every pixel takes its bin's verbatim hex."""
+    import numpy as _np
+    H, W = field.shape
+    rgba = _np.zeros((H, W, 4), dtype=_np.uint8)
+    idx = wave_bin_index(field)
+    ok = idx >= 0
+    if not ok.any():
+        return rgba
+    lut = _np.array(WAVE_FIXED_RGB, dtype=_np.uint8)
+    rgba[ok, 0:3] = lut[idx[ok]]
+    rgba[ok, 3] = alpha
+    return rgba
+
+
+def draw_wave_height_table(path, title, subtitle, source_line, note=None):
+    """Categorical legend: the 18-row user table itself (label + swatch).
+
+    No gradient slider, no hex text -- the swatches are the exact raster
+    colors. Returns (W, H)."""
+    import os as _os
+    from PIL import Image, ImageDraw
+    from geospatial_utils import _legend_font
+    f_title, f_body, f_small = _legend_font(22), _legend_font(15), _legend_font(13)
+    pad, row_h, head_h = 14, 24, 30
+    W = 640
+    y_top = 64
+    y_src = y_top + head_h + row_h * len(WAVE_FIXED_BINS)
+    H = y_src + (58 if note else 40) + 8
+    img = Image.new("RGBA", (W, H), (255, 255, 255, 235))
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
+    d.text((pad, 8), title, font=f_title, fill=(10, 10, 10))
+    d.text((pad, 36), subtitle, font=f_body, fill=(40, 40, 40))
+    y = y_top
+    d.rectangle([pad, y, W - pad, y + head_h], fill=(235, 235, 235, 255),
+                outline=(40, 40, 40))
+    d.text((pad + 6, y + 5), "Wave height", font=f_body, fill=(10, 10, 10))
+    d.text((520, y + 5), "Color", font=f_body, fill=(10, 10, 10))
+    y += head_h
+    for i, (label, hx, _lo, _hi) in enumerate(WAVE_FIXED_BINS):
+        if i % 2 == 1:
+            d.rectangle([pad, y, W - pad, y + row_h],
+                        fill=(245, 245, 245, 255))
+        d.text((pad + 6, y + 3), label, font=f_body, fill=(10, 10, 10))
+        d.rectangle([520, y + 2, W - pad - 2, y + row_h - 2],
+                    fill=_hex_rgb(hx) + (255,), outline=(40, 40, 40))
+        d.line([(pad, y), (W - pad, y)], fill=(200, 200, 200, 255))
+        y += row_h
+    d.rectangle([pad, y_top, W - pad, y], outline=(40, 40, 40))
+    y += 6
+    d.text((pad, y + 6), source_line, font=f_small, fill=(60, 60, 60))
+    if note:
+        d.text((pad, y + 24), note, font=f_small, fill=(60, 60, 60))
+    _os.makedirs(_os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    return W, H
 
 
 def ff(x):
@@ -260,7 +382,9 @@ def _build(got, used_url, datestr, cycle, raw_path):
         source_line=(f"Source: NCEP GLWU v2.1 (WAVEWATCH III) {datestr} t{cycle}z  |  "
                      f"Processed {now_det_str()}"),
         unit_label="feet", transparent_value=None, fmt="{:.0f}",
-        splat_radius=2, product_dir=stage_prod, tick_labels=WAVE_TICKS)
+        splat_radius=2, product_dir=stage_prod, tick_labels=None,
+        discrete_bins=WAVE_FIXED_BINS, discrete_render=render_wave_fixed,
+        discrete_legend=draw_wave_height_table)
 
     if int((rgba[:, :, 3] > 0).sum()) < 10_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: raster has no water pixels.")
@@ -299,12 +423,16 @@ def _build(got, used_url, datestr, cycle, raw_path):
 
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values_ft)
-    scale_html = (f"Wave height (feet, one continuous gradient): <b>0</b> dark "
-                  f"blue → <b>2</b> blue/cyan → <b>5</b> cyan/green → <b>9</b> "
-                  f"green/yellow → <b>12–15</b> yellow-orange → orange → "
-                  f"<b>20</b> red → <b>23–26</b> red-violet → violet → "
-                  f"<b>30+</b> dark purple extreme. Model maximum this run: "
-                  f"<b>{run_max} ft</b>. Values above 30 ft stay dark purple. "
+    scale_html = (f"Wave height (feet, 18 fixed colors): <b>0 ft</b> → "
+                  f"<b>0.5 ft</b> → <b>1-2 ft</b> → <b>3-4 ft</b> → "
+                  f"<b>4-5 ft</b> → <b>6-7 ft</b> → <b>8-9 ft</b> → "
+                  f"<b>10-11 ft</b> → <b>12-13 ft</b> → <b>14-15 ft</b> → "
+                  f"<b>16-17 ft</b> → <b>18-19 ft</b> → <b>20-21 ft</b> → "
+                  f"<b>22-23 ft</b> → <b>24-25 ft</b> → <b>26-27 ft</b> → "
+                  f"<b>28-29 ft</b> → <b>30+ ft</b> (white). Every pixel "
+                  f"shows its bin's exact color; the legend is the full "
+                  f"table. Model maximum this run: <b>{run_max} ft</b>. "
+                  f"Values above 30 ft stay white. "
                   f"Significant height = average of highest third of waves.")
     meta["legend_scale_html"] = scale_html
     write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text
