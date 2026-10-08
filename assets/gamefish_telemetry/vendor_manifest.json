@@ -1,0 +1,15 @@
+{
+  "vendored_utc": "2026-10-08 18:56 UTC",
+  "source": "/Users/wyattleathorn/Documents/Default Project/great-lakes-live-fish-telemetry",
+  "files": [
+    "data/live_detections.json",
+    "data/live_receivers.json",
+    "data/detection_history.json",
+    "data/tag_species_cache.json",
+    "source/species_registry.json",
+    "source/provenance.json",
+    "data/receiver_audit.json (slimmed)"
+  ],
+  "audit_records": 9215,
+  "audit_with_coords": 9215
+}

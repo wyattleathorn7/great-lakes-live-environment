@@ -813,12 +813,15 @@ the other products and the Pages publish proceed normally.
   burbot: winter 0.6–1.7 °C spawn, feeding 12–14 °C; sauger: spring river spawn
   ~6–10 °C); decay constants remain labeled MODEL_ASSUMPTIONs.
 - **Live inputs:** (1) GLSEA SST from §1 (same URL/cadence; a failed SST fetch
-  keeps the previous raster, exit 2); (2) acoustic-telemetry evidence read from
-  the `great-lakes-live-fish-telemetry` checkout when available (USGS real-time
-  detections + tag-species resolutions + GLATOS deployment priors), otherwise
-  the run degrades honestly to suitability-only (flagged in metadata
-  `warnings`). Telemetry is behavioral evidence only — unresolved tags stay
-  unresolved, historical priors are never presented as current counts.
+  keeps the previous raster, exit 2); (2) acoustic-telemetry evidence from the
+  in-repo vendored snapshot `assets/gamefish_telemetry/` (USGS real-time
+  detections + tag-species resolutions + GLATOS deployment priors, slimmed
+  receiver coordinates; refresh via `scripts/vendor_telemetry.py`, vintage in
+  `vendor_manifest.json`), otherwise the run degrades honestly to
+  suitability-only (flagged in metadata `warnings`). Telemetry is behavioral
+  evidence only — unresolved tags stay unresolved, historical priors are
+  never presented as current counts, and stale evidence fades via the
+  model's spatial/temporal decay.
 - **Model:** six separate 0..1 components (telemetry with spatial/temporal
   decay; date-aware seasonal windows; Gaussian thermal suitability on live SST;
   solar-elevation diel factor; shore-proximity habitat; named movement-corridor

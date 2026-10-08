@@ -920,12 +920,6 @@ jobs:
                   burbot, cisco, sauger]
     steps:
       - uses: actions/checkout@v7
-      - name: Checkout telemetry evidence (best-effort input)
-        continue-on-error: true
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ github.repository_owner }}/great-lakes-live-fish-telemetry
-          path: telemetry_src
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"

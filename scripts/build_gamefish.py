@@ -80,7 +80,11 @@ def main():
 
 # ---------------------------------------------------------- telemetry input
 def find_telemetry_repo():
+    # Primary: in-repo vendored snapshot (assets/gamefish_telemetry/,
+    # refreshed via scripts/vendor_telemetry.py). Fallbacks: CI/local
+    # checkouts of the retired standalone telemetry repo.
     cands = [os.environ.get("TELEMETRY_REPO", ""),
+             os.path.join(REPO_ROOT, "assets", "gamefish_telemetry"),
              os.path.join(REPO_ROOT, "telemetry_src"),
              os.path.join(os.path.dirname(REPO_ROOT),
                           "great-lakes-live-fish-telemetry")]
@@ -348,9 +352,10 @@ def live_description_html(cfg, meta, token, legend_img_html):
         f"fades toward transparent.</p>"
         f"<p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA lake surface temperature "
         f"(<a href=\"https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc\">"
-        f"GLSEA current analysis</a>) and acoustic-telemetry evidence from "
-        f"<a href=\"https://github.com/wyattleathorn7/great-lakes-live-fish-telemetry\">"
-        f"great-lakes-live-fish-telemetry</a> (USGS real-time receivers and GLATOS "
+        f"GLSEA current analysis</a>) and acoustic-telemetry evidence "
+        f"(vendored snapshot in <i>assets/gamefish_telemetry/</i>, see "
+        f"DATA_SOURCES.md &sect;13 and <i>vendor_manifest.json</i>; "
+        f"USGS real-time receivers and GLATOS "
         f"deployments; read as input, never modified).</p>"
         f"<p><b>Limitations:</b> surface temperature only (no depth resolution); "
         f"shore-proximity habitat proxy with no bathymetry, substrate, or vegetation "
