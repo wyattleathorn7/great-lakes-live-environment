@@ -8,7 +8,7 @@
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily.html",
   "data_time_utc": "2026-10-06 08:00 AM EDT (7-day median mosaic ending 2026-10-06)",
   "source_last_modified_utc": "n/a (ERDDAP)",
-  "processing_time_utc": "2026-10-08 01:30 PM EDT",
+  "processing_time_utc": "2026-10-08 02:00 PM EDT",
   "units": "TSI 0-100 (display; source mg m^-3 chlorophyll-a)",
   "spatial_resolution_source": "~9 km VIIRS (0.0833 deg PFEG) or ~4 km VIIRS (0.0375 deg Central fallback), 7-day median mosaic, NaN-aware display smoothing",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -34,14 +34,14 @@
     "low": 0.07920839,
     "high": 211.11685422129142,
     "percentiles": {
-      "p5": 0.5796594611941271,
-      "p25": 0.853914737701416,
-      "p50": 1.4544047040159684,
-      "p75": 10.416009818371636,
-      "p95": 32.10485353085419,
-      "p99": 49.694347088141946
+      "p5": 0.5912435639351039,
+      "p25": 0.8922215700149536,
+      "p50": 1.5679626370178088,
+      "p75": 12.372004508972168,
+      "p95": 32.7534838047416,
+      "p99": 49.77411031211203
     },
-    "n_obs": 730487,
+    "n_obs": 750487,
     "extends": [
       {
         "at": "2026-09-22 04:20 UTC",
