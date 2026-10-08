@@ -1,31 +1,10 @@
 name: Update Great Lakes live environment
 
 on:
-  schedule:
-    # Every non-fish product checks its source hourly (each job runs on
-    # the hourly cron; every builder is ALSO source-aware and skips when
-    # the source id is unchanged, so most wakeups are cheap pre-checks:
-    # GLWU/GFS/UVI .idx probes, ERDDAP time-axis probes, STAC metadata
-    # queries, GLSEA HEAD Last-Modified; only NIC NAIS (no validator
-    # headers) needs its ~3 MB download to hash-compare).
-    - cron: "15 * * * *"
-    # Cloud cover and precipitation refresh on their own 5-minute cadence
-    # in update_fast_live.yml (lean publish, no commit). This workflow keeps
-    # them on the hourly run as fallback, plus manual dispatch.
-    # (An earlier */12 + */5 experiment here proved that stacking frequent
-    # schedules on the heavy full workflow gets throttled into hour-long
-    # gaps and serializes into stale deploys — hence the split.)
-    # - Weekly (Sundays): game-fish gradients + leaf color only (slow
-    #   sources: GLSEA daily SST + date-driven seasonal/diel terms; MODIS
-    #   composite phenology — neither needs daily rebuilds). Fired reliably
-    #   by the external pinger (product=weekly); the in-repo cron is backup.
-    - cron: "35 7 * * 0"
-    # - Yearly (Jan 2): light pollution only (NASA VIIRS Black Marble is an
-    #   ANNUAL composite with a content-hash source id — it rebuilds only
-    #   when NASA ships a new year, so hourly/30-min triggers were ~17k
-    #   no-op job runs a year. Fired by the pinger (product=yearly); the
-    #   in-repo cron is backup.
-    - cron: "35 7 2 1 *"
+  # No GitHub schedules: every cadence is fired by the external
+  # cron-job.org pingers via workflow_dispatch (see timers/README.md).
+  # Former in-repo crons (hourly :15, weekly Sun, yearly Jan 2, fast
+  # 5-min) were removed on 2026-10-08 so only cron-job.org drives runs.
   workflow_dispatch:
     inputs:
       product:
@@ -33,7 +12,7 @@ on:
         required: false
         default: "all"
         type: choice
-        options: ["all", "environmental", "weekly", "yearly", "wave_height", "water_temperature", "ice_coverage",
+        options: ["all", "environmental", "halfhourly", "hourly", "daily", "weekly", "yearly", "wave_height", "water_temperature", "ice_coverage",
                    "ice_thickness", "ice_type", "wind", "leaf_color",
                    "chlorophyll", "water_clarity", "solar_radiation",
                    "air_temperature", "snow_coverage", "uv_index",
@@ -52,7 +31,7 @@ concurrency:
 
 jobs:
   wave_height:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'wave_height' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'hourly' || inputs.product == 'wave_height' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -85,7 +64,7 @@ jobs:
           if-no-files-found: warn
 
   water_temperature:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'water_temperature' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'water_temperature' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -117,7 +96,7 @@ jobs:
           if-no-files-found: warn
 
   ice_coverage:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'ice_coverage' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'ice_coverage' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -149,7 +128,7 @@ jobs:
           if-no-files-found: warn
 
   ice_thickness:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'ice_thickness' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'ice_thickness' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -181,7 +160,7 @@ jobs:
           if-no-files-found: warn
 
   ice_type:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'ice_type' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'ice_type' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -213,7 +192,7 @@ jobs:
           if-no-files-found: warn
 
   wind:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'wind' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'wind' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -245,7 +224,7 @@ jobs:
           if-no-files-found: warn
 
   leaf_color:
-    if: ${{ github.event.schedule == '35 7 * * 0' || (inputs.product == 'all' || inputs.product == 'weekly') || inputs.product == 'leaf_color' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'weekly') || inputs.product == 'leaf_color' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -278,7 +257,7 @@ jobs:
           if-no-files-found: warn
 
   chlorophyll:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'chlorophyll' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'weekly' || inputs.product == 'chlorophyll' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -311,7 +290,7 @@ jobs:
           if-no-files-found: warn
 
   water_clarity:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'water_clarity' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'water_clarity' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -344,7 +323,7 @@ jobs:
           if-no-files-found: warn
 
   solar_radiation:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'solar_radiation' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'solar_radiation' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -377,7 +356,7 @@ jobs:
           if-no-files-found: warn
 
   air_temperature:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'air_temperature' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'air_temperature' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -410,7 +389,7 @@ jobs:
           if-no-files-found: warn
 
   snow_coverage:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'snow_coverage' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'snow_coverage' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -443,7 +422,7 @@ jobs:
           if-no-files-found: warn
 
   uv_index:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'uv_index' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'uv_index' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -476,7 +455,7 @@ jobs:
           if-no-files-found: warn
 
   cloud_cover:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'cloud_cover' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'cloud_cover' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -508,7 +487,7 @@ jobs:
           if-no-files-found: warn
 
   surface_pressure:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'surface_pressure' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'surface_pressure' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -540,7 +519,7 @@ jobs:
           if-no-files-found: warn
 
   wave_direction:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'wave_direction' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'hourly' || inputs.product == 'wave_direction' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -572,7 +551,7 @@ jobs:
           if-no-files-found: warn
 
   surface_currents:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'surface_currents' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'hourly' || inputs.product == 'surface_currents' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -604,7 +583,7 @@ jobs:
           if-no-files-found: warn
 
   precipitation:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'precipitation' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'precipitation' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -636,7 +615,7 @@ jobs:
           if-no-files-found: warn
 
   aurora:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'aurora' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'aurora' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -668,7 +647,7 @@ jobs:
           if-no-files-found: warn
 
   bacteria:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'bacteria' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'bacteria' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -701,7 +680,7 @@ jobs:
           if-no-files-found: warn
 
   visibility:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'visibility' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'visibility' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -733,7 +712,7 @@ jobs:
           if-no-files-found: warn
 
   humidity:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'humidity' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'humidity' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -765,7 +744,7 @@ jobs:
           if-no-files-found: warn
 
   light_pollution:
-    if: ${{ github.event.schedule == '35 7 2 1 *' || (inputs.product == 'all' || inputs.product == 'yearly') || inputs.product == 'light_pollution' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'yearly') || inputs.product == 'light_pollution' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -797,7 +776,7 @@ jobs:
           if-no-files-found: warn
 
   air_quality:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'air_quality' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'air_quality' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -829,7 +808,7 @@ jobs:
           if-no-files-found: warn
 
   condensation:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'condensation' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'condensation' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -861,7 +840,7 @@ jobs:
           if-no-files-found: warn
 
   fog:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'fog' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'fog' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -893,7 +872,7 @@ jobs:
           if-no-files-found: warn
 
   dew_point:
-    if: ${{ github.event.schedule == '15 * * * *' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'dew_point' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'dew_point' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -927,8 +906,8 @@ jobs:
   gamefish:
     # Nine species, one matrix leg each: independent products, independent
     # failures (same failure isolation as the twelve environment products).
-    # Runs on the 4x-daily cadence (GLSEA daily + date-driven seasonal/diel).
-    if: ${{ github.event.schedule == '35 7 * * 0' || (inputs.product == 'all' || inputs.product == 'weekly') || inputs.product == 'gamefish' }}
+    # Runs on the weekly cadence (GLSEA daily SST + date-driven seasonal/diel).
+    if: ${{ (inputs.product == 'all' || inputs.product == 'weekly') || inputs.product == 'gamefish' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read

@@ -22,8 +22,10 @@ name: Fast live refresh (precipitation + cloud cover)
 # manual/nightly dispatches start in seconds.
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  # No GitHub schedule: the external cron-job.org `great-lakes-fast-live`
+  # pinger (every 5 min) fires this workflow via workflow_dispatch
+  # (see timers/README.md). The in-repo */5 cron was removed on
+  # 2026-10-08 so only cron-job.org drives runs.
   workflow_dispatch:
 
 permissions:
