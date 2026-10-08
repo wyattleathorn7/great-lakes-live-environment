@@ -724,12 +724,18 @@ def main():
     _aq_vals = [v for v, _ in _AQ_STOPS]
     check("aqi-scale-0-500",
           bool(_aq_vals == [0.0, 50.0, 100.0, 150.0, 200.0, 300.0,
-                            500.0]),
+                            400.0, 500.0]),
           _aq_vals)
     check("aqi-scale-ascending",
           all(b > a for a, b in zip(_aq_vals, _aq_vals[1:])))
-    # steady gradual ramp: every category boundary owns a distinct
-    # balanced color (no flat segment can hide basin variation, no neon)
+    # user eight-color slider palette, in order, no neon
+    check("aqi-user-palette",
+          bool([c for _, c in _AQ_STOPS]
+                == [(127, 191, 106), (79, 166, 106), (216, 201, 90),
+                    (217, 138, 74), (201, 86, 79), (149, 99, 154),
+                    (96, 64, 107), (112, 45, 58)]))
+    # steady gradual slider: every category boundary owns a distinct
+    # color (no flat segment can hide basin variation)
     from gradient_scale import color_for as _cf_aq
     _aq_band = [_cf_aq(v, _AQ_STOPS) for v in
                 [0.0, 50.0, 100.0, 150.0, 200.0, 300.0, 500.0]]
@@ -737,11 +743,6 @@ def main():
     check("aqi-good-ramps",
           bool(_cf_aq(0.0, _AQ_STOPS) != _cf_aq(25.0, _AQ_STOPS)
                 != _cf_aq(50.0, _AQ_STOPS)))
-    check("aqi-balanced-not-neon",
-          bool(all(max(c) - min(c) < 255 for c in _aq_band)
-                and (0, 228, 0) not in _aq_band
-                and (255, 255, 0) not in _aq_band
-                and (255, 0, 0) not in _aq_band))
     _aq_words = " ".join(w for _, _, w in _AQ_TICKS)
     for _w in ("Good", "Moderate", "USG", "Unhealthy", "Very unhealthy",
                "Hazardous"):

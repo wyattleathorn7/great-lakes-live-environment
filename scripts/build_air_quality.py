@@ -39,17 +39,18 @@ API = "https://air-quality-api.open-meteo.com/v1/air-quality"
 # professional standard for US public air-quality reporting. The source
 # variable stays CAMS PM2.5 (ug/m3); it is converted to AQI via the EPA
 # PM2.5 breakpoint table so the SAME index the public sees on AirNow is
-# what the gradient paints. Steady gradual ramp across the fixed 0-500
-# scale: balanced muted colors, one family per category, distinct enough
-# to tell apart but never neon.
-AQI_STOPS = [
-    (0.0, (184, 214, 187)),    # Good: pale green at cleanest
-    (50.0, (106, 168, 111)),   # Good: sage green
-    (100.0, (217, 200, 78)),   # Moderate: muted gold
-    (150.0, (208, 138, 62)),   # USG: muted orange
-    (200.0, (193, 75, 72)),    # Unhealthy: brick red
-    (300.0, (138, 90, 160)),   # Very unhealthy: muted purple
-    (500.0, (126, 47, 60)),    # Hazardous: muted maroon
+# what the gradient paints. Steady gradual slider across the fixed 0-500
+# scale in the user's eight-color palette (EPA boundaries untouched; the
+# extra Dark Purple anchor sits mid-Hazardous so all eight colors run).
+AQI_STOPS = [  # (AQI, rgb) user palette, in order
+    (0.0, (127, 191, 106)),    # Light Green #7FBF6A (Good, cleanest)
+    (50.0, (79, 166, 106)),    # Green #4FA66A (Good)
+    (100.0, (216, 201, 90)),   # Yellow #D8C95A (Moderate)
+    (150.0, (217, 138, 74)),   # Orange #D98A4A (USG)
+    (200.0, (201, 86, 79)),    # Red #C9564F (Unhealthy)
+    (300.0, (149, 99, 154)),   # Purple #95639A (Very Unhealthy)
+    (400.0, (96, 64, 107)),    # Dark Purple #60406B (Hazardous)
+    (500.0, (112, 45, 58)),    # Mahogany/Burgundy #702D3A (Hazardous+)
 ]
 STOPS = AQI_STOPS
 LABELS = [(25.0, "25 Good"), (75.0, "75 Moderate"),
@@ -60,15 +61,15 @@ KEY_TICKS = [(0.0, "0", "Good"), (50.0, "50", "Good"),
              (200.0, "200", "Unhealthy"), (300.0, "300", "Very unhealthy"),
              (500.0, "500", "Hazardous")]
 SCALE_HTML = ("US EPA Air Quality Index (AQI, PM2.5-based, steady "
-              "gradual 0-500 scale): <b>0-50</b> Good, pale green "
-              "deepening to green &rarr; <b>51-100</b> Moderate gold "
+              "gradual 0-500 slider): <b>0-50</b> Good, light green "
+              "deepening to green &rarr; <b>51-100</b> Moderate yellow "
               "&rarr; <b>101-150</b> Unhealthy for Sensitive Groups "
-              "orange &rarr; <b>151-200</b> Unhealthy brick red &rarr; "
+              "orange &rarr; <b>151-200</b> Unhealthy red &rarr; "
               "<b>201-300</b> Very Unhealthy purple &rarr; <b>301-500</b> "
-              "Hazardous maroon. Balanced muted colors, distinct per "
-              "category, never neon. Same AQI always shows the same "
-              "color. CAMS PM2.5 model analysis converted via EPA PM2.5 "
-              "breakpoints — not station observations.")
+              "Hazardous dark purple to mahogany/burgundy. Same AQI "
+              "always shows the same color. CAMS PM2.5 model analysis "
+              "converted via EPA PM2.5 breakpoints — not station "
+              "observations.")
 # EPA PM2.5 (ug/m3, 24-hr) -> AQI breakpoints: (c_lo, c_hi, aqi_lo, aqi_hi)
 PM25_AQI_BP = [
     (0.0, 12.0, 0, 50),
