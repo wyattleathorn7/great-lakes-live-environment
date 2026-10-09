@@ -341,8 +341,8 @@ def wave_travel_uv(filed_deg, period_s):
 # the period field changes even with no arrow nearby.
 
 
-def _label_font(size=6):
-    """DejaVu Sans BOLD at any size (same family CI uses), halo-style labels.
+def _label_font(size=7):
+    """DejaVu Sans Mono BOLD at any size (same family CI uses).
 
     Bold holds a crisp core at tiny sizes where regular collapses into a
     blotch. _legend_font falls back to Helvetica.ttc on macOS, whose
@@ -353,17 +353,17 @@ def _label_font(size=6):
     import glob as _glob
     from PIL import ImageFont as _IF
     cands = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
     ]
     try:
         import matplotlib as _mpl
         cands.append(os.path.join(os.path.dirname(_mpl.__file__),
                                   "mpl-data", "fonts", "ttf",
-                                  "DejaVuSans-Bold.ttf"))
+                                  "DejaVuSansMono-Bold.ttf"))
     except Exception:
         pass
-    cands += _glob.glob("/System/Library/Fonts/Supplemental/DejaVuSans-Bold*.ttf")
-    cands += _glob.glob(os.path.expanduser("~/Library/Fonts/DejaVuSans-Bold.ttf"))
+    cands += _glob.glob("/System/Library/Fonts/Supplemental/DejaVuSansMono-Bold*.ttf")
+    cands += _glob.glob(os.path.expanduser("~/Library/Fonts/DejaVuSansMono-Bold.ttf"))
     for path in cands:
         try:
             return _IF.truetype(path, size)
@@ -636,8 +636,8 @@ def main():
         ap.add_argument("--extra-step", type=int, default=32)
         ap.add_argument("--extra-thresh", type=float, default=0.5,
                         help="period-change threshold (s) for extra labels")
-        ap.add_argument("--font-size", type=int, default=6,
-                        help="period label font size px (default 6)")
+        ap.add_argument("--font-size", type=int, default=7,
+                        help="period label font size px (default 7)")
         ap.add_argument("--direction-style", default="stream",
                         choices=["arrows", "stream"],
                         help="direction glyphs: classic arrows or "
@@ -659,7 +659,7 @@ def main():
 
 
 def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
-        font_size=6, direction_style="stream", preview_dir=None):
+        font_size=7, direction_style="stream", preview_dir=None):
     now = datetime.now(timezone.utc)
     raw_path = os.path.join(RAW_DIR, "glwu_combined_current.grib2")
     used_url, datestr, cycle, stamp = None, None, None, None
@@ -712,7 +712,7 @@ def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
 
 
 def _build(raw_path, used_url, datestr, cycle, source_id,
-           label_every, extra_step, extra_thresh, font_size=6,
+           label_every, extra_step, extra_thresh, font_size=7,
            direction_style="stream", preview_dir=None):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
@@ -866,7 +866,7 @@ def _build(raw_path, used_url, datestr, cycle, source_id,
     # Render settings ride the version token: same-cycle restyles MUST
     # change the ?v= URL or every cache keeps serving the old pixels.
     # TEXT_REV bumps on any glyph/style change (font, halo, density).
-    TEXT_REV = 3
+    TEXT_REV = 4
     meta["source_version"] = source_token(
         f"{source_id}-r{RENDER_VERSION}-{direction_style}-f{font_size}"
         f"-tx{TEXT_REV}")
