@@ -12,7 +12,7 @@
         <Icon>
           <href>https://wyattleathorn7.github.io/great-lakes-live-environment/wave_combined/current.png?v=glwu-20261009-1300Z-combined-r12-stream-f5-tx2</href>
           <refreshMode>onInterval</refreshMode>
-          <refreshInterval>900</refreshInterval>
+          <refreshInterval>300</refreshInterval>
         </Icon>
         <LatLonBox>
           <north>49.5</north>

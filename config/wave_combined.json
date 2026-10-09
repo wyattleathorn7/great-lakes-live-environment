@@ -15,7 +15,7 @@
   "color_min": 0.0,
   "color_max": 30.0,
   "color_units": "ft",
-  "refresh_interval_seconds": 900,
+  "refresh_interval_seconds": 300,
   "buoys": ["45001", "45002", "45132", "45012", "45005"],
   "kml_file": "Great_Lakes_Live_Wave_Height_Period_Direction.kml",
   "overlay_name": "🌊 LIVE WAVE HEIGHT/PERIOD/DIRECTION",
