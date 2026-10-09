@@ -257,7 +257,7 @@ jobs:
           if-no-files-found: warn
 
   chlorophyll:
-    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'weekly' || inputs.product == 'chlorophyll' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'weekly' || inputs.product == 'chlorophyll' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
