@@ -1,0 +1,23 @@
+{
+  "product": "wave_combined",
+  "title": "LIVE WAVE HEIGHT/PERIOD/DIRECTION",
+  "freshness_label": "LIVE / CURRENT MODEL (analysis), 6-hourly cycles",
+  "source_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) — HTSGW height + PERPW peak period + WVDIR direction, surface analysis (single cycle)",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/{date_dir}/glwu.grlc_2p5km.t{cycle}z.grib2",
+  "cycles_try_order": ["19", "13", "07", "01"],
+  "variable": "HTSGW significant height (base color, ft) + PERPW peak period (white labels, s) + WVDIR travel arrows (FROM+180), all surface analysis step 0 from the SAME cycle file",
+  "source_units": "m (height source), s (period source), degrees (direction source)",
+  "display_units": "ft base + seconds labels + travel arrows",
+  "coverage": "Lake water only: Great Lakes cut by the shared NOAA shoreline mask, land fully transparent.",
+  "arrows": "Arrows show the toward-travel vector (WVDIR filed FROM direction + 180 deg, standard oceanographic handling), white shaft with dark outline — pixel-identical style to the wave_direction layer.",
+  "labels": "White period labels with dark halo in the same arrow style, placed just above a decimated subset of arrows (every Nth) plus extras where period changes sharply even with no arrow nearby. Format is seconds with one decimal, e.g. 4.2s.",
+  "color_min": 0.0,
+  "color_max": 30.0,
+  "color_units": "ft",
+  "refresh_interval_seconds": 3600,
+  "buoys": ["45001", "45002", "45132", "45012", "45005"],
+  "kml_file": "Great_Lakes_Live_Waves_Combined.kml",
+  "overlay_name": "🌊 LIVE WAVE HEIGHT/PERIOD/DIRECTION",
+  "note": "Turn on/off independently of all other layers. Does not modify wave_height or wave_direction."
+}

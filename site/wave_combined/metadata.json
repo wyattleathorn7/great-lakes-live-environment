@@ -1,0 +1,48 @@
+{
+  "product": "wave_combined",
+  "title": "LIVE WAVE HEIGHT/PERIOD/DIRECTION",
+  "freshness": "LIVE / CURRENT MODEL (analysis), 6-hourly cycles",
+  "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 HTSGW height + PERPW peak period + WVDIR direction, surface analysis (single cycle)",
+  "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 HTSGW height + PERPW peak period + WVDIR direction, surface analysis (single cycle)",
+  "variable": "HTSGW significant height (base color, ft) + PERPW peak period (white labels, s) + WVDIR travel arrows (FROM+180), all surface analysis step 0 from the SAME cycle file",
+  "source_url": "local:output/raw/glwu_current.grib2",
+  "data_time_utc": "2026-09-27 09:00 AM EDT",
+  "source_last_modified_utc": "n/a (NOMADS)",
+  "processing_time_utc": "2026-10-09 10:09 AM EDT",
+  "units": "ft base (display); s labels (source s); degrees arrows",
+  "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361), single cycle",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.0,
+  "color_scale_max": 30.0,
+  "color_scale_units": "ft",
+  "missing_data_treatment": "only finite HTSGW admitted; off-water grid points and land outside the NOAA shoreline transparent; never zero-filled. Period/dir sampled only on water.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    640
+  ],
+  "legend_scale_html": "Base color = wave height, exact bin colors (see table). Model height max this run: <b>7.8 ft</b>. Arrows point where the waves travel (WVDIR + 180&deg;). White halo numbers are the actual peak period at that spot (seconds between crests, e.g. 4.2s), drawn in the same style as the arrows and placed just above them; extra numbers mark spots where the period changes sharply even between arrows. Period max now <b>7.4s</b>, mean travel <b>76&deg; (E)</b>. Significant height = average of highest third of waves.",
+  "model_cycle": "local tlocalz",
+  "source_id": "local-68706882",
+  "source_version": "local-68706882-r12",
+  "label_style": "white fill (255,255,255,245) + dark halo (20,20,20,235), same as direction arrows; every 3th arrow + extras at >= 0.6s change",
+  "stats": {
+    "valid_cells": 366108,
+    "max_ft": 7.8,
+    "max_period_s": 7.44,
+    "mean_direction_deg": 75.8,
+    "mean_compass": "E",
+    "arrows_drawn": 173,
+    "period_labels_on_arrows": 46,
+    "period_labels_extra": 11
+  },
+  "folder_html": "<h2>LIVE WAVE HEIGHT/PERIOD/DIRECTION</h2><p>Wave height color + actual peak-period numbers + travel arrows, all from one GLWU cycle.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/wave_combined/legend.png?v=local-68706882-r12\" width=\"600\" alt=\"key\"></p><p>Base color = wave height, exact bin colors (see table). Model height max this run: <b>7.8 ft</b>. Arrows point where the waves travel (WVDIR + 180&deg;). White halo numbers are the actual peak period at that spot (seconds between crests, e.g. 4.2s), drawn in the same style as the arrows and placed just above them; extra numbers mark spots where the period changes sharply even between arrows. Period max now <b>7.4s</b>, mean travel <b>76&deg; (E)</b>. Significant height = average of highest third of waves.</p>"
+}
