@@ -860,7 +860,10 @@ def _build(raw_path, used_url, datestr, cycle, source_id,
     meta["legend_scale_html"] = scale_html
     meta["model_cycle"] = f"{datestr} t{cycle}z"
     meta["source_id"] = source_id
-    meta["source_version"] = source_token(f"{source_id}-r{RENDER_VERSION}")
+    # Render settings ride the version token: same-cycle restyles MUST
+    # change the ?v= URL or every cache keeps serving the old pixels.
+    meta["source_version"] = source_token(
+        f"{source_id}-r{RENDER_VERSION}-{direction_style}-f{font_size}")
     meta["label_style"] = ("white fill (255,255,255,245) + dark halo "
                            "(20,20,20,235), same as direction arrows; "
                            f"every {label_every}th arrow + extras at "
