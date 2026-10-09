@@ -105,6 +105,29 @@ jobs:
             output/state/cloud_cover.json
           if-no-files-found: warn
 
+  notify-ais:
+    # Chain the AIS repo into the 5-minute cadence: cron-job.org fires this
+    # workflow every 5 min; this forwards a repository_dispatch so
+    # great-lakes-live-tracking-8-31-26 rebuilds on the same timer (its own
+    # GitHub schedule is disabled). Standalone + best-effort: never in
+    # fast_publish's needs, never fails the run.
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Dispatch AIS rebuild
+        env:
+          TOKEN: ${{ secrets.AIS_DISPATCH_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then echo "AIS_DISPATCH_TOKEN not set; skipping AIS chain."; exit 0; fi
+          code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/wyattleathorn7/great-lakes-live-tracking-8-31-26/dispatches \
+            -d '{"event_type":"five_min"}') || code="000"
+          echo "AIS dispatch HTTP $code"
+          [ "$code" = "204" ] || echo "::warning::AIS chain dispatch returned $code (expected 204)"
+
   fast_publish:
     needs: [precipitation, cloud_cover]
     # Ship whatever succeeded; a single-source outage must not block the
