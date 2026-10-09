@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261009/glwu.grlc_2p5km.t13z.grib2",
   "data_time_utc": "2026-10-09 09:00 AM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-10-09 10:36 AM EDT",
+  "processing_time_utc": "2026-10-09 10:54 AM EDT",
   "units": "ft base (display); s labels (source s); degrees arrows",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361), single cycle",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -27,22 +27,25 @@
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "legend_size": [
     640,
-    640
+    656
   ],
   "legend_scale_html": "Base color = wave height, exact bin colors (see table). Model height max this run: <b>6.6 ft</b>. Arrows point where the waves travel (WVDIR + 180&deg;). White halo numbers are the actual peak period at that spot (seconds between crests, e.g. 4.2s), drawn in the same style as the arrows and placed just above them; extra numbers mark spots where the period changes sharply even between arrows. Period max now <b>9.8s</b>, mean travel <b>280&deg; (W)</b>. Significant height = average of highest third of waves.",
   "model_cycle": "20261009 t13z",
   "source_id": "glwu-20261009-1300Z-combined",
   "source_version": "glwu-20261009-1300Z-combined-r12",
   "label_style": "white fill (255,255,255,245) + dark halo (20,20,20,235), same as direction arrows; every 2th arrow + extras at >= 0.5s change",
+  "direction_style": "stream",
   "stats": {
     "valid_cells": 366108,
     "max_ft": 6.6,
     "max_period_s": 9.82,
     "mean_direction_deg": 279.9,
     "mean_compass": "W",
-    "arrows_drawn": 174,
-    "period_labels_on_arrows": 69,
-    "period_labels_extra": 49
+    "arrows_drawn": 318,
+    "streamlets_drawn": 1179,
+    "stream_heads_drawn": 318,
+    "period_labels_on_arrows": 66,
+    "period_labels_extra": 60
   },
   "folder_html": "<h2>LIVE WAVE HEIGHT/PERIOD/DIRECTION</h2><p>Wave height color + actual peak-period numbers + travel arrows, all from one GLWU cycle.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/wave_combined/legend.png?v=glwu-20261009-1300Z-combined-r12\" width=\"600\" alt=\"key\"></p><p>Base color = wave height, exact bin colors (see table). Model height max this run: <b>6.6 ft</b>. Arrows point where the waves travel (WVDIR + 180&deg;). White halo numbers are the actual peak period at that spot (seconds between crests, e.g. 4.2s), drawn in the same style as the arrows and placed just above them; extra numbers mark spots where the period changes sharply even between arrows. Period max now <b>9.8s</b>, mean travel <b>280&deg; (W)</b>. Significant height = average of highest third of waves.</p>"
 }

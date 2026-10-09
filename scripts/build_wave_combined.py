@@ -176,6 +176,165 @@ def compass(deg):
     return pts[int(((float(deg) % 360) + 22.5) // 45)]
 
 
+# ------------------------------------------------- streamlet direction style
+# EXPERIMENTAL port of the surface-currents streak technique
+# (trace_streamline / paint_flow_arrows in build_surface_currents.py — that
+# file is never touched) applied to the WAVE travel field: white RK2
+# streamlets follow the toward-travel vector, brightness encodes peak
+# period (dim chop -> bright swell), micro-chevrons mark direction.
+
+
+def _sample_uv(y, x, uu, vv):
+    """Bilinear (U,V) at fractional canvas coords; (nan, nan) at land."""
+    H, W = uu.shape
+    if not (0.0 <= y <= H - 1.001 and 0.0 <= x <= W - 1.001):
+        return (float("nan"), float("nan"))
+    y0, x0 = int(y), int(x)
+    y1, x1 = min(y0 + 1, H - 1), min(x0 + 1, W - 1)
+    fy, fx = y - y0, x - x0
+    try:
+        u = (uu[y0, x0] * (1 - fx) + uu[y0, x1] * fx) * (1 - fy) + \
+            (uu[y1, x0] * (1 - fx) + uu[y1, x1] * fx) * fy
+        v = (vv[y0, x0] * (1 - fx) + vv[y0, x1] * fx) * (1 - fy) + \
+            (vv[y1, x0] * (1 - fx) + vv[y1, x1] * fx) * fy
+    except IndexError:
+        return (float("nan"), float("nan"))
+    if not (np.isfinite(u) and np.isfinite(v)):
+        return (float("nan"), float("nan"))
+    return (float(u), float(v))
+
+
+def _trace_streamline(sy, sx, uu, vv, ds=3.0, max_steps=40, min_speed=0.3):
+    path = []
+    y, x = float(sy), float(sx)
+    px, py = None, None
+    for _ in range(max_steps):
+        u, v = _sample_uv(y, x, uu, vv)
+        sp = math.hypot(u, v)
+        if not math.isfinite(sp) or sp < min_speed:
+            break
+        dx, dy = u / sp, -v / sp
+        mx, my = x + dx * ds / 2.0, y + dy * ds / 2.0
+        u2, v2 = _sample_uv(my, mx, uu, vv)
+        sp2 = math.hypot(u2, v2)
+        if not math.isfinite(sp2) or sp2 < min_speed:
+            break
+        ax, ay = dx + u2 / sp2, dy + (-v2 / sp2)
+        n = math.hypot(ax, ay)
+        if n < 1e-9:
+            break
+        ax, ay = ax / n, ay / n
+        if px is not None and (ax * px + ay * py) < 0.3:
+            break
+        x, y = x + ax * ds, y + ay * ds
+        if not (8 <= y < uu.shape[0] - 8 and 8 <= x < uu.shape[1] - 8):
+            break
+        path.append((y, x, ax, ay))
+        px, py = ax, ay
+    return path
+
+
+def paint_wave_streamlets(rgba, uu, vv, period_field, seed_step=11,
+                          ds=3.0, max_steps=40, min_speed=0.3,
+                          sep_px=3.0, head_every=2, head_sep_px=5.0,
+                          line_width=1, head_alpha=230, head_len=4.0):
+    """RK2 streamlets through the wave-travel field, brightness = period.
+
+    Dim streaks = short chop, bright streaks = long swell; micro-chevrons
+    mark travel direction. Fully rasterized (no KML vectors). Returns
+    (rgba, n_streamlets, n_heads).
+    """
+    H, W = uu.shape
+    rng = np.random.default_rng(7)
+    base = Image.fromarray(rgba, mode="RGBA")
+    base_alpha = rgba[:, :, 3]
+    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(overlay)
+    n_lines = n_heads = accepted = 0
+    covered = np.zeros((H, W), bool)
+    placed = np.zeros((H, W), bool)
+    rr, cc = np.ogrid[:H, :W]
+
+    def claim(path, sep):
+        s = int(math.ceil(sep))
+        for (y, x, _ax, _ay) in path[::3]:
+            r0, r1 = max(0, int(y) - s), min(H, int(y) + s + 1)
+            c0, c1 = max(0, int(x) - s), min(W, int(x) + s + 1)
+            dy = rr[r0:r1, 0:1] - y
+            dx = cc[0:1, c0:c1] - x
+            covered[r0:r1, c0:c1][(dy * dy + dx * dx) <= sep * sep] = True
+
+    def clear_for_head(y, x, sep):
+        s = int(math.ceil(sep))
+        r0, r1 = max(0, int(y) - s), min(H, int(y) + s + 1)
+        c0, c1 = max(0, int(x) - s), min(W, int(x) + s + 1)
+        dy = rr[r0:r1, 0:1] - y
+        dx = cc[0:1, c0:c1] - x
+        win = placed[r0:r1, c0:c1]
+        hit = (dy * dy + dx * dx) <= sep * sep
+        if bool((win & hit).any()):
+            return False
+        win[hit] = True
+        return True
+
+    for r0 in range(0, H, seed_step):
+        for c0 in range(0, W, seed_step):
+            r = r0 + seed_step / 2.0 + (rng.random() - 0.5) * seed_step * 0.66
+            c = c0 + seed_step / 2.0 + (rng.random() - 0.5) * seed_step * 0.66
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if covered[int(r), int(c)]:
+                continue
+            u0, v0 = _sample_uv(r, c, uu, vv)
+            if not (math.isfinite(u0) and math.hypot(u0, v0) >= min_speed):
+                continue
+            path = _trace_streamline(r, c, uu, vv, ds=ds,
+                                     max_steps=max_steps,
+                                     min_speed=min_speed)
+            if len(path) < 6:
+                continue
+            claim(path, sep_px)
+            pts = [(x, y) for (y, x, _ax, _ay) in path[::2]]
+            if len(pts) < 2:
+                continue
+            if base_alpha[int(path[-1][0]), int(path[-1][1])] == 0:
+                continue
+            pers = [float(period_field[int(y), int(x)])
+                    for (y, x, _a, _b) in path[::4]
+                    if np.isfinite(period_field[int(y), int(x)])]
+            per = sum(pers) / len(pers) if pers else 0.0
+            alpha = int(round(70 + 130 * min(1.0, max(0.0, per) / 10.0)))
+            d.line(pts, fill=(255, 255, 255, alpha), width=line_width)
+            n_lines += 1
+            accepted += 1
+            if accepted % head_every == 0 and len(path) >= 10:
+                y, x, ax, ay = path[-1]
+                if not clear_for_head(y, x, head_sep_px):
+                    continue
+                ang = math.atan2(ay, ax)
+                for s in (1, -1):
+                    ha = ang + s * (math.pi - 0.6)
+                    d.line([(x, y),
+                            (x + math.cos(ha) * head_len,
+                             y + math.sin(ha) * head_len)],
+                           fill=(255, 255, 255, head_alpha), width=1)
+                n_heads += 1
+    del d
+    out = Image.alpha_composite(base, overlay)
+    return np.array(out), n_lines, n_heads
+
+
+def wave_travel_uv(filed_deg, period_s):
+    """(U,V) travel field: filed FROM degrees -> toward unit vector,
+    scaled by peak period (brightness/speed proxy). NaN off-water."""
+    toward = np.radians((np.asarray(filed_deg, dtype=float) + 180.0) % 360.0)
+    per = np.clip(np.asarray(period_s, dtype=float), 0.0, 12.0)
+    ok = np.isfinite(filed_deg) & np.isfinite(period_s)
+    uu = np.where(ok, np.sin(toward) * np.maximum(per, 0.0), np.nan)
+    vv = np.where(ok, np.cos(toward) * np.maximum(per, 0.0), np.nan)
+    return uu, vv
+
+
 # ------------------------------------------------------------------- labels
 # Period values in the SAME arrow style: white fill + dark halo, rasterized
 # into the PNG (no KML vectors). Placed right above arrows + extras where
@@ -476,10 +635,19 @@ def main():
                         help="period-change threshold (s) for extra labels")
         ap.add_argument("--font-size", type=int, default=5,
                         help="period label font size px (default 5)")
+        ap.add_argument("--direction-style", default="stream",
+                        choices=["arrows", "stream"],
+                        help="direction glyphs: classic arrows or "
+                             "surface-current-style streamlets (experimental)")
+        ap.add_argument("--preview-dir", default=None,
+                        help="experimental preview: write current.png + "
+                             "legend.png here instead of promoting to site/")
         args = ap.parse_args()
         return run(local_file=args.local_file, label_every=args.label_every,
                    extra_step=args.extra_step, extra_thresh=args.extra_thresh,
-                   font_size=args.font_size)
+                   font_size=args.font_size,
+                   direction_style=args.direction_style,
+                   preview_dir=args.preview_dir)
     except SystemExit as e:
         raise
     except Exception:
@@ -488,7 +656,7 @@ def main():
 
 
 def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
-        font_size=5):
+        font_size=5, direction_style="stream", preview_dir=None):
     now = datetime.now(timezone.utc)
     raw_path = os.path.join(RAW_DIR, "glwu_combined_current.grib2")
     used_url, datestr, cycle, stamp = None, None, None, None
@@ -531,7 +699,8 @@ def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
 
     try:
         return _build(raw_path, used_url, datestr, cycle, source_id,
-                      label_every, extra_step, extra_thresh, font_size)
+                      label_every, extra_step, extra_thresh, font_size,
+                      direction_style, preview_dir)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -540,7 +709,8 @@ def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
 
 
 def _build(raw_path, used_url, datestr, cycle, source_id,
-           label_every, extra_step, extra_thresh, font_size=5):
+           label_every, extra_step, extra_thresh, font_size=5,
+           direction_style="stream", preview_dir=None):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     bounds = load_bounds()
@@ -596,8 +766,35 @@ def _build(raw_path, used_url, datestr, cycle, source_id,
     d_water = np.where(water & np.isfinite(dfield), dfield, np.nan)
     p_water = np.where(water & np.isfinite(pfield), pfield, np.nan)
 
-    # arrows: existing style, verbatim
-    rgba, n_arrows, arrow_pos = paint_arrows(rgba, d_water, step=16)
+    # direction glyphs: classic arrows (default, verbatim) or
+    # experimental surface-current-style streamlets
+    n_lines = n_heads = 0
+    if direction_style == "stream":
+        # circular-safe smoothing, stream mode ONLY (arrows keep the
+        # verbatim nearest-bin dots): average unit vectors, not degrees.
+        _rad = np.radians(np.asarray(d_deg, dtype=float).ravel())
+        _okd = (valid_d & np.isfinite(np.asarray(d_deg, dtype=float).ravel())
+                & (np.asarray(d_deg, dtype=float).ravel() >= 0)
+                & (np.asarray(d_deg, dtype=float).ravel() <= 360))
+        _sinf, _ = bin_to_canvas(rows_d, cols_d, np.sin(_rad), _okd,
+                                 (H, W), splat_radius=2)
+        _cosf, _cnt = bin_to_canvas(rows_d, cols_d, np.cos(_rad), _okd,
+                                    (H, W), splat_radius=2)
+        _dsm = np.degrees(np.arctan2(_sinf, _cosf)) % 360.0
+        _dsm[_cnt == 0] = np.nan
+        _dw_s = np.where(water & (_cnt > 0), _dsm, np.nan)
+        uu, vv = wave_travel_uv(_dw_s, p_water)
+        rgba, n_lines, n_heads = paint_wave_streamlets(rgba, uu, vv, p_water)
+        arrow_pos = []  # no lattice arrows in stream mode
+        # streamlets seed off-lattice: label from the period field on a
+        # coarse water grid instead of arrow anchors
+        H2, W2 = p_water.shape
+        arrow_pos = [(r, c) for r in range(24, H2 - 8, 48)
+                     for c in range(24, W2 - 8, 48)
+                     if np.isfinite(p_water[r, c]) and rgba[r, c, 3] > 0]
+        n_arrows = n_heads
+    else:
+        rgba, n_arrows, arrow_pos = paint_arrows(rgba, d_water, step=16)
     # labels: actual period values, same arrow style, above arrows + extras
     rgba, n_lab, n_extra = paint_period_labels(
         rgba, p_water, arrow_pos, label_every=label_every,
@@ -607,9 +804,17 @@ def _build(raw_path, used_url, datestr, cycle, source_id,
     # arrows near shore can spill 1-2 px onto land: clip alpha back
     rgba[:, :, 3] = np.round(
         rgba[:, :, 3].astype(np.float32) * wm).astype(np.uint8)
+    if preview_dir is not None:
+        os.makedirs(preview_dir, exist_ok=True)
+        save_png(rgba, os.path.join(preview_dir, "current.png"))
+        print(f"[{PRODUCT}] PREVIEW {direction_style}: opaque="
+              f"{int((rgba[:, :, 3] > 0).sum())} streamlets={n_lines} "
+              f"heads={n_heads} period_labels={n_lab}+{n_extra}extra")
+        return 0
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     n_opaque = int((rgba[:, :, 3] > 0).sum())
     print(f"[{PRODUCT}] opaque={n_opaque} arrows={n_arrows} "
+          f"streamlets={n_lines}+{n_heads}heads "
           f"period_labels={n_lab}+{n_extra}extra "
           f"hmax={run_max_ft}ft pmax={run_max_s:.1f}s meandir={mean_deg:.0f}")
     if n_opaque < 5_000:
@@ -619,12 +824,20 @@ def _build(raw_path, used_url, datestr, cycle, source_id,
     if n_lab + n_extra < 20:
         raise ValueError(f"too few period labels ({n_lab}+{n_extra})")
 
-    subtitle = (f"Height color + period numbers + arrows  |  "
+    subtitle = (f"Height color + period numbers + "
+                f"{'streamlets' if direction_style == 'stream' else 'arrows'}  |  "
                 f"max {run_max_ft} ft / {run_max_s:.1f}s")
-    arrow_note = ("Arrows show travel direction (WVDIR + 180). "
-                  "White halo numbers are the actual peak period in seconds "
-                  "at that spot (e.g. 4.2s), placed just above arrows; extra "
-                  "numbers mark sharp period changes even between arrows.")
+    if direction_style == "stream":
+        arrow_note = ("White streaks trace travel direction (WVDIR + 180, "
+                      "surface-current style); streak brightness encodes peak "
+                      "period (dim chop, bright swell); micro-chevrons mark "
+                      "travel. White halo numbers are the actual peak period "
+                      "in seconds at that spot.")
+    else:
+        arrow_note = ("Arrows show travel direction (WVDIR + 180). "
+                      "White halo numbers are the actual peak period in seconds "
+                      "at that spot (e.g. 4.2s), placed just above arrows; extra "
+                      "numbers mark sharp period changes even between arrows.")
     lw, lh = draw_combined_table(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
         f"Source: NCEP GLWU v2.1 {datestr} t{cycle}z  |  Processed {now_det_str()}",
@@ -652,12 +865,15 @@ def _build(raw_path, used_url, datestr, cycle, source_id,
                            "(20,20,20,235), same as direction arrows; "
                            f"every {label_every}th arrow + extras at "
                            f">= {extra_thresh}s change")
+    meta["direction_style"] = direction_style
     meta["stats"] = {"valid_cells": int(okv.sum()),
                      "max_ft": run_max_ft,
                      "max_period_s": round(float(run_max_s), 2),
                      "mean_direction_deg": round(float(mean_deg), 1),
                      "mean_compass": compass(mean_deg),
                      "arrows_drawn": n_arrows,
+                     "streamlets_drawn": n_lines,
+                     "stream_heads_drawn": n_heads,
                      "period_labels_on_arrows": n_lab,
                      "period_labels_extra": n_extra}
     token = meta["source_version"]
