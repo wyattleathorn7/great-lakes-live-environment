@@ -182,9 +182,33 @@ def compass(deg):
 # the period field changes even with no arrow nearby.
 
 
-def _label_font(size=13):
+def _label_font(size=5):
+    """DejaVu Sans at any size (same face CI uses), halo-style labels.
+
+    _legend_font falls back to Helvetica.ttc on macOS, whose strikes fail
+    below 8 px (PIL division-by-zero) — so prefer explicit DejaVu paths
+    (repo runners ship fonts-dejavu-core; matplotlib bundles it locally).
+    """
+    import glob as _glob
+    from PIL import ImageFont as _IF
+    cands = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    ]
+    try:
+        import matplotlib as _mpl
+        cands.append(os.path.join(os.path.dirname(_mpl.__file__),
+                                  "mpl-data", "fonts", "ttf", "DejaVuSans.ttf"))
+    except Exception:
+        pass
+    cands += _glob.glob("/System/Library/Fonts/Supplemental/DejaVuSans*.ttf")
+    cands += _glob.glob(os.path.expanduser("~/Library/Fonts/DejaVuSans.ttf"))
+    for path in cands:
+        try:
+            return _IF.truetype(path, size)
+        except (OSError, IOError):
+            continue
     from geospatial_utils import _legend_font
-    return _legend_font(size)
+    return _legend_font(max(size, 8))
 
 
 def _draw_halo_text(d, x, y, text, font):
@@ -450,8 +474,8 @@ def main():
         ap.add_argument("--extra-step", type=int, default=32)
         ap.add_argument("--extra-thresh", type=float, default=0.5,
                         help="period-change threshold (s) for extra labels")
-        ap.add_argument("--font-size", type=int, default=10,
-                        help="period label font size px (default 10)")
+        ap.add_argument("--font-size", type=int, default=5,
+                        help="period label font size px (default 5)")
         args = ap.parse_args()
         return run(local_file=args.local_file, label_every=args.label_every,
                    extra_step=args.extra_step, extra_thresh=args.extra_thresh,
@@ -464,7 +488,7 @@ def main():
 
 
 def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
-        font_size=10):
+        font_size=5):
     now = datetime.now(timezone.utc)
     raw_path = os.path.join(RAW_DIR, "glwu_combined_current.grib2")
     used_url, datestr, cycle, stamp = None, None, None, None
@@ -516,7 +540,7 @@ def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
 
 
 def _build(raw_path, used_url, datestr, cycle, source_id,
-           label_every, extra_step, extra_thresh, font_size=10):
+           label_every, extra_step, extra_thresh, font_size=5):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     bounds = load_bounds()
