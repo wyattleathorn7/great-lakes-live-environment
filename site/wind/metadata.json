@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 (GLWUv2.1, WAVEWATCH III) \u2014 UGRD/VGRD surface analysis over water + NOAA/NCEP HRRR 3 km 10 m wind analysis as land/background fill (full basin rectangle, same footprint as Live Leaf Color)",
   "variable": "UGRD/VGRD surface wind components, analysis step; GLWU over water with HRRR 10 m fill over land/gaps; speed = sqrt(U^2+V^2), visualized as Beaufort Force 0-12",
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261009/glwu.grlc_2p5km.t01z.grib2",
-  "data_time_utc": "GLWU 2026-10-08 09:00 PM EDT (water); HRRR 2026-10-08 08:00 PM EDT (land fill)",
+  "data_time_utc": "GLWU 2026-10-08 09:00 PM EDT (water); HRRR 2026-10-08 09:00 PM EDT (land fill)",
   "source_last_modified_utc": "Fri, 09 Oct 2026 01:28:08 GMT",
-  "processing_time_utc": "2026-10-08 09:30 PM EDT",
+  "processing_time_utc": "2026-10-08 10:00 PM EDT",
   "units": "kt + Beaufort Force 0-12 (display); source m/s",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361) over water + ~3 km NCEP HRRR CONUS grid as land fill",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,9 +30,9 @@
     464
   ],
   "legend_scale_html": "WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only):<br/><b>F0</b> \u2014 Calm (0\u20130.99 kt)<br/><b>F1</b> \u2014 Light air (1\u20133 kt)<br/><b>F2</b> \u2014 Light breeze (4\u20136 kt)<br/><b>F3</b> \u2014 Gentle breeze (7\u201310 kt)<br/><b>F4</b> \u2014 Moderate breeze (11\u201316 kt)<br/><b>F5</b> \u2014 Fresh breeze (17\u201321 kt)<br/><b>F6</b> \u2014 Strong breeze (22\u201327 kt)<br/><b>F7</b> \u2014 High wind (28\u201333 kt)<br/><b>F8</b> \u2014 Gale (34\u201340 kt)<br/><b>F9</b> \u2014 Strong gale (41\u201347 kt)<br/><b>F10</b> \u2014 Storm (48\u201355 kt)<br/><b>F11</b> \u2014 Violent storm (56\u201363 kt)<br/><b>F12</b> \u2014 Hurricane-force (\u226564 kt)<br/>Maximum this run: <b>42 kt</b> (Beaufort 6). Full basin coverage: GLWU over water, HRRR 10 m fill over land. Arrows point where the air moves.",
-  "model_cycle": "20261009 t01z + hrrr.20261009 t00z",
-  "source_id": "glwu-20261009-0100Z+hrrr-hrrr.20261009-t00z-fullbasin-g5",
-  "source_version": "glwu-20261009-0100Z-hrrr-hrrr.20261009-t00z-fullbasin-g5",
+  "model_cycle": "20261009 t01z + hrrr.20261009 t01z",
+  "source_id": "glwu-20261009-0100Z+hrrr-hrrr.20261009-t01z-fullbasin-g5",
+  "source_version": "glwu-20261009-0100Z-hrrr-hrrr.20261009-t01z-fullbasin-g5",
   "beaufort_table": [
     {
       "force": 0,
@@ -119,26 +119,26 @@
     "glwu_canvas_cells": 366108,
     "hrrr_fill_cells": 1748278,
     "inland_lake_cells": 4428,
-    "hrrr_cycle": "hrrr.20261009 t00z",
+    "hrrr_cycle": "hrrr.20261009 t01z",
     "max_kt": 28.0,
     "max_beaufort": 6,
     "max_beaufort_combined": 6,
-    "arrows_drawn": 950
+    "arrows_drawn": 958
   },
   "buoy_qc": {
     "45001": {
-      "obs_kt": 7.8,
+      "obs_kt": 5.8,
       "grid_kt_approx": 8.5,
-      "absdiff_kt": 0.7,
+      "absdiff_kt": 2.7,
       "verdict": "OK",
-      "obs_time": "2026-10-09 00:50 UTC"
+      "obs_time": "2026-10-09 01:30 UTC"
     },
     "45002": {
-      "obs_kt": 7.8,
+      "obs_kt": 5.8,
       "grid_kt_approx": 13.5,
-      "absdiff_kt": 5.7,
+      "absdiff_kt": 7.7,
       "verdict": "CHECK",
-      "obs_time": "2026-10-09 01:00 UTC"
+      "obs_time": "2026-10-09 01:30 UTC"
     },
     "45132": {
       "obs_kt": 9.7,
@@ -152,14 +152,14 @@
       "grid_kt_approx": 19.0,
       "absdiff_kt": 1.5,
       "verdict": "OK",
-      "obs_time": "2026-10-09 00:50 UTC"
+      "obs_time": "2026-10-09 01:30 UTC"
     },
     "45005": {
       "obs_kt": 7.8,
       "grid_kt_approx": 13.5,
       "absdiff_kt": 5.7,
       "verdict": "CHECK",
-      "obs_time": "2026-10-09 01:00 UTC"
+      "obs_time": "2026-10-09 01:30 UTC"
     }
   }
 }
