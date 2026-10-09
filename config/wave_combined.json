@@ -15,9 +15,9 @@
   "color_min": 0.0,
   "color_max": 30.0,
   "color_units": "ft",
-  "refresh_interval_seconds": 3600,
+  "refresh_interval_seconds": 900,
   "buoys": ["45001", "45002", "45132", "45012", "45005"],
-  "kml_file": "Great_Lakes_Live_Waves_Combined.kml",
+  "kml_file": "Great_Lakes_Live_Wave_Height_Period_Direction.kml",
   "overlay_name": "🌊 LIVE WAVE HEIGHT/PERIOD/DIRECTION",
   "note": "Turn on/off independently of all other layers. Does not modify wave_height or wave_direction."
 }

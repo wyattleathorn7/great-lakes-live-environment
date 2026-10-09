@@ -6,9 +6,9 @@
     <NetworkLink>
       <name>🌊 LIVE WAVE HEIGHT/PERIOD/DIRECTION — auto-refresh</name>
       <Link>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/Great_Lakes_Live_Waves_Combined.kml</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/Great_Lakes_Live_Wave_Height_Period_Direction.kml</href>
         <refreshMode>onInterval</refreshMode>
-        <refreshInterval>3600</refreshInterval>
+        <refreshInterval>900</refreshInterval>
       </Link>
     </NetworkLink>
   </Document>

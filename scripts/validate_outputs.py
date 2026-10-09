@@ -63,7 +63,7 @@ PRODUCTS = {
                          "max_opaque_min": 10_000},
     "wave_direction": {"kml": "Great_Lakes_Live_Wave_Direction.kml",
                        "max_opaque_min": 10_000},
-    "wave_combined": {"kml": "Great_Lakes_Live_Waves_Combined.kml",
+    "wave_combined": {"kml": "Great_Lakes_Live_Wave_Height_Period_Direction.kml",
                       "max_opaque_min": 10_000},
     "surface_currents": {"kml": "Great_Lakes_Live_Surface_Currents.kml",
                          "max_opaque_min": 10_000},
