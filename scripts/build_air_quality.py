@@ -9,8 +9,8 @@ legend and metadata while the displayed title stays "LIVE AIR QUALITY".
 CAMS output is MODEL analysis output, labeled as such everywhere; it is
 never presented as station observations and never confused with aerosol
  optical depth. FIXED US EPA Air Quality Index 0-500 continuous
- spectrum (PM2.5 -> AQI via EPA breakpoints; muted professional palette)
- -> FULL BASIN RECTANGLE (lon -93..-73.5, lat 40.5..49.5, the
+  spectrum (PM2.5 -> AQI via EPA breakpoints; bright Apple-Weather-style
+  slider palette) -> FULL BASIN RECTANGLE (lon -93..-73.5, lat 40.5..49.5, the
 exact LIVE LEAF COLOR footprint) -> key + metadata -> Folder live KML +
 stable entry KML. Hourly check; rebuild only when CAMS publishes a newer
 valid hour. Exit 0/2/1 per contract.
@@ -39,18 +39,18 @@ API = "https://air-quality-api.open-meteo.com/v1/air-quality"
 # professional standard for US public air-quality reporting. The source
 # variable stays CAMS PM2.5 (ug/m3); it is converted to AQI via the EPA
 # PM2.5 breakpoint table so the SAME index the public sees on AirNow is
-# what the gradient paints. Steady gradual slider across the fixed 0-500
-# scale in the user's eight-color palette (EPA boundaries untouched; the
-# extra Dark Purple anchor sits mid-Hazardous so all eight colors run).
-AQI_STOPS = [  # (AQI, rgb) user palette, in order
-    (0.0, (127, 191, 106)),    # Light Green #7FBF6A (Good, cleanest)
-    (50.0, (79, 166, 106)),    # Green #4FA66A (Good)
-    (100.0, (216, 201, 90)),   # Yellow #D8C95A (Moderate)
-    (150.0, (217, 138, 74)),   # Orange #D98A4A (USG)
-    (200.0, (201, 86, 79)),    # Red #C9564F (Unhealthy)
-    (300.0, (149, 99, 154)),   # Purple #95639A (Very Unhealthy)
-    (400.0, (96, 64, 107)),    # Dark Purple #60406B (Hazardous)
-    (500.0, (112, 45, 58)),    # Mahogany/Burgundy #702D3A (Hazardous+)
+# what the gradient paints. Bright Apple-style slider across the fixed
+# 0-500 scale (EPA boundaries untouched; the extra Deep Purple anchor sits
+# mid-Hazardous so all eight colors run).
+AQI_STOPS = [  # (AQI, rgb) Apple-bright slider palette, in order
+    (0.0, (120, 220, 85)),    # Bright yellow-green #78DC55 (Good, cleanest)
+    (50.0, (52, 199, 89)),    # Vivid green #34C759 (Good)
+    (100.0, (255, 205, 15)),  # Vivid yellow #FFCD0F (Moderate)
+    (150.0, (255, 149, 0)),   # Vivid orange #FF9500 (USG)
+    (200.0, (255, 69, 58)),   # Vivid red #FF453A (Unhealthy)
+    (300.0, (178, 85, 225)),  # Bright purple #B255E1 (Very Unhealthy)
+    (400.0, (110, 45, 150)),  # Deep purple #6E2D96 (Hazardous)
+    (500.0, (146, 20, 55)),   # Crimson/burgundy #921437 (Hazardous+)
 ]
 STOPS = AQI_STOPS
 LABELS = [(25.0, "25 Good"), (75.0, "75 Moderate"),
@@ -60,13 +60,14 @@ KEY_TICKS = [(0.0, "0", "Good"), (50.0, "50", "Good"),
              (100.0, "100", "Moderate"), (150.0, "150", "USG"),
              (200.0, "200", "Unhealthy"), (300.0, "300", "Very unhealthy"),
              (500.0, "500", "Hazardous")]
-SCALE_HTML = ("US EPA Air Quality Index (AQI, PM2.5-based, steady "
-              "gradual 0-500 slider): <b>0-50</b> Good, light green "
-              "deepening to green &rarr; <b>51-100</b> Moderate yellow "
-              "&rarr; <b>101-150</b> Unhealthy for Sensitive Groups "
-              "orange &rarr; <b>151-200</b> Unhealthy red &rarr; "
-              "<b>201-300</b> Very Unhealthy purple &rarr; <b>301-500</b> "
-              "Hazardous dark purple to mahogany/burgundy. Same AQI "
+SCALE_HTML = ("US EPA Air Quality Index (AQI, PM2.5-based, bright "
+              "Apple-style 0-500 slider): <b>0-50</b> Good, bright "
+              "yellow-green deepening to vivid green &rarr; <b>51-100</b> "
+              "Moderate vivid yellow &rarr; <b>101-150</b> Unhealthy for "
+              "Sensitive Groups vivid orange &rarr; <b>151-200</b> Unhealthy "
+              "vivid red &rarr; <b>201-300</b> Very Unhealthy bright "
+              "purple &rarr; <b>301-500</b> Hazardous deep purple to "
+              "crimson/burgundy. Same AQI "
               "always shows the same color. CAMS PM2.5 model analysis "
               "converted via EPA PM2.5 breakpoints — not station "
               "observations.")

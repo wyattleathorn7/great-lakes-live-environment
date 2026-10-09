@@ -749,12 +749,12 @@ def main():
           _aq_vals)
     check("aqi-scale-ascending",
           all(b > a for a, b in zip(_aq_vals, _aq_vals[1:])))
-    # user eight-color slider palette, in order, no neon
+    # bright Apple-Weather-style slider palette, in order
     check("aqi-user-palette",
           bool([c for _, c in _AQ_STOPS]
-                == [(127, 191, 106), (79, 166, 106), (216, 201, 90),
-                    (217, 138, 74), (201, 86, 79), (149, 99, 154),
-                    (96, 64, 107), (112, 45, 58)]))
+                == [(120, 220, 85), (52, 199, 89), (255, 205, 15),
+                    (255, 149, 0), (255, 69, 58), (178, 85, 225),
+                    (110, 45, 150), (146, 20, 55)]))
     # steady gradual slider: every category boundary owns a distinct
     # color (no flat segment can hide basin variation)
     from gradient_scale import color_for as _cf_aq
