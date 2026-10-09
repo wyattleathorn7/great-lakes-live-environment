@@ -342,25 +342,28 @@ def wave_travel_uv(filed_deg, period_s):
 
 
 def _label_font(size=5):
-    """DejaVu Sans at any size (same face CI uses), halo-style labels.
+    """DejaVu Sans BOLD at any size (same family CI uses), halo-style labels.
 
-    _legend_font falls back to Helvetica.ttc on macOS, whose strikes fail
-    below 8 px (PIL division-by-zero) — so prefer explicit DejaVu paths
-    (repo runners ship fonts-dejavu-core; matplotlib bundles it locally).
+    Bold holds a crisp core at tiny sizes where regular collapses into a
+    blotch. _legend_font falls back to Helvetica.ttc on macOS, whose
+    strikes fail below 8 px (PIL division-by-zero) — so prefer explicit
+    DejaVu paths (repo runners ship fonts-dejavu-core; matplotlib bundles
+    it locally).
     """
     import glob as _glob
     from PIL import ImageFont as _IF
     cands = [
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     ]
     try:
         import matplotlib as _mpl
         cands.append(os.path.join(os.path.dirname(_mpl.__file__),
-                                  "mpl-data", "fonts", "ttf", "DejaVuSans.ttf"))
+                                  "mpl-data", "fonts", "ttf",
+                                  "DejaVuSans-Bold.ttf"))
     except Exception:
         pass
-    cands += _glob.glob("/System/Library/Fonts/Supplemental/DejaVuSans*.ttf")
-    cands += _glob.glob(os.path.expanduser("~/Library/Fonts/DejaVuSans.ttf"))
+    cands += _glob.glob("/System/Library/Fonts/Supplemental/DejaVuSans-Bold*.ttf")
+    cands += _glob.glob(os.path.expanduser("~/Library/Fonts/DejaVuSans-Bold.ttf"))
     for path in cands:
         try:
             return _IF.truetype(path, size)
@@ -371,13 +374,13 @@ def _label_font(size=5):
 
 
 def _draw_halo_text(d, x, y, text, font):
-    """Arrow-style glyph: dark halo passes, then white core — like paint_arrows."""
-    halo = (20, 20, 20, 235)
-    core = (255, 255, 255, 245)
-    for ox, oy in ((-1, 0), (1, 0), (0, -1), (0, 1),
-                   (-1, -1), (1, -1), (-1, 1), (1, 1)):
-        d.text((x + ox, y + oy), text, font=font, fill=halo)
-    d.text((x, y), text, font=font, fill=core)
+    """Arrow-style glyph: proper 1 px outline + solid white core.
+
+    A real stroke (not 8 offset copies) keeps tiny bold glyphs legible
+    instead of flooding them into a blotch.
+    """
+    d.text((x, y), text, font=font, fill=(255, 255, 255, 255),
+           stroke_width=1, stroke_fill=(20, 20, 20, 235))
 
 
 def paint_period_labels(rgba, period_field, arrow_positions,
@@ -862,8 +865,11 @@ def _build(raw_path, used_url, datestr, cycle, source_id,
     meta["source_id"] = source_id
     # Render settings ride the version token: same-cycle restyles MUST
     # change the ?v= URL or every cache keeps serving the old pixels.
+    # TEXT_REV bumps on any glyph/style change (font, halo, density).
+    TEXT_REV = 2
     meta["source_version"] = source_token(
-        f"{source_id}-r{RENDER_VERSION}-{direction_style}-f{font_size}")
+        f"{source_id}-r{RENDER_VERSION}-{direction_style}-f{font_size}"
+        f"-tx{TEXT_REV}")
     meta["label_style"] = ("white fill (255,255,255,245) + dark halo "
                            "(20,20,20,235), same as direction arrows; "
                            f"every {label_every}th arrow + extras at "
