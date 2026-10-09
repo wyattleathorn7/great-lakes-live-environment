@@ -6,9 +6,9 @@
   "product_name": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
   "variable": "lake surface water temperature (satellite-derived AVHRR/VIIRS composite)",
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
-  "data_time_utc": "2026-10-08 02:51 AM EDT",
-  "source_last_modified_utc": "2026-10-08 02:51 AM EDT",
-  "processing_time_utc": "2026-10-08 02:00 PM EDT",
+  "data_time_utc": "2026-10-09 02:51 AM EDT",
+  "source_last_modified_utc": "2026-10-09 02:51 AM EDT",
+  "processing_time_utc": "2026-10-09 09:12 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,13 +25,13 @@
   "missing_data_treatment": "land code 255.0 and -9999/no-data rendered fully transparent; never interpolated.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "source_id": "glsea-Thu, 08 Oct 2026 06:51:17 GMT",
-  "source_version": "glsea-Thu-08-Oct-2026-06-51-17-GMT",
+  "source_id": "glsea-Fri, 09 Oct 2026 06:51:23 GMT",
+  "source_version": "glsea-Fri-09-Oct-2026-06-51-23-GMT",
   "stats": {
     "valid_cells": 148682,
-    "lakewide_mean_F": 59.69,
-    "min_F": 47.88,
-    "max_F": 67.6
+    "lakewide_mean_F": 59.21,
+    "min_F": 48.6,
+    "max_F": 67.46
   },
   "legend_size": [
     640,
@@ -41,44 +41,48 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 51.98,
-      "grid_F": 53.312,
-      "absdiff_F": 1.33,
+      "obs_F": 51.44,
+      "grid_F": 52.843999999999994,
+      "absdiff_F": 1.4,
       "verdict": "OK",
-      "obs_time": "2026-10-08 17:30 UTC"
+      "obs_time": "2026-10-09 12:40 UTC"
     },
     "45002": {
-      "obs_F": 59.72,
-      "grid_F": 62.1815,
-      "absdiff_F": 2.46,
+      "obs_F": 60.26,
+      "grid_F": 61.4615,
+      "absdiff_F": 1.2,
       "verdict": "OK",
-      "obs_time": "2026-10-08 17:30 UTC"
+      "obs_time": "2026-10-09 12:40 UTC"
     },
     "45132": {
-      "obs_F": 64.58,
-      "grid_F": 65.4665,
-      "absdiff_F": 0.89,
+      "obs_F": 63.86,
+      "grid_F": 65.46199999999999,
+      "absdiff_F": 1.6,
       "verdict": "OK",
-      "obs_time": "2026-10-08 17:00 UTC"
+      "obs_time": "2026-10-09 12:00 UTC"
     },
     "45012": {
-      "obs_F": 60.44,
-      "grid_F": 63.216499999999996,
-      "absdiff_F": 2.78,
-      "verdict": "OK",
-      "obs_time": "2026-10-08 17:30 UTC"
+      "time_utc": "2026-10-09 12:50 UTC",
+      "WDIR_deg": 300.0,
+      "WSPD_ms": 8.0,
+      "WVHT_m": 1.3,
+      "DPD_s": 5.0,
+      "APD_s": 4.2,
+      "WTMP_C": null,
+      "ATMP_C": 12.8,
+      "note": "no WTMP obs"
     },
     "45005": {
-      "time_utc": "2026-10-08 17:30 UTC",
-      "WDIR_deg": 260.0,
-      "WSPD_ms": 6.0,
+      "time_utc": "2026-10-09 12:50 UTC",
+      "WDIR_deg": 220.0,
+      "WSPD_ms": 2.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
       "WTMP_C": null,
-      "ATMP_C": 17.8,
+      "ATMP_C": 16.6,
       "note": "no WTMP obs"
     }
   },
-  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>51\u00b0F</b> (deep blue) \u2192 <b>59\u00b0F</b> \u2192 warm <b>67\u00b0F</b> (red). Lakewide mean this run: <b>59.7\u00b0F</b>."
+  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>51\u00b0F</b> (deep blue) \u2192 <b>59\u00b0F</b> \u2192 warm <b>67\u00b0F</b> (red). Lakewide mean this run: <b>59.2\u00b0F</b>."
 }
