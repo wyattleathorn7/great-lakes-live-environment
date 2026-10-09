@@ -341,7 +341,7 @@ def wave_travel_uv(filed_deg, period_s):
 # the period field changes even with no arrow nearby.
 
 
-def _label_font(size=5):
+def _label_font(size=6):
     """DejaVu Sans BOLD at any size (same family CI uses), halo-style labels.
 
     Bold holds a crisp core at tiny sizes where regular collapses into a
@@ -636,8 +636,8 @@ def main():
         ap.add_argument("--extra-step", type=int, default=32)
         ap.add_argument("--extra-thresh", type=float, default=0.5,
                         help="period-change threshold (s) for extra labels")
-        ap.add_argument("--font-size", type=int, default=5,
-                        help="period label font size px (default 5)")
+        ap.add_argument("--font-size", type=int, default=6,
+                        help="period label font size px (default 6)")
         ap.add_argument("--direction-style", default="stream",
                         choices=["arrows", "stream"],
                         help="direction glyphs: classic arrows or "
@@ -659,7 +659,7 @@ def main():
 
 
 def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
-        font_size=5, direction_style="stream", preview_dir=None):
+        font_size=6, direction_style="stream", preview_dir=None):
     now = datetime.now(timezone.utc)
     raw_path = os.path.join(RAW_DIR, "glwu_combined_current.grib2")
     used_url, datestr, cycle, stamp = None, None, None, None
@@ -712,7 +712,7 @@ def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
 
 
 def _build(raw_path, used_url, datestr, cycle, source_id,
-           label_every, extra_step, extra_thresh, font_size=5,
+           label_every, extra_step, extra_thresh, font_size=6,
            direction_style="stream", preview_dir=None):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
@@ -866,7 +866,7 @@ def _build(raw_path, used_url, datestr, cycle, source_id,
     # Render settings ride the version token: same-cycle restyles MUST
     # change the ?v= URL or every cache keeps serving the old pixels.
     # TEXT_REV bumps on any glyph/style change (font, halo, density).
-    TEXT_REV = 2
+    TEXT_REV = 3
     meta["source_version"] = source_token(
         f"{source_id}-r{RENDER_VERSION}-{direction_style}-f{font_size}"
         f"-tx{TEXT_REV}")
