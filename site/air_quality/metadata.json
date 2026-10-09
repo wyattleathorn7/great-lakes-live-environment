@@ -8,7 +8,7 @@
   "source_url": "https://open-meteo.com/en/docs/air-quality-api",
   "data_time_utc": "2026-10-09 12:00 PM EDT",
   "source_last_modified_utc": "n/a (API)",
-  "processing_time_utc": "2026-10-09 12:04 PM EDT",
+  "processing_time_utc": "2026-10-09 12:34 PM EDT",
   "units": "AQI index 0-500 (display; source ug/m3 PM2.5 as filed)",
   "spatial_resolution_source": "CAMS PM2.5 analysis sampled on a 48x30 basin grid, bilinearly resampled to the common canvas, converted PM2.5->AQI",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
