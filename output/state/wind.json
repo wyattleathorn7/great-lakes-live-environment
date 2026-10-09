@@ -1,6 +1,6 @@
 {
-  "model_cycle": "20261009 t01z + hrrr.20261009 t01z",
-  "source_id": "glwu-20261009-0100Z+hrrr-hrrr.20261009-t01z-fullbasin-g5",
+  "model_cycle": "20261009 t01z + hrrr.20261009 t02z",
+  "source_id": "glwu-20261009-0100Z+hrrr-hrrr.20261009-t02z-fullbasin-g5",
   "render_version": 12,
-  "processing_time_utc": "2026-10-08 10:00 PM EDT"
+  "processing_time_utc": "2026-10-08 11:00 PM EDT"
 }

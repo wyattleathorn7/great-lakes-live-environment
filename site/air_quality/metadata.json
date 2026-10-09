@@ -6,9 +6,9 @@
   "product_name": "ECMWF CAMS European air-quality analysis via Open-Meteo Air Quality API (PM2.5, no key, hourly)",
   "variable": "PM2.5 near-surface particulate concentration (CAMS model analysis; clearly identified as modeled, not observed)",
   "source_url": "https://open-meteo.com/en/docs/air-quality-api",
-  "data_time_utc": "2026-10-08 10:00 PM EDT",
+  "data_time_utc": "2026-10-08 11:00 PM EDT",
   "source_last_modified_utc": "n/a (API)",
-  "processing_time_utc": "2026-10-08 10:34 PM EDT",
+  "processing_time_utc": "2026-10-08 11:03 PM EDT",
   "units": "AQI index 0-500 (display; source ug/m3 PM2.5 as filed)",
   "spatial_resolution_source": "CAMS PM2.5 analysis sampled on a 48x30 basin grid, bilinearly resampled to the common canvas, converted PM2.5->AQI",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,18 +30,18 @@
     252
   ],
   "legend_scale_html": "US EPA Air Quality Index (AQI, PM2.5-based, steady gradual 0-500 slider): <b>0-50</b> Good, light green deepening to green &rarr; <b>51-100</b> Moderate yellow &rarr; <b>101-150</b> Unhealthy for Sensitive Groups orange &rarr; <b>151-200</b> Unhealthy red &rarr; <b>201-300</b> Very Unhealthy purple &rarr; <b>301-500</b> Hazardous dark purple to mahogany/burgundy. Same AQI always shows the same color. CAMS PM2.5 model analysis converted via EPA PM2.5 breakpoints \u2014 not station observations.",
-  "model_cycle": "CAMS 2026-10-09T02:00 UTC",
-  "source_id": "cams-pm25-2026-10-09T02:00-g7",
-  "source_version": "cams-pm25-2026-10-09T02-00-g7",
+  "model_cycle": "CAMS 2026-10-09T03:00 UTC",
+  "source_id": "cams-pm25-2026-10-09T03:00-g7",
+  "source_version": "cams-pm25-2026-10-09T03-00-g7",
   "stats": {
     "valid_cells": 2115000,
     "current_min": 0.4166666666666666,
-    "current_max": 82.53472460658084,
-    "cams_hour": "2026-10-09T02:00",
+    "current_max": 92.60636266094417,
+    "cams_hour": "2026-10-09T03:00",
     "data_nature": "modeled analysis, not observed",
     "index": "US EPA AQI (PM2.5-based, 0-500)",
     "aqi_min": 0.4166666666666666,
-    "aqi_max": 82.53472460658084
+    "aqi_max": 92.60636266094417
   },
-  "folder_html": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_quality/legend.png?v=cams-pm25-2026-10-09T02-00-g7\" width=\"600\" alt=\"legend\"><br>US EPA Air Quality Index (AQI, PM2.5-based, steady gradual 0-500 slider): <b>0-50</b> Good, light green deepening to green &rarr; <b>51-100</b> Moderate yellow &rarr; <b>101-150</b> Unhealthy for Sensitive Groups orange &rarr; <b>151-200</b> Unhealthy red &rarr; <b>201-300</b> Very Unhealthy purple &rarr; <b>301-500</b> Hazardous dark purple to mahogany/burgundy. Same AQI always shows the same color. CAMS PM2.5 model analysis converted via EPA PM2.5 breakpoints \u2014 not station observations.</p><p>Near-surface fine-particulate (PM2.5) conditions from the CAMS atmospheric-composition analysis: a continuous field flagging wildfire-smoke intrusions, urban haze, and regional pollutant transport over the Great Lakes. Low values mark clean air; orange, red, and purple mark progressively degraded, unhealthy air. The underlying variable is CAMS PM2.5, converted to the US EPA Air Quality Index via EPA PM2.5 breakpoints and identified as modeled output (CAMS analysis), not station observations.</p><p>Air-quality science (atmospheric chemistry and public-health exposure assessment) tracks PM2.5, particles under 2.5 micrometers that penetrate deep into lungs. The US EPA Air Quality Index converts PM2.5 concentrations to health-based breakpoints (good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, hazardous) on a fixed 0-500 scale. This layer shows the AQI computed from modeled CAMS concentration, not aerosol optical depth, and is labeled as model output rather than station observations.</p><p><b>Units:</b> AQI index 0-500 (display; source ug/m3 PM2.5 as filed)<br><b>Source:</b> ECMWF CAMS European air-quality analysis via Open-Meteo Air Quality API (PM2.5, no key, hourly)<br><b>Update:</b> Checked hourly; republishes only when CAMS publishes a newer valid hour.<br><b>Provenance:</b> <a href=\"https://open-meteo.com/en/docs/air-quality-api\">https://open-meteo.com/en/docs/air-quality-api</a></p>"
+  "folder_html": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_quality/legend.png?v=cams-pm25-2026-10-09T03-00-g7\" width=\"600\" alt=\"legend\"><br>US EPA Air Quality Index (AQI, PM2.5-based, steady gradual 0-500 slider): <b>0-50</b> Good, light green deepening to green &rarr; <b>51-100</b> Moderate yellow &rarr; <b>101-150</b> Unhealthy for Sensitive Groups orange &rarr; <b>151-200</b> Unhealthy red &rarr; <b>201-300</b> Very Unhealthy purple &rarr; <b>301-500</b> Hazardous dark purple to mahogany/burgundy. Same AQI always shows the same color. CAMS PM2.5 model analysis converted via EPA PM2.5 breakpoints \u2014 not station observations.</p><p>Near-surface fine-particulate (PM2.5) conditions from the CAMS atmospheric-composition analysis: a continuous field flagging wildfire-smoke intrusions, urban haze, and regional pollutant transport over the Great Lakes. Low values mark clean air; orange, red, and purple mark progressively degraded, unhealthy air. The underlying variable is CAMS PM2.5, converted to the US EPA Air Quality Index via EPA PM2.5 breakpoints and identified as modeled output (CAMS analysis), not station observations.</p><p>Air-quality science (atmospheric chemistry and public-health exposure assessment) tracks PM2.5, particles under 2.5 micrometers that penetrate deep into lungs. The US EPA Air Quality Index converts PM2.5 concentrations to health-based breakpoints (good, moderate, unhealthy for sensitive groups, unhealthy, very unhealthy, hazardous) on a fixed 0-500 scale. This layer shows the AQI computed from modeled CAMS concentration, not aerosol optical depth, and is labeled as model output rather than station observations.</p><p><b>Units:</b> AQI index 0-500 (display; source ug/m3 PM2.5 as filed)<br><b>Source:</b> ECMWF CAMS European air-quality analysis via Open-Meteo Air Quality API (PM2.5, no key, hourly)<br><b>Update:</b> Checked hourly; republishes only when CAMS publishes a newer valid hour.<br><b>Provenance:</b> <a href=\"https://open-meteo.com/en/docs/air-quality-api\">https://open-meteo.com/en/docs/air-quality-api</a></p>"
 }
