@@ -234,6 +234,13 @@ def paint_period_labels(rgba, period_field, arrow_positions,
             return False
         if _collides(x, y, x + tw, y + th):
             return False
+        # whole glyph must sit on water: center + top corners opaque,
+        # else shoreline alpha-clip would slice the text (e.g. ".2s").
+        pts = [(cx, cy), (x + 2, y + 2), (x + tw - 2, y + 2)]
+        for px, py in pts:
+            ix, iy = int(np.clip(round(px), 0, W - 1)), int(np.clip(round(py), 0, H - 1))
+            if rgba[iy, ix, 3] == 0:
+                return False
         if rgba[int(np.clip(cy, 0, H - 1)), int(np.clip(cx, 0, W - 1)), 3] == 0:
             return False
         if not np.isfinite(period_field[int(np.clip(cy, 0, H - 1)),
@@ -438,14 +445,17 @@ def main():
         ap.add_argument("--local-file", default=None,
                         help="use a cached GRIB2 instead of downloading "
                              "(e.g. output/raw/glwu_current.grib2)")
-        ap.add_argument("--label-every", type=int, default=3,
-                        help="label every Nth arrow (default 3)")
-        ap.add_argument("--extra-step", type=int, default=48)
-        ap.add_argument("--extra-thresh", type=float, default=0.6,
+        ap.add_argument("--label-every", type=int, default=2,
+                        help="label every Nth arrow (default 2)")
+        ap.add_argument("--extra-step", type=int, default=32)
+        ap.add_argument("--extra-thresh", type=float, default=0.5,
                         help="period-change threshold (s) for extra labels")
+        ap.add_argument("--font-size", type=int, default=10,
+                        help="period label font size px (default 10)")
         args = ap.parse_args()
         return run(local_file=args.local_file, label_every=args.label_every,
-                   extra_step=args.extra_step, extra_thresh=args.extra_thresh)
+                   extra_step=args.extra_step, extra_thresh=args.extra_thresh,
+                   font_size=args.font_size)
     except SystemExit as e:
         raise
     except Exception:
@@ -453,7 +463,8 @@ def main():
         return 1
 
 
-def run(local_file=None, label_every=3, extra_step=48, extra_thresh=0.6):
+def run(local_file=None, label_every=2, extra_step=32, extra_thresh=0.5,
+        font_size=10):
     now = datetime.now(timezone.utc)
     raw_path = os.path.join(RAW_DIR, "glwu_combined_current.grib2")
     used_url, datestr, cycle, stamp = None, None, None, None
@@ -463,7 +474,8 @@ def run(local_file=None, label_every=3, extra_step=48, extra_thresh=0.6):
             print(f"[{PRODUCT}] local file missing: {local_file}")
             return 2
         import shutil
-        shutil.copyfile(local_file, raw_path)
+        if os.path.abspath(local_file) != os.path.abspath(raw_path):
+            shutil.copyfile(local_file, raw_path)
         used_url = f"local:{local_file}"
         datestr, cycle, stamp = "local", "local", "0000000000"
         source_id = source_token(f"local-{os.path.getsize(raw_path)}")
@@ -495,7 +507,7 @@ def run(local_file=None, label_every=3, extra_step=48, extra_thresh=0.6):
 
     try:
         return _build(raw_path, used_url, datestr, cycle, source_id,
-                      label_every, extra_step, extra_thresh)
+                      label_every, extra_step, extra_thresh, font_size)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -504,7 +516,7 @@ def run(local_file=None, label_every=3, extra_step=48, extra_thresh=0.6):
 
 
 def _build(raw_path, used_url, datestr, cycle, source_id,
-           label_every, extra_step, extra_thresh):
+           label_every, extra_step, extra_thresh, font_size=10):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     bounds = load_bounds()
@@ -565,7 +577,8 @@ def _build(raw_path, used_url, datestr, cycle, source_id,
     # labels: actual period values, same arrow style, above arrows + extras
     rgba, n_lab, n_extra = paint_period_labels(
         rgba, p_water, arrow_pos, label_every=label_every,
-        extra_step=extra_step, extra_thresh_s=extra_thresh)
+        extra_step=extra_step, extra_thresh_s=extra_thresh,
+        font_size=font_size)
 
     # arrows near shore can spill 1-2 px onto land: clip alpha back
     rgba[:, :, 3] = np.round(

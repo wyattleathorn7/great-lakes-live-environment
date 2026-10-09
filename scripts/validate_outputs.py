@@ -63,6 +63,8 @@ PRODUCTS = {
                          "max_opaque_min": 10_000},
     "wave_direction": {"kml": "Great_Lakes_Live_Wave_Direction.kml",
                        "max_opaque_min": 10_000},
+    "wave_combined": {"kml": "Great_Lakes_Live_Waves_Combined.kml",
+                      "max_opaque_min": 10_000},
     "surface_currents": {"kml": "Great_Lakes_Live_Surface_Currents.kml",
                          "max_opaque_min": 10_000},
     "aurora": {"kml": "Great_Lakes_Live_Ovation_Aurora_Forecast.kml",
@@ -256,7 +258,7 @@ def main():
             lo, hi = meta.get("color_scale_min"), meta.get("color_scale_max")
             if product == "ice_coverage" and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: ice scale must be 0-100, got {lo}-{hi}")
-            if product == "wave_height" and not (0 <= lo < hi <= 30):
+            if product in ("wave_height", "wave_combined") and not (0 <= lo < hi <= 30):
                 failures.append(f"{product}: wave scale out of bounds {lo}-{hi}")
             if product == "water_temperature" and not (20 <= lo < hi <= 95):
                 failures.append(f"{product}: temp scale out of bounds {lo}-{hi}")

@@ -16,7 +16,7 @@ on:
                    "ice_thickness", "ice_type", "wind", "leaf_color",
                    "chlorophyll", "water_clarity", "solar_radiation",
                    "air_temperature", "snow_coverage", "uv_index",
-                   "cloud_cover", "surface_pressure", "wave_direction", "surface_currents", "precipitation", "aurora", "bacteria", "visibility", "humidity", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish"]
+                   "cloud_cover", "surface_pressure", "wave_direction", "wave_combined", "surface_currents", "precipitation", "aurora", "bacteria", "visibility", "humidity", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -550,6 +550,38 @@ jobs:
             output/state/wave_direction.json
           if-no-files-found: warn
 
+  wave_combined:
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'hourly' || inputs.product == 'wave_combined' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update wave combined
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          rc=0; python scripts/build_wave_combined.py || rc=$?
+          if [ $rc -eq 2 ]; then echo "Wave combined source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-wave_combined
+          path: |
+            site/wave_combined
+            site/kml/Great_Lakes_Live_Waves_Combined.kml
+            site/kml/live/Great_Lakes_Live_Waves_Combined.kml
+            kml/Great_Lakes_Live_Waves_Combined.kml
+            output/state/wave_combined.json
+          if-no-files-found: warn
+
   surface_currents:
     if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'hourly' || inputs.product == 'surface_currents' }}
     runs-on: ubuntu-24.04
@@ -973,7 +1005,7 @@ jobs:
           [ "$code" = "204" ] || echo "::warning::NOAA chain dispatch returned $code (expected 204)"
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, surface_currents, precipitation, aurora, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, wave_combined, surface_currents, precipitation, aurora, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()
