@@ -51,10 +51,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
-                              load_bounds, now_det_str, promote_stage,
-                              read_state, save_png, source_token, stage_dir,
-                              write_metadata, write_state)
+from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
+                               base_metadata, load_bounds, now_det_str,
+                               promote_stage, read_state, save_png,
+                               source_token, stage_dir, write_metadata,
+                               write_state)
 from gradient_scale import draw_scale_legend, render_rgba
 
 PRODUCT = "aurora"
@@ -94,6 +95,142 @@ def _get(url, timeout=90):
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return r.read()
+
+
+def _aur_label_font(size=7):
+    """DejaVu Sans Mono Bold (same face as the wave/wind/temp labels)."""
+    import glob as _glob
+    from PIL import ImageFont as _IF
+    cands = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+    ]
+    try:
+        import matplotlib as _mpl
+        cands.append(os.path.join(os.path.dirname(_mpl.__file__),
+                                  "mpl-data", "fonts", "ttf",
+                                  "DejaVuSansMono-Bold.ttf"))
+    except Exception:
+        pass
+    cands += _glob.glob("/System/Library/Fonts/Supplemental/DejaVuSansMono-Bold*.ttf")
+    cands += _glob.glob(os.path.expanduser("~/Library/Fonts/DejaVuSansMono-Bold.ttf"))
+    for path in cands:
+        try:
+            return _IF.truetype(path, size)
+        except (OSError, IOError):
+            continue
+    from geospatial_utils import _legend_font
+    return _legend_font(max(size, 8))
+
+
+def _draw_aur_label(d, x, y, text, font):
+    """White core + 1 px outline stroke (same as the wave/wind/temp labels)."""
+    d.text((x, y), text, font=font, fill=(255, 255, 255, 255),
+           stroke_width=1, stroke_fill=(20, 20, 20, 235))
+
+
+# Intensity bands (lo, hi, max labels): outer ring stays sparse (3-5),
+# the visible center mass carries the bulk (8-15 across the mids), the
+# extreme top stays sparse so the gradient stays readable. Painter is
+# footprint-agnostic (takes any field) so a future full-North-America
+# canvas can reuse it unchanged.
+AURORA_BANDS = [
+    (1.0, 3.0, 4),    # outer oval edge
+    (3.0, 8.0, 4),    # faint body
+    (8.0, 15.0, 9),   # bright center mass
+    (15.0, 22.0, 6),  # severe
+    (22.0, float("inf"), 3),  # extreme top
+]
+
+
+def paint_aurora_labels(rgba, field, font_size=7, extra_sep=45):
+    """OVATION intensity numbers in the wave/wind/temp label style.
+
+    NO preset locations: data-seeded jittered candidates. Within each
+    intensity band, interior (locally uniform) cells go first so labels
+    sit inside color regions instead of on ring edges; per-band caps keep
+    any single measurement from repeating all over the map. Quiet runs
+    (empty basin) simply place zero labels — never a failure.
+    Returns (rgba, n_labels).
+    """
+    import math as _math
+    from PIL import Image, ImageDraw
+    H, W = field.shape
+    img = Image.fromarray(rgba, mode="RGBA")
+    d = ImageDraw.Draw(img)
+    font = _aur_label_font(font_size)
+    ok = np.isfinite(field)
+    if not ok.any():
+        del d
+        return np.array(img), 0
+    _fin = field[ok]
+    seed = int(abs(float(_fin.mean())) * 1000 + float(_fin.std()) * 97) \
+        % (2 ** 32 - 1)
+    rng = np.random.default_rng(seed)
+    grad = np.zeros(field.shape)
+    for dr, dc in ((-12, 0), (12, 0), (0, -12), (0, 12)):
+        shifted = np.roll(field, shift=(-dr, -dc), axis=(0, 1))
+        diff = np.abs(field - shifted)
+        both = ok & np.isfinite(shifted)
+        grad = np.maximum(grad, np.where(both, diff, 0.0))
+    step = 32
+    cand = []
+    for r0 in range(0, H, step):
+        for c0 in range(0, W, step):
+            r = r0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            r, c = int(round(r)), int(round(c))
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if not ok[r, c] or rgba[r, c, 3] == 0:
+                continue
+            cand.append((float(field[r, c]), float(grad[r, c]),
+                         rng.random(), r, c))
+    placed = []
+    n_labels = 0
+
+    def _collides(x0, y0, x1, y1, pad=3):
+        for (a0, b0, a1, b1) in placed:
+            if not (x1 + pad < a0 or x0 - pad > a1 or y1 + pad < b0 or y0 - pad > b1):
+                return True
+        return False
+
+    def _put(cx, cy, text):
+        tw = d.textlength(text, font=font)
+        th = font_size + 4
+        x = cx - tw / 2
+        y = cy - th / 2
+        if not (4 <= x < W - tw - 4 and 4 <= y < H - th - 4):
+            return False
+        if _collides(x, y, x + tw, y + th):
+            return False
+        for (a0, b0, a1, b1) in placed:
+            acx, acy = (a0 + a1) / 2, (b0 + b1) / 2
+            if _math.hypot(acx - cx, acy - cy) < extra_sep:
+                return False
+        pts = [(cx, cy), (x + 2, y + 2), (x + tw - 2, y + 2)]
+        for px, py in pts:
+            ix = int(np.clip(round(px), 0, W - 1))
+            iy = int(np.clip(round(py), 0, H - 1))
+            if rgba[iy, ix, 3] == 0:
+                return False
+        _draw_aur_label(d, x, y, text, font)
+        placed.append((x, y, x + tw, y + th))
+        return True
+
+    for lo, hi, cap in AURORA_BANDS:
+        band = [t for t in cand if lo <= t[0] < hi]
+        # interiors first (low local change), then jitter order
+        band.sort(key=lambda t: (t[1], t[2]))
+        n = 0
+        for v, _g, _j, r, c in band:
+            if n >= cap:
+                break
+            if _put(c, r - 12, f"{v:.0f}"):
+                n += 1
+                n_labels += 1
+
+    del d
+    return np.array(img), n_labels
 
 
 def fetch_ovation():
@@ -193,7 +330,13 @@ def global_viewline(lons, lats, vals, threshold):
 
 def main():
     try:
-        return run()
+        import argparse
+        ap = argparse.ArgumentParser()
+        ap.add_argument("--preview-dir", default=None,
+                        help="preview: write current.png here, skip promote")
+        ap.add_argument("--font-size", type=int, default=7)
+        args = ap.parse_args()
+        return run(preview_dir=args.preview_dir, font_size=args.font_size)
     except SystemExit as e:
         raise
     except Exception:
@@ -201,7 +344,7 @@ def main():
         return 1
 
 
-def run():
+def run(preview_dir=None, font_size=7):
     try:
         obs, fcst, lons, lats, vals, hemi, kpf, kp_now = fetch_ovation()
     except Exception as e:
@@ -218,7 +361,8 @@ def run():
         print(f"[{PRODUCT}] source unchanged ({source_id}); keeping.")
         return _refresh_kml()
     try:
-        return _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id)
+        return _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now,
+                      source_id, preview_dir, font_size)
     except Exception:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED. Keeping previous.")
@@ -236,7 +380,8 @@ def _refresh_kml():
     return 0
 
 
-def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id):
+def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
+           preview_dir=None, font_size=7):
     from geospatial_utils import iso_to_det
     bounds = load_bounds()
     stage = stage_dir(PRODUCT)
@@ -255,6 +400,15 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id):
     print(f"[{PRODUCT}] canvas valid>={floor}: {n_valid} px")
     rgba = render_rgba(paint, AURORA_STOPS, AURORA_ALPHA)
     # Full basin rectangle: no shoreline cut (atmospheric layer).
+    # Intensity numbers in the wave/wind/temp label style (band-capped,
+    # free placement). Quiet runs place zero — never a failure.
+    rgba, n_aur_labels = paint_aurora_labels(rgba, paint, font_size=font_size)
+    print(f"[{PRODUCT}] aurora_labels={n_aur_labels}")
+    if preview_dir is not None:
+        os.makedirs(preview_dir, exist_ok=True)
+        save_png(rgba, os.path.join(preview_dir, "current.png"))
+        print(f"[{PRODUCT}] PREVIEW written.")
+        return 0
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     vl_in = viewline_latitude(field, bounds, CONFIG["viewline_threshold"])
     vl_global = global_viewline(lons[ok], lats[ok], vals[ok], CONFIG["viewline_threshold"])
@@ -283,8 +437,10 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id):
         f"<b>LOWEST 0</b> (transparent, no activity) &rarr; <b>6 bright green</b> "
         f"(auroral oval overhead) &rarr; "
         f"<b>14 orange</b> &rarr; <b>23 magenta</b> (severe) &rarr; "
-        f"<b>HIGHEST+ 30+</b> (violet extreme). "
-        f"Same intensity always shows the same color. Model-derived viewline in basin: "
+         f"<b>HIGHEST+ 30+</b> (violet extreme). "
+         f"Same intensity always shows the same color. White halo numbers "
+         f"are actual OVATION intensity at that spot (sparse by band so "
+         f"the gradient stays readable). Model-derived viewline in basin: "
         f"<b>{vl_txt}</b> (southernmost latitude reaching intensity 5+: aurora may be "
         f"visible low on the northern horizon from there under dark, clear skies).")
     meta = base_metadata(
@@ -302,7 +458,10 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id):
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["source_id"] = source_id
-    meta["source_version"] = source_token(source_id)
+    # Style rides the version token (same-cycle restyles change the ?v=
+    # URL so caches cannot serve old pixels).
+    meta["source_version"] = source_token(
+        f"{source_id}-r{RENDER_VERSION}-aurvals-tx1")
     meta["noaa_product"] = "Aurora Viewline Tonight and Tomorrow Night (Experimental) product family"
     meta["noaa_model"] = "OVATION Prime (2013 version, real-time; Newell et al. / Machol & Redmon / Viereck implementation)"
     meta["data_endpoint"] = CONFIG["data_endpoint"]
@@ -318,7 +477,8 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id):
     meta["footprint"] = CONFIG["footprint_note"]
     meta["stats"] = {"valid_cells": n_valid,
                      "current_min": float(np.nanmin(paint)) if n_valid else None,
-                     "current_max": float(np.nanmax(paint)) if n_valid else None}
+                     "current_max": float(np.nanmax(paint)) if n_valid else None,
+                     "aurora_labels": n_aur_labels}
     token = meta["source_version"]
     folder_html = (
         f"<p><img src=\"{legend_src(token)}\" width=\"600\" alt=\"Aurora gradient key\"></p>"
