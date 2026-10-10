@@ -73,7 +73,16 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
 # arrows, no values). New token by construction so caches cannot serve
 # the old pixels under the old URL.
 # g8 = free (data-seeded, non-grid) label placement + whiter streaks/heads.
-RENDER_TAG = "fullbasin-g8-freelabels"
+# g9 = kt value labels DISABLED by default (gradient + streamlets only);
+#      re-enable via --show-kt-labels. New token so caches cannot serve
+#      the old labeled pixels under the old URL.
+RENDER_TAG = "fullbasin-g9-labels-disabled"
+
+# Live kt value labels (white-halo "12kt" numbers painted into the raster).
+# Disabled by default: gradient + streamlet streaks remain, numeric labels
+# are skipped. Function paint_wind_labels() is kept intact so this can be
+# re-enabled via CLI (--show-kt-labels) without restoring deleted code.
+SHOW_KT_LABELS = False
 
 # Inland lakes that read as LAND in the shared NOAA shoreline mask (which
 # covers the five Great Lakes) but get the full 80% water treatment here:
@@ -581,11 +590,16 @@ def main():
         ap.add_argument("--extra-step", type=int, default=64)
         ap.add_argument("--extra-thresh", type=float, default=4.0,
                         help="kt-change threshold for extra labels")
+        ap.add_argument("--show-kt-labels", action="store_true",
+                        default=SHOW_KT_LABELS,
+                        help="re-enable live kt value labels "
+                             "(default: disabled)")
         args = ap.parse_args()
         return run(direction_style=args.direction_style,
                    preview_dir=args.preview_dir, font_size=args.font_size,
                    label_every=args.label_every, extra_step=args.extra_step,
-                   extra_thresh=args.extra_thresh)
+                   extra_thresh=args.extra_thresh,
+                   show_kt_labels=args.show_kt_labels)
     except SystemExit as e:
         raise
     except Exception:
@@ -593,7 +607,8 @@ def main():
         return 1
 
 def run(direction_style="stream", preview_dir=None, font_size=7,
-        label_every=2, extra_step=64, extra_thresh=4.0):
+        label_every=2, extra_step=64, extra_thresh=4.0,
+        show_kt_labels=SHOW_KT_LABELS):
     now = datetime.now(timezone.utc)
     raw_path = os.path.join(RAW_DIR, "glwu_wind_current.grib2")
     # Same newest-available-cycle detection as wave height (UGRD line),
@@ -642,7 +657,7 @@ def run(direction_style="stream", preview_dir=None, font_size=7,
     try:
         return _build(got, url, datestr, cycle, raw_path, direction_style,
                       preview_dir, font_size, label_every, extra_step,
-                      extra_thresh)
+                      extra_thresh, show_kt_labels)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -652,7 +667,7 @@ def run(direction_style="stream", preview_dir=None, font_size=7,
 
 def _build(got, used_url, datestr, cycle, raw_path, direction_style="stream",
            preview_dir=None, font_size=7, label_every=2, extra_step=64,
-           extra_thresh=4.0):
+           extra_thresh=4.0, show_kt_labels=SHOW_KT_LABELS):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     bounds = load_bounds()
@@ -830,18 +845,24 @@ def _build(got, used_url, datestr, cycle, raw_path, direction_style="stream",
         # merge flattens glyph alphas) — same order as the wave layer.
         rgba, n_lines, n_heads = paint_wind_streamlets(
             rgba, comb_u, comb_v, kt_canvas)
-        rgba, n_lab, n_extra = paint_wind_labels(
-            rgba, kt_canvas, label_every=label_every,
-            extra_step=extra_step, extra_thresh_kt=extra_thresh,
-            font_size=font_size)
+        if show_kt_labels:
+            rgba, n_lab, n_extra = paint_wind_labels(
+                rgba, kt_canvas, label_every=label_every,
+                extra_step=extra_step, extra_thresh_kt=extra_thresh,
+                font_size=font_size)
+        else:
+            # Live kt value display DISABLED: keep gradient + streamlets,
+            # skip numeric labels (paint_wind_labels kept for re-enable).
+            n_lab, n_extra = 0, 0
         n_arrows = n_heads
         print(f"[{PRODUCT}] streamlets={n_lines}+{n_heads}heads "
-              f"kt_labels={n_lab}+{n_extra}extra")
+              f"kt_labels={n_lab}+{n_extra}extra "
+              f"(show_kt_labels={show_kt_labels})")
         if n_arrows < 50:
             print(f"[{PRODUCT}] VALIDATION FAILED: too few stream heads. "
                   f"Keeping previous.")
             return 2
-        if n_lab + n_extra < 20:
+        if show_kt_labels and n_lab + n_extra < 20:
             print(f"[{PRODUCT}] VALIDATION FAILED: too few kt labels. "
                   f"Keeping previous.")
             return 2
@@ -863,8 +884,9 @@ def _build(got, used_url, datestr, cycle, raw_path, direction_style="stream",
                   f"(Beaufort {max(fmax, fmax_fill)}). Full basin coverage: "
                   f"GLWU over water, HRRR 10 m fill over land. "
                   f"White streaks trace travel (brightness = knots, dim calm "
-                  f"to bright gale); white halo numbers are actual kt at "
-                  f"that spot.")
+                  f"to bright gale)"
+                  + ("; white halo numbers are actual kt at "
+                     "that spot." if show_kt_labels else "."))
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"],
         f"{CONFIG['freshness_label']}  |  Water: {data_time_utc}  |  "
@@ -877,7 +899,8 @@ def _build(got, used_url, datestr, cycle, raw_path, direction_style="stream",
         note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY. "
              "Lakes ~80% opacity; land ~55% with intensified colors so the "
              "same force reads the same (single key). White streaks trace "
-             "travel (brightness = knots); white numbers are actual kt.")
+             "travel (brightness = knots)"
+             + ("; white numbers are actual kt." if show_kt_labels else "."))
 
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -947,9 +970,12 @@ def _build(got, used_url, datestr, cycle, raw_path, direction_style="stream",
             " Direction glyphs are RK2 streamlets through the (U,V) "
             "movement field (surface-current technique; streak brightness "
             "encodes knots, dim calm to bright gale; micro-chevrons mark "
-            "travel), plus actual knot values (e.g. 12kt) in white mono "
-            "with a dark outline, placed sparsely with extras where the "
-            "wind changes sharply.")
+            "travel)"
+            + (", plus actual knot values (e.g. 12kt) in white mono "
+               "with a dark outline, placed sparsely with extras where the "
+               "wind changes sharply." if show_kt_labels
+               else " (live kt value labels currently disabled)."))
+    meta["stats"]["show_kt_labels"] = show_kt_labels
 
     field = field  # combined GLWU+HRRR force grid for buoy QC sampling below
     # ---- buoy QC: WSPD (reference only) ----
