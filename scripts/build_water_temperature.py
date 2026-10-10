@@ -51,9 +51,150 @@ def ff(x):
         return None
 
 
+def _temp_label_font(size=7):
+    """DejaVu Sans Mono Bold (same face as the wave/wind value labels)."""
+    import glob as _glob
+    from PIL import ImageFont as _IF
+    cands = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+    ]
+    try:
+        import matplotlib as _mpl
+        cands.append(os.path.join(os.path.dirname(_mpl.__file__),
+                                  "mpl-data", "fonts", "ttf",
+                                  "DejaVuSansMono-Bold.ttf"))
+    except Exception:
+        pass
+    cands += _glob.glob("/System/Library/Fonts/Supplemental/DejaVuSansMono-Bold*.ttf")
+    cands += _glob.glob(os.path.expanduser("~/Library/Fonts/DejaVuSansMono-Bold.ttf"))
+    for path in cands:
+        try:
+            return _IF.truetype(path, size)
+        except (OSError, IOError):
+            continue
+    from geospatial_utils import _legend_font
+    return _legend_font(max(size, 8))
+
+
+def _draw_temp_label(d, x, y, text, font):
+    """White core + 1 px outline stroke (same as the wave/wind labels)."""
+    from PIL import ImageDraw as _ID
+    d.text((x, y), text, font=font, fill=(255, 255, 255, 255),
+           stroke_width=1, stroke_fill=(20, 20, 20, 235))
+
+
+def paint_temp_labels(rgba, field_f, font_size=7, extra_thresh_f=1.5,
+                      max_labels=180):
+    """Actual °F values in the wave/wind label style, free placement.
+
+    NO fixed grid: data-seeded jittered candidates (positions move with the
+    water, never a rigid lattice); thermal-front cells go first, then a
+    spaced fill up to quota. Returns (rgba, n_priority, n_fill).
+    """
+    from PIL import Image, ImageDraw
+    H, W = field_f.shape
+    img = Image.fromarray(rgba, mode="RGBA")
+    d = ImageDraw.Draw(img)
+    font = _temp_label_font(font_size)
+    ok = np.isfinite(field_f)
+    if not ok.any():
+        del d
+        return np.array(img), 0, 0
+    _fin = field_f[ok]
+    seed = int(abs(float(_fin.mean())) * 1000 + float(_fin.std()) * 97) \
+        % (2 ** 32 - 1)
+    rng = np.random.default_rng(seed)
+    grad = np.zeros(field_f.shape)
+    for dr, dc in ((-12, 0), (12, 0), (0, -12), (0, 12)):
+        shifted = np.roll(field_f, shift=(-dr, -dc), axis=(0, 1))
+        diff = np.abs(field_f - shifted)
+        both = ok & np.isfinite(shifted)
+        grad = np.maximum(grad, np.where(both, diff, 0.0))
+    step = 32
+    cand = []
+    for r0 in range(0, H, step):
+        for c0 in range(0, W, step):
+            r = r0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            r, c = int(round(r)), int(round(c))
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if not ok[r, c] or rgba[r, c, 3] == 0:
+                continue
+            cand.append((grad[r, c], rng.random(), r, c))
+    cand.sort(key=lambda t: (-t[0], t[1]))
+    placed = []
+    n_priority = n_fill = 0
+
+    def _collides(x0, y0, x1, y1, pad=3):
+        for (a0, b0, a1, b1) in placed:
+            if not (x1 + pad < a0 or x0 - pad > a1 or y1 + pad < b0 or y0 - pad > b1):
+                return True
+        return False
+
+    def _put(cx, cy, text, sep):
+        tw = d.textlength(text, font=font)
+        th = font_size + 4
+        x = cx - tw / 2
+        y = cy - th / 2
+        if not (4 <= x < W - tw - 4 and 4 <= y < H - th - 4):
+            return False
+        if _collides(x, y, x + tw, y + th):
+            return False
+        for (a0, b0, a1, b1) in placed:
+            acx, acy = (a0 + a1) / 2, (b0 + b1) / 2
+            if math.hypot(acx - cx, acy - cy) < sep:
+                return False
+        pts = [(cx, cy), (x + 2, y + 2), (x + tw - 2, y + 2)]
+        for px, py in pts:
+            ix, iy = int(np.clip(round(px), 0, W - 1)), int(np.clip(round(py), 0, H - 1))
+            if rgba[iy, ix, 3] == 0:
+                return False
+        if not np.isfinite(field_f[int(np.clip(round(cy), 0, H - 1)),
+                                   int(np.clip(round(cx), 0, W - 1))]):
+            return False
+        _draw_temp_label(d, x, y, text, font)
+        placed.append((x, y, x + tw, y + th))
+        return True
+
+    for g, _, r, c in cand:
+        if n_priority + n_fill >= max_labels:
+            break
+        if g < extra_thresh_f:
+            break
+        v = float(field_f[r, c])
+        if not (20.0 <= v <= 95.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}\u00b0F", sep=30):
+            n_priority += 1
+    rest = [t for t in cand if t[0] < extra_thresh_f]
+    rng.shuffle(rest)
+    for _, _, r, c in rest:
+        if n_priority + n_fill >= max_labels:
+            break
+        v = float(field_f[r, c])
+        if not (20.0 <= v <= 95.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}\u00b0F", sep=48):
+            n_fill += 1
+
+    del d
+    return np.array(img), n_priority, n_fill
+
+
 def main():
     try:
-        return run()
+        import argparse
+        ap = argparse.ArgumentParser()
+        ap.add_argument("--preview-dir", default=None,
+                        help="preview: write current.png here, skip promote")
+        ap.add_argument("--font-size", type=int, default=7)
+        ap.add_argument("--extra-thresh", type=float, default=1.5,
+                        help="°F-change threshold for priority labels")
+        ap.add_argument("--max-labels", type=int, default=180)
+        args = ap.parse_args()
+        return run(preview_dir=args.preview_dir, font_size=args.font_size,
+                   extra_thresh=args.extra_thresh, max_labels=args.max_labels)
     except SystemExit as e:
         raise
     except Exception:
@@ -61,7 +202,7 @@ def main():
         return 1
 
 
-def run():
+def run(preview_dir=None, font_size=7, extra_thresh=1.5, max_labels=180):
     raw_path = os.path.join(RAW_DIR, "glsea_cur.asc")
     # Cheap hourly gate: HEAD the Last-Modified stamp before the ~8 MB
     # download. Match with the committed state -> source unchanged, KMLs
@@ -120,7 +261,8 @@ def run():
     # failure returns 2 (keep previous); only unexpected engine errors
     # escape to exit 1 via main().
     try:
-        return _build(info, raw_path, source_id)
+        return _build(info, raw_path, source_id, preview_dir, font_size,
+                      extra_thresh, max_labels)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -128,7 +270,8 @@ def run():
         return 2
 
 
-def _build(info, raw_path, source_id):
+def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
+           extra_thresh=1.5, max_labels=180):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     with open(raw_path) as f:
@@ -193,7 +336,15 @@ def _build(info, raw_path, source_id):
         missing_data_treatment=(f"land code {CONFIG['land_code']} and -9999/no-data "
                                 "rendered fully transparent; never interpolated."))
     meta["source_id"] = source_id
-    meta["source_version"] = source_token(source_id)
+    # Style rides the version token (same-cycle restyles change the ?v=
+    # URL so caches cannot serve old pixels). TEXT_REV bumps on any
+    # label change.
+    meta["source_version"] = source_token(f"{source_id}-r{RENDER_VERSION}-tempvals-tx1")
+    meta["label_method"] = (
+        "Actual °F values (e.g. 45°F) in white mono with a dark outline, "
+        "free placement: data-seeded jittered candidates (positions move "
+        "with the water, never a fixed grid), thermal-front cells first, "
+        "spaced fill up to quota.")
     meta["stats"] = {
         "valid_cells": n_valid,
         "lakewide_mean_F": round(float(np.mean(f_vals)), 2),
@@ -214,6 +365,22 @@ def _build(info, raw_path, source_id):
     if int((rgba[:, :, 3] > 0).sum()) < 10_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: raster has no water pixels.")
         return 2
+
+    # Actual °F values in the wave/wind label style (free placement).
+    rgba, n_tpri, n_tfill = paint_temp_labels(
+        rgba, field, font_size=font_size, extra_thresh_f=extra_thresh,
+        max_labels=max_labels)
+    print(f"[{PRODUCT}] temp_labels={n_tpri}+{n_tfill}extra")
+    if n_tpri + n_tfill < 20:
+        print(f"[{PRODUCT}] VALIDATION FAILED: too few temp labels.")
+        return 2
+    if preview_dir is not None:
+        import os as _os
+        from geospatial_utils import save_png as _sp
+        _os.makedirs(preview_dir, exist_ok=True)
+        _sp(rgba, os.path.join(preview_dir, "current.png"))
+        print(f"[{PRODUCT}] PREVIEW written.")
+        return 0
 
     # ---- buoy QC (reference only; never alters the grid) ----
     qc = fetch_buoy_obs(CONFIG["buoys"])
@@ -249,10 +416,13 @@ def _build(info, raw_path, source_id):
     np.savez_compressed(os.path.join(RAW_DIR, f"{PRODUCT}_field.npz"),
                         lats=lats, lons=lons, values=values_f)
     mid_f = round((vmin + vmax) / 2, 1)
+    meta["stats"]["temp_labels_priority"] = n_tpri
+    meta["stats"]["temp_labels_fill"] = n_tfill
     scale_html = (f"Surface water temperature (°F): cold <b>{vmin:g}°F</b> "
                   f"(deep blue) → <b>{mid_f:g}°F</b> → warm <b>{vmax:g}°F</b> "
                   f"(red). Lakewide mean this run: "
-                  f"<b>{round(float(np.mean(f_vals)), 1)}°F</b>.")
+                  f"<b>{round(float(np.mean(f_vals)), 1)}°F</b>. White halo "
+                  f"numbers are actual °F at that spot.")
     meta["legend_scale_html"] = scale_html
     write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text
 
