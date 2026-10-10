@@ -68,11 +68,12 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
 # Full-basin render generation: bump to force one redeploy of the expanded
 # (GLWU+HRRR, no shoreline cut) raster even when the GLWU cycle is unchanged.
 # Afterwards the source id tracks both model cycles.
-# g6 = streamlet direction streaks (surface-current technique, brightness =
+# g7 = streamlet direction streaks (surface-current technique, brightness =
 # wind speed) + actual knot values in the same halo style (was: lattice
 # arrows, no values). New token by construction so caches cannot serve
 # the old pixels under the old URL.
-RENDER_TAG = "fullbasin-g6-streamkt"
+# g8 = free (data-seeded, non-grid) label placement + whiter streaks/heads.
+RENDER_TAG = "fullbasin-g8-freelabels"
 
 # Inland lakes that read as LAND in the shared NOAA shoreline mask (which
 # covers the five Great Lakes) but get the full 80% water treatment here:
@@ -420,7 +421,7 @@ def paint_wind_streamlets(rgba, uu, vv, kt_field, seed_step=20,
                    for (y, x, _a, _b) in path[::4]
                    if np.isfinite(kt_field[int(y), int(x)])]
             kt = sum(kts) / len(kts) if kts else 0.0
-            alpha = int(round(70 + 130 * min(1.0, max(0.0, kt) / 35.0)))
+            alpha = int(round(110 + 110 * min(1.0, max(0.0, kt) / 35.0)))
             d.line(pts, fill=(255, 255, 255, alpha), width=line_width)
             n_lines += 1
             accepted += 1
@@ -434,7 +435,7 @@ def paint_wind_streamlets(rgba, uu, vv, kt_field, seed_step=20,
                     d.line([(x, y),
                             (x + math.cos(ha) * head_len,
                              y + math.sin(ha) * head_len)],
-                           fill=(255, 255, 255, head_alpha), width=1)
+                           fill=(255, 255, 255, 255), width=1)
                 n_heads += 1
     del d
     out = Image.alpha_composite(base, overlay)
@@ -442,22 +443,53 @@ def paint_wind_streamlets(rgba, uu, vv, kt_field, seed_step=20,
 
 
 def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
-                      extra_thresh_kt=4.0, font_size=7):
+                      extra_thresh_kt=4.0, font_size=7, max_labels=260):
     """Actual knot values in the wave-label style: white mono + dark stroke.
 
-    Minimal density: every `label_every`-th coarse anchor plus extras where
-    the wind changes sharply (>= extra_thresh_kt), with box-collision
-    avoidance. Returns (rgba, n_anchor, n_extra).
+    NO fixed grid: candidates come from a data-seeded jittered lattice, so
+    positions move with the weather instead of sitting on a rigid lattice.
+    High-change cells (fronts/gust gradients) go first with tight spacing;
+    the rest fill a quota with wide spacing. Box-collision avoidance
+    throughout. Returns (rgba, n_priority, n_fill).
     """
     H, W = kt_field.shape
     img = Image.fromarray(rgba, mode="RGBA")
     d = ImageDraw.Draw(img)
     font = _wind_label_font(font_size)
-    anchors = [(r, c) for r in range(32, H - 8, 64)
-               for c in range(32, W - 8, 64)
-               if np.isfinite(kt_field[r, c]) and rgba[r, c, 3] > 0]
+    ok = np.isfinite(kt_field)
+    if not ok.any():
+        del d
+        return np.array(img), 0, 0
+    # deterministic-per-data seed: same field -> same layout (no flicker
+    # between rebuilds of one cycle); new weather -> new positions.
+    _fin = kt_field[ok]
+    seed = int(abs(float(_fin.mean())) * 1000 + float(_fin.std()) * 97) \
+        % (2 ** 32 - 1)
+    rng = np.random.default_rng(seed)
+    # local change map (12 px neighborhood max abs diff)
+    grad = np.zeros(kt_field.shape)
+    for dr, dc in ((-12, 0), (12, 0), (0, -12), (0, 12)):
+        shifted = np.roll(kt_field, shift=(-dr, -dc), axis=(0, 1))
+        diff = np.abs(kt_field - shifted)
+        both = ok & np.isfinite(shifted)
+        grad = np.maximum(grad, np.where(both, diff, 0.0))
+    # jittered candidates on a fine lattice (no visible grid)
+    step = 32
+    cand = []
+    for r0 in range(0, H, step):
+        for c0 in range(0, W, step):
+            r = r0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            r, c = int(round(r)), int(round(c))
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if not ok[r, c] or rgba[r, c, 3] == 0:
+                continue
+            cand.append((grad[r, c], rng.random(), r, c))
+    # priority first (sharp change), then fill in random order
+    cand.sort(key=lambda t: (-t[0], t[1]))
     placed = []
-    n_anchor = n_extra = 0
+    n_priority = n_fill = 0
 
     def _collides(x0, y0, x1, y1, pad=3):
         for (a0, b0, a1, b1) in placed:
@@ -465,7 +497,7 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
                 return True
         return False
 
-    def _put(cx, cy, text):
+    def _put(cx, cy, text, sep):
         tw = d.textlength(text, font=font)
         th = font_size + 4
         x = cx - tw / 2
@@ -474,6 +506,11 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
             return False
         if _collides(x, y, x + tw, y + th):
             return False
+        # separation from other labels (wide for fill, tight for fronts)
+        for (a0, b0, a1, b1) in placed:
+            acx, acy = (a0 + a1) / 2, (b0 + b1) / 2
+            if math.hypot(acx - cx, acy - cy) < sep:
+                return False
         pts = [(cx, cy), (x + 2, y + 2), (x + tw - 2, y + 2)]
         for px, py in pts:
             ix, iy = int(np.clip(round(px), 0, W - 1)), int(np.clip(round(py), 0, H - 1))
@@ -486,40 +523,29 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
         placed.append((x, y, x + tw, y + th))
         return True
 
-    for i, (r, c) in enumerate(anchors):
-        if (i % label_every) != 0:
-            continue
+    for g, _, r, c in cand:
+        if n_priority + n_fill >= max_labels:
+            break
+        if g < extra_thresh_kt:
+            break  # remaining candidates are all low-change: fill pass next
         v = float(kt_field[r, c])
-        if not (np.isfinite(v) and 0.0 <= v <= 120.0):
+        if not (0.0 <= v <= 120.0):
             continue
-        if _put(c, r - 17, f"{v:.0f}kt"):
-            n_anchor += 1
-
-    ok = np.isfinite(kt_field)
-    if ok.any():
-        grad = np.full(kt_field.shape, np.nan)
-        for dr, dc in ((-12, 0), (12, 0), (0, -12), (0, 12)):
-            shifted = np.roll(kt_field, shift=(-dr, -dc), axis=(0, 1))
-            diff = np.abs(kt_field - shifted)
-            both = ok & np.isfinite(shifted)
-            g = np.where(both, diff, 0.0)
-            grad = np.where(np.isnan(grad), g, np.maximum(grad, g))
-        for r in range(extra_step // 2, H, extra_step):
-            for c in range(extra_step // 2, W, extra_step):
-                if not np.isfinite(kt_field[r, c]):
-                    continue
-                if rgba[r, c, 3] == 0:
-                    continue
-                if not (grad[r, c] >= extra_thresh_kt):
-                    continue
-                if _collides(c - 20, r - 26, c + 20, r - 8):
-                    continue
-                v = float(kt_field[r, c])
-                if _put(c, r - 10, f"{v:.0f}kt"):
-                    n_extra += 1
+        if _put(c, r - 12, f"{v:.0f}kt", sep=30):
+            n_priority += 1
+    rest = [t for t in cand if t[0] < extra_thresh_kt]
+    rng.shuffle(rest)
+    for _, _, r, c in rest:
+        if n_priority + n_fill >= max_labels:
+            break
+        v = float(kt_field[r, c])
+        if not (0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}kt", sep=48):
+            n_fill += 1
 
     del d
-    return np.array(img), n_anchor, n_extra
+    return np.array(img), n_priority, n_fill
 
 
 def fetch_hrrr_uv():
