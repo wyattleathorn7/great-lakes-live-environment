@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP RAP (Rapid Refresh) hourly surface DSWRF (downward short-wave radiation flux)",
   "variable": "DSWRF surface, newest RAP cycle valid for the current hour (analysis step when present, else shortest forecast lead)",
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/rap/prod/",
-  "data_time_utc": "2026-10-09 07:00 PM EDT",
+  "data_time_utc": "2026-10-09 08:00 PM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-10-09 09:00 PM EDT",
+  "processing_time_utc": "2026-10-09 09:30 PM EDT",
   "units": "W/m^2 (display); source W m^-2",
   "spatial_resolution_source": "~13 km RAP native grid (awp252), mean-binned to canvas then NaN-aware smoothed for a steady gradient (display only; source precision unchanged)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,12 +30,12 @@
     230
   ],
   "legend_scale_html": "Surface downward shortwave solar radiation (W/m^2), RAP hourly estimate, FIXED absolute scale 0&ndash;1000+: night <b>0</b> (near-black) &rarr; <b>150</b> &rarr; <b>300</b> &rarr; <b>450</b> &rarr; <b>600</b> &rarr; <b>750</b> &rarr; extreme <b>1000+</b> (near-white). <b>LOWEST 0</b>, <b>HIGHEST+ 1000+</b>. Same flux always shows the same color. Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband sunlight: includes ultraviolet, visible, and near-infrared energy. This is not a UV Index and not a visible-light meter reading. Hourly weather-model estimate, not a ground sensor measurement at every location.",
-  "model_cycle": "20261009 t23z",
-  "source_id": "rap-20261009-t23z-f02",
-  "source_version": "rap-20261009-t23z-f02",
+  "model_cycle": "20261010 t00z",
+  "source_id": "rap-20261010-t00z-f01",
+  "source_version": "rap-20261010-t00z-f01",
   "source_model": "NOAA/NCEP RAP (Rapid Refresh)",
-  "forecast_lead_hours": 2,
-  "rap_step_range": "2",
+  "forecast_lead_hours": 1,
+  "rap_step_range": "1",
   "historical": {
     "low": 0.0,
     "high": 806.9060878753662,
@@ -44,10 +44,10 @@
       "p25": 0.0,
       "p50": 0.0,
       "p75": 0.0,
-      "p95": 194.0778038024901,
-      "p99": 495.2498339843745
+      "p95": 54.75,
+      "p99": 376.34223663329703
     },
-    "n_obs": 3845846,
+    "n_obs": 3865846,
     "extends": [
       {
         "at": "2026-09-25 17:24 UTC",
@@ -62,5 +62,5 @@
     "nighttime": true,
     "interior_holes": 0
   },
-  "folder_html": "<h2>LIVE SOLAR RADIATION</h2><p>Modeled incoming sunlight energy at the surface (broadband: includes ultraviolet, visible, and near-infrared solar energy). This is not a UV Index and not a visible-light meter reading. An hourly weather-model estimate, not a ground sensor measurement at every location. Nighttime reads zero (valid data, near-black) \u2014 not missing data. Clouds reduce values quantitatively versus clear sky.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/solar_radiation/legend.png?v=rap-20261009-t23z-f02\" width=\"600\" alt=\"key\"></p><p>Surface downward shortwave solar radiation (W/m^2), RAP hourly estimate, FIXED absolute scale 0&ndash;1000+: night <b>0</b> (near-black) &rarr; <b>150</b> &rarr; <b>300</b> &rarr; <b>450</b> &rarr; <b>600</b> &rarr; <b>750</b> &rarr; extreme <b>1000+</b> (near-white). <b>LOWEST 0</b>, <b>HIGHEST+ 1000+</b>. Same flux always shows the same color. Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband sunlight: includes ultraviolet, visible, and near-infrared energy. This is not a UV Index and not a visible-light meter reading. Hourly weather-model estimate, not a ground sensor measurement at every location.</p><p><b>Variable:</b> DSWRF surface, newest RAP cycle valid for the current hour (analysis step when present, else shortest forecast lead)<br/><b>Units:</b> W/m^2 (hourly RAP cycle; value valid for the current hour (lead time recorded per run))<br/><b>Source:</b> NOAA/NCEP RAP (Rapid Refresh) hourly surface DSWRF (downward short-wave radiation flux)<br/><b>Update:</b> RAP hourly cycles; value valid for the current hour<br/><b>Data time:</b> 2026-10-09 07:00 PM EDT<br/><b>Source version:</b> rap-20261009-t23z-f02<br/><b>Processed:</b> 2026-10-09 09:00 PM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/pub/data/nccf/com/rap/prod/\">NOMADS RAP</a></p>"
+  "folder_html": "<h2>LIVE SOLAR RADIATION</h2><p>Modeled incoming sunlight energy at the surface (broadband: includes ultraviolet, visible, and near-infrared solar energy). This is not a UV Index and not a visible-light meter reading. An hourly weather-model estimate, not a ground sensor measurement at every location. Nighttime reads zero (valid data, near-black) \u2014 not missing data. Clouds reduce values quantitatively versus clear sky.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/solar_radiation/legend.png?v=rap-20261010-t00z-f01\" width=\"600\" alt=\"key\"></p><p>Surface downward shortwave solar radiation (W/m^2), RAP hourly estimate, FIXED absolute scale 0&ndash;1000+: night <b>0</b> (near-black) &rarr; <b>150</b> &rarr; <b>300</b> &rarr; <b>450</b> &rarr; <b>600</b> &rarr; <b>750</b> &rarr; extreme <b>1000+</b> (near-white). <b>LOWEST 0</b>, <b>HIGHEST+ 1000+</b>. Same flux always shows the same color. Values shown exactly as observed; night reads zero; clouds reduce values quantitatively. Broadband sunlight: includes ultraviolet, visible, and near-infrared energy. This is not a UV Index and not a visible-light meter reading. Hourly weather-model estimate, not a ground sensor measurement at every location.</p><p><b>Variable:</b> DSWRF surface, newest RAP cycle valid for the current hour (analysis step when present, else shortest forecast lead)<br/><b>Units:</b> W/m^2 (hourly RAP cycle; value valid for the current hour (lead time recorded per run))<br/><b>Source:</b> NOAA/NCEP RAP (Rapid Refresh) hourly surface DSWRF (downward short-wave radiation flux)<br/><b>Update:</b> RAP hourly cycles; value valid for the current hour<br/><b>Data time:</b> 2026-10-09 08:00 PM EDT<br/><b>Source version:</b> rap-20261010-t00z-f01<br/><b>Processed:</b> 2026-10-09 09:30 PM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/pub/data/nccf/com/rap/prod/\">NOMADS RAP</a></p>"
 }
