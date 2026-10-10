@@ -68,7 +68,11 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
 # Full-basin render generation: bump to force one redeploy of the expanded
 # (GLWU+HRRR, no shoreline cut) raster even when the GLWU cycle is unchanged.
 # Afterwards the source id tracks both model cycles.
-RENDER_TAG = "fullbasin-g5"
+# g6 = streamlet direction streaks (surface-current technique, brightness =
+# wind speed) + actual knot values in the same halo style (was: lattice
+# arrows, no values). New token by construction so caches cannot serve
+# the old pixels under the old URL.
+RENDER_TAG = "fullbasin-g6-streamkt"
 
 # Inland lakes that read as LAND in the shared NOAA shoreline mask (which
 # covers the five Great Lakes) but get the full 80% water treatment here:
@@ -258,6 +262,266 @@ def arrow_points_canvas(uu_canvas, vv_canvas, step_px):
     return pts
 
 
+# ------------------------------------------- streamlet direction + KT labels
+# Same treatment as the combined wave layer (ported technique, verbal style
+# match): RK2 streamlets follow the (U,V) movement field (GRIB components
+# already point toward-motion, no reversal), streak brightness encodes wind
+# speed, micro-chevrons mark travel; actual knot values ride in the same
+# white-halo mono style as the wave period labels. Fully rasterized.
+
+
+def _wind_label_font(size=7):
+    """DejaVu Sans Mono Bold (same face as the wave labels)."""
+    import glob as _glob
+    from PIL import ImageFont as _IF
+    cands = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
+    ]
+    try:
+        import matplotlib as _mpl
+        cands.append(os.path.join(os.path.dirname(_mpl.__file__),
+                                  "mpl-data", "fonts", "ttf",
+                                  "DejaVuSansMono-Bold.ttf"))
+    except Exception:
+        pass
+    cands += _glob.glob("/System/Library/Fonts/Supplemental/DejaVuSansMono-Bold*.ttf")
+    cands += _glob.glob(os.path.expanduser("~/Library/Fonts/DejaVuSansMono-Bold.ttf"))
+    for path in cands:
+        try:
+            return _IF.truetype(path, size)
+        except (OSError, IOError):
+            continue
+    from geospatial_utils import _legend_font
+    return _legend_font(max(size, 8))
+
+
+def _draw_wind_label(d, x, y, text, font):
+    """White core + 1 px outline stroke (same as the wave period labels)."""
+    d.text((x, y), text, font=font, fill=(255, 255, 255, 255),
+           stroke_width=1, stroke_fill=(20, 20, 20, 235))
+
+
+def _wsample_uv(y, x, uu, vv):
+    """Bilinear (U,V) at fractional canvas coords; (nan, nan) at no-data."""
+    H, W = uu.shape
+    if not (0.0 <= y <= H - 1.001 and 0.0 <= x <= W - 1.001):
+        return (float("nan"), float("nan"))
+    y0, x0 = int(y), int(x)
+    y1, x1 = min(y0 + 1, H - 1), min(x0 + 1, W - 1)
+    fy, fx = y - y0, x - x0
+    try:
+        u = (uu[y0, x0] * (1 - fx) + uu[y0, x1] * fx) * (1 - fy) + \
+            (uu[y1, x0] * (1 - fx) + uu[y1, x1] * fx) * fy
+        v = (vv[y0, x0] * (1 - fx) + vv[y0, x1] * fx) * (1 - fy) + \
+            (vv[y1, x0] * (1 - fx) + vv[y1, x1] * fx) * fy
+    except IndexError:
+        return (float("nan"), float("nan"))
+    if not (np.isfinite(u) and np.isfinite(v)):
+        return (float("nan"), float("nan"))
+    return (float(u), float(v))
+
+
+def _wtrace(sy, sx, uu, vv, ds=3.0, max_steps=40, min_speed=0.5):
+    path = []
+    y, x = float(sy), float(sx)
+    px, py = None, None
+    for _ in range(max_steps):
+        u, v = _wsample_uv(y, x, uu, vv)
+        sp = math.hypot(u, v)
+        if not math.isfinite(sp) or sp < min_speed:
+            break
+        dx, dy = u / sp, -v / sp
+        mx, my = x + dx * ds / 2.0, y + dy * ds / 2.0
+        u2, v2 = _wsample_uv(my, mx, uu, vv)
+        sp2 = math.hypot(u2, v2)
+        if not math.isfinite(sp2) or sp2 < min_speed:
+            break
+        ax, ay = dx + u2 / sp2, dy + (-v2 / sp2)
+        n = math.hypot(ax, ay)
+        if n < 1e-9:
+            break
+        ax, ay = ax / n, ay / n
+        if px is not None and (ax * px + ay * py) < 0.3:
+            break
+        x, y = x + ax * ds, y + ay * ds
+        if not (8 <= y < uu.shape[0] - 8 and 8 <= x < uu.shape[1] - 8):
+            break
+        path.append((y, x, ax, ay))
+        px, py = ax, ay
+    return path
+
+
+def paint_wind_streamlets(rgba, uu, vv, kt_field, seed_step=20,
+                          ds=3.0, max_steps=40, min_speed=0.5,
+                          sep_px=3.0, head_every=2, head_sep_px=5.0,
+                          line_width=1, head_alpha=230, head_len=4.0):
+    """RK2 streamlets through the wind movement field, brightness = knots.
+
+    Dim streaks = light air, bright streaks = gale; micro-chevrons mark
+    travel. Fully rasterized (no KML vectors). Returns
+    (rgba, n_streamlets, n_heads). Paint AFTER the dual-opacity merge so
+    the speed brightness survives (the merge flattens glyph alphas).
+    """
+    H, W = uu.shape
+    rng = np.random.default_rng(7)
+    base = Image.fromarray(rgba, mode="RGBA")
+    base_alpha = rgba[:, :, 3]
+    overlay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(overlay)
+    n_lines = n_heads = accepted = 0
+    covered = np.zeros((H, W), bool)
+    placed = np.zeros((H, W), bool)
+    rr, cc = np.ogrid[:H, :W]
+
+    def claim(path, sep):
+        s = int(math.ceil(sep))
+        for (y, x, _ax, _ay) in path[::3]:
+            r0, r1 = max(0, int(y) - s), min(H, int(y) + s + 1)
+            c0, c1 = max(0, int(x) - s), min(W, int(x) + s + 1)
+            dy = rr[r0:r1, 0:1] - y
+            dx = cc[0:1, c0:c1] - x
+            covered[r0:r1, c0:c1][(dy * dy + dx * dx) <= sep * sep] = True
+
+    def clear_for_head(y, x, sep):
+        s = int(math.ceil(sep))
+        r0, r1 = max(0, int(y) - s), min(H, int(y) + s + 1)
+        c0, c1 = max(0, int(x) - s), min(W, int(x) + s + 1)
+        dy = rr[r0:r1, 0:1] - y
+        dx = cc[0:1, c0:c1] - x
+        win = placed[r0:r1, c0:c1]
+        hit = (dy * dy + dx * dx) <= sep * sep
+        if bool((win & hit).any()):
+            return False
+        win[hit] = True
+        return True
+
+    for r0 in range(0, H, seed_step):
+        for c0 in range(0, W, seed_step):
+            r = r0 + seed_step / 2.0 + (rng.random() - 0.5) * seed_step * 0.66
+            c = c0 + seed_step / 2.0 + (rng.random() - 0.5) * seed_step * 0.66
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if covered[int(r), int(c)]:
+                continue
+            u0, v0 = _wsample_uv(r, c, uu, vv)
+            if not (math.isfinite(u0) and math.hypot(u0, v0) >= min_speed):
+                continue
+            path = _wtrace(r, c, uu, vv, ds=ds, max_steps=max_steps,
+                           min_speed=min_speed)
+            if len(path) < 6:
+                continue
+            claim(path, sep_px)
+            pts = [(x, y) for (y, x, _ax, _ay) in path[::2]]
+            if len(pts) < 2:
+                continue
+            if base_alpha[int(path[-1][0]), int(path[-1][1])] == 0:
+                continue
+            kts = [float(kt_field[int(y), int(x)])
+                   for (y, x, _a, _b) in path[::4]
+                   if np.isfinite(kt_field[int(y), int(x)])]
+            kt = sum(kts) / len(kts) if kts else 0.0
+            alpha = int(round(70 + 130 * min(1.0, max(0.0, kt) / 35.0)))
+            d.line(pts, fill=(255, 255, 255, alpha), width=line_width)
+            n_lines += 1
+            accepted += 1
+            if accepted % head_every == 0 and len(path) >= 10:
+                y, x, ax, ay = path[-1]
+                if not clear_for_head(y, x, head_sep_px):
+                    continue
+                ang = math.atan2(ay, ax)
+                for s in (1, -1):
+                    ha = ang + s * (math.pi - 0.6)
+                    d.line([(x, y),
+                            (x + math.cos(ha) * head_len,
+                             y + math.sin(ha) * head_len)],
+                           fill=(255, 255, 255, head_alpha), width=1)
+                n_heads += 1
+    del d
+    out = Image.alpha_composite(base, overlay)
+    return np.array(out), n_lines, n_heads
+
+
+def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
+                      extra_thresh_kt=4.0, font_size=7):
+    """Actual knot values in the wave-label style: white mono + dark stroke.
+
+    Minimal density: every `label_every`-th coarse anchor plus extras where
+    the wind changes sharply (>= extra_thresh_kt), with box-collision
+    avoidance. Returns (rgba, n_anchor, n_extra).
+    """
+    H, W = kt_field.shape
+    img = Image.fromarray(rgba, mode="RGBA")
+    d = ImageDraw.Draw(img)
+    font = _wind_label_font(font_size)
+    anchors = [(r, c) for r in range(32, H - 8, 64)
+               for c in range(32, W - 8, 64)
+               if np.isfinite(kt_field[r, c]) and rgba[r, c, 3] > 0]
+    placed = []
+    n_anchor = n_extra = 0
+
+    def _collides(x0, y0, x1, y1, pad=3):
+        for (a0, b0, a1, b1) in placed:
+            if not (x1 + pad < a0 or x0 - pad > a1 or y1 + pad < b0 or y0 - pad > b1):
+                return True
+        return False
+
+    def _put(cx, cy, text):
+        tw = d.textlength(text, font=font)
+        th = font_size + 4
+        x = cx - tw / 2
+        y = cy - th / 2
+        if not (4 <= x < W - tw - 4 and 4 <= y < H - th - 4):
+            return False
+        if _collides(x, y, x + tw, y + th):
+            return False
+        pts = [(cx, cy), (x + 2, y + 2), (x + tw - 2, y + 2)]
+        for px, py in pts:
+            ix, iy = int(np.clip(round(px), 0, W - 1)), int(np.clip(round(py), 0, H - 1))
+            if rgba[iy, ix, 3] == 0:
+                return False
+        if not np.isfinite(kt_field[int(np.clip(round(cy), 0, H - 1)),
+                                    int(np.clip(round(cx), 0, W - 1))]):
+            return False
+        _draw_wind_label(d, x, y, text, font)
+        placed.append((x, y, x + tw, y + th))
+        return True
+
+    for i, (r, c) in enumerate(anchors):
+        if (i % label_every) != 0:
+            continue
+        v = float(kt_field[r, c])
+        if not (np.isfinite(v) and 0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 17, f"{v:.0f}kt"):
+            n_anchor += 1
+
+    ok = np.isfinite(kt_field)
+    if ok.any():
+        grad = np.full(kt_field.shape, np.nan)
+        for dr, dc in ((-12, 0), (12, 0), (0, -12), (0, 12)):
+            shifted = np.roll(kt_field, shift=(-dr, -dc), axis=(0, 1))
+            diff = np.abs(kt_field - shifted)
+            both = ok & np.isfinite(shifted)
+            g = np.where(both, diff, 0.0)
+            grad = np.where(np.isnan(grad), g, np.maximum(grad, g))
+        for r in range(extra_step // 2, H, extra_step):
+            for c in range(extra_step // 2, W, extra_step):
+                if not np.isfinite(kt_field[r, c]):
+                    continue
+                if rgba[r, c, 3] == 0:
+                    continue
+                if not (grad[r, c] >= extra_thresh_kt):
+                    continue
+                if _collides(c - 20, r - 26, c + 20, r - 8):
+                    continue
+                v = float(kt_field[r, c])
+                if _put(c, r - 10, f"{v:.0f}kt"):
+                    n_extra += 1
+
+    del d
+    return np.array(img), n_anchor, n_extra
+
+
 def fetch_hrrr_uv():
     """Latest HRRR 10 m U/V analysis binned helpers.
 
@@ -279,14 +543,31 @@ def fetch_hrrr_uv():
 
 def main():
     try:
-        return run()
+        import argparse
+        ap = argparse.ArgumentParser()
+        ap.add_argument("--direction-style", default="stream",
+                        choices=["arrows", "stream"],
+                        help="direction glyphs: streamlets or classic arrows")
+        ap.add_argument("--preview-dir", default=None,
+                        help="preview: write current.png here, skip promote")
+        ap.add_argument("--font-size", type=int, default=7)
+        ap.add_argument("--label-every", type=int, default=2)
+        ap.add_argument("--extra-step", type=int, default=64)
+        ap.add_argument("--extra-thresh", type=float, default=4.0,
+                        help="kt-change threshold for extra labels")
+        args = ap.parse_args()
+        return run(direction_style=args.direction_style,
+                   preview_dir=args.preview_dir, font_size=args.font_size,
+                   label_every=args.label_every, extra_step=args.extra_step,
+                   extra_thresh=args.extra_thresh)
     except SystemExit as e:
         raise
     except Exception:
         traceback.print_exc()
         return 1
 
-def run():
+def run(direction_style="stream", preview_dir=None, font_size=7,
+        label_every=2, extra_step=64, extra_thresh=4.0):
     now = datetime.now(timezone.utc)
     raw_path = os.path.join(RAW_DIR, "glwu_wind_current.grib2")
     # Same newest-available-cycle detection as wave height (UGRD line),
@@ -333,7 +614,9 @@ def run():
     # bytes simply produce no commit. Failures still keep previous.
 
     try:
-        return _build(got, url, datestr, cycle, raw_path)
+        return _build(got, url, datestr, cycle, raw_path, direction_style,
+                      preview_dir, font_size, label_every, extra_step,
+                      extra_thresh)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -341,7 +624,9 @@ def run():
         return 2
 
 
-def _build(got, used_url, datestr, cycle, raw_path):
+def _build(got, used_url, datestr, cycle, raw_path, direction_style="stream",
+           preview_dir=None, font_size=7, label_every=2, extra_step=64,
+           extra_thresh=4.0):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     bounds = load_bounds()
@@ -488,12 +773,17 @@ def _build(got, used_url, datestr, cycle, raw_path):
     rgba[ook, 0:3] = np.where(_is_water[:, None], lut_water[fi], lut_land[fi])
     rgba[ook, 3] = WIND_ALPHA_LAND
 
-    rgba, n_arrows = paint_arrows(
-        rgba, arrow_points_canvas(comb_u, comb_v, CANVAS_ARROW_STEP_PX))
-    print(f"[{PRODUCT}] arrows drawn: {n_arrows}")
-    if n_arrows < 50:
-        print(f"[{PRODUCT}] VALIDATION FAILED: too few arrows. Keeping previous.")
-        return 2
+    kt_canvas = np.hypot(comb_u, comb_v) * MS_TO_KT  # m/s -> kt on canvas
+    n_lines = n_heads = n_lab = n_extra = 0
+    if direction_style == "stream":
+        n_arrows = 0  # replaced below by stream heads (validator continuity)
+    else:
+        rgba, n_arrows = paint_arrows(
+            rgba, arrow_points_canvas(comb_u, comb_v, CANVAS_ARROW_STEP_PX))
+        print(f"[{PRODUCT}] arrows drawn: {n_arrows}")
+        if n_arrows < 50:
+            print(f"[{PRODUCT}] VALIDATION FAILED: too few arrows. Keeping previous.")
+            return 2
     # Dual-opacity shoreline merge (the original water-only look over the
     # lakes, see-through over land): the shared NOAA shoreline mask drives
     # per-pixel alpha — 205 over open water, 140 over land, antialiased
@@ -509,6 +799,31 @@ def _build(got, used_url, datestr, cycle, raw_path):
     # missing source data is transparent. RGB bleed keeps
     # the anti-fringe contract for bilinear clients (Google Earth).
     rgba = bleed_rgb_into_transparent(rgba)
+    if direction_style == "stream":
+        # Painted AFTER the merge so streak speed-brightness survives (the
+        # merge flattens glyph alphas) — same order as the wave layer.
+        rgba, n_lines, n_heads = paint_wind_streamlets(
+            rgba, comb_u, comb_v, kt_canvas)
+        rgba, n_lab, n_extra = paint_wind_labels(
+            rgba, kt_canvas, label_every=label_every,
+            extra_step=extra_step, extra_thresh_kt=extra_thresh,
+            font_size=font_size)
+        n_arrows = n_heads
+        print(f"[{PRODUCT}] streamlets={n_lines}+{n_heads}heads "
+              f"kt_labels={n_lab}+{n_extra}extra")
+        if n_arrows < 50:
+            print(f"[{PRODUCT}] VALIDATION FAILED: too few stream heads. "
+                  f"Keeping previous.")
+            return 2
+        if n_lab + n_extra < 20:
+            print(f"[{PRODUCT}] VALIDATION FAILED: too few kt labels. "
+                  f"Keeping previous.")
+            return 2
+    if preview_dir is not None:
+        os.makedirs(preview_dir, exist_ok=True)
+        save_png(rgba, os.path.join(preview_dir, "current.png"))
+        print(f"[{PRODUCT}] PREVIEW {direction_style} written.")
+        return 0
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
 
@@ -521,7 +836,9 @@ def _build(got, used_url, datestr, cycle, raw_path):
                   f"Maximum this run: <b>{max(float(spd_kt[valid].max()), hrrr_max_kt):.0f} kt</b> "
                   f"(Beaufort {max(fmax, fmax_fill)}). Full basin coverage: "
                   f"GLWU over water, HRRR 10 m fill over land. "
-                  f"Arrows point where the air moves.")
+                  f"White streaks trace travel (brightness = knots, dim calm "
+                  f"to bright gale); white halo numbers are actual kt at "
+                  f"that spot.")
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"],
         f"{CONFIG['freshness_label']}  |  Water: {data_time_utc}  |  "
@@ -533,7 +850,8 @@ def _build(got, used_url, datestr, cycle, raw_path):
         f"Processed {now_det_str()}",
         note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY. "
              "Lakes ~80% opacity; land ~55% with intensified colors so the "
-             "same force reads the same (single key).")
+             "same force reads the same (single key). White streaks trace "
+             "travel (brightness = knots); white numbers are actual kt.")
 
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -592,7 +910,20 @@ def _build(got, used_url, datestr, cycle, raw_path):
         "max_beaufort": fmax,
         "max_beaufort_combined": fmax_fill,
         "arrows_drawn": n_arrows,
+        "direction_style": direction_style,
+        "streamlets_drawn": n_lines,
+        "stream_heads_drawn": n_heads,
+        "kt_labels_on_grid": n_lab,
+        "kt_labels_extra": n_extra,
     }
+    if direction_style == "stream":
+        meta["methodology"] += (
+            " Direction glyphs are RK2 streamlets through the (U,V) "
+            "movement field (surface-current technique; streak brightness "
+            "encodes knots, dim calm to bright gale; micro-chevrons mark "
+            "travel), plus actual knot values (e.g. 12kt) in white mono "
+            "with a dark outline, placed sparsely with extras where the "
+            "wind changes sharply.")
 
     field = field  # combined GLWU+HRRR force grid for buoy QC sampling below
     # ---- buoy QC: WSPD (reference only) ----
