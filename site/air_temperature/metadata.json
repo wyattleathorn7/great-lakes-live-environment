@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles",
   "variable": "TMP 2 m above ground, analysis step",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-10-10 09:00 AM EDT",
+  "data_time_utc": "2026-10-10 10:00 AM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-10-10 10:00 AM EDT",
+  "processing_time_utc": "2026-10-10 11:00 AM EDT",
   "units": "degF (display); source K",
   "spatial_resolution_source": "~3 km HRRR Lambert grid (1799x1059)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,21 +30,21 @@
     1074
   ],
   "legend_scale_html": "2 m air temperature (degF), FIXED key (-60..150 F) with a STEADY gradient on the map: the raster blends smoothly through blue-white extreme cold &rarr; gray-blue subfreezing &rarr; <b>royal-blue freezing wall (30-40)</b> &rarr; frigid turquoise/blues (40-55) &rarr; transitional lime/teals (55-70) &rarr; mellow yellows (70-85) &rarr; warming orange/golds (85-100) &rarr; <b>scorching pink/reds (100+) to HIGHEST+ 150</b>, passing exactly through every key color (key bars show the <b>LOWEST -60</b> to <b>HIGHEST+ 150</b> band centers). Same temperature always shows the same color; every color is brightened so nothing renders dark. Freezing (32 F) sits inside the royal-blue wall. Record <b>LOWEST 24.2</b> / <b>HIGHEST+ 89.09</b>.",
-  "model_cycle": "hrrr.20261010 t13z",
-  "source_id": "hrrr-hrrr.20261010-t13z",
-  "source_version": "hrrr-hrrr.20261010-t13z",
+  "model_cycle": "hrrr.20261010 t14z",
+  "source_id": "hrrr-hrrr.20261010-t14z",
+  "source_version": "hrrr-hrrr.20261010-t14z",
   "historical": {
     "low": 24.197059326171917,
     "high": 89.0884106445313,
     "percentiles": {
-      "p5": 31.320703506469727,
-      "p25": 39.680531005859415,
-      "p50": 50.74303100585938,
-      "p75": 56.274281005859415,
-      "p95": 61.05375845336914,
-      "p99": 64.48699521179199
+      "p5": 33.7648832321167,
+      "p25": 43.660108642578166,
+      "p50": 52.660108642578166,
+      "p75": 58.060108642578165,
+      "p95": 63.65698364257817,
+      "p99": 66.19305801391602
     },
-    "n_obs": 4785846,
+    "n_obs": 4805846,
     "extends": [
       {
         "at": "2026-09-22 04:04 UTC",
@@ -130,45 +130,45 @@
   },
   "stats": {
     "valid_cells": 2114386,
-    "current_min": 30.455531005859417,
-    "current_max": 67.46803100585942
+    "current_min": 33.42260864257817,
+    "current_max": 69.64760864257816
   },
   "buoy_qc": {
     "45001": {
-      "obs_F": 52.88,
-      "grid_F": 54.305531005859415,
-      "absdiff_F": 1.43,
+      "obs_F": 52.7,
+      "grid_F": 54.122608642578165,
+      "absdiff_F": 1.42,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "obs_time": "2026-10-10 14:30 UTC"
     },
     "45002": {
-      "obs_F": 61.34,
-      "grid_F": 58.243031005859415,
-      "absdiff_F": 3.1,
+      "obs_F": 60.62,
+      "grid_F": 58.285108642578166,
+      "absdiff_F": 2.33,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "obs_time": "2026-10-10 14:20 UTC"
     },
     "45132": {
-      "obs_F": 63.5,
-      "grid_F": 62.968031005859416,
-      "absdiff_F": 0.53,
+      "obs_F": 63.32,
+      "grid_F": 61.54760864257817,
+      "absdiff_F": 1.77,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:00 UTC"
+      "obs_time": "2026-10-10 14:00 UTC"
     },
     "45012": {
-      "obs_F": 53.96,
-      "grid_F": 55.655531005859416,
-      "absdiff_F": 1.7,
+      "obs_F": 54.14,
+      "grid_F": 54.910108642578166,
+      "absdiff_F": 0.77,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "obs_time": "2026-10-10 14:30 UTC"
     },
     "45005": {
-      "obs_F": 63.14,
-      "grid_F": 63.305531005859415,
-      "absdiff_F": 0.17,
+      "obs_F": 62.78,
+      "grid_F": 62.560108642578165,
+      "absdiff_F": 0.22,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "obs_time": "2026-10-10 14:30 UTC"
     }
   },
-  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Banded 5-degree key (-60..150 F): blue-white extreme cold, gray-blue subfreezing, royal-blue freezing wall (30-40), frigid turquoise/blues (40-55), lime/teal transition (55-70), mellow yellows (70-85), orange/gold warming (85-100), scorching pink/reds past 100. Every band brightened so nothing renders dark.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=hrrr-hrrr.20261010-t13z\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), FIXED key (-60..150 F) with a STEADY gradient on the map: the raster blends smoothly through blue-white extreme cold &rarr; gray-blue subfreezing &rarr; <b>royal-blue freezing wall (30-40)</b> &rarr; frigid turquoise/blues (40-55) &rarr; transitional lime/teals (55-70) &rarr; mellow yellows (70-85) &rarr; warming orange/golds (85-100) &rarr; <b>scorching pink/reds (100+) to HIGHEST+ 150</b>, passing exactly through every key color (key bars show the <b>LOWEST -60</b> to <b>HIGHEST+ 150</b> band centers). Same temperature always shows the same color; every color is brightened so nothing renders dark. Freezing (32 F) sits inside the royal-blue wall. Record <b>LOWEST 24.2</b> / <b>HIGHEST+ 89.09</b>.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-10-10 09:00 AM EDT<br/><b>Processed:</b> 2026-10-10 10:00 AM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
+  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Near-surface (2 m) air temperature from the operational HRRR analysis. Banded 5-degree key (-60..150 F): blue-white extreme cold, gray-blue subfreezing, royal-blue freezing wall (30-40), frigid turquoise/blues (40-55), lime/teal transition (55-70), mellow yellows (70-85), orange/gold warming (85-100), scorching pink/reds past 100. Every band brightened so nothing renders dark.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature/legend.png?v=hrrr-hrrr.20261010-t14z\" width=\"600\" alt=\"key\"></p><p>2 m air temperature (degF), FIXED key (-60..150 F) with a STEADY gradient on the map: the raster blends smoothly through blue-white extreme cold &rarr; gray-blue subfreezing &rarr; <b>royal-blue freezing wall (30-40)</b> &rarr; frigid turquoise/blues (40-55) &rarr; transitional lime/teals (55-70) &rarr; mellow yellows (70-85) &rarr; warming orange/golds (85-100) &rarr; <b>scorching pink/reds (100+) to HIGHEST+ 150</b>, passing exactly through every key color (key bars show the <b>LOWEST -60</b> to <b>HIGHEST+ 150</b> band centers). Same temperature always shows the same color; every color is brightened so nothing renders dark. Freezing (32 F) sits inside the royal-blue wall. Record <b>LOWEST 24.2</b> / <b>HIGHEST+ 89.09</b>.</p><p><b>Units:</b> degF (source Kelvin)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-10-10 10:00 AM EDT<br/><b>Processed:</b> 2026-10-10 11:00 AM EDT<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
 }
