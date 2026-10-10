@@ -8,7 +8,7 @@
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
   "data_time_utc": "2026-10-09 02:51 AM EDT",
   "source_last_modified_utc": "2026-10-09 02:51 AM EDT",
-  "processing_time_utc": "2026-10-10 09:54 AM EDT",
+  "processing_time_utc": "2026-10-10 10:15 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -26,7 +26,7 @@
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "source_id": "glsea-Fri, 09 Oct 2026 06:51:23 GMT",
-  "source_version": "glsea-Fri-09-Oct-2026-06-51-23-GMT-r12-tempvals-tx1",
+  "source_version": "glsea-Fri-09-Oct-2026-06-51-23-GMT-r12-tempvals-tx2",
   "label_method": "Actual \u00b0F values (e.g. 45\u00b0F) in white mono with a dark outline, free placement: data-seeded jittered candidates (positions move with the water, never a fixed grid), thermal-front cells first, spaced fill up to quota.",
   "stats": {
     "valid_cells": 148682,
@@ -48,14 +48,14 @@
       "grid_F": 52.843999999999994,
       "absdiff_F": 2.3,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "obs_time": "2026-10-10 13:50 UTC"
     },
     "45002": {
       "obs_F": 60.62,
       "grid_F": 61.4615,
       "absdiff_F": 0.84,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "obs_time": "2026-10-10 13:50 UTC"
     },
     "45132": {
       "obs_F": 64.4,
@@ -65,23 +65,27 @@
       "obs_time": "2026-10-10 13:00 UTC"
     },
     "45012": {
-      "obs_F": 57.38,
-      "grid_F": 61.763000000000005,
-      "absdiff_F": 4.38,
-      "verdict": "CHECK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "time_utc": "2026-10-10 13:50 UTC",
+      "WDIR_deg": 110.0,
+      "WSPD_ms": 7.0,
+      "WVHT_m": 0.7,
+      "DPD_s": 4.0,
+      "APD_s": 3.3,
+      "WTMP_C": null,
+      "ATMP_C": 12.4,
+      "note": "no WTMP obs"
     },
     "45005": {
-      "time_utc": "2026-10-10 13:30 UTC",
+      "time_utc": "2026-10-10 13:50 UTC",
       "WDIR_deg": 120.0,
-      "WSPD_ms": 5.0,
+      "WSPD_ms": 6.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
       "WTMP_C": null,
-      "ATMP_C": 17.3,
+      "ATMP_C": 17.2,
       "note": "no WTMP obs"
     }
   },
-  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>51\u00b0F</b> (deep blue) \u2192 <b>59\u00b0F</b> \u2192 warm <b>67\u00b0F</b> (red). Lakewide mean this run: <b>59.2\u00b0F</b>. White halo numbers are actual \u00b0F at that spot."
+  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>51\u00b0F</b> (deep blue) \u2192 <b>59\u00b0F</b> \u2192 warm <b>67\u00b0F</b> (red). Lakewide mean this run: <b>59.2\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. The bar ends are recomputed every run from that day's water (1st/99th percentiles, clamped 32\u201386\u00b0F): blue always means the coldest water present and red the warmest, but the same color can stand for a different \u00b0F on different days \u2014 only the printed numbers are absolute."
 }

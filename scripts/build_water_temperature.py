@@ -339,7 +339,7 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
     # Style rides the version token (same-cycle restyles change the ?v=
     # URL so caches cannot serve old pixels). TEXT_REV bumps on any
     # label change.
-    meta["source_version"] = source_token(f"{source_id}-r{RENDER_VERSION}-tempvals-tx1")
+    meta["source_version"] = source_token(f"{source_id}-r{RENDER_VERSION}-tempvals-tx2")
     meta["label_method"] = (
         "Actual °F values (e.g. 45°F) in white mono with a dark outline, "
         "free placement: data-seeded jittered candidates (positions move "
@@ -355,12 +355,13 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
     field, rgba, meta = render_field(
         PRODUCT, lats, lons, values_f, vmin, vmax, meta,
         title=CONFIG["title"],
-        subtitle=(f"{CONFIG['freshness_label']}  |  Data time: "
-                  f"{data_time_iso or 'see metadata'}"),
+        subtitle=(f"{data_time_iso or 'see metadata'}  |  ends = "
+                 f"today's coldest/warmest water"),
         source_line=(f"Source: NOAA/GLERL CoastWatch GLSEA  |  "
                      f"Processed {now_det_str()}"),
         unit_label="\u00b0F", transparent_value=None, fmt="{:.0f}",
-        splat_radius=1, product_dir=stage_prod)
+        splat_radius=1, product_dir=stage_prod,
+        tick_labels=[(vmin, f"{vmin:g}"), (vmax, f"{vmax:g}")])
 
     if int((rgba[:, :, 3] > 0).sum()) < 10_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: raster has no water pixels.")
@@ -431,7 +432,12 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
                   f"(deep blue) → <b>{mid_f:g}°F</b> → warm <b>{vmax:g}°F</b> "
                   f"(red). Lakewide mean this run: "
                   f"<b>{round(float(np.mean(f_vals)), 1)}°F</b>. White halo "
-                  f"numbers are actual °F at that spot.")
+                  f"numbers are actual °F at that spot. The bar ends are "
+                  f"recomputed every run from that day's water (1st/99th "
+                  f"percentiles, clamped 32–86°F): blue always means the "
+                  f"coldest water present and red the warmest, but the same "
+                  f"color can stand for a different °F on different days — "
+                  f"only the printed numbers are absolute.")
     meta["legend_scale_html"] = scale_html
     write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text
 
