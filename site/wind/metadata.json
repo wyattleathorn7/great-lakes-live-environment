@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261010/glwu.grlc_2p5km.t13z.grib2",
   "data_time_utc": "GLWU 2026-10-10 09:00 AM EDT (water); HRRR 2026-10-10 09:00 AM EDT (land fill)",
   "source_last_modified_utc": "Sat, 10 Oct 2026 13:28:21 GMT",
-  "processing_time_utc": "2026-10-10 10:00 AM EDT",
+  "processing_time_utc": "2026-10-10 10:30 AM EDT",
   "units": "kt + Beaufort Force 0-12 (display); source m/s",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361) over water + ~3 km NCEP HRRR CONUS grid as land fill",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -29,10 +29,10 @@
     640,
     464
   ],
-  "legend_scale_html": "WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only):<br/><b>F0</b> \u2014 Calm (0\u20130.99 kt)<br/><b>F1</b> \u2014 Light air (1\u20133 kt)<br/><b>F2</b> \u2014 Light breeze (4\u20136 kt)<br/><b>F3</b> \u2014 Gentle breeze (7\u201310 kt)<br/><b>F4</b> \u2014 Moderate breeze (11\u201316 kt)<br/><b>F5</b> \u2014 Fresh breeze (17\u201321 kt)<br/><b>F6</b> \u2014 Strong breeze (22\u201327 kt)<br/><b>F7</b> \u2014 High wind (28\u201333 kt)<br/><b>F8</b> \u2014 Gale (34\u201340 kt)<br/><b>F9</b> \u2014 Strong gale (41\u201347 kt)<br/><b>F10</b> \u2014 Storm (48\u201355 kt)<br/><b>F11</b> \u2014 Violent storm (56\u201363 kt)<br/><b>F12</b> \u2014 Hurricane-force (\u226564 kt)<br/>Maximum this run: <b>36 kt</b> (Beaufort 7). Full basin coverage: GLWU over water, HRRR 10 m fill over land. White streaks trace travel (brightness = knots, dim calm to bright gale); white halo numbers are actual kt at that spot.",
+  "legend_scale_html": "WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only):<br/><b>F0</b> \u2014 Calm (0\u20130.99 kt)<br/><b>F1</b> \u2014 Light air (1\u20133 kt)<br/><b>F2</b> \u2014 Light breeze (4\u20136 kt)<br/><b>F3</b> \u2014 Gentle breeze (7\u201310 kt)<br/><b>F4</b> \u2014 Moderate breeze (11\u201316 kt)<br/><b>F5</b> \u2014 Fresh breeze (17\u201321 kt)<br/><b>F6</b> \u2014 Strong breeze (22\u201327 kt)<br/><b>F7</b> \u2014 High wind (28\u201333 kt)<br/><b>F8</b> \u2014 Gale (34\u201340 kt)<br/><b>F9</b> \u2014 Strong gale (41\u201347 kt)<br/><b>F10</b> \u2014 Storm (48\u201355 kt)<br/><b>F11</b> \u2014 Violent storm (56\u201363 kt)<br/><b>F12</b> \u2014 Hurricane-force (\u226564 kt)<br/>Maximum this run: <b>36 kt</b> (Beaufort 7). Full basin coverage: GLWU over water, HRRR 10 m fill over land. White streaks trace travel (brightness = knots, dim calm to bright gale).",
   "model_cycle": "20261010 t13z + hrrr.20261010 t13z",
-  "source_id": "glwu-20261010-1300Z+hrrr-hrrr.20261010-t13z-fullbasin-g8-freelabels",
-  "source_version": "glwu-20261010-1300Z-hrrr-hrrr.20261010-t13z-fullbasin-g8-freelabels",
+  "source_id": "glwu-20261010-1300Z+hrrr-hrrr.20261010-t13z-fullbasin-g9-labels-disabled",
+  "source_version": "glwu-20261010-1300Z-hrrr-hrrr.20261010-t13z-fullbasin-g9-labels-disabled",
   "beaufort_table": [
     {
       "force": 0,
@@ -113,7 +113,7 @@
       "color": "#3B0A54"
     }
   ],
-  "methodology": "Wind speed = sqrt(U^2+V^2) from GLWU UGRD/VGRD surface analysis over water (m/s, direction of motion) + HRRR UGRD/VGRD 10 m analysis as the land/background fill (same formula), x1.94384 -> knots, mapped to WMO Beaufort Force 0-12 with unmodified thresholds; GLWU wins wherever valid, HRRR fills land + GLWU gaps + canvas edges. Arrows point along the (U,V) movement vector (no FROM->TOWARD reversal needed for GRIB components); calm (<0.5 m/s) gets no arrow. Full basin rectangle (lon -93..-73.5, lat 40.5..49.5, the Live Leaf Color footprint) with dual opacity from the shared NOAA shoreline mask: open water ~80% (alpha 205, the original lakes look) with the exact Beaufort table colors, land ~55% (alpha 140) with saturation-boosted twins of the same hues so each force reads the same through the extra transparency (single legend, no second key); inland lakes nipigon/nipissing/simcoe/winnebago render at full water opacity via the wind-local landcover water mask; edge RGB bled into transparent pixels (anti-fringe for bilinear clients). Direction glyphs are RK2 streamlets through the (U,V) movement field (surface-current technique; streak brightness encodes knots, dim calm to bright gale; micro-chevrons mark travel), plus actual knot values (e.g. 12kt) in white mono with a dark outline, placed sparsely with extras where the wind changes sharply.",
+  "methodology": "Wind speed = sqrt(U^2+V^2) from GLWU UGRD/VGRD surface analysis over water (m/s, direction of motion) + HRRR UGRD/VGRD 10 m analysis as the land/background fill (same formula), x1.94384 -> knots, mapped to WMO Beaufort Force 0-12 with unmodified thresholds; GLWU wins wherever valid, HRRR fills land + GLWU gaps + canvas edges. Arrows point along the (U,V) movement vector (no FROM->TOWARD reversal needed for GRIB components); calm (<0.5 m/s) gets no arrow. Full basin rectangle (lon -93..-73.5, lat 40.5..49.5, the Live Leaf Color footprint) with dual opacity from the shared NOAA shoreline mask: open water ~80% (alpha 205, the original lakes look) with the exact Beaufort table colors, land ~55% (alpha 140) with saturation-boosted twins of the same hues so each force reads the same through the extra transparency (single legend, no second key); inland lakes nipigon/nipissing/simcoe/winnebago render at full water opacity via the wind-local landcover water mask; edge RGB bled into transparent pixels (anti-fringe for bilinear clients). Direction glyphs are RK2 streamlets through the (U,V) movement field (surface-current technique; streak brightness encodes knots, dim calm to bright gale; micro-chevrons mark travel) (live kt value labels currently disabled).",
   "stats": {
     "valid_cells": 2114386,
     "glwu_canvas_cells": 366108,
@@ -127,8 +127,9 @@
     "direction_style": "stream",
     "streamlets_drawn": 4204,
     "stream_heads_drawn": 1565,
-    "kt_labels_on_grid": 260,
-    "kt_labels_extra": 0
+    "kt_labels_on_grid": 0,
+    "kt_labels_extra": 0,
+    "show_kt_labels": false
   },
   "buoy_qc": {
     "45001": {
@@ -136,35 +137,35 @@
       "grid_kt_approx": 24.5,
       "absdiff_kt": 1.2,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "obs_time": "2026-10-10 14:00 UTC"
     },
     "45002": {
-      "obs_kt": 15.6,
+      "obs_kt": 19.4,
       "grid_kt_approx": 13.5,
-      "absdiff_kt": 2.1,
-      "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "absdiff_kt": 5.9,
+      "verdict": "CHECK",
+      "obs_time": "2026-10-10 14:00 UTC"
     },
     "45132": {
-      "obs_kt": 15.6,
+      "obs_kt": 13.6,
       "grid_kt_approx": 13.5,
-      "absdiff_kt": 2.1,
+      "absdiff_kt": 0.1,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:00 UTC"
+      "obs_time": "2026-10-10 14:00 UTC"
     },
     "45012": {
       "obs_kt": 13.6,
       "grid_kt_approx": 13.5,
       "absdiff_kt": 0.1,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "obs_time": "2026-10-10 14:00 UTC"
     },
     "45005": {
-      "obs_kt": 9.7,
+      "obs_kt": 13.6,
       "grid_kt_approx": 13.5,
-      "absdiff_kt": 3.8,
+      "absdiff_kt": 0.1,
       "verdict": "OK",
-      "obs_time": "2026-10-10 13:30 UTC"
+      "obs_time": "2026-10-10 14:00 UTC"
     }
   }
 }
