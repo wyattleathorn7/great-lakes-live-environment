@@ -136,7 +136,7 @@
       "grid_kt_approx": 2.0,
       "absdiff_kt": 11.6,
       "verdict": "CHECK",
-      "obs_time": "2026-10-10 00:20 UTC"
+      "obs_time": "2026-10-10 00:00 UTC"
     },
     "45002": {
       "obs_kt": 11.7,
@@ -157,7 +157,7 @@
       "grid_kt_approx": 19.0,
       "absdiff_kt": 11.2,
       "verdict": "CHECK",
-      "obs_time": "2026-10-10 00:00 UTC"
+      "obs_time": "2026-10-10 00:20 UTC"
     },
     "45005": {
       "obs_kt": 9.7,
