@@ -374,6 +374,15 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
     if n_tpri + n_tfill < 20:
         print(f"[{PRODUCT}] VALIDATION FAILED: too few temp labels.")
         return 2
+    # render_field saved the BASE raster before painting above: persist the
+    # labeled raster (without this the values never reach the file).
+    # Glyphs near shore can spill 1-2 px onto land: clip alpha back to
+    # the shared shoreline (same as the wave layer).
+    from geospatial_utils import save_png as _sp2, load_watermask as _lwm
+    _wm = _lwm()
+    rgba[:, :, 3] = np.round(
+        rgba[:, :, 3].astype(np.float32) * _wm).astype(np.uint8)
+    _sp2(rgba, os.path.join(stage_prod, "current.png"))
     if preview_dir is not None:
         import os as _os
         from geospatial_utils import save_png as _sp
