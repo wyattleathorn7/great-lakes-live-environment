@@ -16,7 +16,7 @@ on:
                    "ice_thickness", "ice_type", "wind", "leaf_color",
                    "chlorophyll", "water_clarity", "solar_radiation",
                    "air_temperature", "snow_coverage", "uv_index",
-                   "cloud_cover", "surface_pressure", "wave_direction", "wave_combined", "surface_currents", "precipitation", "aurora", "bacteria", "visibility", "humidity", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish"]
+                   "cloud_cover", "surface_pressure", "wave_direction", "wave_combined", "surface_currents", "precipitation", "aurora_global", "bacteria", "visibility", "humidity", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -646,8 +646,8 @@ jobs:
             output/state/precipitation.json
           if-no-files-found: warn
 
-  aurora:
-    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'aurora' }}
+  aurora_global:
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'hourly' || inputs.product == 'aurora_global' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -659,23 +659,23 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: pip install -r requirements.txt
-      - name: Update aurora
+      - name: Update aurora global
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          rc=0; python scripts/build_aurora.py || rc=$?
+          rc=0; python scripts/build_aurora_global.py || rc=$?
           if [ $rc -eq 2 ]; then echo "Aurora source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: site-aurora
+          name: site-aurora_global
           path: |
-            site/aurora
-            site/kml/Great_Lakes_Live_Ovation_Aurora_Forecast.kml
-            site/kml/live/Great_Lakes_Live_Ovation_Aurora_Forecast.kml
-            kml/Great_Lakes_Live_Ovation_Aurora_Forecast.kml
-            output/state/aurora.json
+            site/aurora_global
+            site/kml/Global_Live_Ovation_Aurora_Forecast.kml
+            site/kml/live/Global_Live_Ovation_Aurora_Forecast.kml
+            kml/Global_Live_Ovation_Aurora_Forecast.kml
+            output/state/aurora_global.json
           if-no-files-found: warn
 
   bacteria:
@@ -1005,7 +1005,7 @@ jobs:
           [ "$code" = "204" ] || echo "::warning::NOAA chain dispatch returned $code (expected 204)"
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, wave_combined, surface_currents, precipitation, aurora, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, wave_combined, surface_currents, precipitation, aurora_global, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

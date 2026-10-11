@@ -131,7 +131,7 @@ def _write(xml, out_dirs):
 
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
               description_html, refresh_interval, cache_token, out_dirs=None,
-              folder=None, meta=None):
+              folder=None, meta=None, bounds=None):
     """Write the LIVE overlay file (one GroundOverlay, versioned PNG href).
 
     ``cache_token`` MUST be the deterministic source version
@@ -140,9 +140,11 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     live file goes; the default is the deployed live path. Descriptions
     carry NO timestamps and NEVER repeat the folder title: the Folder name
     already titles the layer, so both Document and Folder descriptions
-    lead with the Legend block.
+    lead with the Legend block. ``bounds`` overrides the common canvas
+    (global-canvas products); defaults to the shared Great Lakes bounds.
     """
-    bounds = load_bounds()
+    if bounds is None:
+        bounds = load_bounds()
     base = pages_base()
     png_url = f"{base}/{png_path}?v={cache_token}"
     header = ""

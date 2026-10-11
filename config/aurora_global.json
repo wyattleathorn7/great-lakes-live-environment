@@ -1,0 +1,22 @@
+{
+  "product": "aurora_global",
+  "title": "LIVE GLOBAL OVATION AURORA FORECAST",
+  "freshness_label": "LIVE / CURRENT FORECAST (OVATION Prime, hourly check)",
+  "source_name": "NOAA/SWPC OVATION Prime aurora model (Aurora Viewline product family)",
+  "source_url": "https://www.spaceweather.gov/products/aurora-viewline-tonight-and-tomorrow-night-experimental",
+  "variable": "OVATION Prime auroral intensity, global 1-degree grid, both polar ovals",
+  "source_units": "OVATION aurora intensity (model units, 0-30+)",
+  "display_units": "auroral intensity 0-30+ (fixed absolute scale)",
+  "canvas_width": 3600,
+  "canvas_height": 1800,
+  "lon_min": -180.0,
+  "lon_max": 180.0,
+  "lat_min": -90.0,
+  "lat_max": 90.0,
+  "viewline_threshold": 5.0,
+  "viewline_guard_lat": 20.0,
+  "refresh_interval_seconds": 3600,
+  "kml_file": "Global_Live_Ovation_Aurora_Forecast.kml",
+  "overlay_name": "🌌 LIVE GLOBAL AURORA FORECAST",
+  "note": "Turn on/off independently of all other layers. Replaces the former Great Lakes basin aurora close-up."
+}

@@ -107,19 +107,19 @@ def main():
              "air_temperature", "snow_coverage", "uv_index",
              "cloud_cover", "surface_pressure", "wave_direction",
              "surface_currents",
-             "precipitation", "aurora", "bacteria"]
+             "precipitation", "aurora_global", "bacteria"]
     for p in prods:
-        for kf in (os.path.join(REPO_ROOT, "kml", f"Great_Lakes_Live_{_k(p)}.kml"),
-                   os.path.join(SITE_DIR, "kml", f"Great_Lakes_Live_{_k(p)}.kml")):
+        for kf in (os.path.join(REPO_ROOT, "kml", _kf(p)),
+                   os.path.join(SITE_DIR, "kml", _kf(p))):
             t = open(kf, encoding="utf-8").read()
             check(f"{p}-entry-one-link", t.count("<NetworkLink>") == 1,
                   t.count("<NetworkLink>"))
             check(f"{p}-entry-no-overlay", "<GroundOverlay>" not in t)
             check(f"{p}-entry-no-tiles-refs", "/tiles/" not in t)
             check(f"{p}-entry-links-live",
-                  f"kml/live/Great_Lakes_Live_{_k(p)}.kml" in t)
+                  f"kml/live/{_kf(p)}" in t)
         kf = os.path.join(SITE_DIR, "kml", "live",
-                          f"Great_Lakes_Live_{_k(p)}.kml")
+                          _kf(p))
         t = open(kf, encoding="utf-8").read()
         check(f"{p}-single-overlay", t.count("<GroundOverlay>") == 1,
               t.count("<GroundOverlay>"))
@@ -135,7 +135,7 @@ def main():
             _bad = ((a[:, :, 3] > 0) & (mask > 250 / 255)).sum() == 0
         elif p in ("cloud_cover", "surface_pressure", "uv_index",
                    "air_temperature", "solar_radiation", "precipitation",
-                   "aurora", "wind"):
+                   "aurora_global", "wind"):
             # basin-rectangle layers: land coverage is by design.
             _bad = True
         elif p == "surface_currents":
@@ -149,8 +149,8 @@ def main():
         else:
             _bad = ((a[:, :, 3] > 0) & (mask <= 0)).sum() == 0
         check(f"{p}-opaque-subset-of-mask", bool(_bad))
-        for kf in (os.path.join(REPO_ROOT, "kml", f"Great_Lakes_Live_{_k(p)}.kml"),
-                   os.path.join(SITE_DIR, "kml", f"Great_Lakes_Live_{_k(p)}.kml")):
+        for kf in (os.path.join(REPO_ROOT, "kml", _kf(p)),
+                   os.path.join(SITE_DIR, "kml", _kf(p))):
             t = open(kf, encoding="utf-8").read()
             check(f"{p}-no-screenoverlay", "<ScreenOverlay" not in t)
             check(f"{p}-no-placeholders",
@@ -159,7 +159,7 @@ def main():
             check(f"{p}-entry-has-link", "<NetworkLink>" in t)
             check(f"{p}-kml-small", len(t) < 100_000, len(t))
         kf = os.path.join(SITE_DIR, "kml", "live",
-                          f"Great_Lakes_Live_{_k(p)}.kml")
+                          _kf(p))
         t = open(kf, encoding="utf-8").read()
         check(f"{p}-has-groundoverlay", "<GroundOverlay>" in t)
         check(f"{p}-live-no-screenoverlay", "<ScreenOverlay" not in t)
@@ -798,6 +798,19 @@ def main():
     return 1 if FAIL else 0
 
 
+_KML_FILE = {
+    # Products whose KML filename breaks the Great_Lakes_Live_<KEY> pattern.
+    "aurora_global": "Global_Live_Ovation_Aurora_Forecast.kml",
+}
+
+
+def _kf(p):
+    """Entry/live KML filename for a product (pattern override aware)."""
+    if p in _KML_FILE:
+        return _KML_FILE[p]
+    return f"Great_Lakes_Live_{_k(p)}.kml"
+
+
 def _k(p):
     return {"wave_height": "Wave_Height", "water_temperature": "Water_Temperature",
             "ice_coverage": "Ice_Coverage", "ice_thickness": "Ice_Thickness",
@@ -813,7 +826,7 @@ def _k(p):
             "wave_direction": "Wave_Direction",
             "surface_currents": "Surface_Currents",
             "precipitation": "Precipitation",
-            "aurora": "Ovation_Aurora_Forecast",
+            "aurora_global": "Ovation_Aurora_Forecast",
             "bacteria": "Water_Quality",
             "visibility": "Atmospheric_Visibility",
             "humidity": "Relative_Humidity",

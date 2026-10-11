@@ -67,10 +67,10 @@ PRODUCTS = {
                       "max_opaque_min": 10_000},
     "surface_currents": {"kml": "Great_Lakes_Live_Surface_Currents.kml",
                          "max_opaque_min": 10_000},
-    "aurora": {"kml": "Great_Lakes_Live_Ovation_Aurora_Forecast.kml",
-               "max_opaque_min": 0},  # quiet-oval intervals => transparent OK (like clear-sky cloud)
+    "aurora_global": {"kml": "Global_Live_Ovation_Aurora_Forecast.kml",
+                      "max_opaque_min": 100},  # world canvas; ovals persist
     "bacteria": {"kml": "Great_Lakes_Live_Water_Quality.kml",
-                 "max_opaque_min": 0},  # NO DATA water is transparent; halos only where sampled
+                  "max_opaque_min": 0},  # NO DATA water is transparent; halos only where sampled
     "visibility": {"kml": "Great_Lakes_Live_Atmospheric_Visibility.kml",
                    "max_opaque_min": 10_000},
     "humidity": {"kml": "Great_Lakes_Live_Relative_Humidity.kml",
@@ -127,6 +127,15 @@ META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
                  "color_scale_max", "missing_data_treatment",
                  "shoreline_mask"]
 
+# Products on a non-shared canvas: expected PNG size + KML LatLonBox.
+GLOBAL_GEOMETRY = {
+    "aurora_global": {
+        "size": (3600, 1800),
+        "edges": {"<north>": 90.0, "<south>": -90.0,
+                  "<east>": 180.0, "<west>": -180.0},
+    },
+}
+
 
 def _site_file_for_href(href):
     """Map a KML Icon href to a local site/ path. None if not resolvable.
@@ -179,8 +188,10 @@ def main():
             im.load()
             if im.mode != "RGBA":
                 failures.append(f"{product}: PNG mode {im.mode} != RGBA")
-            if im.size != (bounds["canvas_width"], bounds["canvas_height"]):
-                failures.append(f"{product}: PNG size {im.size} != canvas")
+            expect_size = GLOBAL_GEOMETRY.get(product, {}).get(
+                "size", (bounds["canvas_width"], bounds["canvas_height"]))
+            if tuple(im.size) != tuple(expect_size):
+                failures.append(f"{product}: PNG size {im.size} != {expect_size}")
             try:
                 leg = Image.open(legend)
                 leg.load()
@@ -212,7 +223,7 @@ def main():
                 elif product in ("cloud_cover", "surface_pressure",
                                    "uv_index", "air_temperature",
                                    "solar_radiation", "precipitation",
-                                   "aurora", "visibility", "humidity",
+                                   "aurora_global", "visibility", "humidity",
                                    "light_pollution",
                                    "air_quality", "condensation", "fog",
                                    "dew_point", "wind"):
@@ -278,7 +289,7 @@ def main():
                 failures.append(f"{product}: wave period scale must be 0-12 s, got {lo}-{hi}")
             if product == "surface_currents" and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: current scale must be 0-100 cm/s, got {lo}-{hi}")
-            if product == "aurora" and (lo, hi) != (0.0, 30.0):
+            if product == "aurora_global" and (lo, hi) != (0.0, 30.0):
                 failures.append(f"{product}: aurora scale must be 0-30, got {lo}-{hi}")
             if product == "bacteria" and (lo, hi) != (10.0, 5000.0):
                 failures.append(f"{product}: bacteria scale must be 10-5000, got {lo}-{hi}")
@@ -505,7 +516,7 @@ def main():
                                "uv_index", "cloud_cover",
                                "surface_pressure", "wave_direction",
                                "surface_currents",
-                               "precipitation", "aurora", "bacteria",
+                                "precipitation", "aurora_global", "bacteria",
                                "visibility", "humidity",
                                "light_pollution",
                                "air_quality", "condensation", "fog",
@@ -543,10 +554,10 @@ def main():
                 if os.environ.get("CI") == "true" and "REPLACE-" in text:
                     failures.append(f"{product}: live KML still has placeholder "
                                     f"PAGES_BASE_URL (CI must set it)")
-                for edge, val in (("<north>", bounds["lat_max"]),
-                                  ("<south>", bounds["lat_min"]),
-                                  ("<east>", bounds["lon_max"]),
-                                  ("<west>", bounds["lon_min"])):
+                edges = GLOBAL_GEOMETRY.get(product, {}).get("edges", {
+                    "<north>": bounds["lat_max"], "<south>": bounds["lat_min"],
+                    "<east>": bounds["lon_max"], "<west>": bounds["lon_min"]})
+                for edge, val in ((k, v) for k, v in edges.items()):
                     if f"{edge}{val}" not in text and f"{edge}{float(val)}" not in text:
                         failures.append(f"{product}: live KML {edge} != {val}")
                 print(f"[{product}] live KML OK: {kp}")

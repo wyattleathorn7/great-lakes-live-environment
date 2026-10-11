@@ -75,14 +75,16 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
 # g8 = free (data-seeded, non-grid) label placement + whiter streaks/heads.
 # g9 = kt value labels DISABLED by default (gradient + streamlets only);
 #      re-enable via --show-kt-labels. New token so caches cannot serve
-#      the old labeled pixels under the old URL.
-RENDER_TAG = "fullbasin-g9-labels-disabled"
+#      the old pixels under the old URL.
+# g10 = kt labels use FIXED lattice placement (no jitter, no shuffle):
+#      same pixel anchors every cycle, only values change.
+# g11 = kt value labels RE-ENABLED by default (fixed placement from g10).
+RENDER_TAG = "fullbasin-g11-labels-enabled"
 
 # Live kt value labels (white-halo "12kt" numbers painted into the raster).
-# Disabled by default: gradient + streamlet streaks remain, numeric labels
-# are skipped. Function paint_wind_labels() is kept intact so this can be
-# re-enabled via CLI (--show-kt-labels) without restoring deleted code.
-SHOW_KT_LABELS = False
+# Enabled by default: gradient + streamlet streaks + fixed-anchor numeric
+# labels. Disable via CLI (--no-kt-labels).
+SHOW_KT_LABELS = True
 
 # Inland lakes that read as LAND in the shared NOAA shoreline mask (which
 # covers the five Great Lakes) but get the full 80% water treatment here:
@@ -455,11 +457,11 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
                       extra_thresh_kt=4.0, font_size=7, max_labels=260):
     """Actual knot values in the wave-label style: white mono + dark stroke.
 
-    NO fixed grid: candidates come from a data-seeded jittered lattice, so
-    positions move with the weather instead of sitting on a rigid lattice.
-    High-change cells (fronts/gust gradients) go first with tight spacing;
-    the rest fill a quota with wide spacing. Box-collision avoidance
-    throughout. Returns (rgba, n_priority, n_fill).
+    FIXED placement (g10): candidates sit on a rigid lattice — same pixel
+    anchors every cycle, only the numbers change. No jitter, no RNG seed,
+    no shuffle. High-change cells (fronts/gust gradients) go first with
+    tight spacing; the rest fill in row-major order with wide spacing.
+    Box-collision avoidance throughout. Returns (rgba, n_priority, n_fill).
     """
     H, W = kt_field.shape
     img = Image.fromarray(rgba, mode="RGBA")
@@ -469,12 +471,6 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
     if not ok.any():
         del d
         return np.array(img), 0, 0
-    # deterministic-per-data seed: same field -> same layout (no flicker
-    # between rebuilds of one cycle); new weather -> new positions.
-    _fin = kt_field[ok]
-    seed = int(abs(float(_fin.mean())) * 1000 + float(_fin.std()) * 97) \
-        % (2 ** 32 - 1)
-    rng = np.random.default_rng(seed)
     # local change map (12 px neighborhood max abs diff)
     grad = np.zeros(kt_field.shape)
     for dr, dc in ((-12, 0), (12, 0), (0, -12), (0, 12)):
@@ -482,21 +478,20 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
         diff = np.abs(kt_field - shifted)
         both = ok & np.isfinite(shifted)
         grad = np.maximum(grad, np.where(both, diff, 0.0))
-    # jittered candidates on a fine lattice (no visible grid)
+    # FIXED candidates on a rigid lattice (no jitter -> anchors never move)
     step = 32
     cand = []
     for r0 in range(0, H, step):
         for c0 in range(0, W, step):
-            r = r0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
-            c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
-            r, c = int(round(r)), int(round(c))
+            r = r0 + step // 2
+            c = c0 + step // 2
             if not (8 <= r < H - 8 and 8 <= c < W - 8):
                 continue
             if not ok[r, c] or rgba[r, c, 3] == 0:
                 continue
-            cand.append((grad[r, c], rng.random(), r, c))
-    # priority first (sharp change), then fill in random order
-    cand.sort(key=lambda t: (-t[0], t[1]))
+            cand.append((grad[r, c], r, c))
+    # priority first (sharp change), ties broken by row,col (deterministic)
+    cand.sort(key=lambda t: (-t[0], t[1], t[2]))
     placed = []
     n_priority = n_fill = 0
 
@@ -532,7 +527,7 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
         placed.append((x, y, x + tw, y + th))
         return True
 
-    for g, _, r, c in cand:
+    for g, r, c in cand:
         if n_priority + n_fill >= max_labels:
             break
         if g < extra_thresh_kt:
@@ -542,9 +537,11 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
             continue
         if _put(c, r - 12, f"{v:.0f}kt", sep=30):
             n_priority += 1
+    # Fill pass: row-major order (deterministic) — NOT shuffled, so anchors
+    # never jump between cycles.
     rest = [t for t in cand if t[0] < extra_thresh_kt]
-    rng.shuffle(rest)
-    for _, _, r, c in rest:
+    rest.sort(key=lambda t: (t[1], t[2]))
+    for _, r, c in rest:
         if n_priority + n_fill >= max_labels:
             break
         v = float(kt_field[r, c])
@@ -590,10 +587,12 @@ def main():
         ap.add_argument("--extra-step", type=int, default=64)
         ap.add_argument("--extra-thresh", type=float, default=4.0,
                         help="kt-change threshold for extra labels")
-        ap.add_argument("--show-kt-labels", action="store_true",
-                        default=SHOW_KT_LABELS,
-                        help="re-enable live kt value labels "
-                             "(default: disabled)")
+        ap.add_argument("--show-kt-labels", dest="show_kt_labels",
+                        action="store_true", default=SHOW_KT_LABELS,
+                        help="show live kt value labels (default: enabled)")
+        ap.add_argument("--no-kt-labels", dest="show_kt_labels",
+                        action="store_false",
+                        help="hide live kt value labels")
         args = ap.parse_args()
         return run(direction_style=args.direction_style,
                    preview_dir=args.preview_dir, font_size=args.font_size,
