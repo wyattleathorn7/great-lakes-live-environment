@@ -79,7 +79,12 @@ BUOY_POS = {  # NDBC (lon, lat) — QC reference only
 # g10 = kt labels use FIXED lattice placement (no jitter, no shuffle):
 #      same pixel anchors every cycle, only values change.
 # g11 = kt value labels RE-ENABLED by default (fixed placement from g10).
-RENDER_TAG = "fullbasin-g11-labels-enabled"
+# g12 = split label engine: OVER WATER emulates the live-temperature
+#      generator exactly (data-seeded jittered candidates, front-first,
+#      shuffled fill); OVER LAND uses the same generative instruction but
+#      anchored to fixed city/town/settlement points + high-change extras
+#      that appear/disappear with the wind.
+RENDER_TAG = "fullbasin-g12-split-water-city"
 
 # Live kt value labels (white-halo "12kt" numbers painted into the raster).
 # Enabled by default: gradient + streamlet streaks + fixed-anchor numeric
@@ -107,6 +112,64 @@ WIND_ALPHA_LAND = 140
 
 HRRR_MSGS = [("UGRD", "10 m above ground"), ("VGRD", "10 m above ground")]
 CANVAS_ARROW_STEP_PX = 45  # canvas-space sampling for land+water arrows
+
+# Strategic fixed land anchors: (name, lon, lat). Major cities first, then
+# branching townships/settlements (Port Huron / Lexington / Port Austin
+# corridor explicitly pinned). Converted to canvas rows/cols at paint time;
+# each label reads the live kt at its snapped land cell, so the ANCHOR is
+# fixed while the VALUE tracks the wind.
+CITY_ANCHORS = [
+    ("Chicago", -87.629, 41.878),
+    ("Milwaukee", -87.906, 43.038),
+    ("Green Bay", -88.013, 44.513),
+    ("Traverse City", -85.620, 44.763),
+    ("Grand Rapids", -85.668, 42.963),
+    ("Lansing", -84.555, 42.733),
+    ("Detroit", -83.045, 42.331),
+    ("Windsor", -83.036, 42.314),
+    ("Sarnia", -82.406, 42.974),
+    ("Port Huron", -82.424, 42.970),
+    ("Lexington", -82.527, 43.267),
+    ("Harbor Beach", -82.640, 43.845),
+    ("Port Austin", -82.677, 43.839),
+    ("Bad Axe", -82.997, 43.800),
+    ("Sandusky MI", -82.828, 43.419),
+    ("Tawas City", -83.513, 44.271),
+    ("Oscoda", -83.326, 44.419),
+    ("Alpena", -83.432, 45.078),
+    ("Cheboygan", -84.474, 45.646),
+    ("Petoskey", -84.955, 45.373),
+    ("Muskegon", -86.248, 43.234),
+    ("Ludington", -86.452, 43.955),
+    ("Manistee", -86.324, 44.244),
+    ("Kenosha", -87.821, 42.584),
+    ("Sheboygan", -87.707, 43.750),
+    ("Manitowoc", -87.657, 44.088),
+    ("Sturgeon Bay", -87.377, 44.834),
+    ("Marquette", -87.395, 46.543),
+    ("Sault Ste Marie", -84.345, 46.495),
+    ("Duluth", -92.093, 46.729),
+    ("Thunder Bay", -89.247, 48.380),
+    ("Toledo", -83.537, 41.652),
+    ("Sandusky OH", -82.711, 41.459),
+    ("Cleveland", -81.694, 41.499),
+    ("Erie", -80.085, 42.129),
+    ("Dunkirk", -79.333, 42.479),
+    ("Buffalo", -78.878, 42.886),
+    ("Rochester", -77.608, 43.156),
+    ("Oswego", -76.510, 43.455),
+    ("Syracuse", -76.147, 43.048),
+    ("Kingston", -76.480, 44.229),
+    ("Toronto", -79.383, 43.653),
+    ("Hamilton", -79.872, 43.256),
+    ("London", -81.245, 42.984),
+    ("Barrie", -79.690, 44.389),
+    ("Collingwood", -80.217, 44.500),
+    ("Owen Sound", -80.940, 44.569),
+    ("North Bay", -79.460, 46.309),
+    ("Sudbury", -80.993, 46.491),
+    ("Gary", -87.346, 41.593),
+]
 
 
 def _rgb(h):
@@ -457,12 +520,23 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
                       extra_thresh_kt=4.0, font_size=7, max_labels=260):
     """Actual knot values in the wave-label style: white mono + dark stroke.
 
-    FIXED placement (g10): candidates sit on a rigid lattice — same pixel
-    anchors every cycle, only the numbers change. No jitter, no RNG seed,
-    no shuffle. High-change cells (fronts/gust gradients) go first with
-    tight spacing; the rest fill in row-major order with wide spacing.
-    Box-collision avoidance throughout. Returns (rgba, n_priority, n_fill).
+    SPLIT engine (g12):
+    - OVER WATER: emulates the live-temperature generator EXACTLY
+      (paint_temp_labels in build_water_temperature.py — NOT modified):
+      data-seeded jittered candidates on a step-32 lattice, front cells
+      first (grad >= thresh, sep 30), then shuffled spaced fill (sep 48).
+    - OVER LAND: same generative instruction, but (1) fixed strategic
+      anchors over CITY_ANCHORS (major cities + Port Huron / Lexington /
+      Port Austin corridor townships) always attempted first, then
+      (2) high-change extras gated by the same grad threshold — they
+      appear/disappear with the wind.
+
+    Water/Land split uses the shared NOAA shoreline mask + inland-lake
+    boxes (same test as the dual-opacity merge). Returns
+    (rgba, n_strategic, n_fill) where strategic = water fronts + cities +
+    land fronts.
     """
+    from geospatial_utils import load_bounds as _lb, load_watermask as _lwm
     H, W = kt_field.shape
     img = Image.fromarray(rgba, mode="RGBA")
     d = ImageDraw.Draw(img)
@@ -471,29 +545,28 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
     if not ok.any():
         del d
         return np.array(img), 0, 0
-    # local change map (12 px neighborhood max abs diff)
+    bounds = _lb()
+    try:
+        _wm = _lwm()
+        _lake = inland_lake_mask(bounds, (H, W))
+        is_water = (_wm >= 0.5) | _lake
+    except Exception:
+        is_water = np.ones((H, W), dtype=bool)
+    # --- temperature-generator emulation: seed + grad map, identical math
+    _fin = kt_field[ok]
+    seed = int(abs(float(_fin.mean())) * 1000 + float(_fin.std()) * 97) \
+        % (2 ** 32 - 1)
+    rng = np.random.default_rng(seed)
     grad = np.zeros(kt_field.shape)
     for dr, dc in ((-12, 0), (12, 0), (0, -12), (0, 12)):
         shifted = np.roll(kt_field, shift=(-dr, -dc), axis=(0, 1))
         diff = np.abs(kt_field - shifted)
         both = ok & np.isfinite(shifted)
         grad = np.maximum(grad, np.where(both, diff, 0.0))
-    # FIXED candidates on a rigid lattice (no jitter -> anchors never move)
-    step = 32
-    cand = []
-    for r0 in range(0, H, step):
-        for c0 in range(0, W, step):
-            r = r0 + step // 2
-            c = c0 + step // 2
-            if not (8 <= r < H - 8 and 8 <= c < W - 8):
-                continue
-            if not ok[r, c] or rgba[r, c, 3] == 0:
-                continue
-            cand.append((grad[r, c], r, c))
-    # priority first (sharp change), ties broken by row,col (deterministic)
-    cand.sort(key=lambda t: (-t[0], t[1], t[2]))
+    step = 32  # same lattice step as the temperature generator
     placed = []
-    n_priority = n_fill = 0
+    n_strategic = n_fill = 0
+    WATER_MAX = 180  # same quota as paint_temp_labels default
 
     def _collides(x0, y0, x1, y1, pad=3):
         for (a0, b0, a1, b1) in placed:
@@ -527,22 +600,110 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
         placed.append((x, y, x + tw, y + th))
         return True
 
-    for g, r, c in cand:
-        if n_priority + n_fill >= max_labels:
+    def _snap_land(r, c, rad=7):
+        """Nearest land-valid cell to (r,c) within rad px, else None."""
+        for rad_i in range(rad + 1):
+            for dr in range(-rad_i, rad_i + 1):
+                for dc in (-rad_i, rad_i):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < H and 0 <= cc < W and ok[rr, cc] \
+                            and not is_water[rr, cc] and rgba[rr, cc, 3] > 0:
+                        return rr, cc
+            for dc in range(-rad_i + 1, rad_i):
+                for dr in (-rad_i, rad_i):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < H and 0 <= cc < W and ok[rr, cc] \
+                            and not is_water[rr, cc] and rgba[rr, cc, 3] > 0:
+                        return rr, cc
+        return None
+
+    # ---- PHASE 1: over-water emulation of the temperature generator ----
+    wcand = []
+    for r0 in range(0, H, step):
+        for c0 in range(0, W, step):
+            r = r0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            r, c = int(round(r)), int(round(c))
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if not ok[r, c] or rgba[r, c, 3] == 0:
+                continue
+            if not is_water[r, c]:
+                continue
+            wcand.append((grad[r, c], rng.random(), r, c))
+    wcand.sort(key=lambda t: (-t[0], t[1]))
+    for g, _, r, c in wcand:
+        if n_strategic + n_fill >= min(WATER_MAX, max_labels):
             break
         if g < extra_thresh_kt:
-            break  # remaining candidates are all low-change: fill pass next
+            break
         v = float(kt_field[r, c])
         if not (0.0 <= v <= 120.0):
             continue
         if _put(c, r - 12, f"{v:.0f}kt", sep=30):
-            n_priority += 1
-    # Fill pass: row-major order (deterministic) — NOT shuffled, so anchors
-    # never jump between cycles.
-    rest = [t for t in cand if t[0] < extra_thresh_kt]
-    rest.sort(key=lambda t: (t[1], t[2]))
-    for _, r, c in rest:
-        if n_priority + n_fill >= max_labels:
+            n_strategic += 1
+    wrest = [t for t in wcand if t[0] < extra_thresh_kt]
+    rng.shuffle(wrest)
+    for _, _, r, c in wrest:
+        if n_strategic + n_fill >= min(WATER_MAX, max_labels):
+            break
+        v = float(kt_field[r, c])
+        if not (0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}kt", sep=48):
+            n_fill += 1
+
+    # ---- PHASE 2a: fixed strategic city/town/settlement anchors (land) ----
+    lon_min, lon_max = bounds["lon_min"], bounds["lon_max"]
+    lat_min, lat_max = bounds["lat_min"], bounds["lat_max"]
+    for _name, lon, lat in CITY_ANCHORS:
+        if n_strategic + n_fill >= max_labels:
+            break
+        if not (lon_min <= lon <= lon_max and lat_min <= lat <= lat_max):
+            continue
+        c0 = int((lon - lon_min) / (lon_max - lon_min) * W)
+        r0 = int((lat_max - lat) / (lat_max - lat_min) * H)
+        if not (8 <= r0 < H - 8 and 8 <= c0 < W - 8):
+            continue
+        hit = _snap_land(r0, c0)
+        if hit is None:
+            continue
+        r, c = hit
+        v = float(kt_field[r, c])
+        if not (0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}kt", sep=30):
+            n_strategic += 1
+
+    # ---- PHASE 2b: land high-change extras (appear/disappear w/ wind) ----
+    lcand = []
+    for r0 in range(0, H, step):
+        for c0 in range(0, W, step):
+            r = r0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            r, c = int(round(r)), int(round(c))
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if not ok[r, c] or rgba[r, c, 3] == 0:
+                continue
+            if is_water[r, c]:
+                continue
+            lcand.append((grad[r, c], rng.random(), r, c))
+    lcand.sort(key=lambda t: (-t[0], t[1]))
+    for g, _, r, c in lcand:
+        if n_strategic + n_fill >= max_labels:
+            break
+        if g < extra_thresh_kt:
+            break  # below-threshold land cells wait for the fill pass
+        v = float(kt_field[r, c])
+        if not (0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}kt", sep=30):
+            n_strategic += 1
+    lrest = [t for t in lcand if t[0] < extra_thresh_kt]
+    rng.shuffle(lrest)
+    for _, _, r, c in lrest:
+        if n_strategic + n_fill >= max_labels:
             break
         v = float(kt_field[r, c])
         if not (0.0 <= v <= 120.0):
@@ -551,7 +712,7 @@ def paint_wind_labels(rgba, kt_field, label_every=2, extra_step=64,
             n_fill += 1
 
     del d
-    return np.array(img), n_priority, n_fill
+    return np.array(img), n_strategic, n_fill
 
 
 def fetch_hrrr_uv():
@@ -970,9 +1131,13 @@ def _build(got, used_url, datestr, cycle, raw_path, direction_style="stream",
             "movement field (surface-current technique; streak brightness "
             "encodes knots, dim calm to bright gale; micro-chevrons mark "
             "travel)"
-            + (", plus actual knot values (e.g. 12kt) in white mono "
-               "with a dark outline, placed sparsely with extras where the "
-               "wind changes sharply." if show_kt_labels
+            + ("; kt value labels use a split engine: over water the exact "
+               "live-temperature generator (data-seeded jittered step-32 "
+               "candidates, gust-front cells first, shuffled spaced fill); "
+               "over land the same instruction anchored to fixed "
+               "city/town/settlement points (incl. Port Huron / Lexington / "
+               "Port Austin corridor) plus high-wind-change extras that "
+               "appear/disappear with the wind." if show_kt_labels
                else " (live kt value labels currently disabled)."))
     meta["stats"]["show_kt_labels"] = show_kt_labels
 
