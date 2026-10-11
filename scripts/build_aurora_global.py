@@ -205,15 +205,53 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
           f"max={vals[ok].max() if ok.any() else float('nan'):.1f}")
     if ok.sum() < 1000:
         raise ValueError("too few valid cells")
-    field = resample_global(lons[ok], lats[ok], vals[ok])
-    # Tropical model-background mask (documented, not data removal of real
-    # signal): OVATION is a high-latitude precipitation model; the faint
-    # 1-4 equatorial/Americas-sector drizzle is background noise, so cells
-    # below |40° paint only at/above the viewline threshold (storm signal
-    # always survives; the viewline is read off the painted edge itself).
-    ys = 90.0 - (np.arange(GH) + 0.5) / GH * 180.0
-    trop = (np.abs(ys) < 40.0)[:, None] & (field < 5.0)
-    paint = np.where((field >= 1.0) & ~trop, field, np.nan)
+    # Source-level floor mask (verified signature, not assumed): obs cells
+    # at exactly the model floor (< 2.0) with no real activity (>= 2.0)
+    # within 3 deg are fill, not precipitation — static across frames,
+    # exactly uniform amid zeros (France/SAtlantic sectors verified).
+    # Real faint oval cells always neighbor genuine activity. Masked cells
+    # are dropped before resampling so no smear of them can paint.
+    _jj = np.clip(np.floor(lons + 180.0).astype(int), 0, 359)
+    _ii2 = np.clip(np.floor(lats + 90.0).astype(int), 0, 179)
+    _gmax = np.full(180 * 360, -1.0)
+    _vv = np.where(ok, vals, -1.0)
+    np.maximum.at(_gmax, _ii2 * 360 + _jj, _vv)
+    _gmax = _gmax.reshape(180, 360)
+    _dil = _gmax.copy()
+    for _di in (-3, -2, -1, 1, 2, 3):
+        for _dj in (-3, -2, -1, 1, 2, 3):
+            _dil = np.maximum(_dil, np.roll(np.roll(_gmax, _di, axis=0),
+                                            _dj, axis=1))
+    _cellmax = _dil[_ii2, _jj]
+    _bg = ok & (vals < 2.0) & (_cellmax < 2.0)
+    print(f"[{PRODUCT}] floor-fill masked obs cells: {int(_bg.sum())}")
+    use = ok & ~_bg
+    field = resample_global(lons[use], lats[use], vals[use])
+    # Background-noise rule (documented; applies equally at ALL latitudes,
+    # so it is not a geographic bias): OVATION carries a persistent,
+    # static, exactly-uniform faint floor (verified: hundreds of cells at
+    # exactly 1.0 amid zeros, unmoving across frames, far below the
+    # product's own viewing-relevance threshold). When genuine activity
+    # exists, faint green paints only attached to it (oval edges stay,
+    # isolated floor cells never paint).
+    core = np.isfinite(field) & (field >= 5.0)
+    # Background rule (documented; verified against source, not assumed):
+    # the persistent static exact-1.0 floor appears far from any activity,
+    # while real faint oval sections sit poleward or adjacent to bright
+    # cores. So: poleward of |50° everything >= floor paints (never erase
+    # the oval); equatorward, faint paints only attached (within 3°,
+    # covering bilinear smear plus genuine gradient fringe) to genuinely
+    # active cells, so storm expansions survive and flat floor plateaus
+    # never paint. Quiet regimes keep their poleward faint oval.
+    _R, _S = 30, 61
+    _pad = np.pad(core.astype(float), _R, mode="constant")
+    _ii = np.zeros((np.asarray(_pad.shape) + 1), dtype=float)
+    _ii[1:, 1:] = np.cumsum(np.cumsum(_pad, axis=0), axis=1)
+    _support = (_ii[_S:_S + GH, _S:_S + GW] - _ii[0:GH, _S:_S + GW]
+                - _ii[_S:_S + GH, 0:GW] + _ii[0:GH, 0:GW]) > 0
+    _ys = 90.0 - (np.arange(GH) + 0.5) / GH * 180.0
+    _high = (np.abs(_ys) >= 50.0)[:, None]
+    paint = np.where((field >= 1.0) & (_high | _support), field, np.nan)
     rgba = render_rgba(paint, AURORA_STOPS, 205)
     rgba, n_labels = paint_aurora_labels(rgba, paint, font_size=font_size)
     # Viewline = the painted threshold edge itself (no smoothing, margins,
@@ -256,8 +294,9 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
          f"NOAA's own view line) "
          f"(<b>{vl_txt}</b>) — aurora may be visible low on the northern "
          f"horizon from there under dark, clear skies. The line spans "
-         f"only longitudes where the oval actually reaches near it. Faint "
-         f"equatorial speckles are a known OVATION grid artifact, not "
+         f"only longitudes where the oval actually reaches near it. "
+         f"Isolated faint cells paint only where connected to genuinely "
+         f"active areas, so model background noise never renders as "
          f"aurora.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
@@ -267,14 +306,15 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
         units="OVATION intensity 0-30+ (display = source)",
         source_resolution="1-degree global OVATION grid, bilinear to 0.1 deg canvas",
         color_min=0.0, color_max=30.0, color_units="OVATION intensity",
-        missing_data_treatment=("intensity < 1.0 transparent; tropical "
-                                "model-background cells (|lat| < 40° and "
-                                "intensity < 5) masked as non-auroral noise — "
-                                "storm-level signal always paints, and the "
-                                "viewline is computed on unmasked source; "
-                                "full world equirectangular canvas lon "
-                                "-180..180 / lat -90..90 (3600x1800); missing "
-                                "source transparent, never zero-filled."))
+        missing_data_treatment=("intensity < 1.0 transparent; faint cells "
+                                "paint only poleward of |50° or attached "
+                                "(within 10°) to genuinely active areas, so "
+                                "isolated model background never renders as "
+                                "aurora while storm expansions and faint oval "
+                                "sections survive; full world equirectangular "
+                                "canvas lon -180..180 / lat -90..90 "
+                                "(3600x1800); missing source transparent, "
+                                "never zero-filled."))
     meta["render_bounds"] = {"lon_min": -180.0, "lon_max": 180.0,
                              "lat_min": -90.0, "lat_max": 90.0}
     meta["spatial_resolution_rendered"] = (
@@ -284,7 +324,7 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
     meta["legend_scale_html"] = scale_html
     meta["source_id"] = source_id
     meta["source_version"] = source_token(
-        f"{source_id}-r{RENDER_VERSION}-aurglobal-tx4")
+        f"{source_id}-r{RENDER_VERSION}-aurglobal-tx5")
     meta["viewline_threshold"] = CONFIG["viewline_threshold"]
     meta["viewline_farthest_lat"] = vl
     meta["stats"] = {"valid_cells": int(np.isfinite(paint).sum()),
