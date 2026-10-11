@@ -1,6 +1,6 @@
 {
-  "model_cycle": "20261011 t07z + hrrr.20261011 t12z",
-  "source_id": "glwu-20261011-0700Z+hrrr-hrrr.20261011-t12z-fullbasin-g12-split-water-city",
+  "model_cycle": "20261011 t13z + hrrr.20261011 t12z",
+  "source_id": "glwu-20261011-1300Z+hrrr-hrrr.20261011-t12z-fullbasin-g12-split-water-city",
   "render_version": 12,
-  "processing_time_utc": "2026-10-11 09:00 AM EDT"
+  "processing_time_utc": "2026-10-11 09:30 AM EDT"
 }
