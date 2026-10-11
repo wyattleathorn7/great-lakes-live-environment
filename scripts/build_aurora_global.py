@@ -82,88 +82,77 @@ def resample_global(lons, lats, vals):
                 + f01 * (1 - tx) * ty + f11 * tx * ty)
 
 
-def farthest_viewline_lat(lons, lats, vals, threshold, guard):
-    """Farthest equatorward reach of the NORTHERN oval: minimum latitude
-    with intensity >= threshold at/above the guard (documented guard
-    excludes near-equatorial grid artifacts, never real aurora)."""
-    m = (lats >= guard) & (vals >= threshold)
-    if not m.any():
-        return None
-    return float(lats[m].min())
+def oval_edge_columns(paint, threshold, bounds, step=2):
+    """Exact equatorward boundary of what is PAINTED, per canvas column.
 
-
-def viewline_spans(lons, lats, vals, threshold, guard, vl, margin_deg=8.0):
-    """Longitude ranges where the oval actually reaches near the viewline.
-
-    The farthest reach is one latitude, but the oval never dips there at
-    every longitude — drawing the line ocean-wide would imply visibility
-    where the oval stays far north. Returns [(lon0, lon1)] merged spans
-    (gaps <= 5 deg tolerated) where some cell within margin north of the
-    line reaches threshold.
+    No smoothing, no margins, no guards beyond the raster's own documented
+    rules: for each column, the southernmost pixel at/above threshold.
+    Columns without reach split the curve. The line IS the displayed data
+    edge — nothing interpretive.
+    Returns ([(x, y)] pixel points, southernmost_lat or None).
     """
-    spans = []
-    cur0 = cur1 = None
-    for lo in range(-180, 180, 2):
-        m = (lons >= lo) & (lons < lo + 2) & (lats >= guard) & (vals >= threshold)
-        if not m.any():
-            hit = False
-        else:
-            hit = float(lats[m].min()) <= vl + margin_deg
-        if hit:
-            if cur0 is None:
-                cur0 = cur1 = lo
-            elif lo - cur1 <= 5 + 2:
-                cur1 = lo
-            else:
-                spans.append((cur0, cur1 + 2))
-                cur0 = cur1 = lo
-        else:
-            if cur0 is not None:
-                spans.append((cur0, cur1 + 2))
-                cur0 = cur1 = None
-    if cur0 is not None:
-        spans.append((cur0, cur1 + 2))
-    return spans
+    H, W = paint.shape
+    # Northern oval only: rows at/above the equator (row of lat 0).
+    r_eq = int((bounds["lat_max"] - 0.0)
+               / (bounds["lat_max"] - bounds["lat_min"]) * H)
+    pts = []
+    for x in range(0, W, step):
+        col = paint[:r_eq, x]
+        hits = np.where(np.isfinite(col) & (col >= threshold))[0]
+        if hits.size:
+            pts.append((x, int(hits.max())))
+    southernmost = None
+    if pts:
+        rmax = max(r for _, r in pts)
+        southernmost = bounds["lat_max"] - (rmax + 0.5) / H \
+            * (bounds["lat_max"] - bounds["lat_min"])
+    return pts, southernmost
 
 
-def paint_viewline(rgba, lat, bounds, spans=None):
-    """Single straight raster latitude line + one mono tag (raster only).
+def paint_viewline(rgba, edge_pts, bounds, tag_lat):
+    """Raster viewline = the painted threshold edge itself (raster only).
 
-    Spans (optional [(lon0, lon1)]) clip the line to longitudes where the
-    oval actually reaches near it; None draws full-width (legacy).
+    Raw pixel points, unsmoothed; gaps in the data split the curve. One
+    mono tag at the southernmost dip. Cartographic linework only (dark
+    underlay + white core so it reads on any color) — every position is
+    a data pixel.
     """
     H, W = rgba.shape[:2]
-    row = int((bounds["lat_max"] - lat)
-              / (bounds["lat_max"] - bounds["lat_min"]) * H)
-    if not (4 <= row < H - 4):
-        return rgba, False
-    if spans:
-        segs = []
-        for lo0, lo1 in spans:
-            c0 = int((lo0 - bounds["lon_min"])
-                     / (bounds["lon_max"] - bounds["lon_min"]) * W)
-            c1 = int((lo1 - bounds["lon_min"])
-                     / (bounds["lon_max"] - bounds["lon_min"]) * W)
-            c0, c1 = max(4, c0), min(W - 4, c1)
-            if c1 - c0 >= 20:
-                segs.append((c0, c1))
-        if not segs:
-            return rgba, False
-    else:
-        segs = [(4, W - 4)]
     img = Image.fromarray(rgba, mode="RGBA")
     d = ImageDraw.Draw(img)
-    for c0, c1 in segs:
-        for dy in (-1, 0, 1):
-            d.line([(c0, row + dy), (c1, row + dy)],
-                   fill=(255, 255, 255, 220))
-    font = _label_font_big(14)
-    tag = f"VIEWLINE ~{lat:.0f}\u00b0N"
-    tx = segs[0][0] + 6
-    d.text((tx, row - 22), tag, font=font, fill=(255, 255, 255, 255),
-           stroke_width=1, stroke_fill=(20, 20, 20, 235))
+    # split on pixel gaps (missing columns break the run)
+    runs, cur = [], []
+    for x, r in sorted(edge_pts):
+        if not (4 <= r < H - 4):
+            continue
+        if cur and x - cur[-1][0] > 3 * 2:
+            runs.append(cur)
+            cur = []
+        cur.append((x, r))
+    if cur:
+        runs.append(cur)
+    drew = False
+    dip = None
+    for run in runs:
+        if len(run) < 3:
+            continue
+        flat = [(x, y) for x, y in run]
+        d.line(flat, fill=(20, 20, 20, 170), width=5, joint="curve")
+        d.line(flat, fill=(255, 255, 255, 235), width=2, joint="curve")
+        drew = True
+        cand = max(run, key=lambda t: t[1])
+        if dip is None or cand[1] > dip[1]:
+            dip = cand
+    if drew and dip is not None:
+        font = _label_font_big(14)
+        lat = bounds["lat_max"] - (dip[1] + 0.5) / H \
+            * (bounds["lat_max"] - bounds["lat_min"])
+        d.text((min(max(dip[0] - 40, 6), W - 170), dip[1] + 8),
+               f"VIEWLINE ~{lat:.0f}\u00b0N", font=font,
+               fill=(255, 255, 255, 255),
+               stroke_width=1, stroke_fill=(20, 20, 20, 235))
     del d
-    return np.array(img), True
+    return np.array(img), drew
 
 
 def main():
@@ -221,24 +210,20 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
     # signal): OVATION is a high-latitude precipitation model; the faint
     # 1-4 equatorial/Americas-sector drizzle is background noise, so cells
     # below |40° paint only at/above the viewline threshold (storm signal
-    # always survives; the viewline itself is computed on raw source).
+    # always survives; the viewline is read off the painted edge itself).
     ys = 90.0 - (np.arange(GH) + 0.5) / GH * 180.0
     trop = (np.abs(ys) < 40.0)[:, None] & (field < 5.0)
     paint = np.where((field >= 1.0) & ~trop, field, np.nan)
     rgba = render_rgba(paint, AURORA_STOPS, 205)
     rgba, n_labels = paint_aurora_labels(rgba, paint, font_size=font_size)
-    vl = farthest_viewline_lat(lons[ok], lats[ok], vals[ok],
-                               CONFIG["viewline_threshold"],
-                               CONFIG["viewline_guard_lat"])
+    # Viewline = the painted threshold edge itself (no smoothing, margins,
+    # or separate guards: every line pixel is a displayed data pixel).
+    edge_pts, vl = oval_edge_columns(paint, CONFIG["viewline_threshold"],
+                                     GBOUNDS)
     vl_ok = False
-    vl_spans = []
     if vl is not None:
-        vl_spans = viewline_spans(lons[ok], lats[ok], vals[ok],
-                                  CONFIG["viewline_threshold"],
-                                  CONFIG["viewline_guard_lat"], vl)
-        rgba, vl_ok = paint_viewline(rgba, vl, GBOUNDS, spans=vl_spans)
-    print(f"[{PRODUCT}] labels={n_labels} viewline={vl} drawn={vl_ok} "
-          f"spans={vl_spans}")
+        rgba, vl_ok = paint_viewline(rgba, edge_pts, GBOUNDS, vl)
+    print(f"[{PRODUCT}] labels={n_labels} viewline={vl} drawn={vl_ok}")
     if preview_dir is not None:
         os.makedirs(preview_dir, exist_ok=True)
         save_png(rgba, os.path.join(preview_dir, "current.png"))
@@ -266,9 +251,10 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
         f"(oval overhead) &rarr; <b>14 orange</b> &rarr; <b>23 magenta</b> "
         f"(severe) &rarr; <b>HIGHEST+ 30+</b> (violet extreme). Same "
         f"intensity always shows the same color. White halo numbers are "
-        f"actual intensity at that spot. Single white viewline: the "
-        f"northern oval's farthest equatorward reach now "
-        f"(<b>{vl_txt}</b>) — aurora may be visible low on the northern "
+         f"actual intensity at that spot. White viewline hugs the oval's "
+         f"farthest equatorward edge (dipping where coverage dips, like "
+         f"NOAA's own view line) "
+         f"(<b>{vl_txt}</b>) — aurora may be visible low on the northern "
          f"horizon from there under dark, clear skies. The line spans "
          f"only longitudes where the oval actually reaches near it. Faint "
          f"equatorial speckles are a known OVATION grid artifact, not "
@@ -298,7 +284,7 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
     meta["legend_scale_html"] = scale_html
     meta["source_id"] = source_id
     meta["source_version"] = source_token(
-        f"{source_id}-r{RENDER_VERSION}-aurglobal-tx2")
+        f"{source_id}-r{RENDER_VERSION}-aurglobal-tx4")
     meta["viewline_threshold"] = CONFIG["viewline_threshold"]
     meta["viewline_farthest_lat"] = vl
     meta["stats"] = {"valid_cells": int(np.isfinite(paint).sum()),
