@@ -5,15 +5,17 @@ aurora close-up: BOTH polar ovals from the same global OVATION JSON grid
 (the northern file already spans -90..90), rendered on an equirectangular
 world canvas (3600x1800, 0.1 deg/px) with the identical fixed 0-30+ scale.
 
-Extra vs the basin layer: ONE rasterized viewline — a single straight
-latitude line at the northern oval's farthest equatorward reach
-(threshold crossings at/above the guard latitude), tagged once with its
-latitude. Raster-burned (no LineString/Placemark: the raster-only rule
-holds and validation stays green).
+No viewline is drawn: the gradient + intensity numbers carry the product
+(raster only).
 
 Intensity numbers ride in the wave/wind/temp label style (band-capped,
-free placement; quiet runs place zero). The basin builder file is kept
-(the painter + stops are imported from it); only its outputs are retired.
+free placement; quiet runs place zero). At global scale they render at
+14 px with wide separation so they read as numbers instead of specks,
+and polar rows (|lat| > 80) are excluded from placement — equirectangular
+pole rows smear across the Google Earth pole pinch, so a label placed
+there renders as a giant blob (the south-pole spot). The basin builder
+file is kept (the painter + stops are imported from it); only its outputs
+are retired.
 
 Exit codes: 0 updated (or skipped); 2 source/validation failure
 (previous kept); 1 unexpected error.
@@ -26,7 +28,6 @@ import sys
 import traceback
 
 import numpy as np
-from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_aurora import AURORA_STOPS, fetch_ovation, paint_aurora_labels
@@ -49,11 +50,6 @@ SKIP_NOTE = "Turn on/off independently of all other layers."
 GW, GH = CONFIG["canvas_width"], CONFIG["canvas_height"]
 GBOUNDS = {"lon_min": CONFIG["lon_min"], "lon_max": CONFIG["lon_max"],
            "lat_min": CONFIG["lat_min"], "lat_max": CONFIG["lat_max"]}
-
-
-def _label_font_big(size=14):
-    from build_aurora import _aur_label_font
-    return _aur_label_font(size)
 
 
 def resample_global(lons, lats, vals):
@@ -82,85 +78,12 @@ def resample_global(lons, lats, vals):
                 + f01 * (1 - tx) * ty + f11 * tx * ty)
 
 
-def oval_edge_columns(paint, threshold, bounds, step=2):
-    """Exact equatorward boundary of what is PAINTED, per canvas column.
-
-    No smoothing, no margins, no guards beyond the raster's own documented
-    rules: for each column, the southernmost pixel at/above threshold.
-    Columns without reach split the curve. The line IS the displayed data
-    edge — nothing interpretive.
-    Returns ([(x, y)] pixel points, southernmost_lat or None).
-    """
-    H, W = paint.shape
-    # Northern oval only: rows at/above the equator (row of lat 0).
-    r_eq = int((bounds["lat_max"] - 0.0)
-               / (bounds["lat_max"] - bounds["lat_min"]) * H)
-    pts = []
-    for x in range(0, W, step):
-        col = paint[:r_eq, x]
-        hits = np.where(np.isfinite(col) & (col >= threshold))[0]
-        if hits.size:
-            pts.append((x, int(hits.max())))
-    southernmost = None
-    if pts:
-        rmax = max(r for _, r in pts)
-        southernmost = bounds["lat_max"] - (rmax + 0.5) / H \
-            * (bounds["lat_max"] - bounds["lat_min"])
-    return pts, southernmost
-
-
-def paint_viewline(rgba, edge_pts, bounds, tag_lat):
-    """Raster viewline = the painted threshold edge itself (raster only).
-
-    Raw pixel points, unsmoothed; gaps in the data split the curve. One
-    mono tag at the southernmost dip. Cartographic linework only (dark
-    underlay + white core so it reads on any color) — every position is
-    a data pixel.
-    """
-    H, W = rgba.shape[:2]
-    img = Image.fromarray(rgba, mode="RGBA")
-    d = ImageDraw.Draw(img)
-    # split on pixel gaps (missing columns break the run)
-    runs, cur = [], []
-    for x, r in sorted(edge_pts):
-        if not (4 <= r < H - 4):
-            continue
-        if cur and x - cur[-1][0] > 3 * 2:
-            runs.append(cur)
-            cur = []
-        cur.append((x, r))
-    if cur:
-        runs.append(cur)
-    drew = False
-    dip = None
-    for run in runs:
-        if len(run) < 3:
-            continue
-        flat = [(x, y) for x, y in run]
-        d.line(flat, fill=(20, 20, 20, 170), width=5, joint="curve")
-        d.line(flat, fill=(255, 255, 255, 235), width=2, joint="curve")
-        drew = True
-        cand = max(run, key=lambda t: t[1])
-        if dip is None or cand[1] > dip[1]:
-            dip = cand
-    if drew and dip is not None:
-        font = _label_font_big(14)
-        lat = bounds["lat_max"] - (dip[1] + 0.5) / H \
-            * (bounds["lat_max"] - bounds["lat_min"])
-        d.text((min(max(dip[0] - 40, 6), W - 170), dip[1] + 8),
-               f"VIEWLINE ~{lat:.0f}\u00b0N", font=font,
-               fill=(255, 255, 255, 255),
-               stroke_width=1, stroke_fill=(20, 20, 20, 235))
-    del d
-    return np.array(img), drew
-
-
 def main():
     try:
         import argparse
         ap = argparse.ArgumentParser()
         ap.add_argument("--preview-dir", default=None)
-        ap.add_argument("--font-size", type=int, default=7)
+        ap.add_argument("--font-size", type=int, default=14)
         args = ap.parse_args()
         return run(preview_dir=args.preview_dir, font_size=args.font_size)
     except SystemExit as e:
@@ -170,7 +93,7 @@ def main():
         return 1
 
 
-def run(preview_dir=None, font_size=7):
+def run(preview_dir=None, font_size=14):
     try:
         obs, fcst, lons, lats, vals, hemi, kpf, kp_now = fetch_ovation()
     except Exception as e:
@@ -196,7 +119,7 @@ def run(preview_dir=None, font_size=7):
 
 
 def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
-           preview_dir=None, font_size=7):
+           preview_dir=None, font_size=14):
     from geospatial_utils import iso_to_det
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
@@ -253,15 +176,13 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
     _high = (np.abs(_ys) >= 50.0)[:, None]
     paint = np.where((field >= 1.0) & (_high | _support), field, np.nan)
     rgba = render_rgba(paint, AURORA_STOPS, 205)
-    rgba, n_labels = paint_aurora_labels(rgba, paint, font_size=font_size)
-    # Viewline = the painted threshold edge itself (no smoothing, margins,
-    # or separate guards: every line pixel is a displayed data pixel).
-    edge_pts, vl = oval_edge_columns(paint, CONFIG["viewline_threshold"],
-                                     GBOUNDS)
-    vl_ok = False
-    if vl is not None:
-        rgba, vl_ok = paint_viewline(rgba, edge_pts, GBOUNDS, vl)
-    print(f"[{PRODUCT}] labels={n_labels} viewline={vl} drawn={vl_ok}")
+    # Intensity numbers at global scale: 14 px + wide separation so they
+    # read as numbers (7 px on a 3600 px canvas renders as specks), polar
+    # rows excluded (pole-pinch smear).
+    rgba, n_labels = paint_aurora_labels(rgba, paint, font_size=font_size,
+                                         extra_sep=90, bounds=GBOUNDS,
+                                         max_abs_lat=80.0)
+    print(f"[{PRODUCT}] labels={n_labels}")
     if preview_dir is not None:
         os.makedirs(preview_dir, exist_ok=True)
         save_png(rgba, os.path.join(preview_dir, "current.png"))
@@ -273,8 +194,6 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
     fcst_det = iso_to_det(fcst) or fcst
     kp_txt = kpf or kp_now or "n/a"
     hemi_txt = hemi or "n/a"
-    vl_txt = (f"~{vl:.0f}\u00b0N northern-oval farthest reach"
-              if vl is not None else "no activity reaching threshold")
     subtitle = f"Global both ovals, fixed 0-30+  |  {fcst_det}"
     lw, lh = draw_scale_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
@@ -282,22 +201,17 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
         [(0.0, "LOWEST 0"), (6.0, "6 oval"), (14.0, "14 bright"),
          (23.0, "23 severe"), (30.0, "HIGHEST+ 30+")],
         f"SWPC OVATION {obs_det} | {hemi_txt} GW | Kp {kp_txt}",
-        note="White line = farthest viewline. Below-faint transparent.")
+        note="No viewline drawn. Below-faint transparent.")
     scale_html = (
         f"Global OVATION auroral intensity, FIXED absolute scale 0&ndash;30+: "
         f"<b>LOWEST 0</b> (transparent) &rarr; <b>6 bright green</b> "
         f"(oval overhead) &rarr; <b>14 orange</b> &rarr; <b>23 magenta</b> "
         f"(severe) &rarr; <b>HIGHEST+ 30+</b> (violet extreme). Same "
         f"intensity always shows the same color. White halo numbers are "
-         f"actual intensity at that spot. White viewline hugs the oval's "
-         f"farthest equatorward edge (dipping where coverage dips, like "
-         f"NOAA's own view line) "
-         f"(<b>{vl_txt}</b>) — aurora may be visible low on the northern "
-         f"horizon from there under dark, clear skies. The line spans "
-         f"only longitudes where the oval actually reaches near it. "
-         f"Isolated faint cells paint only where connected to genuinely "
-         f"active areas, so model background noise never renders as "
-         f"aurora.")
+        f"actual intensity at that spot. "
+        f"Isolated faint cells paint only where connected to genuinely "
+        f"active areas, so model background noise never renders as "
+        f"aurora.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
@@ -326,10 +240,10 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
     meta["source_version"] = source_token(
         f"{source_id}-r{RENDER_VERSION}-aurglobal-tx5")
     meta["viewline_threshold"] = CONFIG["viewline_threshold"]
-    meta["viewline_farthest_lat"] = vl
+    meta["viewline_farthest_lat"] = None
     meta["stats"] = {"valid_cells": int(np.isfinite(paint).sum()),
                      "aurora_labels": n_labels,
-                     "viewline_drawn": vl_ok}
+                     "viewline_drawn": False}
     token = meta["source_version"]
     folder_html = (
         f"<p><img src=\"{pages_base()}/{PRODUCT}/legend.png?v={token}\" "

@@ -142,7 +142,8 @@ AURORA_BANDS = [
 ]
 
 
-def paint_aurora_labels(rgba, field, font_size=7, extra_sep=45):
+def paint_aurora_labels(rgba, field, font_size=7, extra_sep=45,
+                        bounds=None, max_abs_lat=None):
     """OVATION intensity numbers in the wave/wind/temp label style.
 
     NO preset locations: data-seeded jittered candidates. Within each
@@ -150,6 +151,9 @@ def paint_aurora_labels(rgba, field, font_size=7, extra_sep=45):
     sit inside color regions instead of on ring edges; per-band caps keep
     any single measurement from repeating all over the map. Quiet runs
     (empty basin) simply place zero labels — never a failure.
+    bounds + max_abs_lat optionally exclude polar rows (equirectangular
+    pole rows smear across the pinch in Google Earth, so a label placed
+    there renders as a giant blob — e.g. the south-pole spot).
     Returns (rgba, n_labels).
     """
     import math as _math
@@ -162,6 +166,12 @@ def paint_aurora_labels(rgba, field, font_size=7, extra_sep=45):
     if not ok.any():
         del d
         return np.array(img), 0
+    if bounds is not None and max_abs_lat is not None:
+        _row_lat = (bounds["lat_max"] - (np.arange(H) + 0.5) / H
+                    * (bounds["lat_max"] - bounds["lat_min"]))
+        _polar = np.abs(_row_lat) > max_abs_lat
+    else:
+        _polar = None
     _fin = field[ok]
     seed = int(abs(float(_fin.mean())) * 1000 + float(_fin.std()) * 97) \
         % (2 ** 32 - 1)
@@ -180,6 +190,8 @@ def paint_aurora_labels(rgba, field, font_size=7, extra_sep=45):
             c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
             r, c = int(round(r)), int(round(c))
             if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if _polar is not None and _polar[r]:
                 continue
             if not ok[r, c] or rgba[r, c, 3] == 0:
                 continue
