@@ -1008,3 +1008,35 @@ the other products and the Pages publish proceed normally.
 - Wired via `na_common.load_landmask()` in `build_wind_na.py` and
   `build_air_temperature_na.py` only (gate + alpha); all other
   builders untouched.
+
+## 29. One-legend precipitation + original wind rules + island exclusions (2026-10-12)
+
+- **Precipitation, one dBZ legend:** ECCC `RADAR_1KM_RRAI` (mm/h) and
+  `RADAR_1KM_RSNO` (cm/h) are fetched in their documented 14-color styles
+  (`Radar-Rain_14colors`, `Radar-Snow_14colors`, INTERPOLATION=TRUE);
+  every rendered color inverts EXACTLY through the published ramp
+  (colors extracted from the official GetLegendGraphic images) to its
+  rate class, then to dBZ via the NWS NEXRAD Z-R bridge (Z=300R^1.4;
+  equal ECCC colors = equal severity = equal dBZ for rain and snow),
+  then into the original 5-75 dBZ key bins. Precedence follows verified
+  ECCC dynamic coverage (75% of CONUS included) with IEM N0Q native
+  rendering filling ECCC gaps; IEM gap pixels repaint into key rows
+  (vivid cores by chromaticity, washed pixels clamped to rows 0..3, so
+  washed overview pixels can never paint as severe). 10-px cross-fade
+  rides the coverage edge. IEM overview-scale muting is inherent to the
+  source's continental rendering (verified identical across the dynamic
+  `nexrad-n0q-conus` layer and 20-degree tiles); no values are invented.
+- **Wind, original rules:** seed_step 20, ds 3.0, max 40 steps, font 7,
+  label_every 2, extra_step 64 (verbatim `build_wind` parameters),
+  max_labels scaled 260 -> 1200 for the larger land area; 16 NA city
+  anchors first, then data-seeded high-gradient extras in GL label style.
+- **Island exclusions (user polygon, southern Caribbean):** Trinidad &
+  Tobago, Grenada, Aruba/Bonaire/Curaçao, Margarita/Coche/Cubagua, Los
+  Roques removed from BOTH NA masks (`EXCLUDE_POLY` in
+  `build_na_coastmask.carve_exclusions`); St. Vincent, Barbados,
+  Martinique, Guadeloupe, Anguilla, Montserrat verified kept. French
+  Caribbean (Martinique/Guadeloupe, single France record) kept via
+  shapely clipping to a Caribbean box; AIA/VGB/MSR country codes added.
+- **Bilinear GDPS:** `na_common.resample_wcs_to_canvas` (axis-order and
+  NaN hardened) replaces nearest-binning for GDPS temperature and winds;
+  Cuba now renders solid with a smooth 6-color gradient.
