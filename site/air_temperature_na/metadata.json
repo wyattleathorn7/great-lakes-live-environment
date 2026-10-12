@@ -1,14 +1,14 @@
 {
   "product": "air_temperature_na",
-  "title": "LIVE AIR TEMPERATURE \u2014 NORTH AMERICA",
+  "title": "LIVE AIR TEMPERATURE",
   "freshness": "LIVE / CURRENT MODEL (analysis, HRRR + RRFS-NA, GDPS fallback)",
   "noaa_source": "NOAA/NCEP HRRR 3km 2m analysis (CONUS domain) + NOAA RRFS North American output (broad domain) + ECCC GDPS 15km fallback",
   "product_name": "NOAA/NCEP HRRR 3km 2m analysis (CONUS domain) + NOAA RRFS North American output (broad domain) + ECCC GDPS 15km fallback",
   "variable": "TMP 2 m above ground, K -> degF; FIXED banded 5F key -60..150F for all sources",
   "source_url": "https://gsl.noaa.gov/rrfs/",
-  "data_time_utc": "2026-10-11 08:38 PM EDT",
+  "data_time_utc": "2026-10-11 08:45 PM EDT",
   "source_last_modified_utc": "{\"hrrr\": \"hrrr hrrr.20261011/23 n=698318\", \"rrfs_rrfs-na rrfs.20261011/18\": \"n=452374\", \"rrfs_rrfs-conus rrfs.20261011/18\": \"n=0\", \"rrfs_rrfs-ak rrfs.20261011/18\": \"n=678937\", \"gdps\": \"GDPS_15km_AirTemp_2m n=381512\"}",
-  "processing_time_utc": "2026-10-11 08:38 PM EDT",
+  "processing_time_utc": "2026-10-11 08:45 PM EDT",
   "units": "degF",
   "spatial_resolution_source": "HRRR 3km; RRFS 13km NA / 3km nests; GDPS 15km fallback",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,8 +30,8 @@
     412
   ],
   "legend_scale_html": "Air temperature 2m (MODEL analysis, NOT direct observation): <b>LOWEST -60F</b> blue-white &rarr; freezing wall 30-40F &rarr; yellows 70-85F &rarr; <b>HIGHEST+ 150F</b> pink/red. Same F, same color, every source.",
-  "source_id": "na-tmp-20261012-0038",
-  "source_version": "na-tmp-20261012-0038-gdps-GDPS_15km_AirTemp_2m-n-381512-hrrr-hrrr-hrrr.20261011-23-n-698318-rrfs_rrfs-ak-rrfs.20261011-18-n-678937-rrfs_rrfs-conus-rrfs.20261011-18-n-0-rrfs_rrfs-na-rrfs.20261011-18-n-452374",
+  "source_id": "na-tmp-20261012-0045",
+  "source_version": "na-tmp-20261012-0045-gdps-GDPS_15km_AirTemp_2m-n-381512-hrrr-hrrr-hrrr.20261011-23-n-698318-rrfs_rrfs-ak-rrfs.20261011-18-n-678937-rrfs_rrfs-conus-rrfs.20261011-18-n-0-rrfs_rrfs-na-rrfs.20261011-18-n-452374",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -49,5 +49,5 @@
     "valid_pixels": 4346602,
     "gdps_pixels": 381512
   },
-  "folder_html": "<h2>LIVE AIR TEMPERATURE \u2014 NORTH AMERICA</h2><p>Air temperature 2m (MODEL analysis, NOT direct observation): <b>LOWEST -60F</b> blue-white &rarr; freezing wall 30-40F &rarr; yellows 70-85F &rarr; <b>HIGHEST+ 150F</b> pink/red. Same F, same color, every source.</p><p><b>Precedence:</b> HRRR valid > RRFS-NA valid > GDPS valid > transparent. Explicit per-pixel validity masks; never blended, never duplicated.<br><b>Provenance:</b> {'hrrr': 'hrrr hrrr.20261011/23 n=698318', 'rrfs_rrfs-na rrfs.20261011/18': 'n=452374', 'rrfs_rrfs-conus rrfs.20261011/18': 'n=0', 'rrfs_rrfs-ak rrfs.20261011/18': 'n=678937', 'gdps': 'GDPS_15km_AirTemp_2m n=381512'}</p>"
+  "folder_html": "<h2>LIVE AIR TEMPERATURE</h2><p>Air temperature 2m (MODEL analysis, NOT direct observation): <b>LOWEST -60F</b> blue-white &rarr; freezing wall 30-40F &rarr; yellows 70-85F &rarr; <b>HIGHEST+ 150F</b> pink/red. Same F, same color, every source.</p><p><b>Precedence:</b> HRRR valid > RRFS-NA valid > GDPS valid > transparent. Explicit per-pixel validity masks; never blended, never duplicated.<br><b>Provenance:</b> {'hrrr': 'hrrr hrrr.20261011/23 n=698318', 'rrfs_rrfs-na rrfs.20261011/18': 'n=452374', 'rrfs_rrfs-conus rrfs.20261011/18': 'n=0', 'rrfs_rrfs-ak rrfs.20261011/18': 'n=678937', 'gdps': 'GDPS_15km_AirTemp_2m n=381512'}</p>"
 }

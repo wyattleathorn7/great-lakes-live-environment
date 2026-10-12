@@ -37,7 +37,7 @@ PRODUCT = "wind_na"
 CONFIG_NA = json.load(open(os.path.join(REPO_ROOT, "config", "wind_na.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "North_America_Live_Wind.kml"
-OVERLAY_NAME = "\U0001f4a8 LIVE WIND — NORTH AMERICA"
+OVERLAY_NAME = "\U0001f4a8 LIVE WIND"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 
 

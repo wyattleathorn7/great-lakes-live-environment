@@ -1,1 +1,24 @@
-{"coverage":"Shared North American boundary config/north_america_bounds.json (lon -180..-15, lat 5..85, 3300x1600). Full rectangle; missing stays transparent, never 0%.","display_units":"% cloud cover","fallback_note":"RRFS TCDC entire-atmosphere analysis (%) where no valid GOES mask exists. GDPS TotalCloudCover only for verified remaining gaps.","fallback_rrfs":"NOAA RRFS TCDC entire atmosphere (considered as a single layer), analysis step, %","fallback_rrfs_url":"https://gsl.noaa.gov/rrfs/","fallback_url":"https://open.canada.ca/data/en/dataset/c041e79a-914a-5a4e-a485-9cbc506195df","fallbackgdp_layer":"GDPS_15km_TotalCloudCover","freshness_label":"LIVE / CURRENT OBSERVATION + MODEL FILL (GOES FD 10-min + RRFS/GDPS fallback)","precedence":"1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.","product":"cloud_cover_na","refresh_interval_seconds":300,"sat_note":"Full-disk (ABI-L2-ACMF) verified live on both sats; CONUS (ACMC) not assumed to cover Canada. Highest Arctic latitudes: geostationary quality degrades — documented gap, model fill only.","satellites":{"goes_east":"GOES-19, ABI L2 Clear Sky Mask full-disk (ABI-L2-ACMF), BCM+DQF, ~10-min FD scans, s3://noaa-goes19/","goes_west":"GOES-18, ABI L2 Clear Sky Mask full-disk (ABI-L2-ACMF), BCM+DQF, ~10-min FD scans, s3://noaa-goes18/"},"source_name":"NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback","source_url":"https://www.goes.noaa.gov/","title":"LIVE CLOUD COVER — NORTH AMERICA","valid_max":100.0,"valid_min":0.0,"variable":"BCM binary mask (0=clear_or_probably_clear, 1=cloudy_or_probably_cloudy) gated DQF==0 -> % per canvas neighborhood; model TCDC % in fallback domain"}
+{
+  "coverage": "Shared North American boundary config/north_america_bounds.json (lon -180..-15, lat 5..85, 3300x1600). Full rectangle; missing stays transparent, never 0%.",
+  "display_units": "% cloud cover",
+  "fallback_note": "RRFS TCDC entire-atmosphere analysis (%) where no valid GOES mask exists. GDPS TotalCloudCover only for verified remaining gaps.",
+  "fallback_rrfs": "NOAA RRFS TCDC entire atmosphere (considered as a single layer), analysis step, %",
+  "fallback_rrfs_url": "https://gsl.noaa.gov/rrfs/",
+  "fallback_url": "https://open.canada.ca/data/en/dataset/c041e79a-914a-5a4e-a485-9cbc506195df",
+  "fallbackgdp_layer": "GDPS_15km_TotalCloudCover",
+  "freshness_label": "LIVE / CURRENT OBSERVATION + MODEL FILL (GOES FD 10-min + RRFS/GDPS fallback)",
+  "precedence": "1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.",
+  "product": "cloud_cover_na",
+  "refresh_interval_seconds": 300,
+  "sat_note": "Full-disk (ABI-L2-ACMF) verified live on both sats; CONUS (ACMC) not assumed to cover Canada. Highest Arctic latitudes: geostationary quality degrades \u2014 documented gap, model fill only.",
+  "satellites": {
+    "goes_east": "GOES-19, ABI L2 Clear Sky Mask full-disk (ABI-L2-ACMF), BCM+DQF, ~10-min FD scans, s3://noaa-goes19/",
+    "goes_west": "GOES-18, ABI L2 Clear Sky Mask full-disk (ABI-L2-ACMF), BCM+DQF, ~10-min FD scans, s3://noaa-goes18/"
+  },
+  "source_name": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
+  "source_url": "https://www.goes.noaa.gov/",
+  "title": "LIVE CLOUD COVER",
+  "valid_max": 100.0,
+  "valid_min": 0.0,
+  "variable": "BCM binary mask (0=clear_or_probably_clear, 1=cloudy_or_probably_cloudy) gated DQF==0 -> % per canvas neighborhood; model TCDC % in fallback domain"
+}

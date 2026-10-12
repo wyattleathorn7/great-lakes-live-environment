@@ -41,7 +41,7 @@ PRODUCT = "air_temperature_na"
 CONFIG_NA = json.load(open(os.path.join(REPO_ROOT, "config", "air_temperature_na.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "North_America_Live_Air_Temperature.kml"
-OVERLAY_NAME = "\U0001f321\ufe0f LIVE AIR TEMPERATURE — NORTH AMERICA"
+OVERLAY_NAME = "\U0001f321\ufe0f LIVE AIR TEMPERATURE"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 K2F = lambda k: (k - 273.15) * 9.0 / 5.0 + 32.0
 

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
-    <name>🌡️ LIVE AIR TEMPERATURE — NORTH AMERICA</name>
+    <name>🌡️ LIVE AIR TEMPERATURE</name>
     <description><![CDATA[<p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na/legend.png" width="600" alt="legend"><br>Air temperature 2m (MODEL analysis, NOT direct observation): <b>LOWEST -60F</b> blue-white &rarr; freezing wall 30-40F &rarr; yellows 70-85F &rarr; <b>HIGHEST+ 150F</b> pink/red. Same F, same color, every source.</p><p>This entry auto-refreshes from the live overlay (source: NOAA/NCEP HRRR 3km 2m analysis (CONUS domain) + NOAA RRFS North American output (broad domain) + ECCC GDPS 15km fallback).</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
     <NetworkLink>
-      <name>🌡️ LIVE AIR TEMPERATURE — NORTH AMERICA — auto-refresh</name>
+      <name>🌡️ LIVE AIR TEMPERATURE — auto-refresh</name>
       <Link>
         <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Air_Temperature.kml</href>
         <refreshMode>onInterval</refreshMode>
