@@ -950,3 +950,35 @@ the other products and the Pages publish proceed normally.
 - **Refresh:** 900 s. Live build: 79.0% canvas valid; Lake Michigan,
   Toronto, Edmonton, Whitehorse, Iqaluit, Mexico City, San José, Panama,
   Martinique verified.
+
+## 27. NA coverage revision 2 (2026-10-12) — coastline mask, seamless merge
+
+- **Shared coastline mask** (`assets/north_america_coastmask.{png,npy}`,
+  built by `scripts/build_na_coastmask.py` from Natural Earth 50m land):
+  every ocean cell within 100 statute miles (160.934 km, geodesic EDT in
+  overlapping latitude bands with per-band cos(lat) sampling) of land is
+  kept; beyond that a smoothstep feather (161→200 km) fades to
+  transparent. No rectangular cuts: the edge follows every shoreline
+  (verified transects off California/Newfoundland), covers Hawaii,
+  Arctic islands, Caribbean, Central America, Greenland. ONE mask object
+  (`scripts/na_common.load_coastmask`) multiplies overlay alpha in all
+  four builders, and model fields are gated to it — identical edge on
+  every gradient.
+- **Seamless source merge** (`na_common.feather_merge`): precedence order
+  kept, but within 12 px of a higher-priority domain's validity edge the
+  two sources cross-fade linearly where both are valid — the HRRR/CONUS
+  rectangle seam seen on 2026-10-11 is gone. Same treatment order in all
+  builders: merge → despeckle (connected blobs < 4 px only; radar
+  precipitation exempt) → NaN-aware display smoothing → coast gate.
+  GRIB missing flags (9999/−9999/unphysical) → NaN before binning;
+  pinhole fill runs in canvas space after binning.
+- **Wind rendering parity:** `paint_wind_streamlets` imported unchanged
+  from `build_wind` (RK2 streamlets, brightness = knots) + NA strategic
+  kt labels (`paint_na_wind_labels`: 16 city anchors first, then
+  data-seeded high-gradient extras in GL label style). Beaufort key rows,
+  colors, and scale wording identical to the Great Lakes wind legend.
+- **Temperature rendering parity:** raster uses `TEMP_SMOOTH_STOPS`
+  gradient and `draw_banded_key` legend with `KEY_ZONES`, imported from
+  `build_air_temperature` — same key, same scale text.
+- GOES full-disk x/y scale/offset are read per-file (FD ∓0.151844 vs
+  CONUS constants) after a degrees-scale misplacement was caught.

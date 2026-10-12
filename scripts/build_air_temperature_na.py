@@ -27,7 +27,10 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
-from na_common import bin_points_to_canvas, fetch_http, fill_pinholes, gdps_wcs_grid, sanitize_model_vals
+from na_common import (apply_coast_mask, bin_points_to_canvas,
+                         despeckle_valid, feather_merge, fetch_http,
+                         fill_pinholes, gate_field_to_mask, gdps_wcs_grid,
+                         sanitize_model_vals, smooth_field)
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs)
@@ -146,57 +149,59 @@ def _build(bounds, W, H, prev):
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
 
-    f_grid = np.full((H, W), np.nan)
-    own = np.zeros((H, W), dtype=bool)
+    layers = []  # (grid, valid) in precedence order: HRRR > RRFS > GDPS
     prov = {}
     # 1) HRRR (highest precedence).
     try:
         label, v, la, lo = hrrr_tmp()
         v = sanitize_model_vals(v, 180.0, 330.0)
         g, c = bin_points_to_canvas(K2F(v), la, lo, bounds)
-        m = np.isfinite(g)
-        f_grid[m] = g[m]
-        own[m] = True
-        prov["hrrr"] = f"{label} n={int(m.sum())}"
+        g = fill_pinholes(g, radius=3)
+        layers.append((g, np.isfinite(g)))
+        prov["hrrr"] = f"{label} n={int(np.isfinite(g).sum())}"
     except Exception as e:
         prov["hrrr"] = f"unavailable: {type(e).__name__}"
-    # 2) RRFS fills the rest.
+    # 2) RRFS nests + NA grid (same model family: first-valid among them).
     try:
+        rg = np.full((H, W), np.nan)
         for label, v, la, lo, cyc in rrfs_newest_tmp(RAW_DIR):
             v = sanitize_model_vals(v, 180.0, 330.0)
             g, c = bin_points_to_canvas(K2F(v), la, lo, bounds)
-            m = np.isfinite(g) & ~own
-            f_grid[m] = g[m]
-            own[m] = True
+            m = np.isfinite(g) & ~np.isfinite(rg)
+            rg[m] = g[m]
             prov[f"rrfs_{label}"] = f"n={int(m.sum())}"
+        rg = fill_pinholes(rg, radius=3)
+        layers.append((rg, np.isfinite(rg)))
     except Exception as e:
         prov["rrfs"] = f"unavailable: {type(e).__name__}"
     # 3) GDPS fallback: ECCC GDPS 15km AirTemp 2m via WCS — ONLY where
     #    HRRR+RRFS have no verified valid data (verified RRFS gap:
     #    Central America land, e.g. San Jose/Panama, is 9999 in RRFS-NA).
-    gdps_used = 0
-    gaps = ~own
-    if gaps.any():
-        try:
-            arr, la, lo = gdps_wcs_grid("GDPS_15km_AirTemp_2m", bounds, RAW_DIR)
-            band0 = sanitize_model_vals(np.asarray(arr[0], dtype=float), -80.0, 60.0)
-            g, c = bin_points_to_canvas(K2F(band0 + 273.15), la, lo, bounds)
-            m = np.isfinite(g) & gaps
-            f_grid[m] = g[m]
-            own[m] = True
-            gdps_used = int(m.sum())
-            prov["gdps"] = f"GDPS_15km_AirTemp_2m n={gdps_used}"
-        except Exception as e:
-            prov["gdps"] = f"unavailable: {type(e).__name__}: {e}"
-    if not np.isfinite(f_grid).any():
+    try:
+        arr, la, lo = gdps_wcs_grid("GDPS_15km_AirTemp_2m", bounds, RAW_DIR)
+        band0 = sanitize_model_vals(np.asarray(arr[0], dtype=float), -80.0, 60.0)
+        g, c = bin_points_to_canvas(K2F(band0 + 273.15), la, lo, bounds)
+        g = fill_pinholes(g, radius=3)
+        layers.append((g, np.isfinite(g)))
+        prov["gdps"] = f"GDPS_15km_AirTemp_2m n={int(np.isfinite(g).sum())}"
+    except Exception as e:
+        prov["gdps"] = f"unavailable: {type(e).__name__}: {e}"
+    if not layers or not any(np.isfinite(g).any() for g, _ in layers):
         raise RuntimeError(f"no HRRR/RRFS/GDPS temperature data ({prov})")
-    # Close interior resampling pinholes (coarse grids -> 0.05 deg canvas);
-    # domain edges and unobserved regions stay missing (never extrapolated).
-    f_grid = fill_pinholes(f_grid, radius=3)
-    n_valid = int(np.isfinite(f_grid).sum())
-    print(f"[{PRODUCT}] valid px={n_valid} ({100.0*n_valid/(W*H):.2f}%) prov={prov}")
+    # Seamless cross-fade where domains overlap (no rectangular seams),
+    # then one shared treatment: despeckle, display smoothing, coast gate.
+    f_grid, own = feather_merge(layers, feather_px=12)
+    own = despeckle_valid(own, min_size=4) & np.isfinite(f_grid)
+    f_grid[~own] = np.nan
+    n_raw = int(own.sum())
+    disp = smooth_field(f_grid, size=5, passes=2)
+    disp = gate_field_to_mask(disp)
+    n_valid = int(np.isfinite(disp).sum())
+    print(f"[{PRODUCT}] raw px={n_raw} display px={n_valid} "
+          f"({100.0*n_valid/(W*H):.2f}%) prov={prov}")
 
-    rgba = render_rgba(np.clip(f_grid, -60.0, 150.0), TEMP_SMOOTH_STOPS, 205)
+    rgba = render_rgba(np.clip(disp, -60.0, 150.0), TEMP_SMOOTH_STOPS, 205)
+    rgba = apply_coast_mask(rgba)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     data_time = now_det_str()
@@ -221,7 +226,7 @@ def _build(bounds, W, H, prev):
     meta["source_id"] = src_id
     meta["source_version"] = source_token(src_id + json.dumps(prov, sort_keys=True))
     meta["na_bounds"] = bounds
-    meta["stats"] = {"valid_pixels": n_valid, "gdps_pixels": gdps_used}
+    meta["stats"] = {"valid_pixels": n_valid, "raw_pixels": n_raw}
     token = meta["source_version"]
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2><p>{scale_html}</p>"
                    f"<p><b>Precedence:</b> {CONFIG_NA['precedence']}<br><b>Provenance:</b> {prov}</p>")

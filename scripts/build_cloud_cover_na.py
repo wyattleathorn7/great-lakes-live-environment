@@ -26,7 +26,10 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
-from na_common import bin_points_to_canvas, fetch_http, fill_pinholes, sanitize_model_vals
+from na_common import (apply_coast_mask, bin_points_to_canvas,
+                         despeckle_valid, feather_merge, fetch_http,
+                         fill_pinholes, gate_field_to_mask,
+                         sanitize_model_vals, smooth_field)
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs)
@@ -169,8 +172,11 @@ def _build(bounds, W, H):
         m = np.isfinite(frac)
         field[m] = frac[m] * 100.0
         sat_valid[m] = True
+    layers = [(field, sat_valid)]
     # RRFS TCDC fallback where GOES missing.
     rrfc = 0
+    rrfs_grid = np.full((H, W), np.nan)
+    rrfs_valid = np.zeros((H, W), dtype=bool)
     try:
         from na_common import eccodes_read_idx_ranges
         now = dt.datetime.now(dt.timezone.utc)
@@ -206,8 +212,10 @@ def _build(bounds, W, H):
                 vals = sanitize_model_vals(np.asarray(vals, float), 0.0, 100.0)
                 g, c = bin_points_to_canvas(vals, np.asarray(lats, float),
                                             np.asarray(lons, float), bounds)
-                m = np.isfinite(g) & ~sat_valid
-                field[m] = np.clip(g[m], 0, 100)
+                g = fill_pinholes(g, radius=3)
+                m = np.isfinite(g)
+                rrfs_grid[m] = np.clip(g[m], 0, 100)
+                rrfs_valid[m] = True
                 rrfc = int(m.sum())
                 prov["RRFS-TCDC"] = f"{dd} n={rrfc}"
                 got = True
@@ -219,8 +227,15 @@ def _build(bounds, W, H):
     except Exception as e:
         prov["RRFS-TCDC"] = f"unavailable: {type(e).__name__}"
 
+    layers.append((rrfs_grid, rrfs_valid))
+    # Seamless cross-fade at the satellite/model boundary, then one shared
+    # treatment: despeckle, display smoothing, coast gate.
+    field, _v = feather_merge(layers, feather_px=12)
+    own = despeckle_valid(np.isfinite(field), min_size=4)
+    field[~own] = np.nan
+    field = gate_field_to_mask(smooth_field(field, size=5, passes=2))
     n_sat = int(sat_valid.sum())
-    n_mod = int(np.isfinite(field).sum() - n_sat)
+    n_mod = int(np.isfinite(field).sum() - (np.isfinite(field) & sat_valid).sum())
     if np.isfinite(field).sum() == 0:
         raise RuntimeError(f"no GOES-FD or RRFS cloud data ({prov})")
     print(f"[{PRODUCT}] sat px={n_sat} model-fill px={n_mod} prov={prov}")
@@ -229,6 +244,7 @@ def _build(bounds, W, H):
     # Clear (<1%) and missing stay transparent (GL convention).
     clear = np.isfinite(field) & (field < 1.0)
     rgba[clear, 3] = 0
+    rgba = apply_coast_mask(rgba)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     data_time = now_det_str()

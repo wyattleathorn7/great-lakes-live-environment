@@ -114,6 +114,108 @@ def fill_pinholes(grid, radius=2):
     return out
 
 
+_COASTMASK = None
+
+
+def load_coastmask():
+    """Shared NA coastline mask: 1.0 on land + <=100mi offshore, smooth
+    feather to 0 beyond (assets/north_america_coastmask.npy). One mask
+    for all four layers so every edge is identical."""
+    global _COASTMASK
+    if _COASTMASK is None:
+        p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "assets", "north_america_coastmask.npy")
+        if not os.path.exists(p):
+            raise FileNotFoundError(f"NA coastline mask missing: {p}")
+        _COASTMASK = np.load(p).astype(np.float32)
+    return _COASTMASK
+
+
+def apply_coast_mask(rgba, mask=None):
+    """Multiply overlay alpha by the shared coastline feather and bleed
+    edge RGB into transparent pixels (same anti-fringe contract as the
+    Great Lakes shoreline mask). Returns new array."""
+    from geospatial_utils import bleed_rgb_into_transparent
+    if mask is None:
+        mask = load_coastmask()
+    out = rgba.copy()
+    out[:, :, 3] = np.round(out[:, :, 3].astype(np.float32) * mask).astype(np.uint8)
+    return bleed_rgb_into_transparent(out)
+
+
+def gate_field_to_mask(field, mask=None):
+    """NaN-out model values where the mask is exactly 0 (far outside the
+    buffered zone). Feather-zone values are kept (alpha carries the edge)."""
+    if mask is None:
+        mask = load_coastmask()
+    f = field.copy()
+    f[mask <= 0.0] = np.nan
+    return f
+
+
+def despeckle_valid(valid, min_size=4):
+    """Drop isolated valid speckles (lone resampling-pinhole cells).
+
+    Gentle by design: only connected blobs smaller than `min_size` go, so
+    narrow-but-legitimate geography (Central American isthmus, islands,
+    coast fringe) survives. No morphological opening is used — lace-like
+    valid patches from coarse grids would be erased by it. Never applied
+    to radar precipitation (isolated storms are legitimate)."""
+    from scipy.ndimage import label
+    v = np.asarray(valid, dtype=bool)
+    lab, n = label(v, structure=np.ones((3, 3)))
+    if n == 0:
+        return v
+    sizes = np.bincount(lab.ravel())
+    keep = np.zeros(n + 1, dtype=bool)
+    keep[0] = False
+    keep[1:] = sizes[1:] >= min_size
+    return keep[lab]
+
+
+def smooth_field(field, size=5, passes=2):
+    """NaN-aware uniform smoothing (GL-style display smoothing): coherent
+    gradients stay, coarse-grid cell edges and stipple dissolve.
+    Statistics must always use the pre-smoothing field."""
+    from scipy.ndimage import uniform_filter
+    f = np.asarray(field, dtype=float)
+    out = f.copy()
+    for _ in range(passes):
+        valid = np.isfinite(out)
+        if not valid.any():
+            return out
+        acc = np.where(valid, out, 0.0)
+        num = uniform_filter(acc, size=size, mode="nearest")
+        den = uniform_filter(valid.astype(float), size=size, mode="nearest")
+        with np.errstate(invalid="ignore", divide="ignore"):
+            sm = num / np.where(den > 0, den, np.nan)
+        out[valid] = sm[valid]
+    return out
+
+
+def feather_merge(layers, feather_px=12):
+    """Merge [(grid, valid), ...] in precedence order with a seamless
+    cross-fade: inside the higher-priority domain the high-priority
+    value wins outright; within `feather_px` of its validity edge (where
+    the next source is also valid) the two cross-fade linearly, so no
+    rectangular source seam can appear. Returns (merged, valid)."""
+    from scipy.ndimage import distance_transform_edt
+    merged = layers[0][0].astype(float).copy()
+    valid = np.asarray(layers[0][1], dtype=bool).copy()
+    for grid, ok in layers[1:]:
+        g = np.asarray(grid, dtype=float)
+        ok = np.asarray(ok, dtype=bool)
+        if valid.any():
+            d_in = distance_transform_edt(valid)
+            band = valid & ok & (d_in <= feather_px)
+            w = np.clip(d_in / float(feather_px), 0.0, 1.0)
+            merged[band] = w[band] * merged[band] + (1.0 - w[band]) * g[band]
+        new = ok & ~valid
+        merged[new] = g[new]
+        valid = valid | ok
+    return merged, valid
+
+
 def gdps_wcs_grid(coverage_id, bounds, raw_dir, timeout=300):
     """Fetch ECCC GDPS WCS GetCoverage GeoTIFF for the NA bbox.
 

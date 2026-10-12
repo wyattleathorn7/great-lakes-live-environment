@@ -162,14 +162,33 @@ def _build(scan_dt, source_id, bounds, W, H):
     # lower-priority ECCC echoes underneath (no duplicate rendering).
     eccc_echo = cov & (rain_e | snow_e) & ~in_iem
 
-    # 3) Compose: IEM native pixels + ECCC rank-mapped pixels.
+    # 3) Compose: IEM native pixels + ECCC rank-mapped pixels, with a
+    # seamless cross-fade band just inside the IEM domain edge (both
+    # echoes present -> blend, so no box seam; IEM dry still wins).
+    from scipy.ndimage import distance_transform_edt
+    from na_common import apply_coast_mask
     out = np.zeros((H, W, 4), dtype=np.uint8)
     out[iem_wins] = iem[iem_wins]
+    eccc_avail = cov & (rain_e | snow_e)
+    ecol = np.zeros((H, W, 3), dtype=np.uint8)
+    ealp = np.zeros((H, W), dtype=np.uint8)
+    if eccc_avail.any():
+        cols = eccc_rank_to_key(strength[eccc_avail])
+        ecol[eccc_avail] = cols
+        ealp[eccc_avail] = np.maximum(paths["rain"][eccc_avail, 3],
+                                      paths["snow"][eccc_avail, 3])
     if eccc_echo.any():
-        cols = eccc_rank_to_key(strength[eccc_echo])
-        out[eccc_echo, :3] = cols
-        out[eccc_echo, 3] = np.maximum(paths["rain"][eccc_echo, 3],
-                                       paths["snow"][eccc_echo, 3])
+        out[eccc_echo, :3] = ecol[eccc_echo]
+        out[eccc_echo, 3] = ealp[eccc_echo]
+    d_in = distance_transform_edt(in_iem)
+    band = in_iem & (d_in <= 6) & iem_echo & eccc_avail
+    if band.any():
+        w = (d_in[band] / 6.0)[:, None]
+        out[band, :3] = np.round(w * out[band, :3].astype(float)
+                                 + (1.0 - w) * ecol[band].astype(float)).astype(np.uint8)
+        out[band, 3] = np.round(w[:, 0] * out[band, 3].astype(float)
+                                + (1.0 - w[:, 0]) * ealp[band].astype(float)).astype(np.uint8)
+    out = apply_coast_mask(out)
     n_iem = int(iem_wins.sum())
     n_eccc = int(eccc_echo.sum())
     print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} "
