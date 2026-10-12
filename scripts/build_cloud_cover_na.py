@@ -232,12 +232,21 @@ def _build(bounds, W, H):
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     data_time = now_det_str()
+    # Original continuous key: identical stops, labels, and units.
     lw, lh = draw_scale_legend(os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"],
-                               f"GOES FD + RRFS fill | {data_time}", "%", CLOUD_STOPS, CLOUD_LABELS,
-                               f"{prov} | {data_time}")
-    scale_html = ("Cloud cover % (OBSERVED satellite where GOES valid, MODEL RRFS TCDC fill elsewhere): "
-                  "<b>LOWEST 0 clear</b> (transparent) &rarr; 25/50/75 &rarr; <b>HIGHEST+ 100 overcast</b>. "
-                  "Missing is never shown as clear.")
+                               f"GOES full-disk + RRFS fill | {data_time}", "%", CLOUD_STOPS, CLOUD_LABELS,
+                               f"Source: NOAA GOES-East/GOES-West ABI clear-sky mask + RRFS TCDC fill  |  "
+                               f"Processed {data_time}",
+                               note="Clear sky (<1%) is transparent, not colored.")
+    scale_html = ("Cloud cover (%, OBSERVED neighborhood fraction from "
+                  "GOES: share of 2 km satellite pixels flagged cloudy "
+                  "around each point): <b>LOWEST 0 clear</b> transparent "
+                  "&rarr; thin cloud <b>dark-blue/blue/cyan</b> &rarr; "
+                  "<b>40 green</b> &rarr; <b>55 yellow</b> &rarr; <b>70 orange</b> "
+                  "&rarr; <b>82 red</b> &rarr; <b>90 magenta</b> &rarr; "
+                  "<b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same "
+                  "color; clear areas stay see-through. Satellite retrieval where "
+                  "GOES is valid, model fill elsewhere (see provenance).")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],

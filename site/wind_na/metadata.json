@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP GLWU v2.1 surface U/V (Great Lakes water) + HRRR 3km 10m U/V + RRFS North American 10m U/V + ECCC GDPS fallback",
   "variable": "UGRD/VGRD 10m/surface, m/s -> kt x1.94384 -> WMO Beaufort 0-12",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
-  "data_time_utc": "2026-10-11 08:45 PM EDT",
-  "source_last_modified_utc": "{\"glwu 20261011/19\": \"n=12260\", \"hrrr hrrr.20261011/23\": \"n=686058\", \"rrfs-na rrfs.20261011/00\": \"n=452374\", \"gdps\": \"GDPS_15km_Wind_10m n=456824\"}",
-  "processing_time_utc": "2026-10-11 08:45 PM EDT",
+  "data_time_utc": "2026-10-11 09:05 PM EDT",
+  "source_last_modified_utc": "{\"glwu 20261011/19\": \"n=12260\", \"hrrr hrrr.20261012/00\": \"n=686058\", \"rrfs-na rrfs.20261011/00\": \"n=452374\", \"gdps\": \"GDPS_15km_Wind_10m n=456824\"}",
+  "processing_time_utc": "2026-10-11 09:05 PM EDT",
   "units": "kt (Beaufort 0-12)",
   "spatial_resolution_source": "GLWU ~2.5km; HRRR 3km; RRFS 13km NA",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -29,9 +29,89 @@
     640,
     464
   ],
-  "legend_scale_html": "Wind (MODEL analysis): speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion. Calm (&lt;0.5 m/s) draws no arrow.",
-  "source_id": "na-wind-20261012-0045",
-  "source_version": "na-wind-20261012-0045-gdps-GDPS_15km_Wind_10m-n-456824-glwu-20261011-19-n-12260-hrrr-hrrr.20261011-23-n-686058-rrfs-na-rrfs.20261011-00-n-452374",
+  "legend_scale_html": "WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. Same force always shows the same color.",
+  "beaufort_table": [
+    {
+      "force": 0,
+      "description": "Calm",
+      "range_kt": "0\u20130.99 kt",
+      "color": "#1B4FD8"
+    },
+    {
+      "force": 1,
+      "description": "Light air",
+      "range_kt": "1\u20133 kt",
+      "color": "#1E78E0"
+    },
+    {
+      "force": 2,
+      "description": "Light breeze",
+      "range_kt": "4\u20136 kt",
+      "color": "#14A8DC"
+    },
+    {
+      "force": 3,
+      "description": "Gentle breeze",
+      "range_kt": "7\u201310 kt",
+      "color": "#14C8C8"
+    },
+    {
+      "force": 4,
+      "description": "Moderate breeze",
+      "range_kt": "11\u201316 kt",
+      "color": "#3CBE50"
+    },
+    {
+      "force": 5,
+      "description": "Fresh breeze",
+      "range_kt": "17\u201321 kt",
+      "color": "#96D232"
+    },
+    {
+      "force": 6,
+      "description": "Strong breeze",
+      "range_kt": "22\u201327 kt",
+      "color": "#FAC828"
+    },
+    {
+      "force": 7,
+      "description": "High wind",
+      "range_kt": "28\u201333 kt",
+      "color": "#FAA01E"
+    },
+    {
+      "force": 8,
+      "description": "Gale",
+      "range_kt": "34\u201340 kt",
+      "color": "#F07814"
+    },
+    {
+      "force": 9,
+      "description": "Strong gale",
+      "range_kt": "41\u201347 kt",
+      "color": "#DC281E"
+    },
+    {
+      "force": 10,
+      "description": "Storm",
+      "range_kt": "48\u201355 kt",
+      "color": "#C81428"
+    },
+    {
+      "force": 11,
+      "description": "Violent storm",
+      "range_kt": "56\u201363 kt",
+      "color": "#A50A3C"
+    },
+    {
+      "force": 12,
+      "description": "Hurricane-force",
+      "range_kt": "\u226564 kt",
+      "color": "#3B0A54"
+    }
+  ],
+  "source_id": "na-wind-20261012-0105",
+  "source_version": "na-wind-20261012-0105-gdps-GDPS_15km_Wind_10m-n-456824-glwu-20261011-19-n-12260-hrrr-hrrr.20261012-00-n-686058-rrfs-na-rrfs.20261011-00-n-452374",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -48,5 +128,5 @@
   "stats": {
     "valid_pixels": 4169848
   },
-  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE</h2><p>Wind (MODEL analysis): speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion. Calm (&lt;0.5 m/s) draws no arrow.</p><p><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu 20261011/19': 'n=12260', 'hrrr hrrr.20261011/23': 'n=686058', 'rrfs-na rrfs.20261011/00': 'n=452374', 'gdps': 'GDPS_15km_Wind_10m n=456824'}</p>"
+  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE</h2><p>WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. Same force always shows the same color.</p><p><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu 20261011/19': 'n=12260', 'hrrr hrrr.20261012/00': 'n=686058', 'rrfs-na rrfs.20261011/00': 'n=452374', 'gdps': 'GDPS_15km_Wind_10m n=456824'}</p>"
 }

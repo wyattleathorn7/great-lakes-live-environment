@@ -6,9 +6,9 @@
   "product_name": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
   "variable": "BCM binary mask (0=clear_or_probably_clear, 1=cloudy_or_probably_cloudy) gated DQF==0 -> % per canvas neighborhood; model TCDC % in fallback domain",
   "source_url": "https://www.goes.noaa.gov/",
-  "data_time_utc": "2026-10-11 08:45 PM EDT",
-  "source_last_modified_utc": "{\"GOES-19\": \"2026-10-12 00:30Z valid-cells=3104499\", \"GOES-18\": \"2026-10-12 00:30Z valid-cells=2741210\", \"RRFS-TCDC\": \"rrfs.20261011 n=70354\"}",
-  "processing_time_utc": "2026-10-11 08:45 PM EDT",
+  "data_time_utc": "2026-10-11 09:05 PM EDT",
+  "source_last_modified_utc": "{\"GOES-19\": \"2026-10-12 00:50Z valid-cells=3104499\", \"GOES-18\": \"2026-10-12 00:50Z valid-cells=2741210\", \"RRFS-TCDC\": \"rrfs.20261011 n=70354\"}",
+  "processing_time_utc": "2026-10-11 09:05 PM EDT",
   "units": "%",
   "spatial_resolution_source": "GOES FD ~2km; RRFS 13km NA; canvas 3300x1600",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -29,9 +29,9 @@
     640,
     230
   ],
-  "legend_scale_html": "Cloud cover % (OBSERVED satellite where GOES valid, MODEL RRFS TCDC fill elsewhere): <b>LOWEST 0 clear</b> (transparent) &rarr; 25/50/75 &rarr; <b>HIGHEST+ 100 overcast</b>. Missing is never shown as clear.",
-  "source_id": "na-cloud-20261012-0045",
-  "source_version": "na-cloud-20261012-0045-GOES-18-2026-10-12-00-30Z-valid-cells-2741210-GOES-19-2026-10-12-00-30Z-valid-cells-3104499-RRFS-TCDC-rrfs.20261011-n-70354",
+  "legend_scale_html": "Cloud cover (%, OBSERVED neighborhood fraction from GOES: share of 2 km satellite pixels flagged cloudy around each point): <b>LOWEST 0 clear</b> transparent &rarr; thin cloud <b>dark-blue/blue/cyan</b> &rarr; <b>40 green</b> &rarr; <b>55 yellow</b> &rarr; <b>70 orange</b> &rarr; <b>82 red</b> &rarr; <b>90 magenta</b> &rarr; <b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same color; clear areas stay see-through. Satellite retrieval where GOES is valid, model fill elsewhere (see provenance).",
+  "source_id": "na-cloud-20261012-0105",
+  "source_version": "na-cloud-20261012-0105-GOES-18-2026-10-12-00-50Z-valid-cells-2741210-GOES-19-2026-10-12-00-50Z-valid-cells-3104499-RRFS-TCDC-rrfs.20261011-n-70354",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -49,5 +49,5 @@
     "satellite_pixels": 4125754,
     "model_fill_pixels": 70354
   },
-  "folder_html": "<h2>LIVE CLOUD COVER</h2><p>Cloud cover % (OBSERVED satellite where GOES valid, MODEL RRFS TCDC fill elsewhere): <b>LOWEST 0 clear</b> (transparent) &rarr; 25/50/75 &rarr; <b>HIGHEST+ 100 overcast</b>. Missing is never shown as clear.</p><p><b>Precedence:</b> 1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.<br><b>Provenance:</b> {'GOES-19': '2026-10-12 00:30Z valid-cells=3104499', 'GOES-18': '2026-10-12 00:30Z valid-cells=2741210', 'RRFS-TCDC': 'rrfs.20261011 n=70354'}</p>"
+  "folder_html": "<h2>LIVE CLOUD COVER</h2><p>Cloud cover (%, OBSERVED neighborhood fraction from GOES: share of 2 km satellite pixels flagged cloudy around each point): <b>LOWEST 0 clear</b> transparent &rarr; thin cloud <b>dark-blue/blue/cyan</b> &rarr; <b>40 green</b> &rarr; <b>55 yellow</b> &rarr; <b>70 orange</b> &rarr; <b>82 red</b> &rarr; <b>90 magenta</b> &rarr; <b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same color; clear areas stay see-through. Satellite retrieval where GOES is valid, model fill elsewhere (see provenance).</p><p><b>Precedence:</b> 1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.<br><b>Provenance:</b> {'GOES-19': '2026-10-12 00:50Z valid-cells=3104499', 'GOES-18': '2026-10-12 00:50Z valid-cells=2741210', 'RRFS-TCDC': 'rrfs.20261011 n=70354'}</p>"
 }

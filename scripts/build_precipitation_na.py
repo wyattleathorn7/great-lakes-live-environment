@@ -182,7 +182,7 @@ def _build(scan_dt, source_id, bounds, W, H):
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
         KEY_ROWS,
         f"IEM {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} | {now_det_str()}",
-        note="IEM colors = dBZ. ECCC colors = qualitative intensity (mm/h, cm/h). No echo = transparent.")
+        note="No echo = transparent (no precipitation).")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],

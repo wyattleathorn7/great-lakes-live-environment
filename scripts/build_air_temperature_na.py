@@ -31,7 +31,9 @@ from na_common import bin_points_to_canvas, fetch_http, fill_pinholes, gdps_wcs_
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs)
-from build_air_temperature import TEMP_BANDS, KEY_ZONES
+from build_air_temperature import (KEY_ZONES, SCALE_HTML, TEMP_BANDS,
+                                     TEMP_SMOOTH_STOPS, draw_banded_key)
+from gradient_scale import render_rgba
 from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata, now_det_str,
                               promote_stage, read_state, save_png,
                               source_token, stage_dir, write_metadata,
@@ -47,21 +49,6 @@ K2F = lambda k: (k - 273.15) * 9.0 / 5.0 + 32.0
 
 RRFS_PARA = "https://nomads.ncep.noaa.gov/pub/data/nccf/com/rrfs/para"
 RRFS_PROD = "https://nomads.ncep.noaa.gov/pub/data/nccf/com/rrfs/prod"
-
-
-def band_color(f):
-    for lo, hi, rgb in TEMP_BANDS:
-        if lo <= f < hi or (hi == 150 and f >= hi):
-            return rgb
-    return TEMP_BANDS[0][2] if f < TEMP_BANDS[0][0] else TEMP_BANDS[-1][2]
-
-
-BAND_LUT = np.array([band_color(f) for f in range(-60, 151)], dtype=np.uint8)
-
-
-def f_to_rgb(farr):
-    idx = np.clip(np.floor(farr + 60).astype(int), 0, 210)
-    return BAND_LUT[idx]
 
 
 def rrfs_newest_tmp(out_dir, grids=("na", "conus", "ak")):
@@ -155,7 +142,6 @@ def run():
 
 
 def _build(bounds, W, H, prev):
-    from geospatial_utils import _legend_font, draw_category_legend
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
@@ -210,24 +196,18 @@ def _build(bounds, W, H, prev):
     n_valid = int(np.isfinite(f_grid).sum())
     print(f"[{PRODUCT}] valid px={n_valid} ({100.0*n_valid/(W*H):.2f}%) prov={prov}")
 
-    rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    m = np.isfinite(f_grid)
-    rgba[m, :3] = f_to_rgb(np.clip(f_grid[m], -60, 150))
-    rgba[m, 3] = 205
+    rgba = render_rgba(np.clip(f_grid, -60.0, 150.0), TEMP_SMOOTH_STOPS, 205)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     data_time = now_det_str()
-    key_rows = [((r, g, b), f"{lo}..{hi} F — {label}")
-                for lo, hi, (r, g, b) in TEMP_BANDS
-                for label in [next((z[2] for z in KEY_ZONES if z[0] <= lo < z[1]), "")]
-                ][:12]
-    lw, lh = draw_category_legend(
+    # Original banded key: identical layout, bars, and zone callouts.
+    lw, lh = draw_banded_key(
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"],
-        f"HRRR + RRFS-NA 2m analysis | {data_time}", TEMP_BANDS and [(c, f"{a}..{b}F") for a, b, c in TEMP_BANDS][::4],
-        f"{prov} | {data_time}", note="FIXED 5F bands -60..150F, all sources.")
-    scale_html = ("Air temperature 2m (MODEL analysis, NOT direct observation): "
-                  "<b>LOWEST -60F</b> blue-white &rarr; freezing wall 30-40F &rarr; "
-                  "yellows 70-85F &rarr; <b>HIGHEST+ 150F</b> pink/red. Same F, same color, every source.")
+        f"2 m air temperature (degF)  |  {data_time}",
+        TEMP_BANDS, KEY_ZONES,
+        f"Source: NOAA HRRR + RRFS-NA + ECCC GDPS (see provenance)  |  "
+        f"Processed {now_det_str()}")
+    scale_html = SCALE_HTML
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["primary_url"], CONFIG_NA["variable"],

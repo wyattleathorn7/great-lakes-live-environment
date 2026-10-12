@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
 from na_common import bin_points_to_canvas, fetch_http, fill_pinholes, gdps_wcs_grid, sanitize_model_vals
-from beaufort import FORCE_COLORS, MS_TO_KT, force_from_kt
+from beaufort import FORCE_COLORS, MS_TO_KT, force_from_kt, force_name, force_range_text
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs)
@@ -302,15 +302,20 @@ def _build(bounds, W, H):
     rgba = np.array(img)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
-    from beaufort import BEAUFORT
-    key_rows = [((_hex(FORCE_COLORS[f])[0], _hex(FORCE_COLORS[f])[1], _hex(FORCE_COLORS[f])[2]), f"F{f} {n} {a}-{b}kt")
-                for f, n, a, b in BEAUFORT]
+    # Original Beaufort key rows, verbatim (same colors, same labels).
+    key_rows = [(FORCE_COLORS[f], f"F{f} — {force_name(f)} ({force_range_text(f)})")
+                for f in range(13)]
     data_time = now_det_str()
     lw, lh = draw_category_legend(os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"],
-                                  f"GLWU + HRRR + RRFS-NA 10m | {data_time}", key_rows,
-                                  f"{prov} | {data_time}", note="TOWARD-motion arrows; calm: no arrow.")
-    scale_html = ("Wind (MODEL analysis): speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. "
-                  "Arrows point TOWARD motion. Calm (&lt;0.5 m/s) draws no arrow.")
+                                  f"{CONFIG_NA['freshness_label']}  |  {data_time}", key_rows,
+                                  f"Source: GLWU v2.1 + HRRR 10 m + RRFS-NA + GDPS (see provenance)  |  "
+                                  f"Processed {data_time}",
+                                  note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY. "
+                                       "White arrows trace travel direction.")
+    scale_html = ("WIND — BEAUFORT SCALE (colors follow force, dark purple = "
+                  "Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. "
+                  "Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. "
+                  "Same force always shows the same color.")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
@@ -320,6 +325,9 @@ def _build(bounds, W, H):
         missing_data_treatment="GLWU > HRRR > RRFS > GDPS(gaps) > transparent; missing never calm.")
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
+    meta["beaufort_table"] = [
+        {"force": f, "description": force_name(f), "range_kt": force_range_text(f),
+         "color": FORCE_COLORS[f]} for f in range(13)]
     src_id = f"na-wind-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
     meta["source_id"] = src_id
     meta["source_version"] = source_token(src_id + json.dumps(prov, sort_keys=True))
