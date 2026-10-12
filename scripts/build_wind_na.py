@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
-from na_common import (apply_coast_mask, bin_points_to_canvas, load_landmask,
+from na_common import (apply_coast_mask, bin_points_to_canvas, load_landonly,
                        despeckle_valid, feather_merge, fetch_http,
                        fill_pinholes, gate_field_to_mask, gdps_wcs_grid,
                        sanitize_model_vals, smooth_field)
@@ -302,7 +302,7 @@ def run():
 
 def _build(bounds, W, H):
     from geospatial_utils import draw_category_legend
-    LANDMASK = load_landmask()
+    LANDMASK = load_landonly()  # crisp: shoreline cut, no sea fringe
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)

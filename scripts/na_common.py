@@ -147,6 +147,23 @@ def load_landmask():
     return _LANDMASK
 
 
+_LANDONLY = None
+
+
+def load_landonly():
+    """Crisp selected-country land, no offshore fringe (wind + air
+    temperature): 1.0 on kept land (Great Lakes included), 0.0 everywhere
+    else — shoreline and the Mexico border are hard cuts."""
+    global _LANDONLY
+    if _LANDONLY is None:
+        p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "assets", "north_america_landonly.npy")
+        if not os.path.exists(p):
+            raise FileNotFoundError(f"NA land-only mask missing: {p}")
+        _LANDONLY = np.load(p).astype(np.float32)
+    return _LANDONLY
+
+
 def apply_coast_mask(rgba, mask=None):
     """Multiply overlay alpha by the shared coastline feather and bleed
     edge RGB into transparent pixels (same anti-fringe contract as the

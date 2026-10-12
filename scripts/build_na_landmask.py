@@ -110,10 +110,29 @@ def main(shp=None):
     excl_small = excl.reshape(h2 // SUPER, SUPER, w2 // SUPER, SUPER).max(axis=(1, 3))
     a2 = alpha.reshape(H, SUPER, W, SUPER).mean(axis=(1, 3)).astype(np.float32)
     a2[excl_small] = 0.0
+    # Crisp land-only variant (wind + air temperature): selected-country
+    # land exactly, NO offshore fringe. Majority vote per canvas cell, so
+    # the shoreline (and the Mexico border) stays a hard cut, not a ramp.
+    land_small = land.reshape(h2 // SUPER, SUPER, w2 // SUPER, SUPER).mean(axis=(1, 3))
+    crisp = ((land_small >= 0.5).astype(np.float32))
+    crisp[excl_small > 0.5] = 0.0
+    # ...but never punch holes inside kept land (sub-cell islets/rocks in
+    # the 50m data that read as water at 0.025 deg stay painted: they are
+    # land, and speckling the interior would read as missing data).
+    # binary_fill_holes touches ONLY fully enclosed gaps, so the outer
+    # shoreline is untouched (no closing/dilation: those would push a
+    # fringe of paint into the sea, which this variant forbids).
+    from scipy.ndimage import binary_fill_holes
+    crisp = binary_fill_holes(crisp > 0.5).astype(np.float32)
+    crisp[excl_small > 0.5] = 0.0
     from PIL import Image
     Image.fromarray((a2 * 255 + 0.5).astype(np.uint8)).save(ASSET_PNG)
     np.save(ASSET_NPY, a2)
     print(f"wrote {ASSET_PNG} + {ASSET_NPY}")
+    Image.fromarray((crisp * 255).astype(np.uint8)).save(
+        os.path.join(REPO_ROOT, "assets", "north_america_landonly.png"))
+    np.save(os.path.join(REPO_ROOT, "assets", "north_america_landonly.npy"), crisp)
+    print("wrote assets/north_america_landonly.png/.npy (crisp, no sea fringe)")
     checks = [(-157.8, 21.3, "Honolulu", 1.0), (-79.4, 43.7, "Toronto", 1.0),
               (-99.1, 19.4, "MexicoCity", 1.0), (-92.5, 15.0, "S.Mexico", 1.0),
               (-90.5, 14.0, "Guatemala", 0.0), (-79.5, 9.0, "Panama", 0.0),
