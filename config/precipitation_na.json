@@ -21,7 +21,7 @@
   },
   "iem_layer": "nexrad-n0q-900913",
   "iem_wms_url": "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi",
-  "precedence": "1) IEM opaque echo pixels inside the IEM effective domain. 2) ECCC rain/snow intensity outside the IEM domain where ECCC dynamic coverage = 1. 3) Transparent elsewhere. Coverage masks (ECCC RADAR_COVERAGE_*), never alpha-zero, decide the domain. Overlapping pixels: IEM wins; ECCC never painted on top of IEM.",
+  "precedence": "ECCC (rates -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; IEM N0Q (native rendering, itself the original legend) fills ECCC gaps; 10-px cross-fade on the coverage edge; transparent elsewhere.",
   "product": "precipitation_na",
   "refresh_interval_seconds": 300,
   "source_name": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it",
@@ -30,6 +30,6 @@
   "title": "LIVE PRECIPITATION",
   "valid_max": 75.0,
   "valid_min": 5.0,
-  "variable": "N0Q base reflectivity dBZ (IEM domain); ECCC precipitation-rate rain/snow mapped to a compatible qualitative intensity (documented, not numerically equal)",
+  "variable": "N0Q base reflectivity dBZ (IEM domain gaps); ECCC precipitation-rate rain (mm/h)/snow (cm/h) mapped to dBZ through the ECCC 14-color class rates with the NWS Z=300R^1.4 equivalence (equal ECCC colors = equal severity = equal dBZ for rain and snow). One 5-75 dBZ key for both sources.",
   "visual_note": "IEM palette preserved in its domain. ECCC intensities mapped to the same 11-step key qualitatively. Equal colors across the transition do NOT claim identical measurements."
 }

@@ -40,8 +40,11 @@ NA_COUNTRIES = {
     "USA", "CAN", "MEX", "GRL", "SPM",
     "CUB", "BHS", "JAM", "HTI", "DOM", "PRI", "CYM", "TCA", "VIR",
     "ATG", "DMA", "GRD", "KNA", "LCA", "VCT", "BRB", "TTO",
-    "ABW", "CUW", "SXM", "BMU",
+    "ABW", "CUW", "SXM", "BMU", "AIA", "VGB", "MSR",
 }
+# France holds Martinique + Guadeloupe (same record as metropolitan
+# France): keep ONLY the pieces inside this Caribbean box.
+FRA_CARIBBEAN_BOX = (-70.0, 10.0, -58.0, 19.0)  # lon_min, lat_min, lon_max, lat_max
 
 
 def load_country_shapes(shp_path, wanted):
@@ -53,6 +56,19 @@ def load_country_shapes(shp_path, wanted):
     seen = set()
     for s, rec in zip(shapes, recs):
         code = rec["ADM0_A3"]
+        if code == "FRA":
+            # French Caribbean only (Martinique, Guadeloupe): clip the
+            # single France record to the Caribbean box via shapely.
+            from shapely.geometry import box as _box, shape as _shape
+            try:
+                clip = _shape(s.__geo_interface__).intersection(
+                    _box(*FRA_CARIBBEAN_BOX))
+                if not clip.is_empty:
+                    geoms.append(clip.__geo_interface__)
+                    seen.add("FRA-Caribbean")
+            except Exception:
+                continue
+            continue
         if code not in wanted:
             continue
         seen.add(code)
@@ -99,22 +115,44 @@ def main(shp=None):
     print("rasterizing excluded land for the hard border cut...")
     import shapefile as _shp
     r = _shp.Reader(shp)
+    from shapely.geometry import box as _box2, shape as _shape2
     other = []
     for s, rec in zip(r.shapes(), r.records()):
-        if rec["ADM0_A3"] not in NA_COUNTRIES:
-            try:
-                other.append(s.__geo_interface__)
-            except Exception:
-                continue
+        code = rec["ADM0_A3"]
+        if code in NA_COUNTRIES or code == "FRA":
+            continue
+        try:
+            other.append(s.__geo_interface__)
+        except Exception:
+            continue
+    # France minus the kept Caribbean pieces (i.e. French Guiana slivers
+    # at the canvas edge): difference of the two boxes, shapely-handled.
+    for s, rec in zip(r.shapes(), r.records()):
+        if rec["ADM0_A3"] != "FRA":
+            continue
+        try:
+            g = _shape2(s.__geo_interface__)
+            east = g.intersection(_box2(-60.0, 5.0, -15.0, 85.0))
+            keep = east.difference(_box2(*FRA_CARIBBEAN_BOX))
+            if not keep.is_empty:
+                other.append(keep.__geo_interface__)
+        except Exception:
+            continue
     excl = rasterize_land(other, w2, h2)
     excl_small = excl.reshape(h2 // SUPER, SUPER, w2 // SUPER, SUPER).max(axis=(1, 3))
     a2 = alpha.reshape(H, SUPER, W, SUPER).mean(axis=(1, 3)).astype(np.float32)
     a2[excl_small] = 0.0
+    from build_na_coastmask import carve_exclusions
+    a2 = carve_exclusions(a2)
     # Crisp land-only variant (wind + air temperature): selected-country
     # land exactly, NO offshore fringe. Majority vote per canvas cell, so
     # the shoreline (and the Mexico border) stays a hard cut, not a ramp.
     land_small = land.reshape(h2 // SUPER, SUPER, w2 // SUPER, SUPER).mean(axis=(1, 3))
-    crisp = ((land_small >= 0.5).astype(np.float32))
+    land_any = land.reshape(h2 // SUPER, SUPER, w2 // SUPER, SUPER).max(axis=(1, 3))
+    # Majority vote, OR any-subcell (sub-cell islets like Martinique must
+    # survive: a canvas cell holding ANY kept land is kept — at most a
+    # one-cell stair-step on the shoreline, never a feather ramp).
+    crisp = ((land_small >= 0.5) | (land_any > 0)).astype(np.float32)
     crisp[excl_small > 0.5] = 0.0
     # ...but never punch holes inside kept land (sub-cell islets/rocks in
     # the 50m data that read as water at 0.025 deg stay painted: they are
@@ -125,6 +163,8 @@ def main(shp=None):
     from scipy.ndimage import binary_fill_holes
     crisp = binary_fill_holes(crisp > 0.5).astype(np.float32)
     crisp[excl_small > 0.5] = 0.0
+    from build_na_coastmask import carve_exclusions
+    crisp = carve_exclusions(crisp)
     from PIL import Image
     Image.fromarray((a2 * 255 + 0.5).astype(np.uint8)).save(ASSET_PNG)
     np.save(ASSET_NPY, a2)

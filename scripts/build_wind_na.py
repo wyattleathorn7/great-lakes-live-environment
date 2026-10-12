@@ -54,8 +54,8 @@ NA_CITY_ANCHORS = [
 ]
 
 
-def paint_na_wind_labels(rgba, kt_field, bounds, label_step=110,
-                         font_size=8, max_labels=260):
+def paint_na_wind_labels(rgba, kt_field, bounds, label_step=64,
+                         font_size=7, max_labels=1200):
     """Strategic kt values in the Great Lakes label style (white mono +
     dark stroke): fixed city anchors first, then high-change extras on a
     data-seeded jittered lattice with spacing guards. Returns
@@ -110,9 +110,9 @@ def paint_na_wind_labels(rgba, kt_field, bounds, label_step=110,
         y, x, v = cell_value(lon, lat)
         if v is None or not (8 <= y < H - 8 and 8 <= x < W - 8):
             continue
-        if claim(y, x, 55):
+        if claim(y, x, 30):
             _draw_wind_label(d, x + 6, y - 12, f"{v:.0f}", font)
-            mark(y, x, 55)
+            mark(y, x, 30)
             n_strat += 1
     # high-change extras on a jittered lattice
     gy, gx = np.gradient(np.where(ok, kt_field, 0.0))
@@ -128,9 +128,9 @@ def paint_na_wind_labels(rgba, kt_field, bounds, label_step=110,
     for _, yy, xx, v in cand:
         if n_strat + n_fill >= max_labels:
             break
-        if claim(yy, xx, 85):
+        if claim(yy, xx, 48):
             _draw_wind_label(d, xx + 6, yy - 12, f"{v:.0f}", font)
-            mark(yy, xx, 85)
+            mark(yy, xx, 48)
             n_fill += 1
     del d
     return np.array(img), n_strat, n_fill
@@ -342,14 +342,15 @@ def _build(bounds, W, H):
     # gap: Central America land). WindDir is the meteorological FROM
     # direction, so toward-motion U = -spd*sin(dir), V = -spd*cos(dir).
     try:
-        arr_s, la_s, lo_s = gdps_wcs_grid("GDPS_15km_WindSpeed_10m", bounds, RAW_DIR)
-        arr_d, _, _ = gdps_wcs_grid("GDPS_15km_WindDir_10m", bounds, RAW_DIR)
+        arr_s, la_s, lo_s, slat, slon = gdps_wcs_grid("GDPS_15km_WindSpeed_10m", bounds, RAW_DIR)
+        arr_d, _, _, _, _ = gdps_wcs_grid("GDPS_15km_WindDir_10m", bounds, RAW_DIR)
         spd = sanitize_model_vals(np.asarray(arr_s[0], dtype=float), 0.0, 120.0)
         wdir = np.asarray(arr_d[0], dtype=float)
         wdir = np.where(np.isfinite(wdir), wdir % 360.0, np.nan)
         rad = np.deg2rad(wdir)
-        gu, _ = bin_points_to_canvas(-spd * np.sin(rad), la_s, lo_s, bounds)
-        gv, _ = bin_points_to_canvas(-spd * np.cos(rad), la_s, lo_s, bounds)
+        from na_common import resample_wcs_to_canvas as _bilin
+        gu = _bilin(np.where(np.isfinite(spd), -spd * np.sin(rad), np.nan), slat, slon, bounds)
+        gv = _bilin(np.where(np.isfinite(spd), -spd * np.cos(rad), np.nan), slat, slon, bounds)
         gu = fill_pinholes(gu, radius=3)
         gv = fill_pinholes(gv, radius=3)
         joint = np.isfinite(gu) & np.isfinite(gv)
@@ -388,8 +389,10 @@ def _build(bounds, W, H):
     from build_wind import paint_wind_streamlets
     rgba, n_stream, n_heads = paint_wind_streamlets(
         rgba, np.where(m, Ud, np.nan), np.where(m, Vd, np.nan), np.where(m, kt, np.nan),
-        seed_step=36, ds=3.0, max_steps=40, min_speed=0.5)
-    rgba, n_strat, n_fill = paint_na_wind_labels(rgba, np.where(m, kt, np.nan), bounds)
+        seed_step=20, ds=3.0, max_steps=40, min_speed=0.5)
+    rgba, n_strat, n_fill = paint_na_wind_labels(
+        rgba, np.where(m, kt, np.nan), bounds,
+        label_step=64, font_size=7, max_labels=1200)
     rgba = apply_coast_mask(rgba, LANDMASK)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     print(f"[{PRODUCT}] streamlets={n_stream}/{n_heads} labels={n_strat}+{n_fill}")

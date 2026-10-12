@@ -96,6 +96,33 @@ def smoothstep(a, b, x):
     return t * t * (3.0 - 2.0 * t)
 
 
+# Hand-drawn exclusion (user polygon, southern Caribbean): every island
+# inside goes — Trinidad & Tobago, Grenada, the Venezuelan offshore
+# islands (Margarita/Coche/Cubagua, Los Roques), and the ABC islands.
+# Vertices in (lon, lat), traced from the operator's drawing.
+EXCLUDE_POLY = [
+    (-70.4, 12.9), (-66.0, 12.7), (-62.5, 12.5), (-60.5, 11.8),
+    (-59.4, 11.0), (-59.7, 10.2), (-60.8, 9.7), (-62.5, 9.4),
+    (-64.5, 10.0), (-66.5, 10.6), (-68.2, 11.2), (-70.0, 11.7),
+]
+
+
+def carve_exclusions(mask):
+    """Zero the mask inside EXCLUDE_POLY (user's drawn shape). Operates
+    on the 3300x1600 canvas mask in place semantics (returns new array).
+    Applies to every NA boundary so all gradients agree."""
+    from matplotlib.path import Path
+    Hh, Ww = mask.shape
+    xs = LON_MIN + (np.arange(Ww) + 0.5) * (LON_MAX - LON_MIN) / Ww
+    ys = LAT_MAX - (np.arange(Hh) + 0.5) * (LAT_MAX - LAT_MIN) / Hh
+    xx, yy = np.meshgrid(xs, ys)
+    inside = Path(EXCLUDE_POLY).contains_points(
+        np.stack([xx.ravel(), yy.ravel()], axis=1)).reshape(Hh, Ww)
+    out = mask.copy()
+    out[inside] = 0.0
+    return out
+
+
 def main(shp=None):
     import urllib.request
     if shp is None:
@@ -125,6 +152,7 @@ def main(shp=None):
     alpha = 1.0 - smoothstep(BUFFER_KM, FEATHER_KM, dist)
     # downsample to NA canvas (mean preserves the feather)
     a2 = alpha.reshape(H, SUPER, W, SUPER).mean(axis=(1, 3)).astype(np.float32)
+    a2 = carve_exclusions(a2)
     from PIL import Image
     Image.fromarray((a2 * 255 + 0.5).astype(np.uint8)).save(ASSET_PNG)
     np.save(ASSET_NPY, a2)

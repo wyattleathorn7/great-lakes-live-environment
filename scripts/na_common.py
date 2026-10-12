@@ -249,6 +249,45 @@ def feather_merge(layers, feather_px=12):
     return merged, valid
 
 
+def resample_wcs_to_canvas(vals2d, src_lats1d, src_lons1d, bounds):
+    """Bilinear resample of a regular lat/lon source grid (e.g. GDPS WCS
+    0.15 deg) onto the NA canvas. Coarse cells become smooth gradients
+    instead of single-cell dots. Out-of-source cells stay NaN (never
+    extrapolated)."""
+    from scipy.interpolate import RectBivariateSpline
+    vals = np.asarray(vals2d, dtype=float)
+    lats = np.asarray(src_lats1d, dtype=float)
+    lons = np.asarray(src_lons1d, dtype=float)
+    # RectBivariateSpline needs strictly INCREASING axes (WCS often
+    # delivers descending latitude).
+    if lats[0] > lats[-1]:
+        lats = lats[::-1]
+        vals = vals[::-1, :]
+    if lons[0] > lons[-1]:
+        lons = lons[::-1]
+        vals = vals[:, ::-1]
+    ok_src = np.isfinite(vals)
+    if not ok_src.all():
+        # nearest-valid prefill for the spline; validity re-derived below
+        # so missing source cells can never smear into the render.
+        from scipy.ndimage import distance_transform_edt
+        _, idx = distance_transform_edt(~ok_src, return_indices=True)
+        filled = vals[tuple(idx)]
+    else:
+        filled = vals
+    lut = RectBivariateSpline(lats, lons, filled, kx=1, ky=1)
+    lut_ok = RectBivariateSpline(lats, lons, ok_src.astype(float), kx=1, ky=1)
+    H, W = bounds["canvas_height"], bounds["canvas_width"]
+    qlat = bounds["lat_max"] - (np.arange(H) + 0.5) * (bounds["lat_max"] - bounds["lat_min"]) / H
+    qlon = bounds["lon_min"] + (np.arange(W) + 0.5) * (bounds["lon_max"] - bounds["lon_min"]) / W
+    # grid=True evaluation also needs strictly increasing axes.
+    grid = lut(qlat[::-1], qlon)[::-1, :]
+    conf = lut_ok(qlat[::-1], qlon)[::-1, :]
+    inside = ((qlat[:, None] >= lats.min()) & (qlat[:, None] <= lats.max())
+              & (qlon[None, :] >= lons.min()) & (qlon[None, :] <= lons.max()))
+    return np.where(inside & (conf > 0.5), grid, np.nan)
+
+
 def gdps_wcs_grid(coverage_id, bounds, raw_dir, timeout=300):
     """Fetch ECCC GDPS WCS GetCoverage GeoTIFF for the NA bbox.
 
@@ -281,7 +320,7 @@ def gdps_wcs_grid(coverage_id, bounds, raw_dir, timeout=300):
         lons = west + (np.arange(w) + 0.5) * (east - west) / w
         lats = north - (np.arange(h) + 0.5) * (north - south) / h
         lo2, la2 = np.meshgrid(lons, lats)
-    return vals, la2, lo2
+    return vals, la2, lo2, lats, lons
 
 
 def sanitize_model_vals(vals, lo=-100.0, hi=400.0):

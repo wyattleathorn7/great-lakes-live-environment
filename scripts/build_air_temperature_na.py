@@ -179,9 +179,13 @@ def _build(bounds, W, H, prev):
     #    HRRR+RRFS have no verified valid data (verified RRFS gap:
     #    Central America land, e.g. San Jose/Panama, is 9999 in RRFS-NA).
     try:
-        arr, la, lo = gdps_wcs_grid("GDPS_15km_AirTemp_2m", bounds, RAW_DIR)
+        arr, la, lo, lat1d, lon1d = gdps_wcs_grid("GDPS_15km_AirTemp_2m", bounds, RAW_DIR)
         band0 = sanitize_model_vals(np.asarray(arr[0], dtype=float), -80.0, 60.0)
-        g, c = bin_points_to_canvas(K2F(band0 + 273.15), la, lo, bounds)
+        # Bilinear (not nearest-bin): coarse GDPS cells must render as a
+        # smooth gradient, never single-cell dots.
+        from na_common import resample_wcs_to_canvas
+        g = resample_wcs_to_canvas(band0 + 273.15, lat1d, lon1d, bounds)
+        g = K2F(np.where(np.isfinite(g), g, np.nan))
         g = fill_pinholes(g, radius=3)
         layers.append((g, np.isfinite(g)))
         prov["gdps"] = f"GDPS_15km_AirTemp_2m n={int(np.isfinite(g).sum())}"

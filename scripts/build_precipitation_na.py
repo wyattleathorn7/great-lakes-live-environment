@@ -55,12 +55,65 @@ ECCC = "https://geo.weather.gc.ca/geomet"
 IEM = "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi"
 
 
-def na_wms_111(base, layers, bounds, w, h, extra=""):
+def na_wms_111(base, layers, bounds, w, h, extra="", style=""):
     q = (f"SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS={layers}"
-         f"&STYLES=&SRS=EPSG:4326&BBOX={bounds['lon_min']},{bounds['lat_min']},"
+         f"&STYLES={style}&SRS=EPSG:4326&BBOX={bounds['lon_min']},{bounds['lat_min']},"
          f"{bounds['lon_max']},{bounds['lat_max']}&WIDTH={w}&HEIGHT={h}"
          f"&FORMAT=image/png&TRANSPARENT=TRUE{extra}")
     return f"{base}?{q}"
+
+
+# ECCC Radar-Rain_14colors / Radar-Snow_14colors class colors, extracted
+# from the official GetLegendGraphic ramps (same 14-color ramp for both;
+# units differ: rain mm/h, snow cm/h). Class i spans [RATE, next RATE).
+# Legend URLs:
+#   https://geo.weather.gc.ca/geomet?...&layer=RADAR_1KM_RRAI&...&STYLE=Radar-Rain_14colors
+#   https://geo.weather.gc.ca/geomet?...&layer=RADAR_1KM_RSNO&...&STYLE=Radar-Snow_14colors
+ECCC_CLASS_RGB = [
+    (0, 152, 254), (0, 229, 140), (0, 203, 0), (0, 152, 0), (0, 102, 0),
+    (85, 152, 0), (254, 197, 0), (254, 152, 0), (254, 102, 0), (254, 0, 0),
+    (254, 1, 108), (127, 25, 178), (80, 0, 121), (51, 0, 77),
+]
+ECCC_RAIN_RATES = [0.1, 1.0, 2.0, 4.0, 8.0, 12.0, 16.0, 24.0, 32.0, 50.0,
+                   64.0, 100.0, 125.0, 200.0]  # mm/h class lower bounds
+
+
+def _rate_to_dbz(r_mmh):
+    """NWS NEXRAD Z-R equivalence (Z=300R^1.4): the documented bridge that
+    puts ECCC precipitation rates on the N0Q dBZ key. ECCC paints equal
+    colors for equal severity in rain and snow, so the rain-rate column
+    owns both products' mapping (no snow-ratio invention)."""
+    import math
+    return 10.0 * math.log10(300.0 * max(r_mmh, 1e-6) ** 1.4)
+
+
+# dBZ value of each ECCC class lower bound under the Z-R bridge.
+ECCC_CLASS_DBZ = [_rate_to_dbz(r) for r in ECCC_RAIN_RATES]
+
+# Original N0Q key bins (must match KEY_ROWS ranges in order).
+KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
+
+
+def eccc_class_to_key(eccc_rgb):
+    """Map ECCC-rendered RGB -> original N0Q KEY_ROWS color via nearest
+    documented class color -> rate -> dBZ -> key bin. Returns (N,3)."""
+    import numpy as np
+    pal = np.array(ECCC_CLASS_RGB, dtype=float)
+    px = np.asarray(eccc_rgb, dtype=float).reshape(-1, 3)
+    d2 = ((px[:, None, :] - pal[None, :, :]) ** 2).sum(axis=2)
+    cls = d2.argmin(axis=1)
+    dbz = np.array(ECCC_CLASS_DBZ)[cls]
+    keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
+    out = np.zeros((px.shape[0], 3), dtype=np.uint8)
+    for i, z in enumerate(dbz):
+        b = 0
+        for lo in KEY_BINS[1:]:
+            if z >= lo:
+                b += 1
+            else:
+                break
+        out[i] = keypal[min(b, len(keypal) - 1)]
+    return out
 
 
 def eccc_time_default(layer, timeout=30):
@@ -75,11 +128,27 @@ def eccc_time_default(layer, timeout=30):
         return "unprobed"
 
 
-def eccc_rank_to_key(echo_strength):
-    """Map 0..1 ECCC echo rank -> IEM KEY_ROWS color index (qualitative)."""
-    idx = np.clip((echo_strength * len(KEY_ROWS)).astype(int), 0, len(KEY_ROWS) - 1)
-    palette = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
-    return palette[idx]
+def key_from_iem_wash(rgb):
+    """Map IEM overview-scale pixels into N0Q key rows without inventing
+    intensity. Vivid pixels (real chroma: storm cores survive overview
+    minification) match by chromaticity to the exact key row. Washed-out
+    pixels (overview blur destroyed their color) fall back to a
+    luminance rank clamped to rows 0..3 (very light..moderate): a washed
+    pixel can never paint as severe/intense/extreme."""
+    import numpy as np
+    keypal = np.array([c for c, _ in KEY_ROWS], dtype=float)
+    knorm = keypal / np.maximum(keypal.max(axis=1, keepdims=True), 1.0)
+    px = np.asarray(rgb, dtype=float).reshape(-1, 3)
+    mx = px.max(axis=1, keepdims=True)
+    pn = px / np.maximum(mx, 1.0)
+    chroma = px.max(axis=1) - px.min(axis=1)
+    d2 = ((pn[:, None, :] - knorm[None, :, :]) ** 2).sum(axis=2)
+    cls = d2.argmin(axis=1)
+    lum = (0.299 * px[:, 0] + 0.587 * px[:, 1] + 0.114 * px[:, 2]) / 255.0
+    soft = np.clip((lum * 3.99).astype(int), 0, 3)
+    cls = np.where(chroma > 60.0, cls, soft)
+    return np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)[cls].reshape(
+        np.asarray(rgb).shape)
 
 
 def main():
@@ -125,71 +194,77 @@ def _build(scan_dt, source_id, bounds, W, H):
     iem = load_rgba(iem_path, (W, H))
     iem_echo = iem[:, :, 3] > 0
 
-    # IEM effective-domain mask (NOT the international border: the
-    # network footprint from GetCapabilities + WSR-88D range).
-    xs = bounds["lon_min"] + (np.arange(W) + 0.5) * (bounds["lon_max"] - bounds["lon_min"]) / W
-    ys = bounds["lat_max"] - (np.arange(H) + 0.5) * (bounds["lat_max"] - bounds["lat_min"]) / H
-    in_iem = ((xs[None, :] >= dom["lon_min"]) & (xs[None, :] <= dom["lon_max"])
-              & (ys[:, None] >= dom["lat_min"]) & (ys[:, None] <= dom["lat_max"]))
-    iem_wins = in_iem & iem_echo
-
     # 2) ECCC rain + snow + coverage GetMaps (authoritative footprint).
     # Coverage semantics (verified live 2026-10-11 by echo containment:
     # 10147/10174 rain echoes fall OUTSIDE the .INV-opaque area): the
     # RADAR_COVERAGE_*.INV style fills areas with NO radar coverage, so
     # true coverage = INV-transparent pixels. The default (non-INV)
     # style paints only outlines and must NOT be used as a mask.
+    # Rate products are fetched in their documented 14-color styles so
+    # every rendered color inverts EXACTLY to its rate class (same ramp
+    # for rain and snow; units differ). INTERPOLATION=TRUE is ECCC's
+    # documented smoother resampling for GetMap.
     t_rain = eccc_time_default("RADAR_1KM_RRAI")
     t_snow = eccc_time_default("RADAR_1KM_RSNO")
     paths = {}
-    for key, layer in (("rain", "RADAR_1KM_RRAI"), ("snow", "RADAR_1KM_RSNO"),
-                       ("covr", "RADAR_COVERAGE_RRAI.INV"), ("covs", "RADAR_COVERAGE_RSNO.INV")):
+    for key, layer, style, interp in (
+            ("rain", "RADAR_1KM_RRAI", "Radar-Rain_14colors", True),
+            ("snow", "RADAR_1KM_RSNO", "Radar-Snow_14colors", True),
+            ("covr", "RADAR_COVERAGE_RRAI.INV", "", False),
+            ("covs", "RADAR_COVERAGE_RSNO.INV", "", False)):
         p = os.path.join(RAW_DIR, f"precip_na_eccc_{key}.png")
-        wms_getmap(na_wms_111(ECCC, layer, bounds, W, H), p)
+        wms_getmap(na_wms_111(ECCC, layer, bounds, W, H,
+                              extra="&INTERPOLATION=TRUE" if interp else "",
+                              style=style), p)
         paths[key] = load_rgba(p, (W, H))
-
-    def luminance(a):
-        return (0.299 * a[:, :, 0] + 0.587 * a[:, :, 1] + 0.114 * a[:, :, 2]) / 255.0
 
     # Authoritative coverage: INV-transparent == radar-covered.
     cov = (paths["covr"][:, :, 3] == 0) | (paths["covs"][:, :, 3] == 0)
     rain_e = paths["rain"][:, :, 3] > 0
     snow_e = paths["snow"][:, :, 3] > 0
-    strength = np.maximum(luminance(paths["rain"]) * rain_e,
-                          luminance(paths["snow"]) * snow_e)
-    # ECCC is excluded EVERYWHERE inside the IEM effective domain — IEM
-    # dry (no echo) is a valid observation there and must not expose
-    # lower-priority ECCC echoes underneath (no duplicate rendering).
-    eccc_echo = cov & (rain_e | snow_e) & ~in_iem
+    # Precedence by verified coverage (never a box, never a border):
+    # ECCC (rates -> dBZ -> original key) wins everywhere its dynamic
+    # coverage is valid, including most of CONUS; IEM N0Q (native
+    # rendering, itself the original legend) fills ECCC's gaps. IEM dry
+    # inside its network footprint still suppresses lower-priority data,
+    # but ECCC-covered echoes are never hidden.
+    eccc_echo = cov & (rain_e | snow_e)
 
-    # 3) Compose: IEM native pixels + ECCC rank-mapped pixels, with a
-    # seamless cross-fade band just inside the IEM domain edge (both
-    # echoes present -> blend, so no box seam; IEM dry still wins).
+    # 3) Compose on ONE legend: ECCC (rate -> dBZ -> original key bins)
+    # everywhere covered; IEM native N0Q fills ECCC's gaps; a 10-px
+    # cross-fade rides the coverage edge (both echo -> blend on one
+    # scale, never a box seam, never double-painted).
     from scipy.ndimage import distance_transform_edt
     from na_common import apply_coast_mask
     out = np.zeros((H, W, 4), dtype=np.uint8)
-    out[iem_wins] = iem[iem_wins]
     eccc_avail = cov & (rain_e | snow_e)
     ecol = np.zeros((H, W, 3), dtype=np.uint8)
     ealp = np.zeros((H, W), dtype=np.uint8)
     if eccc_avail.any():
-        cols = eccc_rank_to_key(strength[eccc_avail])
+        both = np.maximum(paths["rain"][eccc_avail].astype(float),
+                          paths["snow"][eccc_avail].astype(float))
+        cols = eccc_class_to_key(both[:, :3])
         ecol[eccc_avail] = cols
         ealp[eccc_avail] = np.maximum(paths["rain"][eccc_avail, 3],
                                       paths["snow"][eccc_avail, 3])
     if eccc_echo.any():
         out[eccc_echo, :3] = ecol[eccc_echo]
         out[eccc_echo, 3] = ealp[eccc_echo]
-    d_in = distance_transform_edt(in_iem)
-    band = in_iem & (d_in <= 6) & iem_echo & eccc_avail
+    # IEM gap fill repainted into the same key rows (vivid cores match by
+    # chroma; washed pixels clamp to very-light..moderate, never intense).
+    iem_fill = iem_echo & ~eccc_echo
+    out[iem_fill] = iem[iem_fill]
+    out[iem_fill, :3] = key_from_iem_wash(iem[iem_fill][:, :3])
+    d_edge = distance_transform_edt(~cov)
+    band = cov & (d_edge <= 10) & eccc_echo & iem_echo
     if band.any():
-        w = (d_in[band] / 6.0)[:, None]
+        w = (d_edge[band] / 10.0)[:, None]
         out[band, :3] = np.round(w * out[band, :3].astype(float)
-                                 + (1.0 - w) * ecol[band].astype(float)).astype(np.uint8)
+                                 + (1.0 - w) * iem[band, :3].astype(float)).astype(np.uint8)
         out[band, 3] = np.round(w[:, 0] * out[band, 3].astype(float)
-                                + (1.0 - w[:, 0]) * ealp[band].astype(float)).astype(np.uint8)
+                                + (1.0 - w[:, 0]) * iem[band, 3].astype(float)).astype(np.uint8)
     out = apply_coast_mask(out)
-    n_iem = int(iem_wins.sum())
+    n_iem = int(iem_fill.sum())
     n_eccc = int(eccc_echo.sum())
     print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} "
           f"({100.0*(n_iem+n_eccc)/(W*H):.2f}% canvas)")
@@ -206,14 +281,13 @@ def _build(scan_dt, source_id, bounds, W, H):
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
         data_time_utc=data_time, source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}",
-        units="dBZ (IEM) + qualitative ECCC intensity",
-        source_resolution="IEM ~1km CONUS mosaic 5-min; ECCC 1km NA composite 6-min; canvas 3300x1600 (0.05 deg/px)",
-        color_min=5.0, color_max=75.0, color_units="dBZ (IEM domain); qualitative elsewhere",
-        missing_data_treatment=("IEM wins inside lon -130..-65/lat 22..50; ECCC outside it where "
-                                "RADAR_COVERAGE_*.INV is transparent (verified authoritative "
-                                "coverage: echoes fall outside INV-opaque); transparent elsewhere; "
-                                "never zero-filled; "
-                                "ECCC colors are rank-mapped, not dBZ."))
+        units="dBZ (both sources on the original N0Q key)",
+        source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km NA composite 6-min (rates -> dBZ via NWS Z=300R^1.4); canvas 3300x1600 (0.05 deg/px)",
+        color_min=5.0, color_max=75.0, color_units="dBZ",
+        missing_data_treatment=("ECCC wins where RADAR_COVERAGE_*.INV is transparent "
+                                "(verified authoritative coverage); IEM N0Q fills ECCC gaps natively; "
+                                "10-px cross-fade on the coverage edge; transparent elsewhere; "
+                                "never zero-filled."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = SCALE_HTML
     meta["source_id"] = source_id
