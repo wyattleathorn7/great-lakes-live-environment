@@ -51,6 +51,12 @@ GW, GH = CONFIG["canvas_width"], CONFIG["canvas_height"]
 GBOUNDS = {"lon_min": CONFIG["lon_min"], "lon_max": CONFIG["lon_max"],
            "lat_min": CONFIG["lat_min"], "lat_max": CONFIG["lat_max"]}
 
+# Intensity value labels (white-halo numbers painted into the raster).
+# Disabled by default: gradient + viewline remain, numeric labels are
+# skipped. paint_aurora_labels() is kept intact so this can be re-enabled
+# via CLI (--show-aur-labels) without restoring deleted code.
+SHOW_AUR_LABELS = False
+
 
 def resample_global(lons, lats, vals):
     """Bin OVATION obs to the 1-degree grid, then bilinear to 0.1 deg."""
@@ -84,8 +90,13 @@ def main():
         ap = argparse.ArgumentParser()
         ap.add_argument("--preview-dir", default=None)
         ap.add_argument("--font-size", type=int, default=14)
+        ap.add_argument("--show-aur-labels", action="store_true",
+                        default=SHOW_AUR_LABELS,
+                        help="re-enable intensity value labels "
+                             "(default: disabled)")
         args = ap.parse_args()
-        return run(preview_dir=args.preview_dir, font_size=args.font_size)
+        return run(preview_dir=args.preview_dir, font_size=args.font_size,
+                   show_aur_labels=args.show_aur_labels)
     except SystemExit as e:
         raise
     except Exception:
@@ -93,7 +104,8 @@ def main():
         return 1
 
 
-def run(preview_dir=None, font_size=14):
+def run(preview_dir=None, font_size=14,
+        show_aur_labels=SHOW_AUR_LABELS):
     try:
         obs, fcst, lons, lats, vals, hemi, kpf, kp_now = fetch_ovation()
     except Exception as e:
@@ -111,7 +123,7 @@ def run(preview_dir=None, font_size=14):
         return 0
     try:
         return _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now,
-                      source_id, preview_dir, font_size)
+                      source_id, preview_dir, font_size, show_aur_labels)
     except Exception:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED. Keeping previous.")
@@ -119,7 +131,8 @@ def run(preview_dir=None, font_size=14):
 
 
 def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
-           preview_dir=None, font_size=14):
+           preview_dir=None, font_size=14,
+           show_aur_labels=SHOW_AUR_LABELS):
     from geospatial_utils import iso_to_det
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
@@ -179,9 +192,14 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
     # Intensity numbers at global scale: 14 px + wide separation so they
     # read as numbers (7 px on a 3600 px canvas renders as specks), polar
     # rows excluded (pole-pinch smear).
-    rgba, n_labels = paint_aurora_labels(rgba, paint, font_size=font_size,
-                                         extra_sep=90, bounds=GBOUNDS,
-                                         max_abs_lat=80.0)
+    if show_aur_labels:
+        rgba, n_labels = paint_aurora_labels(rgba, paint, font_size=font_size,
+                                             extra_sep=90, bounds=GBOUNDS,
+                                             max_abs_lat=80.0)
+    else:
+        # Intensity value display DISABLED: keep gradient + viewline,
+        # skip numeric labels (painter kept for re-enable).
+        n_labels = 0
     print(f"[{PRODUCT}] labels={n_labels}")
     if preview_dir is not None:
         os.makedirs(preview_dir, exist_ok=True)
@@ -207,11 +225,10 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
         f"<b>LOWEST 0</b> (transparent) &rarr; <b>6 bright green</b> "
         f"(oval overhead) &rarr; <b>14 orange</b> &rarr; <b>23 magenta</b> "
         f"(severe) &rarr; <b>HIGHEST+ 30+</b> (violet extreme). Same "
-        f"intensity always shows the same color. White halo numbers are "
-        f"actual intensity at that spot. "
-        f"Isolated faint cells paint only where connected to genuinely "
-        f"active areas, so model background noise never renders as "
-        f"aurora.")
+         f"intensity always shows the same color. "
+         f"Isolated faint cells paint only where connected to genuinely "
+         f"active areas, so model background noise never renders as "
+         f"aurora.")
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
@@ -238,7 +255,7 @@ def _build(obs, fcst, lons, lats, vals, hemi, kpf, kp_now, source_id,
     meta["legend_scale_html"] = scale_html
     meta["source_id"] = source_id
     meta["source_version"] = source_token(
-        f"{source_id}-r{RENDER_VERSION}-aurglobal-tx5")
+        f"{source_id}-r{RENDER_VERSION}-aurglobal-tx6")
     meta["viewline_threshold"] = CONFIG["viewline_threshold"]
     meta["viewline_farthest_lat"] = None
     meta["stats"] = {"valid_cells": int(np.isfinite(paint).sum()),
