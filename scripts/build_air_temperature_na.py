@@ -27,7 +27,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
-from na_common import (apply_coast_mask, bin_points_to_canvas,
+from na_common import (apply_coast_mask, bin_points_to_canvas, load_landmask,
                          despeckle_valid, feather_merge, fetch_http,
                          fill_pinholes, gate_field_to_mask, gdps_wcs_grid,
                          sanitize_model_vals, smooth_field)
@@ -145,6 +145,7 @@ def run():
 
 
 def _build(bounds, W, H, prev):
+    LANDMASK = load_landmask()
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
@@ -195,13 +196,13 @@ def _build(bounds, W, H, prev):
     f_grid[~own] = np.nan
     n_raw = int(own.sum())
     disp = smooth_field(f_grid, size=5, passes=2)
-    disp = gate_field_to_mask(disp)
+    disp = gate_field_to_mask(disp, LANDMASK)
     n_valid = int(np.isfinite(disp).sum())
     print(f"[{PRODUCT}] raw px={n_raw} display px={n_valid} "
           f"({100.0*n_valid/(W*H):.2f}%) prov={prov}")
 
     rgba = render_rgba(np.clip(disp, -60.0, 150.0), TEMP_SMOOTH_STOPS, 205)
-    rgba = apply_coast_mask(rgba)
+    rgba = apply_coast_mask(rgba, LANDMASK)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     data_time = now_det_str()

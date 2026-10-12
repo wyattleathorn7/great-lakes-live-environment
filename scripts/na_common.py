@@ -115,6 +115,7 @@ def fill_pinholes(grid, radius=2):
 
 
 _COASTMASK = None
+_LANDMASK = None
 
 
 def load_coastmask():
@@ -129,6 +130,21 @@ def load_coastmask():
             raise FileNotFoundError(f"NA coastline mask missing: {p}")
         _COASTMASK = np.load(p).astype(np.float32)
     return _COASTMASK
+
+
+def load_landmask():
+    """Strict North American country mask (wind + air temperature only):
+    USA/Canada/Mexico/Greenland/Caribbean land + <=100mi offshore with
+    the same feather; every other country's land is exactly 0, so the
+    mainland ends precisely at Mexico's southern border."""
+    global _LANDMASK
+    if _LANDMASK is None:
+        p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "assets", "north_america_landmask.npy")
+        if not os.path.exists(p):
+            raise FileNotFoundError(f"NA land mask missing: {p}")
+        _LANDMASK = np.load(p).astype(np.float32)
+    return _LANDMASK
 
 
 def apply_coast_mask(rgba, mask=None):

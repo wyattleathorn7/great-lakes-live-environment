@@ -982,3 +982,29 @@ the other products and the Pages publish proceed normally.
   `build_air_temperature` — same key, same scale text.
 - GOES full-disk x/y scale/offset are read per-file (FD ∓0.151844 vs
   CONUS constants) after a degrees-scale misplacement was caught.
+
+## 28. Strict country cutout for wind + air temperature (2026-10-12)
+
+- User decision: North America ends at Mexico. Wind and air temperature
+  use a strict country mask; precipitation and cloud cover keep the
+  §27 coastline mask (broader radar/satellite footprint).
+- **Land set** (`scripts/build_na_landmask.py`, Natural Earth 50m
+  admin-0, `ADM0_A3`): USA (incl. Alaska + Hawaii), Canada, Mexico,
+  Greenland, St. Pierre et Miquelon, and the Caribbean states
+  (Cuba, Bahamas, Jamaica, Haiti, Dominican Republic, Puerto Rico,
+  Cayman, Turks & Caicos, Virgin Islands, Antigua & Barbuda, Dominica,
+  Grenada, St. Kitts & Nevis, St. Lucia, St. Vincent & Grenadines,
+  Barbados, Trinidad & Tobago, Aruba, Curacao, Sint Maarten, Bermuda).
+  Explicitly excluded: Guatemala, Belize, Honduras, El Salvador,
+  Nicaragua, Costa Rica, Panama, Venezuela, Colombia, and all of
+  Europe/Africa (their 100-mile ocean fringes painted by the old mask
+  are gone).
+- **Perfect border cut:** non-selected countries' LAND is forced to
+  exactly 0 (the 100-mile ocean feather never bleeds across a land
+  border); ocean keeps the shoreline-following 161→200 km feather.
+  Verified by transect: Chiapas 205 → Guatemala 0 at the border line;
+  Guatemala City / San Jose / Panama / Venezuela / mid-Atlantic all 0;
+  Mexico City / S. Mexico / Toronto / Honolulu 205.
+- Wired via `na_common.load_landmask()` in `build_wind_na.py` and
+  `build_air_temperature_na.py` only (gate + alpha); all other
+  builders untouched.

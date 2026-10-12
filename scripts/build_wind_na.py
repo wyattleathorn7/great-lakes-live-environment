@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
-from na_common import (apply_coast_mask, bin_points_to_canvas,
+from na_common import (apply_coast_mask, bin_points_to_canvas, load_landmask,
                        despeckle_valid, feather_merge, fetch_http,
                        fill_pinholes, gate_field_to_mask, gdps_wcs_grid,
                        sanitize_model_vals, smooth_field)
@@ -302,6 +302,7 @@ def run():
 
 def _build(bounds, W, H):
     from geospatial_utils import draw_category_legend
+    LANDMASK = load_landmask()
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
@@ -367,8 +368,8 @@ def _build(bounds, W, H):
     own = despeckle_valid(own_u & own_v & np.isfinite(U) & np.isfinite(V), min_size=4)
     U[~own] = np.nan
     V[~own] = np.nan
-    Ud = gate_field_to_mask(smooth_field(U, size=5, passes=2))
-    Vd = gate_field_to_mask(smooth_field(V, size=5, passes=2))
+    Ud = gate_field_to_mask(smooth_field(U, size=5, passes=2), LANDMASK)
+    Vd = gate_field_to_mask(smooth_field(V, size=5, passes=2), LANDMASK)
     spd = np.hypot(Ud, Vd)  # m/s; NaN where missing (never zero-filled)
     n_valid = int(np.isfinite(spd).sum())
     if n_valid == 0:
@@ -389,7 +390,7 @@ def _build(bounds, W, H):
         rgba, np.where(m, Ud, np.nan), np.where(m, Vd, np.nan), np.where(m, kt, np.nan),
         seed_step=36, ds=3.0, max_steps=40, min_speed=0.5)
     rgba, n_strat, n_fill = paint_na_wind_labels(rgba, np.where(m, kt, np.nan), bounds)
-    rgba = apply_coast_mask(rgba)
+    rgba = apply_coast_mask(rgba, LANDMASK)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     print(f"[{PRODUCT}] streamlets={n_stream}/{n_heads} labels={n_strat}+{n_fill}")
 
