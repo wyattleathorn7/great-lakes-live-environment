@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>🌧️ LIVE PRECIPITATION — NORTH AMERICA</name>
+    <description><![CDATA[<p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/precipitation_na/legend.png?v=na-precip-20261011-1420" width="600" alt="legend"><br>Precipitation intensity (NEXRAD N0Q base reflectivity, dBZ, OBSERVED radar echo): <b>LOWEST 5 Very Light</b> cyan/blue (drizzle, mist) &rarr; <b>Light</b> greens (~20-30: light rain/snow) &rarr; <b>Moderate</b> dark green (~30-40: steady rain/snow) &rarr; <b>Heavy</b> yellow/orange (~40-50: heavy rain) &rarr; <b>Severe</b> red (~50-60: severe storms, hail possible) &rarr; <b>Intense</b> magenta/purple (~60-70: violent storms, large hail) &rarr; <b>HIGHEST+ 70+ Extreme</b> white (destructive hail, debris). Same dBZ always shows the same color in every season — rain, snow, lake-effect snow, thunderstorms. No echo (no precipitation) stays see-through so the map underneath shows.</p><p><b>Status:</b> LIVE / CURRENT OBSERVATION (NEXRAD + ECCC NA radar, 5-6 min mosaic)</p><p><b>Source:</b> Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it<br/><a href="https://mesonet.agron.iastate.edu/current/radar.phtml">https://mesonet.agron.iastate.edu/current/radar.phtml</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of all other layers.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <Folder>
+      <name>LIVE PRECIPITATION — NORTH AMERICA</name>
+      <description><![CDATA[<p>Precipitation intensity (NEXRAD N0Q base reflectivity, dBZ, OBSERVED radar echo): <b>LOWEST 5 Very Light</b> cyan/blue (drizzle, mist) &rarr; <b>Light</b> greens (~20-30: light rain/snow) &rarr; <b>Moderate</b> dark green (~30-40: steady rain/snow) &rarr; <b>Heavy</b> yellow/orange (~40-50: heavy rain) &rarr; <b>Severe</b> red (~50-60: severe storms, hail possible) &rarr; <b>Intense</b> magenta/purple (~60-70: violent storms, large hail) &rarr; <b>HIGHEST+ 70+ Extreme</b> white (destructive hail, debris). Same dBZ always shows the same color in every season — rain, snow, lake-effect snow, thunderstorms. No echo (no precipitation) stays see-through so the map underneath shows.</p><p><b>Sources:</b> Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it<br><b>Precedence:</b> 1) IEM opaque echo pixels inside the IEM effective domain. 2) ECCC rain/snow intensity outside the IEM domain where ECCC dynamic coverage = 1. 3) Transparent elsewhere. Coverage masks (ECCC RADAR_COVERAGE_*), never alpha-zero, decide the domain. Overlapping pixels: IEM wins; ECCC never painted on top of IEM.<br></p>]]></description>
+      <GroundOverlay>
+        <name>🌧️ LIVE PRECIPITATION — NORTH AMERICA</name>
+        <drawOrder>10</drawOrder>
+        <Icon>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/precipitation_na/current.png?v=na-precip-20261011-1420</href>
+          <refreshMode>onInterval</refreshMode>
+          <refreshInterval>300</refreshInterval>
+        </Icon>
+        <LatLonBox>
+          <north>85.0</north>
+          <south>5.0</south>
+          <east>-15.0</east>
+          <west>-180.0</west>
+        </LatLonBox>
+      </GroundOverlay>
+    </Folder>
+  </Document>
+</kml>

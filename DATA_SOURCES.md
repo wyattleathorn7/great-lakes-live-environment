@@ -837,3 +837,116 @@ the other products and the Pages publish proceed normally.
   `?v=<source_id>`), refreshed on the 4×-daily schedule (source id includes the
   run date so seasonal/diel drift rebuilds). Same stage→promote, exit-2, and
   validation contract as every other product.
+
+---
+
+## 22. North American expansion (2026-10-11) — shared boundary
+
+- **Common NA canvas** (`config/north_america_bounds.json`, read ONLY via
+  `scripts/na_bounds.py`): lon −180…−15, lat 5…85, 3300×1600 px (0.05°/px,
+  square), EPSG:4326. All four NA layers bin onto this exact canvas.
+- **Coverage geometry** (`config/north_america_coverage.geojson`): the bbox
+  encloses the 100-statute-mile (160.934 km) geodesic buffer (pyproj.Geod,
+  WGS84) around Natural-Earth-class coastline geometry, unioned with
+  Alaska, Canadian mainland, Arctic islands, CONUS, Mexico, Central
+  America, Caribbean islands, and Greenland. 100 mi = 1.446° latitude;
+  longitude equivalent 1.46° (7°N) … 11.9° (83°N). Margins: west
+  antimeridian edge covers all buffered Alaska; south +0.5° past buffered
+  Panama; east/north edges tight (~1°/0°) and noted in the GeoJSON.
+- **What the boundary is not:** it does not claim coastline-following
+  offshore precision per-pixel, and it does not imply valid source data
+  everywhere — gaps stay transparent, per product below.
+- **Archived Great Lakes versions:** `archive/great_lakes_original/`
+  (configs + builders + bounds copy + `MANIFEST.json` + restore procedure).
+  Disabled flags: `output/state/<product>.disabled`,
+  `site/<product>/DISABLED.json`. Workflows: old `wind`,
+  `air_temperature`, `cloud_cover`, `precipitation` jobs set `if: false`;
+  fast-live workflow now runs `precipitation_na` + `cloud_cover_na`.
+  Original `DATA_SOURCES.md` §§ 4/8/14/17 and all original outputs/KMLs
+  (bounds −93…−73.5 / 40.5…49.5) retained untouched.
+
+## 23. NA precipitation — IEM (CONUS) + ECCC NA composite (verified live 2026-10-11)
+
+- **IEM:** same WMS/layer as §17 (`nexrad-n0q-900913`), GetMap over the NA
+  canvas (CONUS echoes land inside its domain). Advertised footprint from
+  live GetCapabilities (`LatLonBoundingBox -171…170 / 5…70`); effective
+  network domain used for precedence: lon −130…−65, lat 22…50
+  (documented in `config/precipitation_na.json`, NOT the border).
+- **ECCC:** NA Radar Composite 1 km
+  (`https://open.canada.ca/data/en/dataset/37aecae5-7783-4274-b595-df02aa003ac3`,
+  GeoMet `https://geo.weather.gc.ca/geomet`): `RADAR_1KM_RRAI` rain (mm/h)
+  + `RADAR_1KM_RSNO` snow (cm/h), both verified live with `time` Dimension
+  defaults (2026-10-11T14:00Z, 6-min cadence). ECCC incorporates US + Canadian
+  radars (up to ~180).
+- **Coverage (authoritative, verified by echo containment):** the
+  `RADAR_COVERAGE_*.INV` styles fill areas with NO radar coverage —
+  10147/10174 rain echoes fall OUTSIDE the INV-opaque area — so coverage =
+  INV-transparent pixels. The default coverage style paints outlines only
+  and is never used as a mask. Alpha-zero echoes are observations (dry),
+  never coverage proof.
+- **Precedence:** IEM everywhere inside its effective domain (dry = valid,
+  suppresses ECCC underneath — no duplicates) > ECCC rain/snow (max echo)
+  outside it where covered > transparent. ECCC rates rank-mapped to the
+  11-step N0Q key QUALITATIVELY (documented in legend/metadata; equal
+  colors ≠ identical dBZ). No precip-type classification added.
+- **Refresh:** 300 s (IEM 5-min, ECCC 6-min). Live build 2026-10-11:
+  IEM 62,234 px + ECCC 17,572 px, Canadian echoes verified.
+
+## 24. NA air temperature — HRRR + RRFS-NA + GDPS (verified live 2026-10-11)
+
+- **HRRR:** unchanged §8 source (CONUS/Alaska domain, TMP 2 m, hourly).
+- **RRFS:** NOAA RRFSv1 (op. 2026-10-06; `https://gsl.noaa.gov/rrfs/`).
+  NOMADS `com/rrfs/prod/` HTTPS directory/file fetches return 403 on
+  2026-10-11, so the live parallel feed `com/rrfs/para/rrfs.YYYYMMDD/CC/`
+  is used (verified 200): NA grid `rrfs.tCCz.2dfld.13km.f000.na.grib2`
+  (4881×2961 rotated lat-lon) + `conus`/`ak` 3 km nests; `TMP:2 m above
+  ground:anl` verified in `.idx`. Prod preferred when its HTTPS opens
+  (code tries prod first). Hourly cycles.
+- **GDPS fallback (required, verified gap):** RRFS-NA marks Central America
+  land (San José, Panama: 312/312 and 843/843 pts = 9999) as missing, so
+  ECCC GDPS 15 km `GDPS_15km_AirTemp_2m` (°C) via GeoMet WCS GetCoverage
+  fills ONLY still-NaN cells (381,512 px on 2026-10-11, incl. Central
+  America, Iqaluit, W. Greenland). Dataset:
+  `https://open.canada.ca/data/en/dataset/c041e79a-914a-5a4e-a485-9cbc506195df`.
+- **Guards added (`scripts/na_common.py`):** GRIB missing flags
+  (9999/−9999/unphysical) → NaN (never 150°F oceans); pinhole fill radius 3
+  (interior only, edges never extrapolated). Rendering identical to §8:
+  K→°F, FIXED 5°F bands −60…150°F. Live build: 82.3% canvas valid;
+  Toronto/Winnipeg/Edmonton/Whitehorse/Iqaluit/Nome/Nuuk/Mexico City/
+  San José/Martinique all verified covered.
+
+## 25. NA cloud cover — GOES-East/West full-disk + RRFS + (GDPS if needed)
+
+- **Satellites (verified live 2026-10-11):** `ABI-L2-ACMF` full-disk Clear
+  Sky Mask on `s3://noaa-goes19` (GOES-19/East) + `s3://noaa-goes18`
+  (GOES-18/West), ~10-min FD scans, BCM gated DQF==0 → % per NA cell.
+  CONUS (ACMC) never assumed to cover Canada. Lesson recorded: FD x/y
+  scale/offset MUST come from each file's own attributes
+  (∓0.151844 vs CONUS −0.101332/+0.128212) — fixed in
+  `build_cloud_cover_na.fd_read_mask` after a degrees-scale southward
+  misplacement was found and rebuilt.
+- **Fallbacks:** RRFS `TCDC:entire atmosphere:anl` (%) where GOES invalid
+  (70,354 px); GDPS `GDPS_15km_TotalCloudCover` held in reserve for
+  verified remaining gaps (not needed on 2026-10-11). Missing satellite
+  pixels never rendered as clear; clear (<1%) transparent per GL rule.
+- **Refresh:** 300 s (satellite cadence) / model cadence for fill. Live
+  build: 4.13M satellite + 70k model cells; all Canadian mainland sample
+  points + Central America verified.
+
+## 26. NA wind — GLWU + HRRR + RRFS-NA + GDPS (verified live 2026-10-11)
+
+- **GLWU:** same §3–4 detection (UGRD surface `:anl:` stamp; shortNames
+  u/v step 0 — same match rule as the GL wind layer) over Great Lakes
+  water only (12,260 px, top precedence).
+- **HRRR:** same 10 m U/V analysis as the GL wind layer (686,058 px).
+- **RRFS-NA:** same para feed as §24 (`UGRD/VGRD:10 m above ground:anl`,
+  452,374 px). **GDPS fallback (required, verified gap):** Central America
+  (same RRFS gap as temperature) via WCS `GDPS_15km_WindSpeed_10m` (m/s) +
+  `GDPS_15km_WindDir_10m` (met FROM degrees → toward-motion
+  U=−spd·sin, V=−spd·cos; 456,824 px).
+- **Conventions kept:** m/s→kt ×1.94384, WMO Beaufort 0–12, TOWARD arrows
+  rasterized at NA-consistent density (55-px lattice), calm <0.5 m/s no
+  arrow, one source per pixel (no duplicates), missing never calm.
+- **Refresh:** 900 s. Live build: 79.0% canvas valid; Lake Michigan,
+  Toronto, Edmonton, Whitehorse, Iqaluit, Mexico City, San José, Panama,
+  Martinique verified.

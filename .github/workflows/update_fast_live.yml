@@ -1,4 +1,4 @@
-name: Fast live refresh (precipitation + cloud cover)
+name: Fast live refresh (NA precipitation + NA cloud cover)
 
 # Dedicated 5-minute refresh for the two fastest-moving layers. This
 # workflow exists because the main workflow's full cycle (all products +
@@ -36,7 +36,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  precipitation:
+  precipitation_na:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -53,26 +53,26 @@ jobs:
       # job's imports.)
       - name: Install dependencies
         run: pip install "numpy>=1.26" "pillow>=10.1"
-      - name: Update precipitation
+      - name: Update NA precipitation
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          rc=0; python scripts/build_precipitation.py || rc=$?
-          if [ $rc -eq 2 ]; then echo "Precipitation source unavailable; previous raster kept."; exit 0; fi
+          rc=0; python scripts/build_precipitation_na.py || rc=$?
+          if [ $rc -eq 2 ]; then echo "NA precipitation source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: site-precipitation
+          name: site-precipitation_na
           path: |
-            site/precipitation
-            site/kml/Great_Lakes_Live_Precipitation.kml
-            site/kml/live/Great_Lakes_Live_Precipitation.kml
-            kml/Great_Lakes_Live_Precipitation.kml
-            output/state/precipitation.json
+            site/precipitation_na
+            site/kml/North_America_Live_Precipitation.kml
+            site/kml/live/North_America_Live_Precipitation.kml
+            kml/North_America_Live_Precipitation.kml
+            output/state/precipitation_na.json
           if-no-files-found: warn
 
-  cloud_cover:
+  cloud_cover_na:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -86,23 +86,23 @@ jobs:
       # and pyproj on top of numpy/PIL (see note on precipitation above).
       - name: Install dependencies
         run: pip install "numpy>=1.26" "pillow>=10.1" "h5netcdf>=1.0" "h5py>=3.0" "pyproj>=3.6"
-      - name: Update cloud cover
+      - name: Update NA cloud cover
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
-          rc=0; python scripts/build_cloud_cover.py || rc=$?
-          if [ $rc -eq 2 ]; then echo "Cloud source unavailable; previous raster kept."; exit 0; fi
+          rc=0; python scripts/build_cloud_cover_na.py || rc=$?
+          if [ $rc -eq 2 ]; then echo "NA cloud source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: site-cloud_cover
+          name: site-cloud_cover_na
           path: |
-            site/cloud_cover
-            site/kml/Great_Lakes_Live_Cloud_Cover.kml
-            site/kml/live/Great_Lakes_Live_Cloud_Cover.kml
-            kml/Great_Lakes_Live_Cloud_Cover.kml
-            output/state/cloud_cover.json
+            site/cloud_cover_na
+            site/kml/North_America_Live_Cloud_Cover.kml
+            site/kml/live/North_America_Live_Cloud_Cover.kml
+            kml/North_America_Live_Cloud_Cover.kml
+            output/state/cloud_cover_na.json
           if-no-files-found: warn
 
   notify-ais:
@@ -129,7 +129,7 @@ jobs:
           [ "$code" = "204" ] || echo "::warning::AIS chain dispatch returned $code (expected 204)"
 
   fast_publish:
-    needs: [precipitation, cloud_cover]
+    needs: [precipitation_na, cloud_cover_na]
     # Ship whatever succeeded; a single-source outage must not block the
     # other layer, and must never block on a red job.
     if: always()

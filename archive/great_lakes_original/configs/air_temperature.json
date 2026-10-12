@@ -1,0 +1,25 @@
+{
+  "product": "air_temperature",
+  "title": "LIVE AIR TEMPERATURE",
+  "freshness_label": "LIVE / CURRENT MODEL (analysis)",
+  "source_name": "NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
+  "file_pattern": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/hrrr/prod/{date_dir}/conus/hrrr.t{cycle}z.wrfsfcf00.grib2",
+  "variable": "TMP 2 m above ground, analysis step",
+  "source_units": "K",
+  "display_units": "degF",
+  "valid_min_c": -60.0,
+  "valid_max_c": 55.0,
+  "allow_negative": true,
+  "refresh_interval_seconds": 3600,
+  "buoys": [
+    "45001",
+    "45002",
+    "45132",
+    "45012",
+    "45005"
+  ],
+  "buoy_qc_tolerance_f": 5.0,
+  "what": "Near-surface (2 m) air temperature from the operational HRRR analysis. Banded 5-degree key (-60..150 F): blue-white extreme cold, gray-blue subfreezing, royal-blue freezing wall (30-40), frigid turquoise/blues (40-55), lime/teal transition (55-70), mellow yellows (70-85), orange/gold warming (85-100), scorching pink/reds past 100. Every band brightened so nothing renders dark.",
+  "why_extreme": "Extreme cold anchors near-white blue-white; extreme heat anchors vivid pink/red; ordinary temperatures own most of the key." 
+}

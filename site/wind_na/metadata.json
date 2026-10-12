@@ -1,0 +1,52 @@
+{
+  "product": "wind_na",
+  "title": "LIVE WIND \u2014 NORTH AMERICA",
+  "freshness": "LIVE / CURRENT MODEL (analysis, GLWU + HRRR + RRFS-NA, GDPS fallback)",
+  "noaa_source": "NOAA/NCEP GLWU v2.1 surface U/V (Great Lakes water) + HRRR 3km 10m U/V + RRFS North American 10m U/V + ECCC GDPS fallback",
+  "product_name": "NOAA/NCEP GLWU v2.1 surface U/V (Great Lakes water) + HRRR 3km 10m U/V + RRFS North American 10m U/V + ECCC GDPS fallback",
+  "variable": "UGRD/VGRD 10m/surface, m/s -> kt x1.94384 -> WMO Beaufort 0-12",
+  "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
+  "data_time_utc": "2026-10-11 08:32 PM EDT",
+  "source_last_modified_utc": "{\"glwu 20261011/19\": \"n=12260\", \"hrrr hrrr.20261011/23\": \"n=686058\", \"rrfs-na rrfs.20261011/00\": \"n=452374\", \"gdps\": \"GDPS_15km_Wind_10m n=456824\"}",
+  "processing_time_utc": "2026-10-11 08:32 PM EDT",
+  "units": "kt (Beaufort 0-12)",
+  "spatial_resolution_source": "GLWU ~2.5km; HRRR 3km; RRFS 13km NA",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0,
+  "color_scale_max": 12,
+  "color_scale_units": "Beaufort force",
+  "missing_data_treatment": "GLWU > HRRR > RRFS > GDPS(gaps) > transparent; missing never calm.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    464
+  ],
+  "legend_scale_html": "Wind (MODEL analysis): speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion. Calm (&lt;0.5 m/s) draws no arrow.",
+  "source_id": "na-wind-20261012-0032",
+  "source_version": "na-wind-20261012-0032-gdps-GDPS_15km_Wind_10m-n-456824-glwu-20261011-19-n-12260-hrrr-hrrr.20261011-23-n-686058-rrfs-na-rrfs.20261011-00-n-452374",
+  "na_bounds": {
+    "canvas_height": 1600,
+    "canvas_width": 3300,
+    "crs": "EPSG:4326",
+    "lat_max": 85.0,
+    "lat_min": 5.0,
+    "lon_max": -15.0,
+    "lon_min": -180.0,
+    "note": "Authoritative common geography for the four North American live layers (precipitation_na, air_temperature_na, cloud_cover_na, wind_na). Every NA builder bins its own source grid onto this exact canvas, so the four overlays align in Google Earth. Degrees per pixel: 0.05 x 0.05 (square). This boundary is a bounding extent enclosing the buffered landmass; it does not imply valid source data everywhere \u2014 areas without valid source data stay transparent.",
+    "offshore_buffer_m": 160934.4,
+    "offshore_buffer_statute_miles": 100.0,
+    "resolution_deg_per_pixel": 0.05
+  },
+  "stats": {
+    "valid_pixels": 4169848
+  },
+  "folder_html": "<h2>LIVE WIND \u2014 NORTH AMERICA</h2><p>Wind (MODEL analysis): speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion. Calm (&lt;0.5 m/s) draws no arrow.</p><p><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu 20261011/19': 'n=12260', 'hrrr hrrr.20261011/23': 'n=686058', 'rrfs-na rrfs.20261011/00': 'n=452374', 'gdps': 'GDPS_15km_Wind_10m n=456824'}</p>"
+}

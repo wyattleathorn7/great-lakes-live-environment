@@ -1,0 +1,11 @@
+{
+  "crs": "EPSG:4326",
+  "lon_min": -93.0,
+  "lon_max": -73.5,
+  "lat_min": 40.5,
+  "lat_max": 49.5,
+  "canvas_width": 1800,
+  "canvas_height": 1175,
+  "overlay_alpha": 205,
+  "note": "Authoritative common geography for all three live layers. Every product bins its own source grid onto this exact canvas, so the three overlays align perfectly in Google Earth."
+}

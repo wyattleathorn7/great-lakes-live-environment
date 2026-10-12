@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>☁️ LIVE CLOUD COVER — NORTH AMERICA</name>
+    <description><![CDATA[<p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/cloud_cover_na/legend.png" width="600" alt="legend"><br>Cloud cover % (OBSERVED satellite where GOES valid, MODEL RRFS TCDC fill elsewhere): <b>LOWEST 0 clear</b> (transparent) &rarr; 25/50/75 &rarr; <b>HIGHEST+ 100 overcast</b>. Missing is never shown as clear.</p><p>This entry auto-refreshes from the live overlay (source: NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback).</p><p>Turn on/off independently of all other layers. Add this file once; new source cycles appear automatically.</p><p><i>Not endorsed by NOAA.</i></p>]]></description>
+    <NetworkLink>
+      <name>☁️ LIVE CLOUD COVER — NORTH AMERICA — auto-refresh</name>
+      <Link>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Cloud_Cover.kml</href>
+        <refreshMode>onInterval</refreshMode>
+        <refreshInterval>300</refreshInterval>
+      </Link>
+    </NetworkLink>
+  </Document>
+</kml>

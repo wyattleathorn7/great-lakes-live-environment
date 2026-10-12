@@ -1,0 +1,53 @@
+{
+  "product": "air_temperature_na",
+  "title": "LIVE AIR TEMPERATURE \u2014 NORTH AMERICA",
+  "freshness": "LIVE / CURRENT MODEL (analysis, HRRR + RRFS-NA, GDPS fallback)",
+  "noaa_source": "NOAA/NCEP HRRR 3km 2m analysis (CONUS domain) + NOAA RRFS North American output (broad domain) + ECCC GDPS 15km fallback",
+  "product_name": "NOAA/NCEP HRRR 3km 2m analysis (CONUS domain) + NOAA RRFS North American output (broad domain) + ECCC GDPS 15km fallback",
+  "variable": "TMP 2 m above ground, K -> degF; FIXED banded 5F key -60..150F for all sources",
+  "source_url": "https://gsl.noaa.gov/rrfs/",
+  "data_time_utc": "2026-10-11 10:23 AM EDT",
+  "source_last_modified_utc": "{\"hrrr\": \"hrrr hrrr.20261011/13 n=698318\", \"rrfs_rrfs-na rrfs.20261011/12\": \"n=452374\", \"rrfs_rrfs-conus rrfs.20261011/12\": \"n=0\", \"rrfs_rrfs-ak rrfs.20261011/12\": \"n=678937\", \"gdps\": \"GDPS_15km_AirTemp_2m n=381512\"}",
+  "processing_time_utc": "2026-10-11 10:23 AM EDT",
+  "units": "degF",
+  "spatial_resolution_source": "HRRR 3km; RRFS 13km NA / 3km nests; GDPS 15km fallback",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": -60.0,
+  "color_scale_max": 150.0,
+  "color_scale_units": "degF",
+  "missing_data_treatment": "HRRR valid > RRFS valid > GDPS (verified gaps only) > transparent; never blended.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    412
+  ],
+  "legend_scale_html": "Air temperature 2m (MODEL analysis, NOT direct observation): <b>LOWEST -60F</b> blue-white &rarr; freezing wall 30-40F &rarr; yellows 70-85F &rarr; <b>HIGHEST+ 150F</b> pink/red. Same F, same color, every source.",
+  "source_id": "na-tmp-20261011-1423",
+  "source_version": "na-tmp-20261011-1423-gdps-GDPS_15km_AirTemp_2m-n-381512-hrrr-hrrr-hrrr.20261011-13-n-698318-rrfs_rrfs-ak-rrfs.20261011-12-n-678937-rrfs_rrfs-conus-rrfs.20261011-12-n-0-rrfs_rrfs-na-rrfs.20261011-12-n-452374",
+  "na_bounds": {
+    "canvas_height": 1600,
+    "canvas_width": 3300,
+    "crs": "EPSG:4326",
+    "lat_max": 85.0,
+    "lat_min": 5.0,
+    "lon_max": -15.0,
+    "lon_min": -180.0,
+    "note": "Authoritative common geography for the four North American live layers (precipitation_na, air_temperature_na, cloud_cover_na, wind_na). Every NA builder bins its own source grid onto this exact canvas, so the four overlays align in Google Earth. Degrees per pixel: 0.05 x 0.05 (square). This boundary is a bounding extent enclosing the buffered landmass; it does not imply valid source data everywhere \u2014 areas without valid source data stay transparent.",
+    "offshore_buffer_m": 160934.4,
+    "offshore_buffer_statute_miles": 100.0,
+    "resolution_deg_per_pixel": 0.05
+  },
+  "stats": {
+    "valid_pixels": 4346602,
+    "gdps_pixels": 381512
+  },
+  "folder_html": "<h2>LIVE AIR TEMPERATURE \u2014 NORTH AMERICA</h2><p>Air temperature 2m (MODEL analysis, NOT direct observation): <b>LOWEST -60F</b> blue-white &rarr; freezing wall 30-40F &rarr; yellows 70-85F &rarr; <b>HIGHEST+ 150F</b> pink/red. Same F, same color, every source.</p><p><b>Precedence:</b> HRRR valid > RRFS-NA valid > GDPS valid > transparent. Explicit per-pixel validity masks; never blended, never duplicated.<br><b>Provenance:</b> {'hrrr': 'hrrr hrrr.20261011/13 n=698318', 'rrfs_rrfs-na rrfs.20261011/12': 'n=452374', 'rrfs_rrfs-conus rrfs.20261011/12': 'n=0', 'rrfs_rrfs-ak rrfs.20261011/12': 'n=678937', 'gdps': 'GDPS_15km_AirTemp_2m n=381512'}</p>"
+}

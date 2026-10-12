@@ -85,6 +85,14 @@ PRODUCTS = {
             "max_opaque_min": 10_000},
     "dew_point": {"kml": "Great_Lakes_Live_Dew_Point.kml",
                   "max_opaque_min": 10_000},
+    "precipitation_na": {"kml": "North_America_Live_Precipitation.kml",
+                         "max_opaque_min": 0},  # dry continent => transparent OK
+    "cloud_cover_na": {"kml": "North_America_Live_Cloud_Cover.kml",
+                       "max_opaque_min": 0},  # clear-sky => transparent OK
+    "air_temperature_na": {"kml": "North_America_Live_Air_Temperature.kml",
+                           "max_opaque_min": 10_000},
+    "wind_na": {"kml": "North_America_Live_Wind.kml",
+                "max_opaque_min": 10_000},
     "gamefish_walleye": {"kml": "WALLEYE_LIVE.kml",
                          "max_opaque_min": 10_000},
     "gamefish_yellow_perch": {"kml": "YELLOW_PERCH_LIVE.kml",
@@ -128,12 +136,19 @@ META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
                  "shoreline_mask"]
 
 # Products on a non-shared canvas: expected PNG size + KML LatLonBox.
+_NA_SIZE = (3300, 1600)
+_NA_EDGES = {"<north>": 85.0, "<south>": 5.0,
+             "<east>": -15.0, "<west>": -180.0}
 GLOBAL_GEOMETRY = {
     "aurora_global": {
         "size": (3600, 1800),
         "edges": {"<north>": 90.0, "<south>": -90.0,
                   "<east>": 180.0, "<west>": -180.0},
     },
+    "precipitation_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "cloud_cover_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "air_temperature_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "wind_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
 }
 
 
@@ -226,7 +241,9 @@ def main():
                                    "aurora_global", "visibility", "humidity",
                                    "light_pollution",
                                    "air_quality", "condensation", "fog",
-                                   "dew_point", "wind"):
+                                   "dew_point", "wind",
+                                   "precipitation_na", "cloud_cover_na",
+                                   "air_temperature_na", "wind_na"):
                     # basin-rectangle layers (user requirement): full
                     # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
                     # (Leaf/snow stay land-cut: leaves and ground snow
@@ -275,13 +292,13 @@ def main():
                 failures.append(f"{product}: temp scale out of bounds {lo}-{hi}")
             if product == "ice_thickness" and not (0 <= lo < hi <= 50):
                 failures.append(f"{product}: thickness scale out of bounds {lo}-{hi}")
-            if product == "wind" and (lo, hi) != (0, 12):
+            if product in ("wind", "wind_na") and (lo, hi) != (0, 12):
                 failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
             if product == "uv_index" and (lo, hi) != (0.0, 12.0):
                 failures.append(f"{product}: UV scale must be 0-12, got {lo}-{hi}")
-            if product == "cloud_cover" and (lo, hi) != (0.0, 100.0):
+            if product in ("cloud_cover", "cloud_cover_na") and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: cloud scale must be 0-100 %, got {lo}-{hi}")
-            if product == "precipitation" and (lo, hi) != (5.0, 75.0):
+            if product in ("precipitation", "precipitation_na") and (lo, hi) != (5.0, 75.0):
                 failures.append(f"{product}: precipitation scale must be 5-75 dBZ, got {lo}-{hi}")
             if product == "surface_pressure" and (lo, hi) != (980.0, 1040.0):
                 failures.append(f"{product}: pressure scale must be 980-1040 hPa, got {lo}-{hi}")
@@ -291,7 +308,10 @@ def main():
                 failures.append(f"{product}: current scale must be 0-100 cm/s, got {lo}-{hi}")
             if product == "aurora_global" and (lo, hi) != (0.0, 30.0):
                 failures.append(f"{product}: aurora scale must be 0-30, got {lo}-{hi}")
+            if product in ("air_temperature_na",) and (lo, hi) != (-60.0, 150.0):
+                failures.append(f"{product}: NA air temp scale must be fixed -60..150 F, got {lo}-{hi}")
             if product == "bacteria" and (lo, hi) != (10.0, 5000.0):
+                failures.append(f"{product}: NA air temp scale must be fixed -60..150 F, got {lo}-{hi}")
                 failures.append(f"{product}: bacteria scale must be 10-5000, got {lo}-{hi}")
             if product == "visibility" and (lo, hi) != (0.0, 30.0):
                 failures.append(f"{product}: visibility scale must be 0-30 mi, got {lo}-{hi}")
@@ -513,10 +533,11 @@ def main():
                                     f"onInterval in {kp}")
                 if product in ("chlorophyll", "water_clarity",
                                "solar_radiation", "air_temperature",
-                               "uv_index", "cloud_cover",
+                               "air_temperature_na",
+                               "uv_index", "cloud_cover", "cloud_cover_na",
                                "surface_pressure", "wave_direction",
                                "surface_currents",
-                                "precipitation", "aurora_global", "bacteria",
+                                "precipitation", "precipitation_na", "aurora_global", "bacteria",
                                "visibility", "humidity",
                                "light_pollution",
                                "air_quality", "condensation", "fog",

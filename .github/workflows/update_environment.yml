@@ -13,10 +13,11 @@ on:
         default: "all"
         type: choice
         options: ["all", "environmental", "halfhourly", "hourly", "daily", "weekly", "yearly", "wave_height", "water_temperature", "ice_coverage",
-                   "ice_thickness", "ice_type", "wind", "leaf_color",
-                   "chlorophyll", "water_clarity", "solar_radiation",
-                   "air_temperature", "snow_coverage", "uv_index",
-                   "cloud_cover", "surface_pressure", "wave_direction", "wave_combined", "surface_currents", "precipitation", "aurora_global", "bacteria", "visibility", "humidity", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish"]
+                    "ice_thickness", "ice_type", "wind", "leaf_color",
+                    "chlorophyll", "water_clarity", "solar_radiation",
+                    "air_temperature", "snow_coverage", "uv_index",
+                    "cloud_cover", "surface_pressure", "wave_direction", "wave_combined", "surface_currents", "precipitation", "aurora_global", "bacteria", "visibility", "humidity", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish",
+                    "wind_na", "air_temperature_na", "cloud_cover_na", "precipitation_na"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
 # back results and deploys Pages.
@@ -192,7 +193,10 @@ jobs:
           if-no-files-found: warn
 
   wind:
-    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'wind' }}
+    # DISABLED 2026-10-11: Great Lakes basin wind superseded by wind_na.
+    # Preserved in archive/great_lakes_original/. Never re-enable without
+    # removing wind_na (duplicate-layer rule).
+    if: false
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -356,7 +360,9 @@ jobs:
           if-no-files-found: warn
 
   air_temperature:
-    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'air_temperature' }}
+    # DISABLED 2026-10-11: Great Lakes basin air temperature superseded by
+    # air_temperature_na. See archive/great_lakes_original/.
+    if: false
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -455,7 +461,9 @@ jobs:
           if-no-files-found: warn
 
   cloud_cover:
-    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'cloud_cover' }}
+    # DISABLED 2026-10-11: Great Lakes basin cloud cover superseded by
+    # cloud_cover_na. See archive/great_lakes_original/.
+    if: false
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -615,7 +623,9 @@ jobs:
           if-no-files-found: warn
 
   precipitation:
-    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'precipitation' }}
+    # DISABLED 2026-10-11: Great Lakes basin precipitation superseded by
+    # precipitation_na. See archive/great_lakes_original/.
+    if: false
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -935,6 +945,134 @@ jobs:
             output/state/dew_point.json
           if-no-files-found: warn
 
+  wind_na:
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'wind_na' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update North American wind
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          rc=0; python scripts/build_wind_na.py || rc=$?
+          if [ $rc -eq 2 ]; then echo "NA wind source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-wind_na
+          path: |
+            site/wind_na
+            output/state/wind_na.json
+            site/kml/North_America_Live_Wind.kml
+            site/kml/live/North_America_Live_Wind.kml
+            kml/North_America_Live_Wind.kml
+          if-no-files-found: warn
+
+  air_temperature_na:
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'air_temperature_na' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update North American air temperature
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          rc=0; python scripts/build_air_temperature_na.py || rc=$?
+          if [ $rc -eq 2 ]; then echo "NA air temp source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-air_temperature_na
+          path: |
+            site/air_temperature_na
+            site/kml/North_America_Live_Air_Temperature.kml
+            site/kml/live/North_America_Live_Air_Temperature.kml
+            kml/North_America_Live_Air_Temperature.kml
+            output/state/air_temperature_na.json
+          if-no-files-found: warn
+
+  cloud_cover_na:
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'cloud_cover_na' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update North American cloud cover
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          rc=0; python scripts/build_cloud_cover_na.py || rc=$?
+          if [ $rc -eq 2 ]; then echo "NA cloud source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-cloud_cover_na
+          path: |
+            site/cloud_cover_na
+            site/kml/North_America_Live_Cloud_Cover.kml
+            site/kml/live/North_America_Live_Cloud_Cover.kml
+            kml/North_America_Live_Cloud_Cover.kml
+            output/state/cloud_cover_na.json
+          if-no-files-found: warn
+
+  precipitation_na:
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'precipitation_na' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Update North American precipitation
+        env:
+          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+        run: |
+          rc=0; python scripts/build_precipitation_na.py || rc=$?
+          if [ $rc -eq 2 ]; then echo "NA precipitation source unavailable; previous raster kept."; exit 0; fi
+          exit $rc
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: site-precipitation_na
+          path: |
+            site/precipitation_na
+            site/kml/North_America_Live_Precipitation.kml
+            site/kml/live/North_America_Live_Precipitation.kml
+            kml/North_America_Live_Precipitation.kml
+            output/state/precipitation_na.json
+          if-no-files-found: warn
+
   gamefish:
     # Nine species, one matrix leg each: independent products, independent
     # failures (same failure isolation as the twelve environment products).
@@ -1005,7 +1143,7 @@ jobs:
           [ "$code" = "204" ] || echo "::warning::NOAA chain dispatch returned $code (expected 204)"
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, wave_combined, surface_currents, precipitation, aurora_global, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, wave_combined, surface_currents, precipitation, aurora_global, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, wind_na, air_temperature_na, cloud_cover_na, precipitation_na, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

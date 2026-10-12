@@ -1,0 +1,53 @@
+{
+  "product": "cloud_cover_na",
+  "title": "LIVE CLOUD COVER \u2014 NORTH AMERICA",
+  "freshness": "LIVE / CURRENT OBSERVATION + MODEL FILL (GOES FD 10-min + RRFS/GDPS fallback)",
+  "noaa_source": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
+  "product_name": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
+  "variable": "BCM binary mask (0=clear_or_probably_clear, 1=cloudy_or_probably_cloudy) gated DQF==0 -> % per canvas neighborhood; model TCDC % in fallback domain",
+  "source_url": "https://www.goes.noaa.gov/",
+  "data_time_utc": "2026-10-11 08:06 PM EDT",
+  "source_last_modified_utc": "{\"GOES-19\": \"2026-10-11 23:50Z valid-cells=3104499\", \"GOES-18\": \"2026-10-11 23:50Z valid-cells=2741210\", \"RRFS-TCDC\": \"rrfs.20261011 n=70354\"}",
+  "processing_time_utc": "2026-10-11 08:06 PM EDT",
+  "units": "%",
+  "spatial_resolution_source": "GOES FD ~2km; RRFS 13km NA; canvas 3300x1600",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 0.0,
+  "color_scale_max": 100.0,
+  "color_scale_units": "%",
+  "missing_data_treatment": "GOES BCM/DQF==0 valid > RRFS TCDC > GDPS (verified gaps) > transparent; missing never 0%.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_size": [
+    640,
+    230
+  ],
+  "legend_scale_html": "Cloud cover % (OBSERVED satellite where GOES valid, MODEL RRFS TCDC fill elsewhere): <b>LOWEST 0 clear</b> (transparent) &rarr; 25/50/75 &rarr; <b>HIGHEST+ 100 overcast</b>. Missing is never shown as clear.",
+  "source_id": "na-cloud-20261012-0006",
+  "source_version": "na-cloud-20261012-0006-GOES-18-2026-10-11-23-50Z-valid-cells-2741210-GOES-19-2026-10-11-23-50Z-valid-cells-3104499-RRFS-TCDC-rrfs.20261011-n-70354",
+  "na_bounds": {
+    "canvas_height": 1600,
+    "canvas_width": 3300,
+    "crs": "EPSG:4326",
+    "lat_max": 85.0,
+    "lat_min": 5.0,
+    "lon_max": -15.0,
+    "lon_min": -180.0,
+    "note": "Authoritative common geography for the four North American live layers (precipitation_na, air_temperature_na, cloud_cover_na, wind_na). Every NA builder bins its own source grid onto this exact canvas, so the four overlays align in Google Earth. Degrees per pixel: 0.05 x 0.05 (square). This boundary is a bounding extent enclosing the buffered landmass; it does not imply valid source data everywhere \u2014 areas without valid source data stay transparent.",
+    "offshore_buffer_m": 160934.4,
+    "offshore_buffer_statute_miles": 100.0,
+    "resolution_deg_per_pixel": 0.05
+  },
+  "stats": {
+    "satellite_pixels": 4125754,
+    "model_fill_pixels": 70354
+  },
+  "folder_html": "<h2>LIVE CLOUD COVER \u2014 NORTH AMERICA</h2><p>Cloud cover % (OBSERVED satellite where GOES valid, MODEL RRFS TCDC fill elsewhere): <b>LOWEST 0 clear</b> (transparent) &rarr; 25/50/75 &rarr; <b>HIGHEST+ 100 overcast</b>. Missing is never shown as clear.</p><p><b>Precedence:</b> 1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.<br><b>Provenance:</b> {'GOES-19': '2026-10-11 23:50Z valid-cells=3104499', 'GOES-18': '2026-10-11 23:50Z valid-cells=2741210', 'RRFS-TCDC': 'rrfs.20261011 n=70354'}</p>"
+}
