@@ -159,7 +159,11 @@ def _build(bounds, W, H):
             dest = os.path.join(RAW_DIR, f"na_{sat.lower()}_acmf.nc")
             goes_acm.download(url, dest)
             cloudy, lats, lons = fd_read_mask(dest)
-            g, c = bin_points_to_canvas(cloudy, lats, lons, bounds, agg="mean")
+            # splat_radius=2 like the original CONUS layer: the rotated
+            # GOES fixed grid is finer than the canvas and prints moire
+            # without it.
+            g, c = bin_points_to_canvas(cloudy, lats, lons, bounds, agg="mean",
+                                        splat_radius=2)
             sat_grids.append(g)
             prov[name] = f"{scan:%Y-%m-%d %H:%MZ} valid-cells={int(np.isfinite(g).sum())}"
         except Exception as e:

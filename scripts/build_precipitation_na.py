@@ -199,7 +199,8 @@ def _ir_underlay(bounds, W, H):
             g, _c = bin_points_to_canvas(
                 np.asarray(got["bt"], dtype=float),
                 np.asarray(got["lats"], dtype=float),
-                np.asarray(got["lons"], dtype=float), bounds)
+                np.asarray(got["lons"], dtype=float), bounds,
+                splat_radius=2)  # rotated fixed grid prints moire w/o splat
             g = fill_pinholes(g, radius=3)
             if np.isfinite(g).any():
                 grids.append(g)

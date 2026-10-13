@@ -43,12 +43,16 @@ def load_rgba(path, expect_wh=None):
     return np.array(im)
 
 
-def bin_points_to_canvas(vals, lats, lons, bounds, agg="mean"):
+def bin_points_to_canvas(vals, lats, lons, bounds, agg="mean", splat_radius=0):
     """Bin scattered WGS84 points onto the NA canvas. Returns (grid, count).
 
     grid holds agg value per cell, NaN where no points. Separate count
     array tracks support so valid-zero (e.g. 0% cloud, calm) is never
-    confused with missing.
+    confused with missing. splat_radius>0 (mean only) spreads each source
+    point over a (2r+1)^2 neighbourhood before averaging — required when
+    the source lattice (e.g. the rotated GOES fixed grid) is finer than
+    the canvas, otherwise the lattice prints through as moire. Same role
+    as splat_radius in the Great Lakes bin_to_canvas.
     """
     h, w = bounds["canvas_height"], bounds["canvas_width"]
     col = ((np.asarray(lons) - bounds["lon_min"]) / (bounds["lon_max"] - bounds["lon_min"]) * w).astype(int)
@@ -75,6 +79,20 @@ def bin_points_to_canvas(vals, lats, lons, bounds, agg="mean"):
     else:
         raise ValueError(agg)
     count.ravel()[cells] = np.diff(bounds_idx)
+    if splat_radius > 0 and agg == "mean":
+        r = int(splat_radius)
+        s = np.where(count > 0, grid * count, 0.0)
+        c = count.astype(float)
+        sp = np.pad(s, r)
+        cp = np.pad(c, r)
+        acc = np.zeros_like(s)
+        acc_c = np.zeros_like(c)
+        for dy in range(2 * r + 1):
+            for dx in range(2 * r + 1):
+                acc += sp[dy:dy + h, dx:dx + w]
+                acc_c += cp[dy:dy + h, dx:dx + w]
+        grid = np.where(acc_c > 0, acc / np.where(acc_c > 0, acc_c, 1.0), np.nan)
+        count = acc_c.astype(np.int32)
     return grid, count
 
 

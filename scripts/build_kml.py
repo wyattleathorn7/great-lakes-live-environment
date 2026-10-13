@@ -131,7 +131,7 @@ def _write(xml, out_dirs):
 
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
               description_html, refresh_interval, cache_token, out_dirs=None,
-              folder=None, meta=None, bounds=None):
+              folder=None, meta=None, bounds=None, extra_overlays=None):
     """Write the LIVE overlay file (one GroundOverlay, versioned PNG href).
 
     ``cache_token`` MUST be the deterministic source version
@@ -140,8 +140,12 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     live file goes; the default is the deployed live path. Descriptions
     carry NO timestamps and NEVER repeat the folder title: the Folder name
     already titles the layer, so both Document and Folder descriptions
-    lead with the Legend block. ``bounds`` overrides the common canvas
+    lead with the Legend block.     ``bounds`` overrides the common canvas
     (global-canvas products); defaults to the shared Great Lakes bounds.
+    ``extra_overlays`` (optional) appends further versioned GroundOverlays
+    as [(png_relpath, bounds_dict, draw_order), ...] — e.g. a
+    native-resolution basin inset above a continental base. Same cache
+    token, same refresh cadence; raster-only, never vectors.
     """
     if bounds is None:
         bounds = load_bounds()
@@ -158,20 +162,24 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     desc.text = None
     document.append(desc)
 
-    ground = _q("GroundOverlay")
-    ground.append(_q("name", overlay_name))
-    ground.append(_q("drawOrder", "10"))
-    icon = _q("Icon")
-    icon.append(_q("href", png_url))
-    icon.append(_q("refreshMode", "onInterval"))
-    icon.append(_q("refreshInterval", str(refresh_interval)))
-    ground.append(icon)
-    box = _q("LatLonBox")
-    box.append(_q("north", str(bounds["lat_max"])))
-    box.append(_q("south", str(bounds["lat_min"])))
-    box.append(_q("east", str(bounds["lon_max"])))
-    box.append(_q("west", str(bounds["lon_min"])))
-    ground.append(box)
+    def _overlay(name, url, b, order):
+        ground = _q("GroundOverlay")
+        ground.append(_q("name", name))
+        ground.append(_q("drawOrder", str(order)))
+        icon = _q("Icon")
+        icon.append(_q("href", url))
+        icon.append(_q("refreshMode", "onInterval"))
+        icon.append(_q("refreshInterval", str(refresh_interval)))
+        ground.append(icon)
+        box = _q("LatLonBox")
+        box.append(_q("north", str(b["lat_max"])))
+        box.append(_q("south", str(b["lat_min"])))
+        box.append(_q("east", str(b["lon_max"])))
+        box.append(_q("west", str(b["lon_min"])))
+        ground.append(box)
+        return ground
+
+    ground = _overlay(overlay_name, png_url, bounds, 10)
     descriptions = [header + description_html]
     if folder is not None:
         folder_el = _q("Folder")
@@ -180,10 +188,16 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
         _fdesc.text = None
         folder_el.append(_fdesc)
         folder_el.append(ground)
+        for png_rel, b, order in (extra_overlays or []):
+            folder_el.append(_overlay(
+                overlay_name, f"{base}/{png_rel}?v={cache_token}", b, order))
         document.append(folder_el)
         descriptions.append(header + strip_old_stamps(folder[1]))
     else:
         document.append(ground)
+        for png_rel, b, order in (extra_overlays or []):
+            document.append(_overlay(
+                overlay_name, f"{base}/{png_rel}?v={cache_token}", b, order))
 
     xml = _serialize(doc, descriptions)
     if out_dirs is None:
@@ -348,11 +362,16 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
     block = legend_block(f"{product}/legend.png", version,
                          meta.get("legend_scale_html", ""))
     folder = meta.get("folder_html")
+    extras = [ (e["png"], e["bounds"], e.get("draw_order", 20))
+               for e in (meta.get("extra_overlays") or []) ]
+    from geospatial_utils import load_bounds as _glb
     build_kml(product, kml_filename, overlay_name,
               f"{product}/current.png", f"{product}/legend.png",
               description_html(title, meta, note, block),
               refresh_interval, version,
-              folder=(title, folder) if folder else None, meta=meta)
+              folder=(title, folder) if folder else None, meta=meta,
+              bounds=meta.get("na_bounds") or _glb(),
+              extra_overlays=extras)
     build_entry_kml(product, kml_filename, overlay_name,
                     entry_description_html(title, meta, note),
                     refresh_interval)
