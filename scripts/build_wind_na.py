@@ -24,10 +24,9 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
-from na_common import (apply_coast_mask, bin_points_to_canvas, load_landonly,
-                       despeckle_valid, feather_merge, fetch_http,
-                       fill_pinholes, gate_field_to_mask, gdps_wcs_grid,
-                       sanitize_model_vals, smooth_field)
+from na_common import (apply_coverage_mask, bin_points_to_canvas,
+                       fetch_http, fill_pinholes, gate_field_to_coverage,
+                       gdps_wcs_grid, sanitize_model_vals, smooth_field)
 from beaufort import FORCE_COLORS, MS_TO_KT, force_from_kt, force_name, force_range_text
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
@@ -503,6 +502,10 @@ def _build(bounds, W, H):
         owned |= take
     U[~owned] = np.nan
     V[~owned] = np.nan
+    from na_common import gate_field_to_coverage
+    cover = CONFIG_NA.get("coverage_mode", "extended200")
+    U = gate_field_to_coverage(U, cover)
+    V = gate_field_to_coverage(V, cover)
     Ud, Vd = U, V
     spd = np.hypot(Ud, Vd)  # m/s; NaN where missing (never zero-filled)
     n_valid = int(np.isfinite(spd).sum())
@@ -535,14 +538,14 @@ def _build(bounds, W, H):
     # never enlarged, never a sparse 4-5 values. Full rectangle:
     # transparent only where missing, same as the original basin layer.
     from build_wind import paint_wind_streamlets
-    from geospatial_utils import bleed_rgb_into_transparent
+    from na_common import apply_coverage_mask
     rgba, n_stream, n_heads = paint_wind_streamlets(
         rgba, np.where(m, Ud, np.nan), np.where(m, Vd, np.nan), np.where(m, kt, np.nan),
         seed_step=12, ds=3.0, max_steps=40, min_speed=0.5)
     rgba, n_strat, n_fill = paint_na_wind_labels(
         rgba, np.where(m, kt, np.nan), bounds,
         label_step=16, font_size=7, max_labels=1500, extra_thresh_kt=4.0)
-    rgba = bleed_rgb_into_transparent(rgba)
+    rgba = apply_coverage_mask(rgba, cover)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     print(f"[{PRODUCT}] streamlets={n_stream}/{n_heads} labels={n_strat}+{n_fill}")
     # Single continental overlay only (no basin inset): one field, one
@@ -560,7 +563,8 @@ def _build(bounds, W, H):
                                         "Great Lakes + major Canadian lakes ~80% opacity; "
                                         "other land ~55% with intensified colors so the "
                                         "same force reads the same (single key). White streaks trace "
-                                        "travel (brightness = knots); white numbers are actual kt.")
+                                        "travel (brightness = knots); white numbers are actual kt. "
+                                        "Coverage: extended200 (200-mi offshore + full Gulf/Caribbean).")
     scale_html = ("WIND — BEAUFORT SCALE (colors follow force, dark purple = "
                   "Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. "
                   "Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. "

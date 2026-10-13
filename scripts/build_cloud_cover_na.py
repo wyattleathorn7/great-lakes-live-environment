@@ -26,9 +26,9 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
-from na_common import (apply_coast_mask, bin_points_to_canvas, load_landmask,
+from na_common import (apply_coverage_mask, bin_points_to_canvas,
                          despeckle_valid, feather_merge, fetch_http,
-                         fill_pinholes, gate_field_to_mask,
+                         fill_pinholes, gate_field_to_coverage,
                          sanitize_model_vals, smooth_field)
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
@@ -280,9 +280,11 @@ def _build(bounds, W, H):
     # the raw observed neighborhood fraction (its grain IS the product),
     # and model layers arrive pre-smoothed above. Gaps stay transparent.
     field, _v = feather_merge(layers, feather_px=12)
-    # Exact air-temp footprint + 100mi expansion: selected-country feathered
-    # mask (ends at Mexico, Caribbean exclusions carved).
-    field = gate_field_to_mask(field, load_landmask())
+    # Coverage switch (config coverage_mode): extended200 paints the
+    # 200-mile offshore + full Gulf/Caribbean; landonly the crisp NA
+    # land; basin the original rectangle.
+    cover = CONFIG_NA.get("coverage_mode", "extended200")
+    field = gate_field_to_coverage(field, cover)
     # Shared cache for the precipitation composite: the merged % field
     # (NaN = missing/clear) + build time, so precipitation_na can paint the
     # same realistic white-cloud underlay without refetching GOES/RRFS/GDPS.
@@ -302,7 +304,7 @@ def _build(bounds, W, H):
     # Clear (<1%) and missing stay transparent (GL convention).
     clear = np.isfinite(field) & (field < 1.0)
     rgba[clear, 3] = 0
-    rgba = apply_coast_mask(rgba, load_landmask())
+    rgba = apply_coverage_mask(rgba, cover)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     data_time = now_det_str()

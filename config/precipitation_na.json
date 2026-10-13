@@ -1,5 +1,6 @@
 {
   "coverage": "Shared North American boundary config/north_america_bounds.json (lon -180..-15, lat 5..85, 3300x1600). No shoreline cut. Gaps transparent.",
+  "coverage_mode": "extended200",
   "display_units": "dBZ-equivalent qualitative intensity (IEM domain) + compatible ECCC intensity (outside IEM domain)",
   "eccc_coverage_layers": [
     "RADAR_COVERAGE_RRAI",

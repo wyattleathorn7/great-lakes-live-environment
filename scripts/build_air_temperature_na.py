@@ -27,10 +27,10 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
-from na_common import (apply_coast_mask, bin_points_to_canvas, load_landonly,
+from na_common import (apply_coverage_mask, bin_points_to_canvas,
                          despeckle_valid, feather_merge, fetch_http,
-                         fill_pinholes, gate_field_to_mask, gdps_wcs_grid,
-                         sanitize_model_vals, smooth_field)
+                         fill_pinholes, gate_field_to_coverage,
+                         gdps_wcs_grid, sanitize_model_vals, smooth_field)
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs)
@@ -145,7 +145,9 @@ def run():
 
 
 def _build(bounds, W, H, prev):
-    LANDMASK = load_landonly()  # crisp: shoreline cut, no sea fringe
+    # Coverage switch (config coverage_mode, default landonly: the crisp
+    # NA land zone with no sea fringe, exactly as published).
+    cover = CONFIG_NA.get("coverage_mode", "landonly")
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
@@ -200,13 +202,13 @@ def _build(bounds, W, H, prev):
     f_grid[~own] = np.nan
     n_raw = int(own.sum())
     disp = smooth_field(f_grid, size=5, passes=2)
-    disp = gate_field_to_mask(disp, LANDMASK)
+    disp = gate_field_to_coverage(disp, cover)
     n_valid = int(np.isfinite(disp).sum())
     print(f"[{PRODUCT}] raw px={n_raw} display px={n_valid} "
           f"({100.0*n_valid/(W*H):.2f}%) prov={prov}")
 
     rgba = render_rgba(np.clip(disp, -60.0, 150.0), TEMP_SMOOTH_STOPS, 205)
-    rgba = apply_coast_mask(rgba, LANDMASK)
+    rgba = apply_coverage_mask(rgba, cover)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     data_time = now_det_str()

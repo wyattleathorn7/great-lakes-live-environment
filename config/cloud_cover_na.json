@@ -1,5 +1,6 @@
 {
   "coverage": "Shared North American boundary config/north_america_bounds.json (lon -180..-15, lat 5..85, 3300x1600). Full rectangle; missing stays transparent, never 0%.",
+  "coverage_mode": "extended200",
   "display_units": "% cloud cover",
   "fallback_note": "RRFS TCDC entire-atmosphere analysis (%) where no valid GOES mask exists. GDPS TotalCloudCover only for verified remaining gaps.",
   "fallback_rrfs": "NOAA RRFS TCDC entire atmosphere (considered as a single layer), analysis step, %",

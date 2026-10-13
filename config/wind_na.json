@@ -1,6 +1,7 @@
 {
   "arrow_convention": "TOWARD-motion vectors (U eastward, V northward); calm <0.5 m/s no arrow; no duplicate arrows \u2014 one source owns each pixel",
   "coverage": "Shared North American boundary config/north_america_bounds.json (lon -180..-15, lat 5..85, 3300x1600). Full rectangle; missing components never treated as calm.",
+  "coverage_mode": "extended200",
   "display_units": "kt (Beaufort Force 0-12)",
   "fallback_note": "GDPS 10m winds only where RRFS has a verified variable/coverage gap.",
   "fallback_source": "ECCC GDPS 15km 10m winds (GDPS_15km_Winds_10m)",

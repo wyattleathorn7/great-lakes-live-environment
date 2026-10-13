@@ -1,5 +1,6 @@
 {
   "coverage": "Shared North American boundary config/north_america_bounds.json (lon -180..-15, lat 5..85, 3300x1600). Full rectangle, only missing transparent.",
+  "coverage_mode": "landonly",
   "display_units": "degF",
   "fallback_eccc_layers": [
     "GDPS_15km_AirTemp_2m"

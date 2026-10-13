@@ -167,6 +167,75 @@ def load_landmask():
 
 _LANDONLY = None
 _LAKES = None
+_EXTENDED = None
+
+
+def load_extended():
+    """Extended North American coverage (wind_na + precipitation_na +
+    cloud_cover_na): kept NA + Central America land with a 200-statute-
+    mile offshore feather, full Gulf of Mexico/America + Caribbean Sea
+    water, hard shoreline cuts at South America + Russia, open Atlantic
+    east of the refined cut line transparent
+    (assets/north_america_extended.npy)."""
+    global _EXTENDED
+    if _EXTENDED is None:
+        p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          "assets", "north_america_extended.npy")
+        if not os.path.exists(p):
+            raise FileNotFoundError(f"NA extended mask missing: {p}")
+        _EXTENDED = np.load(p).astype(np.float32)
+    return _EXTENDED
+
+
+# Coverage switch shared by the four NA builders. Each product config
+# carries "coverage_mode": one of "basin" (original Great Lakes
+# rectangle), "landonly" (crisp NA land, no sea fringe), or
+# "extended200" (200-mile offshore + full Gulf/Caribbean). Deploy-time
+# switch: edit the product's config, rebuild, publish.
+COVERAGE_MODES = ("basin", "landonly", "extended200")
+
+
+def load_coverage_mask(mode):
+    """Feathered 0..1 canvas mask for a coverage mode."""
+    if mode == "extended200":
+        return load_extended()
+    if mode == "landonly":
+        return load_landonly()
+    if mode == "basin":
+        from na_bounds import load_na_bounds as _nab
+        bounds = _nab()
+        Hh, Ww = bounds["canvas_height"], bounds["canvas_width"]
+        from geospatial_utils import load_bounds as _glb
+        glb = _glb()
+        mask = np.zeros((Hh, Ww), dtype=np.float32)
+        c0 = int((glb["lon_min"] - bounds["lon_min"])
+                 / (bounds["lon_max"] - bounds["lon_min"]) * Ww)
+        c1 = int((glb["lon_max"] - bounds["lon_min"])
+                 / (bounds["lon_max"] - bounds["lon_min"]) * Ww)
+        r0 = int((bounds["lat_max"] - glb["lat_max"])
+                 / (bounds["lat_max"] - bounds["lat_min"]) * Hh)
+        r1 = int((bounds["lat_max"] - glb["lat_min"])
+                 / (bounds["lat_max"] - bounds["lat_min"]) * Hh)
+        mask[max(r0, 0):min(r1, Hh), max(c0, 0):min(c1, Ww)] = 1.0
+        return mask
+    raise ValueError(f"unknown coverage mode: {mode!r} (want one of {COVERAGE_MODES})")
+
+
+def apply_coverage_mask(rgba, mode):
+    """Alpha-cut + edge-RGB bleed for a coverage mode (same anti-fringe
+    contract as apply_coast_mask)."""
+    from geospatial_utils import bleed_rgb_into_transparent
+    out = rgba.copy()
+    out[:, :, 3] = np.round(
+        out[:, :, 3].astype(np.float32) * load_coverage_mask(mode)).astype(np.uint8)
+    return bleed_rgb_into_transparent(out)
+
+
+def gate_field_to_coverage(field, mode):
+    """NaN-out field values where the coverage mask is exactly 0."""
+    f = field.copy()
+    f[load_coverage_mask(mode) <= 0.0] = np.nan
+    return f
 
 
 def load_lakemask():

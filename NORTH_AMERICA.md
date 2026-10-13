@@ -1,9 +1,22 @@
 # North American Expansion — four live gradients
 
 Supersedes the Great Lakes basin versions of Live Precipitation, Live Air
-Temperature, Live Cloud Cover, and Live Wind with full North American
-coverage on ONE shared boundary. All other Great Lakes environmental
+Temperature, Live Cloud Cover, and Live Wind with North American
+coverage on selectable boundaries. All other Great Lakes environmental
 layers are untouched.
+
+## Coverage switch (all four NA layers)
+
+Every NA builder reads `coverage_mode` from its `config/*_na.json`:
+`basin` (original Great Lakes rectangle −93…−73.5 / 40.5…49.5),
+`landonly` (crisp NA land, no sea fringe — exactly the published NA air
+temperature zone), or `extended200` (200 statute miles offshore + full
+Gulf of Mexico/America + Caribbean Sea, hard shoreline cuts at South
+America + Russia, open Atlantic east of the refined cut line
+transparent, Central America included). Current defaults: wind,
+precipitation, and cloud cover use `extended200`; air temperature uses
+`landonly`. To change a layer's coverage, edit its config value and
+rebuild — no code changes needed.
 
 ## Shared boundary (authoritative)
 
@@ -15,6 +28,15 @@ layers are untouched.
   America, Caribbean, Greenland). The bbox encloses the buffer; it does not
   claim the rectangle itself hugs the coast, and it does not imply data
   everywhere — gaps stay transparent.
+- `config/north_america_extended.*` is NOT a committed config: the
+  extended200 mask is built by `scripts/build_na_extmask.py` into
+  `assets/north_america_extended.{png,npy}` (200 statute miles /
+  321.869 km offshore feather 322→370 km; explicit Gulf + Caribbean fill
+  polygon; Atlantic cut along the refined operator line, applied below
+  lat 31 so Bermuda keeps its 200-mile rule; hard zero on South-American,
+  Russian, and all other non-kept land — water paints to their shores).
+  Loader: `scripts/na_common.load_extended()`; switch helpers
+  `load_coverage_mask` / `apply_coverage_mask` / `gate_field_to_coverage`.
 
 ## Archived Great Lakes layers (disabled, recoverable)
 

@@ -176,7 +176,7 @@ def _ir_underlay(bounds, W, H):
     only if NO sat yields data (caller falls back to the % underlay)."""
     import goes_acm
     from na_common import (bin_points_to_canvas, fill_pinholes,
-                           gate_field_to_mask, load_landmask)
+                           gate_field_to_coverage)
     try:
         with np.load(os.path.join(RAW_DIR, "na_cloud_ir.npz")) as z:
             cb = np.asarray(z["bright"], dtype=float)
@@ -217,8 +217,8 @@ def _ir_underlay(bounds, W, H):
     bright[m] = np.clip((288.0 - cold[m]) * 4.0, 0.0, 255.0)
     alpha[m] = np.clip((282.0 - cold[m]) * 4.5, 0.0, 215.0)
     alpha[m & (alpha < 3.0)] = np.nan  # warm surface: fully transparent
-    bright = gate_field_to_mask(bright, load_landmask())
-    alpha = gate_field_to_mask(alpha, load_landmask())
+    bright = gate_field_to_coverage(bright, CONFIG_NA.get("coverage_mode", "extended200"))
+    alpha = gate_field_to_coverage(alpha, CONFIG_NA.get("coverage_mode", "extended200"))
     try:
         np.savez_compressed(os.path.join(RAW_DIR, "na_cloud_ir.npz"),
                             bright=bright.astype(np.float32),
@@ -303,7 +303,7 @@ def _build(scan_dt, source_id, bounds, W, H):
     # cross-fade rides the coverage edge (both echo -> blend on one
     # scale, never a box seam, never double-painted).
     from scipy.ndimage import distance_transform_edt
-    from na_common import apply_coast_mask, load_landmask
+    from na_common import apply_coverage_mask
     # Exact air-temp footprint + 100mi expansion: selected-country feathered
     # mask (ends at Mexico, Caribbean exclusions carved), NOT the global
     # coastline mask.
@@ -361,7 +361,7 @@ def _build(scan_dt, source_id, bounds, W, H):
                                  + (1.0 - w) * iem[band, :3].astype(float)).astype(np.uint8)
         out[band, 3] = np.round(w[:, 0] * out[band, 3].astype(float)
                                 + (1.0 - w[:, 0]) * iem[band, 3].astype(float)).astype(np.uint8)
-    out = apply_coast_mask(out, load_landmask())
+    out = apply_coverage_mask(out, CONFIG_NA.get("coverage_mode", "extended200"))
     n_iem = int(iem_fill.sum())
     n_eccc = int(eccc_echo.sum())
     print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} "
