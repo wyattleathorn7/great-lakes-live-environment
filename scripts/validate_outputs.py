@@ -525,14 +525,12 @@ def main():
                 if "/tiles/" in text:
                     failures.append(f"{product}: live KML must not reference tiles")
                 n_overlays = text.count("<GroundOverlay>")
-                # wind_na carries a native-resolution basin inset above the
-                # continental base (same product, same key); everything else
-                # stays single-overlay (GE Web image limit).
-                allowed = 2 if product == "wind_na" else 1
+                # Single continental overlay for every product (GE Web
+                # image limit): wind_na included — one field, one engine,
+                # everywhere, no basin inset.
+                allowed = 1
                 if n_overlays != allowed:
                     failures.append(f"{product}: {n_overlays} overlays (expected exactly {allowed})")
-                if product == "wind_na" and "wind_na/basin.png" not in text:
-                    failures.append(f"{product}: missing basin inset overlay")
                 if "<refreshMode>onInterval</refreshMode>" not in text \
                         or "<refreshInterval>" not in text:
                     failures.append(f"{product}: live Icon must refresh "
