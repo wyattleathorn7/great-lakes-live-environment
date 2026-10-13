@@ -602,7 +602,7 @@ def _build(bounds, W, H):
         vmeta["na_bounds"] = bounds
         vmeta["coverage_mode"] = mode
         vmeta["stats"] = st
-        vfolder = (f"<h2>{vtitle}</h2><p>{scale_html}</p>"
+        vfolder = (f"<h2>{vtitle}</h2>"
                    f"<p><b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
                    f"<b>Provenance:</b> {prov}</p>")
@@ -614,7 +614,7 @@ def _build(bounds, W, H):
         _vtext = build_kml(
             vprod, vkml, OVERLAY_NAME, f"{vprod}/current.png",
             f"{vprod}/legend.png",
-            description_html(vtitle, vmeta, SKIP_NOTE, vblock)
+            description_html(vtitle, vmeta, SKIP_NOTE, "")
             + coverage_selector_html(mode, variant_kmls, selector_kml),
             CONFIG_NA["refresh_interval_seconds"], token,
             folder=(vtitle, vmeta["folder_html"]),
@@ -670,7 +670,7 @@ def _build(bounds, W, H):
     meta["na_bounds"] = bounds
     meta["coverage_mode"] = default_cover
     meta["stats"] = {"valid_pixels": n_valid}
-    folder_html = (f"<h2>{CONFIG_NA['title']}</h2><p>{scale_html}</p>"
+    folder_html = (f"<h2>{CONFIG_NA['title']}</h2>"
                    f"<p>Single continental field at NA resolution; same Beaufort "
                    f"colors, dual opacity, streamlet and label engines as the "
                    f"original basin layer, density-matched per degree.</p>"
@@ -683,7 +683,7 @@ def _build(bounds, W, H):
     outs = live_out_dirs(stage, KML_FILE)
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
                          f"{PRODUCT}/legend.png",
-                         description_html(CONFIG_NA["title"], meta, SKIP_NOTE, block)
+                         description_html(CONFIG_NA["title"], meta, SKIP_NOTE, "")
                          + coverage_selector_html(default_cover, variant_kmls,
                                                   selector_kml),
                          CONFIG_NA["refresh_interval_seconds"], token,
@@ -698,7 +698,8 @@ def _build(bounds, W, H):
         [(m, variant_kmls[m]) for m in COVERAGE_ORDER],
         CONFIG_NA["refresh_interval_seconds"],
         out_dirs=[os.path.join(stage, "kml", selector_kml),
-                  os.path.join(stage, "site", "kml", selector_kml)])
+                  os.path.join(stage, "site", "kml", selector_kml)],
+        default_mode=default_cover)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": data_time, "source_id": src_id,
                           "processing_time_utc": meta["processing_time_utc"]})

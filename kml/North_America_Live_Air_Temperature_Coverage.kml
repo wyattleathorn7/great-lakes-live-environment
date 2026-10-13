@@ -13,6 +13,7 @@
       </Style>
       <NetworkLink>
         <name>Great Lakes Basin Coverage</name>
+        <visibility>0</visibility>
         <Link>
           <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Air_Temperature_Basin.kml</href>
           <refreshMode>onInterval</refreshMode>
@@ -21,6 +22,7 @@
       </NetworkLink>
       <NetworkLink>
         <name>North America Coverage</name>
+        <visibility>1</visibility>
         <Link>
           <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Air_Temperature_NorthAmerica.kml</href>
           <refreshMode>onInterval</refreshMode>
@@ -29,6 +31,7 @@
       </NetworkLink>
       <NetworkLink>
         <name>Extended North America Coverage</name>
+        <visibility>0</visibility>
         <Link>
           <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Air_Temperature_Extended.kml</href>
           <refreshMode>onInterval</refreshMode>

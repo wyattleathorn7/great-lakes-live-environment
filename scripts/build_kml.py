@@ -382,16 +382,19 @@ def coverage_selector_html(current_mode, entry_kmls, selector_kml):
                 f"\u25cb <a href=\"{base}/kml/{entry_kmls[mode]}\">"
                 f"{label}</a>")
     return (
-        f"<p><b>Coverage Selector</b> \u2014 one coverage at a time "
-        f"(Pro switches exclusively; Web/app: uncheck the others):<br>"
+        f"<p><b>Coverage Selector</b> \u2014 pick one coverage at a time:<br>"
         + "<br>".join(rows) + "<br>"
+        f"Pro switches automatically. In Web/app, open the "
+        f"<b>Coverage Selector folder</b> in Layers and check exactly one "
+        f"box.<br>"
         f"Add once: <a href=\"{base}/kml/{selector_kml}\">Coverage "
         f"collection file</a> (all three as toggles).</p>"
     )
 
 
 def build_coverage_selector(title, selector_filename, variants,
-                            refresh_interval, out_dirs=None):
+                            refresh_interval, out_dirs=None,
+                            default_mode=None):
     """Write the coverage collection file (radioFolder of NetworkLinks).
 
     ``variants`` = [(mode, live_kml_filename), ...] in display order.
@@ -400,6 +403,10 @@ def build_coverage_selector(title, selector_filename, variants,
     rule holds: links only, zero GroundOverlay / vectors here (imagery
     stays in the per-coverage live files so the Web per-document image
     cap can never trip).
+
+    ``default_mode`` (or the first variant) loads switched ON while the
+    others load OFF, so adding the collection never stacks all three
+    gradients at once in any client.
     """
     doc = _q("kml")
     document = _q("Document")
@@ -421,10 +428,14 @@ def build_coverage_selector(title, selector_filename, variants,
     folder_el.append(style)
 
     base = pages_base()
+    if default_mode is None:
+        default_mode = variants[0][0]
     fdescs = []
     for mode, live_kml in variants:
         link = _q("NetworkLink")
         link.append(_q("name", COVERAGE_LABELS[mode]))
+        link.append(_q("visibility",
+                       "1" if mode == default_mode else "0"))
         url = _q("Link")
         url.append(_q("href", f"{base}/kml/live/{live_kml}"))
         url.append(_q("refreshMode", "onInterval"))

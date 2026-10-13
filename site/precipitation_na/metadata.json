@@ -6,9 +6,9 @@
   "product_name": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it",
   "variable": "N0Q base reflectivity dBZ (IEM domain gaps); ECCC precipitation-rate rain (mm/h)/snow (cm/h) mapped to dBZ through the ECCC 14-color class rates with the NWS Z=300R^1.4 equivalence (equal ECCC colors = equal severity = equal dBZ for rain and snow). One 5-75 dBZ key for both sources.",
   "source_url": "https://mesonet.agron.iastate.edu/current/radar.phtml",
-  "data_time_utc": "2026-10-13 15:35 UTC",
-  "source_last_modified_utc": "ECCC rain 2026-10-13T15:36:00Z; snow 2026-10-13T15:36:00Z",
-  "processing_time_utc": "2026-10-13 11:38 AM EDT",
+  "data_time_utc": "2026-10-13 16:15 UTC",
+  "source_last_modified_utc": "ECCC rain 2026-10-13T16:12:00Z; snow 2026-10-13T16:12:00Z",
+  "processing_time_utc": "2026-10-13 12:18 PM EDT",
   "units": "dBZ (both sources on the original N0Q key)",
   "spatial_resolution_source": "IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km NA composite 6-min (rates -> dBZ via NWS Z=300R^1.4); canvas 3300x1600 (0.05 deg/px)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,8 +30,8 @@
     412
   ],
   "legend_scale_html": "Precipitation intensity (NEXRAD N0Q base reflectivity, dBZ, OBSERVED radar echo): <b>LOWEST 5 Very Light</b> cyan/blue (drizzle, mist) &rarr; <b>Light</b> greens (~20-30: light rain/snow) &rarr; <b>Moderate</b> dark green (~30-40: steady rain/snow) &rarr; <b>Heavy</b> yellow/orange (~40-50: heavy rain) &rarr; <b>Severe</b> red (~50-60: severe storms, hail possible) &rarr; <b>Intense</b> magenta/purple (~60-70: violent storms, large hail) &rarr; <b>HIGHEST+ 70+ Extreme</b> white (destructive hail, debris). Same dBZ always shows the same color in every season \u2014 rain, snow, lake-effect snow, thunderstorms. No echo (no precipitation) stays see-through so the map underneath shows.",
-  "source_id": "na-precip-20261013-1535",
-  "source_version": "na-precip-20261013-1535",
+  "source_id": "na-precip-20261013-1615",
+  "source_version": "na-precip-20261013-1615",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -46,18 +46,18 @@
     "resolution_deg_per_pixel": 0.05
   },
   "stats": {
-    "iem_pixels": 17546,
-    "eccc_pixels": 41760,
-    "transparent_pixels": 5220694,
-    "cloud_underlay": "IR GOES-19 15:20Z+GOES-18 15:20Z n=2080549"
+    "iem_pixels": 13713,
+    "eccc_pixels": 40146,
+    "transparent_pixels": 5226141,
+    "cloud_underlay": "ir-cache age=2348s"
   },
   "provenance": {
     "iem_wms": "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=nexrad-n0q-900913&STYLES=&SRS=EPSG:4326&BBOX=-180.0,5.0,-15.0,85.0&WIDTH=3300&HEIGHT=1600&F",
     "eccc_wms": "https://geo.weather.gc.ca/geomet",
-    "eccc_time_rain": "2026-10-13T15:36:00Z",
-    "eccc_time_snow": "2026-10-13T15:36:00Z",
-    "cloud_underlay": "IR GOES-19 15:20Z+GOES-18 15:20Z n=2080549"
+    "eccc_time_rain": "2026-10-13T16:12:00Z",
+    "eccc_time_snow": "2026-10-13T16:12:00Z",
+    "cloud_underlay": "ir-cache age=2348s"
   },
-  "folder_html": "<h2>LIVE PRECIPITATION</h2><p>Precipitation intensity (NEXRAD N0Q base reflectivity, dBZ, OBSERVED radar echo): <b>LOWEST 5 Very Light</b> cyan/blue (drizzle, mist) &rarr; <b>Light</b> greens (~20-30: light rain/snow) &rarr; <b>Moderate</b> dark green (~30-40: steady rain/snow) &rarr; <b>Heavy</b> yellow/orange (~40-50: heavy rain) &rarr; <b>Severe</b> red (~50-60: severe storms, hail possible) &rarr; <b>Intense</b> magenta/purple (~60-70: violent storms, large hail) &rarr; <b>HIGHEST+ 70+ Extreme</b> white (destructive hail, debris). Same dBZ always shows the same color in every season \u2014 rain, snow, lake-effect snow, thunderstorms. No echo (no precipitation) stays see-through so the map underneath shows.</p><p><b>Sources:</b> Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it<br><b>Precedence:</b> ECCC (rates -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; IEM N0Q (native rendering, itself the original legend) fills ECCC gaps; 10-px cross-fade on the coverage edge; transparent elsewhere.<br><b>Coverage:</b> Extended North America Coverage<br><b>Cloud underlay:</b> real GOES-19/18 Band-13 infrared satellite texture (IR GOES-19 15:20Z+GOES-18 15:20Z n=2080549)<br><b>Data time:</b> 2026-10-13 15:35 UTC</p><p><b>Coverage Selector</b> \u2014 one coverage at a time (Pro switches exclusively; Web/app: uncheck the others):<br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Precipitation_Basin.kml\">Great Lakes Basin Coverage</a><br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Precipitation_NorthAmerica.kml\">North America Coverage</a><br>\u25c9 <b>Extended North America Coverage</b> (this view)<br>Add once: <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Precipitation_Coverage.kml\">Coverage collection file</a> (all three as toggles).</p>",
+  "folder_html": "<h2>LIVE PRECIPITATION</h2><p><b>Sources:</b> Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it<br><b>Precedence:</b> ECCC (rates -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; IEM N0Q (native rendering, itself the original legend) fills ECCC gaps; 10-px cross-fade on the coverage edge; transparent elsewhere.<br><b>Coverage:</b> Extended North America Coverage<br><b>Cloud underlay:</b> real GOES-19/18 Band-13 infrared satellite texture (ir-cache age=2348s)<br><b>Data time:</b> 2026-10-13 16:15 UTC</p><p><b>Coverage Selector</b> \u2014 pick one coverage at a time:<br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Precipitation_Basin.kml\">Great Lakes Basin Coverage</a><br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Precipitation_NorthAmerica.kml\">North America Coverage</a><br>\u25c9 <b>Extended North America Coverage</b> (this view)<br>Pro switches automatically. In Web/app, open the <b>Coverage Selector folder</b> in Layers and check exactly one box.<br>Add once: <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Precipitation_Coverage.kml\">Coverage collection file</a> (all three as toggles).</p>",
   "coverage_mode": "extended200"
 }

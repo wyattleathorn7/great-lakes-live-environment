@@ -620,13 +620,15 @@ def main():
                         or "<refreshInterval>" not in text:
                     failures.append(f"{product}: live Icon must refresh "
                                     f"onInterval in {kp}")
+                # NOTE: NA gradients keep their legends in the entry
+                # (top-folder) files only; live views carry the Coverage
+                # Selector instead, so they are exempt here.
                 if product in ("chlorophyll", "water_clarity",
                                "solar_radiation", "air_temperature",
-                               "air_temperature_na",
-                               "uv_index", "cloud_cover", "cloud_cover_na",
+                               "uv_index", "cloud_cover",
                                "surface_pressure", "wave_direction",
                                "surface_currents",
-                                "precipitation", "precipitation_na", "aurora_global", "bacteria",
+                                "precipitation", "aurora_global", "bacteria",
                                "visibility", "humidity",
                                "light_pollution",
                                "air_quality", "condensation", "fog",

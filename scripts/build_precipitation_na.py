@@ -422,7 +422,7 @@ def _build(scan_dt, source_id, bounds, W, H):
                                "eccc_wms": ECCC, "eccc_time_rain": t_rain,
                                "eccc_time_snow": t_snow,
                                "cloud_underlay": cloud_prov}
-        vfolder = (f"<h2>{vtitle}</h2><p>{SCALE_HTML}</p>"
+        vfolder = (f"<h2>{vtitle}</h2>"
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
                    f"<b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
@@ -437,7 +437,7 @@ def _build(scan_dt, source_id, bounds, W, H):
         _vtext = build_kml(
             vprod, vkml, OVERLAY_NAME, f"{vprod}/current.png",
             f"{vprod}/legend.png",
-            description_html(vtitle, vmeta, SKIP_NOTE, vblock)
+            description_html(vtitle, vmeta, SKIP_NOTE, "")
             + coverage_selector_html(mode, variant_kmls, selector_kml),
             CONFIG_NA["refresh_interval_seconds"], token,
             folder=(vtitle, vmeta["folder_html"]),
@@ -473,7 +473,7 @@ def _build(scan_dt, source_id, bounds, W, H):
                           "eccc_wms": ECCC, "eccc_time_rain": t_rain, "eccc_time_snow": t_snow,
                           "cloud_underlay": cloud_prov}
     token = meta["source_version"]
-    folder_html = (f"<h2>{CONFIG_NA['title']}</h2><p>{SCALE_HTML}</p>"
+    folder_html = (f"<h2>{CONFIG_NA['title']}</h2>"
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
                    f"<b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
@@ -488,7 +488,7 @@ def _build(scan_dt, source_id, bounds, W, H):
     outs = live_out_dirs(stage, KML_FILE)
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
                          f"{PRODUCT}/legend.png",
-                         description_html(CONFIG_NA["title"], meta, SKIP_NOTE, block)
+                         description_html(CONFIG_NA["title"], meta, SKIP_NOTE, "")
                          + coverage_selector_html(default_cover, variant_kmls,
                                                   selector_kml),
                          CONFIG_NA["refresh_interval_seconds"], token,
@@ -503,7 +503,8 @@ def _build(scan_dt, source_id, bounds, W, H):
         [(m, variant_kmls[m]) for m in COVERAGE_ORDER],
         CONFIG_NA["refresh_interval_seconds"],
         out_dirs=[os.path.join(stage, "kml", selector_kml),
-                  os.path.join(stage, "site", "kml", selector_kml)])
+                  os.path.join(stage, "site", "kml", selector_kml)],
+        default_mode=default_cover)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": data_time, "source_id": source_id,
                           "processing_time_utc": meta["processing_time_utc"]})
