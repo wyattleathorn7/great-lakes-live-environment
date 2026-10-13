@@ -218,6 +218,11 @@ def _build(bounds, W, H):
                 m = np.isfinite(g)
                 rrfs_grid[m] = np.clip(g[m], 0, 100)
                 rrfs_valid[m] = True
+                # Display-smoothing on the MODEL layer only: the coarse
+                # 13 km grid must not print cell edges. The GOES-observed
+                # layer below is NEVER smoothed (its raw 2 km grain is the
+                # original layer's look).
+                rrfs_grid = smooth_field(rrfs_grid, size=5, passes=2)
                 rrfc = int(m.sum())
                 prov["RRFS-TCDC"] = f"{dd} n={rrfc}"
                 got = True
@@ -243,19 +248,37 @@ def _build(bounds, W, H):
             raw = raw * 100.0  # fraction -> %
         g = resample_wcs_to_canvas(
             sanitize_model_vals(raw, 0.0, 100.0), slat, slon, bounds)
-        g = fill_pinholes(np.clip(g, 0.0, 100.0), radius=3)
+        g = smooth_field(fill_pinholes(np.clip(g, 0.0, 100.0), radius=3),
+                         size=5, passes=2)
         layers.append((g, np.isfinite(g)))
         prov["GDPS-TCC"] = f"GDPS_15km_TotalCloudCover n={int(np.isfinite(g).sum())}"
     except Exception as e:
         prov["GDPS-TCC"] = f"unavailable: {type(e).__name__}: {e}"
-    # Seamless cross-fade at the satellite/model boundary, then one shared
-    # treatment: despeckle, display smoothing, coast gate.
+    # Per-pixel provenance mask (same precedence as the merge: sat wins,
+    # then RRFS, then GDPS) for accuracy auditing: 1=GOES observed,
+    # 2=RRFS model, 3=GDPS model, 0=missing.
+    try:
+        _gdps_ok = np.isfinite(layers[2][0]) & np.asarray(layers[2][1], dtype=bool) \
+            if len(layers) > 2 else np.zeros((H, W), dtype=bool)
+        _rrfs_ok = np.isfinite(layers[1][0]) & np.asarray(layers[1][1], dtype=bool)
+        _sat_ok = np.asarray(sat_valid, dtype=bool) & np.isfinite(layers[0][0])
+        provmask = np.zeros((H, W), dtype=np.uint8)
+        provmask[_gdps_ok] = 3
+        provmask[_rrfs_ok] = 2
+        provmask[_sat_ok] = 1
+        np.savez_compressed(os.path.join(RAW_DIR, "na_cloud_prov.npz"),
+                            prov=provmask,
+                            built_utc=dt.datetime.now(dt.timezone.utc).isoformat())
+    except Exception as e:
+        print(f"[{PRODUCT}] WARNING: prov mask write failed: {e}")
+    # Seamless cross-fade at the satellite/model boundary, then the coast
+    # gate. NO global smoothing, NO despeckle: the original layer renders
+    # the raw observed neighborhood fraction (its grain IS the product),
+    # and model layers arrive pre-smoothed above. Gaps stay transparent.
     field, _v = feather_merge(layers, feather_px=12)
-    own = despeckle_valid(np.isfinite(field), min_size=4)
-    field[~own] = np.nan
     # Exact air-temp footprint + 100mi expansion: selected-country feathered
     # mask (ends at Mexico, Caribbean exclusions carved).
-    field = gate_field_to_mask(smooth_field(field, size=5, passes=2), load_landmask())
+    field = gate_field_to_mask(field, load_landmask())
     # Shared cache for the precipitation composite: the merged % field
     # (NaN = missing/clear) + build time, so precipitation_na can paint the
     # same realistic white-cloud underlay without refetching GOES/RRFS/GDPS.

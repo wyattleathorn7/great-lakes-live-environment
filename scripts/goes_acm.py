@@ -28,6 +28,100 @@ FILE_RE = re.compile(
 X_SCALE, X_OFFSET = 5.6e-05, -0.101332
 Y_SCALE, Y_OFFSET = -5.6e-05, 0.128212
 
+# Full-disk Band-13 (10.3 um clean LWIR) Cloud and Moisture Imagery: day +
+# night satellite texture for the precipitation cloud underlay. Same public
+# buckets as the clear-sky mask, ~24 MB per 10-min scan:
+#   ABI-L2-CMIPF/YYYY/DDD/HH/OR_ABI-L2-CMIPF-M6C13_G19_s..._e..._c....nc
+CMIPF_RE = re.compile(
+    r"OR_ABI-L2-CMIPF-M6C13_G\d{2}_s(\d{4})(\d{3})(\d{2})(\d{2})\d{3}_e.*\.nc$")
+
+
+def newest_cmi_c13(bucket, max_back_hours=4, now=None):
+    """Newest full-disk Band-13 file in bucket with scan-start at least
+    12 min in the past. Returns (https_url, scan_dt). Raises if none."""
+    now = now or dt.datetime.now(dt.timezone.utc)
+    floor = now - dt.timedelta(minutes=12)
+    t = now.replace(minute=0, second=0, microsecond=0)
+    last = None
+    for _ in range(max_back_hours + 1):
+        dd = t.strftime("%Y/%j/%H")
+        try:
+            url = (f"{bucket}/?list-type=2&prefix=ABI-L2-CMIPF/{dd}/"
+                   f"&max-keys=100")
+            req = urllib.request.Request(url, headers=UA)
+            with urllib.request.urlopen(req, timeout=30) as r:
+                root = ET.fromstring(r.read())
+            ns = {"s": "http://s3.amazonaws.com/doc/2006-03-01/"}
+            keys = [e.text for e in root.findall("s:Contents/s:Key", ns)]
+        except Exception as e:
+            last = e
+            t -= dt.timedelta(hours=1)
+            continue
+        cands = []
+        for k in keys:
+            m = CMIPF_RE.search(k.split("/")[-1])
+            if not m:
+                continue
+            try:
+                scan = dt.datetime(int(m.group(1)), 1, 1,
+                                   tzinfo=dt.timezone.utc) \
+                    + dt.timedelta(days=int(m.group(2)) - 1,
+                                   hours=int(m.group(3)),
+                                   minutes=int(m.group(4)))
+            except ValueError:
+                continue
+            if scan <= floor:
+                cands.append((scan, k))
+        if cands:
+            scan, key = max(cands)
+            return f"{bucket}/{key}", scan
+        t -= dt.timedelta(hours=1)
+    raise last or RuntimeError("no GOES CMIPF-C13 file found")
+
+
+def read_cmi_bt(path):
+    """Return dict with 1D arrays: bt (brightness temperature K, NaN where
+    DQF!=0 or unusable), lats, lons, scan_dt (from filename). Raises on
+    unreadable file. Scale/offset come from the file's own attributes."""
+    import h5netcdf
+    f = h5netcdf.File(path, "r")
+    try:
+        xa, ya = f["x"].attrs, f["y"].attrs
+        xs = float(xa["scale_factor"]) if "scale_factor" in xa else X_SCALE
+        xo = float(xa["add_offset"]) if "add_offset" in xa else X_OFFSET
+        ys = float(ya["scale_factor"]) if "scale_factor" in ya else Y_SCALE
+        yo = float(ya["add_offset"]) if "add_offset" in ya else Y_OFFSET
+        x = f["x"][:].astype(float) * xs + xo
+        y = f["y"][:].astype(float) * ys + yo
+        var = f["CMI"]
+        va = var.attrs
+        cmi = np.asarray(var[:]).astype(float)
+        if "scale_factor" in va:
+            cmi = cmi * float(va["scale_factor"])
+        if "add_offset" in va:
+            cmi = cmi + float(va["add_offset"])
+        dqf = np.asarray(f["DQF"][:]).astype(float) if "DQF" in f else None
+        proj = f["goes_imager_projection"].attrs
+        lon0 = float(proj["longitude_of_projection_origin"])
+        h = float(proj["perspective_point_height"])
+    finally:
+        f.close()
+    good = np.isfinite(cmi) & (cmi > 150.0) & (cmi < 330.0)
+    if dqf is not None:
+        good &= (dqf == 0)
+    bt = np.where(good, cmi, np.nan)
+    lats, lons = fixed_grid_to_latlon(x, y, lon0, h)
+    m = re.search(r"_s(\d{4})(\d{3})(\d{2})(\d{2})\d{3}_",
+                  os.path.basename(path))
+    scan = None
+    if m:
+        scan = dt.datetime(int(m.group(1)), 1, 1,
+                           tzinfo=dt.timezone.utc) \
+            + dt.timedelta(days=int(m.group(2)) - 1,
+                           hours=int(m.group(3)), minutes=int(m.group(4)))
+    return {"bt": bt.ravel(), "lats": lats.ravel(), "lons": lons.ravel(),
+            "scan_dt": scan}
+
 
 def _list_keys(prefix, timeout=30):
     """S3 ListBucket keys under prefix (anonymous HTTPS, no boto3)."""

@@ -161,6 +161,73 @@ def main():
         return 1
 
 
+IR_SATS = [
+    ("GOES-19", "https://noaa-goes19.s3.amazonaws.com", "G19"),
+    ("GOES-18", "https://noaa-goes18.s3.amazonaws.com", "G18"),
+]
+IR_CACHE_S = 2700  # 45 min: satellite texture evolves slower than echoes
+
+
+def _ir_underlay(bounds, W, H):
+    """Real satellite cloud texture: GOES-19/18 full-disk Band-13 (10.3 um
+    clean LWIR) brightness temperatures, coldest-wins merged, enhanced to
+    grayscale (cold opaque white -> warm transparent so the base map shows
+    through). Works day and night. Returns (bright, alpha, prov). Raises
+    only if NO sat yields data (caller falls back to the % underlay)."""
+    import goes_acm
+    from na_common import (bin_points_to_canvas, fill_pinholes,
+                           gate_field_to_mask, load_landmask)
+    try:
+        with np.load(os.path.join(RAW_DIR, "na_cloud_ir.npz")) as z:
+            cb = np.asarray(z["bright"], dtype=float)
+            ca = np.asarray(z["alpha"], dtype=float)
+            built = dt.datetime.fromisoformat(str(z["built_utc"]))
+        age = abs((dt.datetime.now(dt.timezone.utc) - built).total_seconds())
+        if (cb.shape == (H, W) and ca.shape == (H, W) and age < IR_CACHE_S
+                and np.isfinite(cb).any()):
+            return cb, ca, f"ir-cache age={age:.0f}s"
+    except Exception:
+        pass
+    grids = []
+    scans = []
+    for name, bucket, sat in IR_SATS:
+        try:
+            url, scan = goes_acm.newest_cmi_c13(bucket)
+            dest = os.path.join(RAW_DIR, f"na_{sat.lower()}_c13.nc")
+            goes_acm.download(url, dest)
+            got = goes_acm.read_cmi_bt(dest)
+            g, _c = bin_points_to_canvas(
+                np.asarray(got["bt"], dtype=float),
+                np.asarray(got["lats"], dtype=float),
+                np.asarray(got["lons"], dtype=float), bounds)
+            g = fill_pinholes(g, radius=3)
+            if np.isfinite(g).any():
+                grids.append(g)
+                scans.append(f"{name} {scan:%H:%MZ}")
+        except Exception as e:
+            scans.append(f"{name} unavailable:{type(e).__name__}")
+    if not grids:
+        raise RuntimeError(f"no GOES-IR C13 data ({scans})")
+    with np.errstate(invalid="ignore"):
+        cold = np.nanmin(np.stack(grids), axis=0)  # coldest wins = clouds
+    m = np.isfinite(cold)
+    bright = np.full((H, W), np.nan)
+    alpha = np.full((H, W), np.nan)
+    bright[m] = np.clip((288.0 - cold[m]) * 4.0, 0.0, 255.0)
+    alpha[m] = np.clip((282.0 - cold[m]) * 4.5, 0.0, 215.0)
+    alpha[m & (alpha < 3.0)] = np.nan  # warm surface: fully transparent
+    bright = gate_field_to_mask(bright, load_landmask())
+    alpha = gate_field_to_mask(alpha, load_landmask())
+    try:
+        np.savez_compressed(os.path.join(RAW_DIR, "na_cloud_ir.npz"),
+                            bright=bright.astype(np.float32),
+                            alpha=alpha.astype(np.float32),
+                            built_utc=dt.datetime.now(dt.timezone.utc).isoformat())
+    except Exception:
+        pass
+    return bright, alpha, f"IR {'+'.join(scans)} n={int(np.isfinite(alpha).sum())}"
+
+
 def run():
     bounds = load_na_bounds()
     W, H = bounds["canvas_width"], bounds["canvas_height"]
@@ -240,26 +307,33 @@ def _build(scan_dt, source_id, bounds, W, H):
     # mask (ends at Mexico, Caribbean exclusions carved), NOT the global
     # coastline mask.
     out = np.zeros((H, W, 4), dtype=np.uint8)
-    # Realistic white-cloud underlay (NOAA Science-On-a-Sphere look): the
-    # SAME merged GOES + RRFS + GDPS % field the cloud layer renders,
-    # cached by build_cloud_cover_na (fresh <30 min required). White with
-    # density-carrying alpha; radar echoes overwrite it below. Cache
-    # missing/stale -> precip-only raster (never a failure).
+    # Real satellite cloud underlay (NOAA Science-On-a-Sphere look):
+    # GOES-19/18 Band-13 infrared texture first (day + night); the merged
+    # GOES+model % field as flat white only if IR is unavailable; radar
+    # echoes overwrite either below. Underlay missing -> precip-only raster
+    # (never a failure).
     cloud_prov = "unavailable"
     try:
-        with np.load(os.path.join(RAW_DIR, "na_cloud_field.npz")) as z:
-            cf = np.asarray(z["field"], dtype=float)
-            built = dt.datetime.fromisoformat(str(z["built_utc"]))
-        age = abs((dt.datetime.now(dt.timezone.utc) - built).total_seconds())
-        if cf.shape == (H, W) and age < 1800 and np.isfinite(cf).any():
-            m = np.isfinite(cf) & (cf >= 1.0)
-            out[m, 0:3] = 255
-            out[m, 3] = np.clip(50.0 + cf[m] * 1.4, 0, 190).astype(np.uint8)
-            cloud_prov = f"na_cloud_field age={age:.0f}s n={int(m.sum())}"
-        else:
-            cloud_prov = f"stale/incompatible (age={age:.0f}s)"
+        ib, ia, cloud_prov = _ir_underlay(bounds, W, H)
+        m = np.isfinite(ib) & np.isfinite(ia) & (ia > 0)
+        out[m, 0:3] = np.round(ib[m])[:, None].astype(np.uint8)
+        out[m, 3] = np.round(ia[m]).astype(np.uint8)
     except Exception as e:
-        cloud_prov = f"unavailable: {type(e).__name__}"
+        cloud_prov = f"IR unavailable:{type(e).__name__}; trying % field"
+        try:
+            with np.load(os.path.join(RAW_DIR, "na_cloud_field.npz")) as z:
+                cf = np.asarray(z["field"], dtype=float)
+                built = dt.datetime.fromisoformat(str(z["built_utc"]))
+            age = abs((dt.datetime.now(dt.timezone.utc) - built).total_seconds())
+            if cf.shape == (H, W) and age < 1800 and np.isfinite(cf).any():
+                m = np.isfinite(cf) & (cf >= 1.0)
+                out[m, 0:3] = 255
+                out[m, 3] = np.clip(50.0 + cf[m] * 1.4, 0, 190).astype(np.uint8)
+                cloud_prov = f"% na_cloud_field age={age:.0f}s n={int(m.sum())}"
+            else:
+                cloud_prov = f"% stale/incompatible (age={age:.0f}s)"
+        except Exception as e2:
+            cloud_prov = f"unavailable: {type(e2).__name__}"
     eccc_avail = cov & (rain_e | snow_e)
     ecol = np.zeros((H, W, 3), dtype=np.uint8)
     ealp = np.zeros((H, W), dtype=np.uint8)
@@ -299,8 +373,8 @@ def _build(scan_dt, source_id, bounds, W, H):
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
         KEY_ROWS,
         f"IEM {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} | {now_det_str()}",
-        note="No echo = transparent (no precipitation). White = cloud-cover "
-             "underlay (same merged GOES+model field as Live Cloud Cover).")
+        note="No echo = transparent (no precipitation). Gray shading = real "
+             "GOES-19/18 infrared satellite cloud texture (Band 13, day+night).")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
@@ -327,8 +401,8 @@ def _build(scan_dt, source_id, bounds, W, H):
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2><p>{SCALE_HTML}</p>"
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
-                   f"<b>Cloud underlay:</b> white, same merged field as "
-                   f"Live Cloud Cover ({cloud_prov})<br>"
+                   f"<b>Cloud underlay:</b> real GOES-19/18 Band-13 infrared "
+                   f"satellite texture ({cloud_prov})<br>"
                    f"<b>Data time:</b> {data_time}</p>")
     meta["folder_html"] = folder_html
     write_metadata(stage_prod, meta)
