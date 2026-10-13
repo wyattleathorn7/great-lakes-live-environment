@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP GLWU v2.1 surface U/V (Great Lakes water) + HRRR 3km 10m U/V + RRFS North American 10m U/V + ECCC GDPS fallback",
   "variable": "UGRD/VGRD 10m/surface, m/s -> kt x1.94384 -> WMO Beaufort 0-12",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
-  "data_time_utc": "2026-10-12 07:30 PM EDT",
-  "source_last_modified_utc": "{\"glwu\": \"unavailable: FileNotFoundError\", \"hrrr hrrr.20261012/22\": \"n=701862\", \"rrfs-na rrfs.20261012/00\": \"n=2632946\", \"gdps\": \"GDPS_15km_Wind_10m n=5273396\"}",
-  "processing_time_utc": "2026-10-12 07:30 PM EDT",
+  "data_time_utc": "2026-10-12 08:01 PM EDT",
+  "source_last_modified_utc": "{\"glwu\": \"unavailable: FileNotFoundError\", \"hrrr hrrr.20261012/23\": \"n=701862\", \"rrfs-na rrfs.20261012/00\": \"n=2632946\", \"gdps\": \"GDPS_15km_Wind_10m n=5273396\"}",
+  "processing_time_utc": "2026-10-12 08:01 PM EDT",
   "units": "kt (Beaufort 0-12)",
   "spatial_resolution_source": "GLWU ~2.5km; HRRR 3km; RRFS 13km NA",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -110,8 +110,8 @@
       "color": "#3B0A54"
     }
   ],
-  "source_id": "na-wind-20261012-2330",
-  "source_version": "na-wind-20261012-2330-gdps-GDPS_15km_Wind_10m-n-5273396-glwu-unavailable-FileNotFoundError-hrrr-hrrr.20261012-22-n-701862-rrfs-na-rrfs.20261012-00-n-2632946",
+  "source_id": "na-wind-20261013-0001",
+  "source_version": "na-wind-20261013-0001-gdps-GDPS_15km_Wind_10m-n-5273396-glwu-unavailable-FileNotFoundError-hrrr-hrrr.20261012-23-n-701862-rrfs-na-rrfs.20261012-00-n-2632946",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -128,5 +128,5 @@
   "stats": {
     "valid_pixels": 1481324
   },
-  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE</h2><p>WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. Same force always shows the same color.</p><p><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu': 'unavailable: FileNotFoundError', 'hrrr hrrr.20261012/22': 'n=701862', 'rrfs-na rrfs.20261012/00': 'n=2632946', 'gdps': 'GDPS_15km_Wind_10m n=5273396'}</p>"
+  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE</h2><p>WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. Same force always shows the same color.</p><p><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu': 'unavailable: FileNotFoundError', 'hrrr hrrr.20261012/23': 'n=701862', 'rrfs-na rrfs.20261012/00': 'n=2632946', 'gdps': 'GDPS_15km_Wind_10m n=5273396'}</p>"
 }
