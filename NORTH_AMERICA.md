@@ -18,6 +18,18 @@ precipitation, and cloud cover use `extended200`; air temperature uses
 `landonly`. To change a layer's coverage, edit its config value and
 rebuild — no code changes needed.
 
+## Coverage Selector (Google Earth)
+
+Each gradient ships four extra files per build: one single-overlay
+variant per coverage (`*_Basin.kml`, `*_NorthAmerica.kml`,
+`*_Extended.kml`, each with its own entry + live pair and raster dir)
+plus a `*_Coverage.kml` collection file. The collection is a `radioFolder`
+of NetworkLinks: Google Earth Pro shows it as an exclusive selector
+(picking one coverage turns the others off); Google Earth Web/app shows
+the same three as manual checkboxes. Every variant and primary
+description carries a Coverage Selector link block directly underneath
+the legend, so switching never requires coming back to this repo.
+
 ## Shared boundary (authoritative)
 
 - `config/north_america_bounds.json` — lon −180…−15, lat 5…85,

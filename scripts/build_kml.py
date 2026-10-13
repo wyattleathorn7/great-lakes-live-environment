@@ -336,6 +336,116 @@ def live_out_dirs(stage, kml_filename):
     }
 
 
+# Coverage Selector (all four North American gradients). One coverage at
+# a time: Great Lakes Basin Coverage (original rectangle), North America
+# Coverage (crisp NA land zone), Extended North America Coverage
+# (200-mile offshore + full Gulf/Caribbean). Mode keys match
+# na_common.COVERAGE_MODES.
+COVERAGE_ORDER = ("basin", "landonly", "extended200")
+COVERAGE_LABELS = {
+    "basin": "Great Lakes Basin Coverage",
+    "landonly": "North America Coverage",
+    "extended200": "Extended North America Coverage",
+}
+# File/dir suffixes per mode (variant KMLs, site dirs, metadata keys).
+COVERAGE_SUFFIX = {
+    "basin": "Basin",
+    "landonly": "NorthAmerica",
+    "extended200": "Extended",
+}
+COVERAGE_DIR_SUFFIX = {
+    "basin": "basin",
+    "landonly": "northamerica",
+    "extended200": "extended",
+}
+
+
+def coverage_selector_html(current_mode, entry_kmls, selector_kml):
+    """HTML block for live descriptions, directly underneath the legend.
+
+    ``entry_kmls`` maps mode -> entry KML filename; ``selector_kml`` is
+    the radioFolder collection file. The current coverage renders as a
+    filled bullet (no link); the others link to their entry files, and
+    the collection file (add once, toggle inside) is linked last.
+    Plain anchors only (no script): Google Earth Pro treats the
+    collection as an exclusive radio group; Web/app users toggle the
+    folder's checkboxes by hand.
+    """
+    base = pages_base()
+    rows = []
+    for mode in COVERAGE_ORDER:
+        label = COVERAGE_LABELS[mode]
+        if mode == current_mode:
+            rows.append(f"\u25c9 <b>{label}</b> (this view)")
+        else:
+            rows.append(
+                f"\u25cb <a href=\"{base}/kml/{entry_kmls[mode]}\">"
+                f"{label}</a>")
+    return (
+        f"<p><b>Coverage Selector</b> \u2014 one coverage at a time "
+        f"(Pro switches exclusively; Web/app: uncheck the others):<br>"
+        + "<br>".join(rows) + "<br>"
+        f"Add once: <a href=\"{base}/kml/{selector_kml}\">Coverage "
+        f"collection file</a> (all three as toggles).</p>"
+    )
+
+
+def build_coverage_selector(title, selector_filename, variants,
+                            refresh_interval, out_dirs=None):
+    """Write the coverage collection file (radioFolder of NetworkLinks).
+
+    ``variants`` = [(mode, live_kml_filename), ...] in display order.
+    Exactly one child shows at a time in Google Earth Pro (radioFolder);
+    Web/app shows the same children as manual checkboxes. Raster-only
+    rule holds: links only, zero GroundOverlay / vectors here (imagery
+    stays in the per-coverage live files so the Web per-document image
+    cap can never trip).
+    """
+    doc = _q("kml")
+    document = _q("Document")
+    doc.append(document)
+    document.append(_q("name", f"{title} \u2014 Coverage Selector"))
+    desc = _q("description")
+    desc.text = None
+    document.append(desc)
+
+    folder_el = _q("Folder")
+    folder_el.append(_q("name", "Coverage Selector"))
+    _fdesc = _q("description")
+    _fdesc.text = None
+    folder_el.append(_fdesc)
+    style = _q("Style")
+    list_style = _q("ListStyle")
+    list_style.append(_q("listItemType", "radioFolder"))
+    style.append(list_style)
+    folder_el.append(style)
+
+    base = pages_base()
+    fdescs = []
+    for mode, live_kml in variants:
+        link = _q("NetworkLink")
+        link.append(_q("name", COVERAGE_LABELS[mode]))
+        url = _q("Link")
+        url.append(_q("href", f"{base}/kml/live/{live_kml}"))
+        url.append(_q("refreshMode", "onInterval"))
+        url.append(_q("refreshInterval", str(refresh_interval)))
+        link.append(url)
+        folder_el.append(link)
+    document.append(folder_el)
+
+    fdesc_html = (
+        f"<p><b>Coverage Selector</b> \u2014 pick one coverage "
+        f"(exclusive in Google Earth Pro; manual checkboxes in Web/app).</p>")
+    xml = _serialize(doc, [fdesc_html, fdesc_html])
+    if out_dirs is None:
+        out_dirs = [os.path.join(KML_DIR, selector_filename),
+                    os.path.join(SITE_DIR, "kml", selector_filename)]
+    _write(xml, out_dirs)
+    assert_no_vector_geometry(xml)
+    assert "<GroundOverlay" not in xml, "selector must not carry imagery"
+    return xml
+
+
 def refresh_kml_base_url(product, kml_filename, overlay_name, title,
                          note, refresh_interval):
     """Rewrite entry + live KMLs from committed metadata (skip path).

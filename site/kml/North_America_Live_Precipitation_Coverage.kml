@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>LIVE PRECIPITATION — Coverage Selector</name>
+    <description><![CDATA[<p><b>Coverage Selector</b> — pick one coverage (exclusive in Google Earth Pro; manual checkboxes in Web/app).</p>]]></description>
+    <Folder>
+      <name>Coverage Selector</name>
+      <description><![CDATA[<p><b>Coverage Selector</b> — pick one coverage (exclusive in Google Earth Pro; manual checkboxes in Web/app).</p>]]></description>
+      <Style>
+        <ListStyle>
+          <listItemType>radioFolder</listItemType>
+        </ListStyle>
+      </Style>
+      <NetworkLink>
+        <name>Great Lakes Basin Coverage</name>
+        <Link>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Precipitation_Basin.kml</href>
+          <refreshMode>onInterval</refreshMode>
+          <refreshInterval>300</refreshInterval>
+        </Link>
+      </NetworkLink>
+      <NetworkLink>
+        <name>North America Coverage</name>
+        <Link>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Precipitation_NorthAmerica.kml</href>
+          <refreshMode>onInterval</refreshMode>
+          <refreshInterval>300</refreshInterval>
+        </Link>
+      </NetworkLink>
+      <NetworkLink>
+        <name>Extended North America Coverage</name>
+        <Link>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Precipitation_Extended.kml</href>
+          <refreshMode>onInterval</refreshMode>
+          <refreshInterval>300</refreshInterval>
+        </Link>
+      </NetworkLink>
+    </Folder>
+  </Document>
+</kml>

@@ -93,6 +93,30 @@ PRODUCTS = {
                            "max_opaque_min": 10_000},
     "wind_na": {"kml": "North_America_Live_Wind.kml",
                 "max_opaque_min": 10_000},
+    "wind_na_basin": {"kml": "North_America_Live_Wind_Basin.kml",
+                      "max_opaque_min": 10_000},
+    "wind_na_northamerica": {"kml": "North_America_Live_Wind_NorthAmerica.kml",
+                             "max_opaque_min": 10_000},
+    "wind_na_extended": {"kml": "North_America_Live_Wind_Extended.kml",
+                         "max_opaque_min": 10_000},
+    "precipitation_na_basin": {"kml": "North_America_Live_Precipitation_Basin.kml",
+                               "max_opaque_min": 0},
+    "precipitation_na_northamerica": {"kml": "North_America_Live_Precipitation_NorthAmerica.kml",
+                                      "max_opaque_min": 0},
+    "precipitation_na_extended": {"kml": "North_America_Live_Precipitation_Extended.kml",
+                                  "max_opaque_min": 0},
+    "cloud_cover_na_basin": {"kml": "North_America_Live_Cloud_Cover_Basin.kml",
+                             "max_opaque_min": 0},
+    "cloud_cover_na_northamerica": {"kml": "North_America_Live_Cloud_Cover_NorthAmerica.kml",
+                                    "max_opaque_min": 0},
+    "cloud_cover_na_extended": {"kml": "North_America_Live_Cloud_Cover_Extended.kml",
+                                "max_opaque_min": 0},
+    "air_temperature_na_basin": {"kml": "North_America_Live_Air_Temperature_Basin.kml",
+                                 "max_opaque_min": 10_000},
+    "air_temperature_na_northamerica": {"kml": "North_America_Live_Air_Temperature_NorthAmerica.kml",
+                                        "max_opaque_min": 10_000},
+    "air_temperature_na_extended": {"kml": "North_America_Live_Air_Temperature_Extended.kml",
+                                    "max_opaque_min": 10_000},
     "gamefish_walleye": {"kml": "WALLEYE_LIVE.kml",
                          "max_opaque_min": 10_000},
     "gamefish_yellow_perch": {"kml": "YELLOW_PERCH_LIVE.kml",
@@ -149,6 +173,43 @@ GLOBAL_GEOMETRY = {
     "cloud_cover_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
     "air_temperature_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
     "wind_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "wind_na_basin": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "wind_na_northamerica": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "wind_na_extended": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "precipitation_na_basin": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "precipitation_na_northamerica": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "precipitation_na_extended": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "cloud_cover_na_basin": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "cloud_cover_na_northamerica": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "cloud_cover_na_extended": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "air_temperature_na_basin": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "air_temperature_na_northamerica": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "air_temperature_na_extended": {"size": _NA_SIZE, "edges": _NA_EDGES},
+}
+
+# Coverage collection files (radioFolder of NetworkLinks, one per NA
+# gradient): exclusive in Google Earth Pro, manual checkboxes in Web/app.
+SELECTORS = {
+    "North_America_Live_Wind_Coverage.kml": [
+        "North_America_Live_Wind_Basin.kml",
+        "North_America_Live_Wind_NorthAmerica.kml",
+        "North_America_Live_Wind_Extended.kml",
+    ],
+    "North_America_Live_Precipitation_Coverage.kml": [
+        "North_America_Live_Precipitation_Basin.kml",
+        "North_America_Live_Precipitation_NorthAmerica.kml",
+        "North_America_Live_Precipitation_Extended.kml",
+    ],
+    "North_America_Live_Cloud_Cover_Coverage.kml": [
+        "North_America_Live_Cloud_Cover_Basin.kml",
+        "North_America_Live_Cloud_Cover_NorthAmerica.kml",
+        "North_America_Live_Cloud_Cover_Extended.kml",
+    ],
+    "North_America_Live_Air_Temperature_Coverage.kml": [
+        "North_America_Live_Air_Temperature_Basin.kml",
+        "North_America_Live_Air_Temperature_NorthAmerica.kml",
+        "North_America_Live_Air_Temperature_Extended.kml",
+    ],
 }
 
 
@@ -241,9 +302,20 @@ def main():
                                    "aurora_global", "visibility", "humidity",
                                    "light_pollution",
                                    "air_quality", "condensation", "fog",
-                                   "dew_point", "wind",
-                                   "precipitation_na", "cloud_cover_na",
-                                   "air_temperature_na", "wind_na"):
+                                    "dew_point", "wind",
+                                    "precipitation_na", "cloud_cover_na",
+                                    "air_temperature_na", "wind_na",
+                                    "wind_na_basin", "wind_na_northamerica",
+                                    "wind_na_extended",
+                                    "precipitation_na_basin",
+                                    "precipitation_na_northamerica",
+                                    "precipitation_na_extended",
+                                    "cloud_cover_na_basin",
+                                    "cloud_cover_na_northamerica",
+                                    "cloud_cover_na_extended",
+                                    "air_temperature_na_basin",
+                                    "air_temperature_na_northamerica",
+                                    "air_temperature_na_extended"):
                     # basin-rectangle layers (user requirement): full
                     # lon -93..-73.5 / lat 40.5..49.5 canvas incl. land.
                     # (Leaf/snow stay land-cut: leaves and ground snow
@@ -292,13 +364,23 @@ def main():
                 failures.append(f"{product}: temp scale out of bounds {lo}-{hi}")
             if product == "ice_thickness" and not (0 <= lo < hi <= 50):
                 failures.append(f"{product}: thickness scale out of bounds {lo}-{hi}")
-            if product in ("wind", "wind_na") and (lo, hi) != (0, 12):
+            if product in ("wind", "wind_na", "wind_na_basin",
+                             "wind_na_northamerica", "wind_na_extended") \
+                    and (lo, hi) != (0, 12):
                 failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
             if product == "uv_index" and (lo, hi) != (0.0, 12.0):
                 failures.append(f"{product}: UV scale must be 0-12, got {lo}-{hi}")
-            if product in ("cloud_cover", "cloud_cover_na") and (lo, hi) != (0.0, 100.0):
+            if product in ("cloud_cover", "cloud_cover_na",
+                             "cloud_cover_na_basin",
+                             "cloud_cover_na_northamerica",
+                             "cloud_cover_na_extended") \
+                    and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: cloud scale must be 0-100 %, got {lo}-{hi}")
-            if product in ("precipitation", "precipitation_na") and (lo, hi) != (5.0, 75.0):
+            if product in ("precipitation", "precipitation_na",
+                           "precipitation_na_basin",
+                           "precipitation_na_northamerica",
+                           "precipitation_na_extended") \
+                    and (lo, hi) != (5.0, 75.0):
                 failures.append(f"{product}: precipitation scale must be 5-75 dBZ, got {lo}-{hi}")
             if product == "surface_pressure" and (lo, hi) != (980.0, 1040.0):
                 failures.append(f"{product}: pressure scale must be 980-1040 hPa, got {lo}-{hi}")
@@ -308,7 +390,10 @@ def main():
                 failures.append(f"{product}: current scale must be 0-100 cm/s, got {lo}-{hi}")
             if product == "aurora_global" and (lo, hi) != (0.0, 30.0):
                 failures.append(f"{product}: aurora scale must be 0-30, got {lo}-{hi}")
-            if product in ("air_temperature_na",) and (lo, hi) != (-60.0, 150.0):
+            if product in ("air_temperature_na", "air_temperature_na_basin",
+                             "air_temperature_na_northamerica",
+                             "air_temperature_na_extended") \
+                    and (lo, hi) != (-60.0, 150.0):
                 failures.append(f"{product}: NA air temp scale must be fixed -60..150 F, got {lo}-{hi}")
             if product == "bacteria" and (lo, hi) != (10.0, 5000.0):
                 failures.append(f"{product}: NA air temp scale must be fixed -60..150 F, got {lo}-{hi}")
@@ -588,6 +673,38 @@ def main():
                 print(f"[{product}] live KML OK: {kp}")
             except ET.ParseError as e:
                 failures.append(f"{product}: live KML XML parse error in {kp}: {e}")
+
+    for selector, members in SELECTORS.items():
+        for rel in (os.path.join("kml", selector),
+                    os.path.join(SITE_DIR, "kml", selector)):
+            if not os.path.exists(os.path.join(REPO_ROOT, rel)) \
+                    and not os.path.exists(rel):
+                failures.append(f"selector: missing {rel}")
+        sp = os.path.join(SITE_DIR, "kml", selector)
+        if not os.path.exists(sp):
+            continue
+        try:
+            text = open(sp, encoding="utf-8").read()
+            ET.fromstring(text)  # must parse
+            for bad in ("<LineString", "<Polygon", "<Placemark", "<Point",
+                        "<ScreenOverlay", "<GroundOverlay"):
+                if bad in text:
+                    failures.append(f"selector {selector}: forbidden {bad}")
+            if "radioFolder" not in text:
+                failures.append(f"selector {selector}: missing radioFolder style")
+            if text.count("<NetworkLink") != 3:
+                failures.append(f"selector {selector}: want exactly 3 "
+                                f"NetworkLinks, found {text.count('<NetworkLink')}")
+            for member in members:
+                if member not in text:
+                    failures.append(f"selector {selector}: missing link to {member}")
+                if not os.path.exists(
+                        os.path.join(SITE_DIR, "kml", "live", member)):
+                    failures.append(f"selector {selector}: member live file "
+                                    f"missing: {member}")
+            print(f"[selector] OK: {selector}")
+        except ET.ParseError as e:
+            failures.append(f"selector: XML parse error in {selector}: {e}")
 
     if failures:
         print("\nVALIDATION FAILURES:")

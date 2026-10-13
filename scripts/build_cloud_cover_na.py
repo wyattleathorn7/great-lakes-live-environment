@@ -280,14 +280,10 @@ def _build(bounds, W, H):
     # the raw observed neighborhood fraction (its grain IS the product),
     # and model layers arrive pre-smoothed above. Gaps stay transparent.
     field, _v = feather_merge(layers, feather_px=12)
-    # Coverage switch (config coverage_mode): extended200 paints the
-    # 200-mile offshore + full Gulf/Caribbean; landonly the crisp NA
-    # land; basin the original rectangle.
-    cover = CONFIG_NA.get("coverage_mode", "extended200")
-    field = gate_field_to_coverage(field, cover)
-    # Shared cache for the precipitation composite: the merged % field
-    # (NaN = missing/clear) + build time, so precipitation_na can paint the
-    # same realistic white-cloud underlay without refetching GOES/RRFS/GDPS.
+    default_cover = CONFIG_NA.get("coverage_mode", "extended200")
+    # Shared cache for the precipitation composite: the UNGATED merged %
+    # field (NaN = missing/clear) + build time (precipitation_na applies
+    # its own coverage mask, so the cache must not be pre-clipped).
     try:
         np.savez_compressed(os.path.join(RAW_DIR, "na_cloud_field.npz"),
                             field=field.astype(np.float32),
@@ -295,25 +291,21 @@ def _build(bounds, W, H):
     except Exception as e:
         print(f"[{PRODUCT}] WARNING: cloud field cache write failed: {e}")
     n_sat = int(sat_valid.sum())
-    n_mod = int(np.isfinite(field).sum() - (np.isfinite(field) & sat_valid).sum())
     if np.isfinite(field).sum() == 0:
         raise RuntimeError(f"no GOES-FD or RRFS cloud data ({prov})")
-    print(f"[{PRODUCT}] sat px={n_sat} model-fill px={n_mod} prov={prov}")
 
-    rgba = render_rgba(field, CLOUD_STOPS, 205)
-    # Clear (<1%) and missing stay transparent (GL convention).
-    clear = np.isfinite(field) & (field < 1.0)
-    rgba[clear, 3] = 0
-    rgba = apply_coverage_mask(rgba, cover)
-    save_png(rgba, os.path.join(stage_prod, "current.png"))
-
+    from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
+                           COVERAGE_ORDER, COVERAGE_SUFFIX,
+                           build_coverage_selector,
+                           coverage_selector_html)
+    variant_kmls = {m: KML_FILE.replace(".kml", f"_{COVERAGE_SUFFIX[m]}.kml")
+                    for m in COVERAGE_ORDER}
+    variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
+                    for m in COVERAGE_ORDER}
+    variant_titles = {m: f"{CONFIG_NA['title']} \u2014 {COVERAGE_LABELS[m]}"
+                      for m in COVERAGE_ORDER}
+    selector_kml = KML_FILE.replace(".kml", "_Coverage.kml")
     data_time = now_det_str()
-    # Original continuous key: identical stops, labels, and units.
-    lw, lh = draw_scale_legend(os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"],
-                               f"GOES full-disk + RRFS fill | {data_time}", "%", CLOUD_STOPS, CLOUD_LABELS,
-                               f"Source: NOAA GOES-East/GOES-West ABI clear-sky mask + RRFS TCDC fill  |  "
-                               f"Processed {data_time}",
-                               note="Clear sky (<1%) is transparent, not colored.")
     scale_html = ("Cloud cover (%, OBSERVED neighborhood fraction from "
                   "GOES: share of 2 km satellite pixels flagged cloudy "
                   "around each point): <b>LOWEST 0 clear</b> transparent "
@@ -323,6 +315,88 @@ def _build(bounds, W, H):
                   "<b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same "
                   "color; clear areas stay see-through. Satellite retrieval where "
                   "GOES is valid, model fill elsewhere (see provenance).")
+    src_id = f"na-cloud-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
+    token = source_token(src_id + json.dumps(prov, sort_keys=True))
+
+    for mode in COVERAGE_ORDER:
+        field_m = gate_field_to_coverage(field, mode)
+        n_mod = int(np.isfinite(field_m).sum()
+                    - (np.isfinite(field_m) & sat_valid).sum())
+        print(f"[{PRODUCT}] variant {mode}: model-fill px={n_mod}")
+        rgba_m = render_rgba(field_m, CLOUD_STOPS, 205)
+        clear_m = np.isfinite(field_m) & (field_m < 1.0)
+        rgba_m[clear_m, 3] = 0
+        rgba_m = apply_coverage_mask(rgba_m, mode)
+        vprod, vtitle, vkml = (variant_dirs[mode], variant_titles[mode],
+                               variant_kmls[mode])
+        vdir = os.path.join(stage, "site", vprod)
+        os.makedirs(vdir, exist_ok=True)
+        save_png(rgba_m, os.path.join(vdir, "current.png"))
+        lw, lh = draw_scale_legend(
+            os.path.join(vdir, "legend.png"), vtitle,
+            f"GOES full-disk + RRFS fill | {data_time}", "%", CLOUD_STOPS,
+            CLOUD_LABELS,
+            f"Source: NOAA GOES-East/GOES-West ABI clear-sky mask + RRFS TCDC fill  |  "
+            f"Processed {data_time}",
+            note="Clear sky (<1%) is transparent, not colored.")
+        vmeta = base_metadata(
+            vprod, vtitle, CONFIG_NA["freshness_label"],
+            CONFIG_NA["source_name"], CONFIG_NA["source_url"],
+            CONFIG_NA["variable"],
+            data_time_utc=data_time,
+            source_last_modified_utc=json.dumps(prov)[:300],
+            units="%",
+            source_resolution="GOES FD ~2km; RRFS 13km NA; canvas 3300x1600",
+            color_min=0.0, color_max=100.0, color_units="%",
+            missing_data_treatment="GOES BCM/DQF==0 valid > RRFS TCDC > GDPS (verified gaps) > transparent; missing never 0%.")
+        vmeta["legend_size"] = [lw, lh]
+        vmeta["legend_scale_html"] = scale_html
+        vmeta["source_id"] = src_id
+        vmeta["source_version"] = token
+        vmeta["na_bounds"] = bounds
+        vmeta["coverage_mode"] = mode
+        vmeta["stats"] = {"satellite_pixels": n_sat,
+                          "model_fill_pixels": n_mod}
+        vfolder = (f"<h2>{vtitle}</h2><p>{scale_html}</p>"
+                   f"<p><b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
+                   f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
+                   f"<b>Provenance:</b> {prov}</p>")
+        vmeta["folder_html"] = vfolder + coverage_selector_html(
+            mode, variant_kmls, selector_kml)
+        write_metadata(vdir, vmeta)
+        vblock = legend_block(f"{vprod}/legend.png", token, scale_html)
+        vouts = live_out_dirs(stage, vkml)
+        _vtext = build_kml(
+            vprod, vkml, OVERLAY_NAME, f"{vprod}/current.png",
+            f"{vprod}/legend.png",
+            description_html(vtitle, vmeta, SKIP_NOTE, vblock)
+            + coverage_selector_html(mode, variant_kmls, selector_kml),
+            CONFIG_NA["refresh_interval_seconds"], token,
+            folder=(vtitle, vmeta["folder_html"]),
+            out_dirs=vouts["live"], meta=vmeta, bounds=bounds)
+        assert_no_vector_geometry(_vtext)
+        build_entry_kml(vprod, vkml, OVERLAY_NAME,
+                        entry_description_html(vtitle, vmeta, SKIP_NOTE),
+                        CONFIG_NA["refresh_interval_seconds"],
+                        out_dirs=vouts["entry"])
+
+    field = gate_field_to_coverage(field, default_cover)
+    n_mod = int(np.isfinite(field).sum() - (np.isfinite(field) & sat_valid).sum())
+    print(f"[{PRODUCT}] sat px={n_sat} model-fill px={n_mod} prov={prov}")
+
+    rgba = render_rgba(field, CLOUD_STOPS, 205)
+    # Clear (<1%) and missing stay transparent (GL convention).
+    clear = np.isfinite(field) & (field < 1.0)
+    rgba[clear, 3] = 0
+    rgba = apply_coverage_mask(rgba, default_cover)
+    save_png(rgba, os.path.join(stage_prod, "current.png"))
+
+    # Original continuous key: identical stops, labels, and units.
+    lw, lh = draw_scale_legend(os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"],
+                               f"GOES full-disk + RRFS fill | {data_time}", "%", CLOUD_STOPS, CLOUD_LABELS,
+                               f"Source: NOAA GOES-East/GOES-West ABI clear-sky mask + RRFS TCDC fill  |  "
+                               f"Processed {data_time}",
+                               note="Clear sky (<1%) is transparent, not colored.")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
@@ -332,28 +406,37 @@ def _build(bounds, W, H):
         missing_data_treatment="GOES BCM/DQF==0 valid > RRFS TCDC > GDPS (verified gaps) > transparent; missing never 0%.")
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
-    src_id = f"na-cloud-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
     meta["source_id"] = src_id
-    meta["source_version"] = source_token(src_id + json.dumps(prov, sort_keys=True))
+    meta["source_version"] = token
     meta["na_bounds"] = bounds
+    meta["coverage_mode"] = default_cover
     meta["stats"] = {"satellite_pixels": n_sat, "model_fill_pixels": n_mod}
-    token = meta["source_version"]
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2><p>{scale_html}</p>"
-                   f"<p><b>Precedence:</b> {CONFIG_NA['precedence']}<br><b>Provenance:</b> {prov}</p>")
-    meta["folder_html"] = folder_html
+                   f"<p><b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
+                   f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br><b>Provenance:</b> {prov}</p>")
+    meta["folder_html"] = folder_html + coverage_selector_html(
+        default_cover, variant_kmls, selector_kml)
     write_metadata(stage_prod, meta)
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     outs = live_out_dirs(stage, KML_FILE)
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
                          f"{PRODUCT}/legend.png",
-                         description_html(CONFIG_NA["title"], meta, SKIP_NOTE, block),
+                         description_html(CONFIG_NA["title"], meta, SKIP_NOTE, block)
+                         + coverage_selector_html(default_cover, variant_kmls,
+                                                  selector_kml),
                          CONFIG_NA["refresh_interval_seconds"], token,
-                         folder=(CONFIG_NA["title"], folder_html),
+                         folder=(CONFIG_NA["title"], meta["folder_html"]),
                          out_dirs=outs["live"], meta=meta, bounds=bounds)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),
                     CONFIG_NA["refresh_interval_seconds"], out_dirs=outs["entry"])
+    build_coverage_selector(
+        CONFIG_NA["title"], selector_kml,
+        [(m, variant_kmls[m]) for m in COVERAGE_ORDER],
+        CONFIG_NA["refresh_interval_seconds"],
+        out_dirs=[os.path.join(stage, "kml", selector_kml),
+                  os.path.join(stage, "site", "kml", selector_kml)])
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": data_time, "source_id": src_id,
                           "processing_time_utc": meta["processing_time_utc"]})

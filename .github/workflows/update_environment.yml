@@ -971,10 +971,24 @@ jobs:
           name: site-wind_na
           path: |
             site/wind_na
+            site/wind_na_basin
+            site/wind_na_northamerica
+            site/wind_na_extended
             output/state/wind_na.json
             site/kml/North_America_Live_Wind.kml
             site/kml/live/North_America_Live_Wind.kml
+            site/kml/North_America_Live_Wind_Basin.kml
+            site/kml/live/North_America_Live_Wind_Basin.kml
+            site/kml/North_America_Live_Wind_NorthAmerica.kml
+            site/kml/live/North_America_Live_Wind_NorthAmerica.kml
+            site/kml/North_America_Live_Wind_Extended.kml
+            site/kml/live/North_America_Live_Wind_Extended.kml
+            site/kml/North_America_Live_Wind_Coverage.kml
             kml/North_America_Live_Wind.kml
+            kml/North_America_Live_Wind_Basin.kml
+            kml/North_America_Live_Wind_NorthAmerica.kml
+            kml/North_America_Live_Wind_Extended.kml
+            kml/North_America_Live_Wind_Coverage.kml
           if-no-files-found: warn
 
   air_temperature_na:
@@ -1003,9 +1017,23 @@ jobs:
           name: site-air_temperature_na
           path: |
             site/air_temperature_na
+            site/air_temperature_na_basin
+            site/air_temperature_na_northamerica
+            site/air_temperature_na_extended
             site/kml/North_America_Live_Air_Temperature.kml
             site/kml/live/North_America_Live_Air_Temperature.kml
+            site/kml/North_America_Live_Air_Temperature_Basin.kml
+            site/kml/live/North_America_Live_Air_Temperature_Basin.kml
+            site/kml/North_America_Live_Air_Temperature_NorthAmerica.kml
+            site/kml/live/North_America_Live_Air_Temperature_NorthAmerica.kml
+            site/kml/North_America_Live_Air_Temperature_Extended.kml
+            site/kml/live/North_America_Live_Air_Temperature_Extended.kml
+            site/kml/North_America_Live_Air_Temperature_Coverage.kml
             kml/North_America_Live_Air_Temperature.kml
+            kml/North_America_Live_Air_Temperature_Basin.kml
+            kml/North_America_Live_Air_Temperature_NorthAmerica.kml
+            kml/North_America_Live_Air_Temperature_Extended.kml
+            kml/North_America_Live_Air_Temperature_Coverage.kml
             output/state/air_temperature_na.json
           if-no-files-found: warn
 
@@ -1035,9 +1063,23 @@ jobs:
           name: site-cloud_cover_na
           path: |
             site/cloud_cover_na
+            site/cloud_cover_na_basin
+            site/cloud_cover_na_northamerica
+            site/cloud_cover_na_extended
             site/kml/North_America_Live_Cloud_Cover.kml
             site/kml/live/North_America_Live_Cloud_Cover.kml
+            site/kml/North_America_Live_Cloud_Cover_Basin.kml
+            site/kml/live/North_America_Live_Cloud_Cover_Basin.kml
+            site/kml/North_America_Live_Cloud_Cover_NorthAmerica.kml
+            site/kml/live/North_America_Live_Cloud_Cover_NorthAmerica.kml
+            site/kml/North_America_Live_Cloud_Cover_Extended.kml
+            site/kml/live/North_America_Live_Cloud_Cover_Extended.kml
+            site/kml/North_America_Live_Cloud_Cover_Coverage.kml
             kml/North_America_Live_Cloud_Cover.kml
+            kml/North_America_Live_Cloud_Cover_Basin.kml
+            kml/North_America_Live_Cloud_Cover_NorthAmerica.kml
+            kml/North_America_Live_Cloud_Cover_Extended.kml
+            kml/North_America_Live_Cloud_Cover_Coverage.kml
             output/state/cloud_cover_na.json
           if-no-files-found: warn
 
@@ -1067,9 +1109,23 @@ jobs:
           name: site-precipitation_na
           path: |
             site/precipitation_na
+            site/precipitation_na_basin
+            site/precipitation_na_northamerica
+            site/precipitation_na_extended
             site/kml/North_America_Live_Precipitation.kml
             site/kml/live/North_America_Live_Precipitation.kml
+            site/kml/North_America_Live_Precipitation_Basin.kml
+            site/kml/live/North_America_Live_Precipitation_Basin.kml
+            site/kml/North_America_Live_Precipitation_NorthAmerica.kml
+            site/kml/live/North_America_Live_Precipitation_NorthAmerica.kml
+            site/kml/North_America_Live_Precipitation_Extended.kml
+            site/kml/live/North_America_Live_Precipitation_Extended.kml
+            site/kml/North_America_Live_Precipitation_Coverage.kml
             kml/North_America_Live_Precipitation.kml
+            kml/North_America_Live_Precipitation_Basin.kml
+            kml/North_America_Live_Precipitation_NorthAmerica.kml
+            kml/North_America_Live_Precipitation_Extended.kml
+            kml/North_America_Live_Precipitation_Coverage.kml
             output/state/precipitation_na.json
           if-no-files-found: warn
 

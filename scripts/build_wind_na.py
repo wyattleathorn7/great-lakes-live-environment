@@ -500,61 +500,141 @@ def _build(bounds, W, H):
         U[take] = gu[take]
         V[take] = gv[take]
         owned |= take
-    U[~owned] = np.nan
-    V[~owned] = np.nan
     from na_common import gate_field_to_coverage
-    cover = CONFIG_NA.get("coverage_mode", "extended200")
-    U = gate_field_to_coverage(U, cover)
-    V = gate_field_to_coverage(V, cover)
-    Ud, Vd = U, V
-    spd = np.hypot(Ud, Vd)  # m/s; NaN where missing (never zero-filled)
-    n_valid = int(np.isfinite(spd).sum())
-    if n_valid == 0:
-        raise RuntimeError(f"no wind components from any source ({prov})")
-    kt = spd * MS_TO_KT
-    print(f"[{PRODUCT}] valid px={n_valid} ({100*n_valid/(W*H):.2f}%) prov={prov}")
-
-    rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    m = np.isfinite(kt)
-    # Original dual-opacity finish, expanded: the five Great Lakes + the
-    # large Canadian lakes get the full water treatment (exact Beaufort
-    # table @205); all other land gets the saturation-boosted vivid twins
-    # @140 so each force reads the same through the extra transparency.
-    # Single legend (water colors), same as the original.
-    from build_wind import WIND_ALPHA_LAND, WIND_ALPHA_WATER, _vivid_for_land
-    from na_common import load_lakemask
-    lake = (load_lakemask() >= 0.5) & m
-    forces = np.array([force_from_kt(x) for x in kt[m]])
-    pal = np.array([force_rgb(f) for f in forces], dtype=np.uint8)
-    vivid = np.array([_vivid_for_land(FORCE_COLORS[f]) for f in forces], dtype=np.uint8)
-    idx = np.zeros((H, W), dtype=int)
-    idx[m] = np.arange(int(m.sum()))
-    rgba[m, :3] = np.where(lake[m][:, None], pal, vivid)
-    rgba[m, 3] = np.where(lake[m], WIND_ALPHA_WATER, WIND_ALPHA_LAND)
-    # Same engines as the original, density-matched per degree (NA canvas
-    # is ~20 px/deg vs basin ~92 px/deg): streamlet seeds 12px and label
-    # lattice 16px give the same geographic spacing as the basin's 20px /
-    # 32px, so Canada and the south look like the original rectangle —
-    # never enlarged, never a sparse 4-5 values. Full rectangle:
-    # transparent only where missing, same as the original basin layer.
-    from build_wind import paint_wind_streamlets
-    from na_common import apply_coverage_mask
-    rgba, n_stream, n_heads = paint_wind_streamlets(
-        rgba, np.where(m, Ud, np.nan), np.where(m, Vd, np.nan), np.where(m, kt, np.nan),
-        seed_step=12, ds=3.0, max_steps=40, min_speed=0.5)
-    rgba, n_strat, n_fill = paint_na_wind_labels(
-        rgba, np.where(m, kt, np.nan), bounds,
-        label_step=16, font_size=7, max_labels=1500, extra_thresh_kt=4.0)
-    rgba = apply_coverage_mask(rgba, cover)
-    save_png(rgba, os.path.join(stage_prod, "current.png"))
-    print(f"[{PRODUCT}] streamlets={n_stream}/{n_heads} labels={n_strat}+{n_fill}")
-    # Single continental overlay only (no basin inset): one field, one
-    # engine, everywhere — no pasted rectangle, no seams.
+    from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
+                           COVERAGE_ORDER, COVERAGE_SUFFIX,
+                           build_coverage_selector,
+                           coverage_selector_html)
+    default_cover = CONFIG_NA.get("coverage_mode", "extended200")
+    variant_kmls = {m: KML_FILE.replace(".kml", f"_{COVERAGE_SUFFIX[m]}.kml")
+                    for m in COVERAGE_ORDER}
+    variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
+                    for m in COVERAGE_ORDER}
+    variant_titles = {m: f"{CONFIG_NA['title']} \u2014 {COVERAGE_LABELS[m]}"
+                      for m in COVERAGE_ORDER}
+    selector_kml = KML_FILE.replace(".kml", "_Coverage.kml")
 
     # Original Beaufort key rows, verbatim (same colors, same labels).
     key_rows = [(FORCE_COLORS[f], f"F{f} — {force_name(f)} ({force_range_text(f)})")
                 for f in range(13)]
     data_time = now_det_str()
+    scale_html = ("WIND — BEAUFORT SCALE (colors follow force, dark purple = "
+                  "Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. "
+                  "Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. "
+                  "Same force always shows the same color.")
+    src_id = f"na-wind-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
+    token = source_token(src_id + json.dumps(prov, sort_keys=True))
+
+    from build_wind import WIND_ALPHA_LAND, WIND_ALPHA_WATER, _vivid_for_land
+    from build_wind import paint_wind_streamlets
+    from na_common import apply_coverage_mask, load_lakemask
+
+    def _render_variant(mode):
+        """Gate the merged field to one coverage, paint the original
+        finish (exact Beaufort colors, dual opacity, streamlets, kt
+        labels). Returns (rgba, kt_gated, stats)."""
+        Ug = gate_field_to_coverage(U, mode)
+        Vg = gate_field_to_coverage(V, mode)
+        spd_m = np.hypot(Ug, Vg)
+        kt_m = spd_m * MS_TO_KT
+        m_m = np.isfinite(kt_m)
+        lake_m = (load_lakemask() >= 0.5) & m_m
+        forces_m = np.array([force_from_kt(x) for x in kt_m[m_m]])
+        pal_m = np.array([force_rgb(f) for f in forces_m], dtype=np.uint8)
+        vivid_m = np.array([_vivid_for_land(FORCE_COLORS[f]) for f in forces_m],
+                           dtype=np.uint8)
+        rgba_m = np.zeros((H, W, 4), dtype=np.uint8)
+        rgba_m[m_m, :3] = np.where(lake_m[m_m][:, None], pal_m, vivid_m)
+        rgba_m[m_m, 3] = np.where(lake_m[m_m], WIND_ALPHA_WATER, WIND_ALPHA_LAND)
+        rgba_m, n_stream, n_heads = paint_wind_streamlets(
+            rgba_m, np.where(m_m, Ug, np.nan), np.where(m_m, Vg, np.nan),
+            np.where(m_m, kt_m, np.nan),
+            seed_step=12, ds=3.0, max_steps=40, min_speed=0.5)
+        rgba_m, n_strat, n_fill = paint_na_wind_labels(
+            rgba_m, np.where(m_m, kt_m, np.nan), bounds,
+            label_step=16, font_size=7, max_labels=1500, extra_thresh_kt=4.0)
+        rgba_m = apply_coverage_mask(rgba_m, mode)
+        return rgba_m, kt_m, {"valid_pixels": int(m_m.sum()),
+                              "streamlets": n_stream, "heads": n_heads,
+                              "labels": n_strat, "extra_labels": n_fill}
+
+    for mode in COVERAGE_ORDER:
+        rgba_m, kt_m, st = _render_variant(mode)
+        vprod, vtitle, vkml = (variant_dirs[mode], variant_titles[mode],
+                               variant_kmls[mode])
+        vdir = os.path.join(stage, "site", vprod)
+        os.makedirs(vdir, exist_ok=True)
+        save_png(rgba_m, os.path.join(vdir, "current.png"))
+        print(f"[{PRODUCT}] variant {mode}: streamlets={st['streamlets']}/"
+              f"{st['heads']} labels={st['labels']}+{st['extra_labels']} "
+              f"px={st['valid_pixels']}")
+        lw, lh = draw_category_legend(
+            os.path.join(vdir, "legend.png"), vtitle,
+            f"{CONFIG_NA['freshness_label']}  |  {data_time}", key_rows,
+            f"Source: GLWU v2.1 + HRRR 10 m + RRFS-NA + GDPS (see provenance)  |  "
+            f"Processed {data_time}",
+            note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY. "
+                 "Great Lakes + major Canadian lakes ~80% opacity; "
+                 "other land ~55% with intensified colors so the "
+                 "same force reads the same (single key). White streaks trace "
+                 "travel (brightness = knots); white numbers are actual kt. "
+                 f"Coverage: {COVERAGE_LABELS[mode]}.")
+        vmeta = base_metadata(
+            vprod, vtitle, CONFIG_NA["freshness_label"],
+            CONFIG_NA["source_name"], CONFIG_NA["source_url"],
+            CONFIG_NA["variable"],
+            data_time_utc=data_time,
+            source_last_modified_utc=json.dumps(prov)[:300],
+            units="kt (Beaufort 0-12)",
+            source_resolution="GLWU ~2.5km; HRRR 3km; RRFS 13km NA",
+            color_min=0, color_max=12, color_units="Beaufort force",
+            missing_data_treatment="GLWU > HRRR > RRFS > GDPS(gaps) > transparent; missing never calm. "
+                "Dual opacity (original finish): lakes at water alpha 205 with exact Beaufort colors; "
+                "other land at alpha 140 with saturation-boosted twins (single legend).")
+        vmeta["legend_size"] = [lw, lh]
+        vmeta["legend_scale_html"] = scale_html
+        vmeta["beaufort_table"] = [
+            {"force": f, "description": force_name(f),
+             "range_kt": force_range_text(f), "color": FORCE_COLORS[f]}
+            for f in range(13)]
+        vmeta["source_id"] = src_id
+        vmeta["source_version"] = token
+        vmeta["na_bounds"] = bounds
+        vmeta["coverage_mode"] = mode
+        vmeta["stats"] = st
+        vfolder = (f"<h2>{vtitle}</h2><p>{scale_html}</p>"
+                   f"<p><b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
+                   f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
+                   f"<b>Provenance:</b> {prov}</p>")
+        vmeta["folder_html"] = vfolder + coverage_selector_html(
+            mode, variant_kmls, selector_kml)
+        write_metadata(vdir, vmeta)
+        vblock = legend_block(f"{vprod}/legend.png", token, scale_html)
+        vouts = live_out_dirs(stage, vkml)
+        _vtext = build_kml(
+            vprod, vkml, OVERLAY_NAME, f"{vprod}/current.png",
+            f"{vprod}/legend.png",
+            description_html(vtitle, vmeta, SKIP_NOTE, vblock)
+            + coverage_selector_html(mode, variant_kmls, selector_kml),
+            CONFIG_NA["refresh_interval_seconds"], token,
+            folder=(vtitle, vmeta["folder_html"]),
+            out_dirs=vouts["live"], meta=vmeta, bounds=bounds)
+        assert_no_vector_geometry(_vtext)
+        build_entry_kml(vprod, vkml, OVERLAY_NAME,
+                        entry_description_html(vtitle, vmeta, SKIP_NOTE),
+                        CONFIG_NA["refresh_interval_seconds"],
+                        out_dirs=vouts["entry"])
+
+    # Primary (default coverage): legacy paths/URLs, same pixels as the
+    # matching variant. Single continental overlay, no inset.
+    rgba, kt_def, st_def = _render_variant(default_cover)
+    m = np.isfinite(kt_def)
+    n_valid = int(m.sum())
+    print(f"[{PRODUCT}] valid px={n_valid} ({100*n_valid/(W*H):.2f}%) prov={prov}")
+    save_png(rgba, os.path.join(stage_prod, "current.png"))
+    print(f"[{PRODUCT}] streamlets={st_def['streamlets']}/{st_def['heads']} "
+          f"labels={st_def['labels']}+{st_def['extra_labels']}")
+
     lw, lh = draw_category_legend(os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"],
                                   f"{CONFIG_NA['freshness_label']}  |  {data_time}", key_rows,
                                   f"Source: GLWU v2.1 + HRRR 10 m + RRFS-NA + GDPS (see provenance)  |  "
@@ -585,31 +665,40 @@ def _build(bounds, W, H):
     meta["beaufort_table"] = [
         {"force": f, "description": force_name(f), "range_kt": force_range_text(f),
          "color": FORCE_COLORS[f]} for f in range(13)]
-    src_id = f"na-wind-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
     meta["source_id"] = src_id
-    meta["source_version"] = source_token(src_id + json.dumps(prov, sort_keys=True))
+    meta["source_version"] = token
     meta["na_bounds"] = bounds
+    meta["coverage_mode"] = default_cover
     meta["stats"] = {"valid_pixels": n_valid}
-    token = meta["source_version"]
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2><p>{scale_html}</p>"
                    f"<p>Single continental field at NA resolution; same Beaufort "
                    f"colors, dual opacity, streamlet and label engines as the "
                    f"original basin layer, density-matched per degree.</p>"
-                   f"<p><b>Precedence:</b> {CONFIG_NA['precedence']}<br><b>Provenance:</b> {prov}</p>")
-    meta["folder_html"] = folder_html
+                   f"<p><b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
+                   f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br><b>Provenance:</b> {prov}</p>")
+    meta["folder_html"] = folder_html + coverage_selector_html(
+        default_cover, variant_kmls, selector_kml)
     write_metadata(stage_prod, meta)
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     outs = live_out_dirs(stage, KML_FILE)
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
                          f"{PRODUCT}/legend.png",
-                         description_html(CONFIG_NA["title"], meta, SKIP_NOTE, block),
+                         description_html(CONFIG_NA["title"], meta, SKIP_NOTE, block)
+                         + coverage_selector_html(default_cover, variant_kmls,
+                                                  selector_kml),
                          CONFIG_NA["refresh_interval_seconds"], token,
-                         folder=(CONFIG_NA["title"], folder_html),
+                         folder=(CONFIG_NA["title"], meta["folder_html"]),
                          out_dirs=outs["live"], meta=meta, bounds=bounds)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),
                     CONFIG_NA["refresh_interval_seconds"], out_dirs=outs["entry"])
+    build_coverage_selector(
+        CONFIG_NA["title"], selector_kml,
+        [(m, variant_kmls[m]) for m in COVERAGE_ORDER],
+        CONFIG_NA["refresh_interval_seconds"],
+        out_dirs=[os.path.join(stage, "kml", selector_kml),
+                  os.path.join(stage, "site", "kml", selector_kml)])
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": data_time, "source_id": src_id,
                           "processing_time_utc": meta["processing_time_utc"]})
