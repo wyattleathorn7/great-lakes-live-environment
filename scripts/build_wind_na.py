@@ -44,13 +44,33 @@ KML_FILE = "North_America_Live_Wind.kml"
 OVERLAY_NAME = "\U0001f4a8 LIVE WIND"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 
-# Strategic label anchors (lon, lat): major metros + corridor towns across
-# the NA footprint, attempted first like the Great Lakes city's anchors.
-NA_CITY_ANCHORS = [
-    (-74.0, 40.7), (-87.6, 41.9), (-79.4, 43.7), (-95.4, 29.8),
+# Strategic label anchors (lon, lat): the ORIGINAL Great Lakes fixed-city
+# anchors first (verbatim from build_wind.CITY_ANCHORS, so basin values sit
+# exactly where the original layer puts them), then major metros + corridor
+# towns across the wider NA footprint. Same font/size/seps/kt style as the
+# original split engine.
+from build_wind import CITY_ANCHORS as _GL_CITY_ANCHORS
+GL_NA_ANCHORS = [(lon, lat) for (_name, lon, lat) in _GL_CITY_ANCHORS]
+METRO_ANCHORS = [
+    (-74.0, 40.7), (-95.4, 29.8),
     (-99.1, 19.4), (-103.3, 20.7), (-84.1, 9.9), (-82.4, 23.1),
     (-149.9, 61.2), (-113.5, 53.5), (-97.1, 49.9), (-75.7, 45.4),
     (-52.7, 47.6), (-157.8, 21.3), (-61.2, 14.6), (-90.5, 14.6),
+]
+NA_CITY_ANCHORS = GL_NA_ANCHORS + METRO_ANCHORS
+# Fixed lake-value anchors (same white-mono kt style, same sep guards as
+# the city anchors): the Great Lakes basin is covered by _GL_CITY_ANCHORS;
+# these extend the identical fixed-value treatment to the large Canadian
+# lakes — Winnipeg + its scattered neighbours, Athabasca, Great Slave +
+# its scattered neighbours, Great Bear. Position fixed, value live.
+LAKE_ANCHORS = [
+    (-97.8, 51.2), (-97.0, 53.3),    # Winnipeg south / north basins
+    (-98.7, 51.0), (-100.3, 52.4),   # Manitoba, Winnipegosis
+    (-100.1, 53.6),                  # Cedar Lake
+    (-109.5, 59.2),                  # Athabasca
+    (-114.0, 61.5), (-110.8, 62.6),  # Slave main / east arm
+    (-113.3, 65.3),                  # Point Lake (Slave scattered)
+    (-120.5, 66.0), (-118.0, 65.8),  # Bear main / east
 ]
 
 
@@ -106,12 +126,14 @@ def paint_na_wind_labels(rgba, kt_field, bounds, label_step=64,
         return (y, x, best)
 
     n_strat = n_fill = 0
-    for lon, lat in NA_CITY_ANCHORS:
+    # Fixed anchors first: basin cities, then Canadian lake values, then
+    # continental metros — lakes outrank far metros in collisions.
+    for lon, lat in list(GL_NA_ANCHORS) + list(LAKE_ANCHORS) + list(METRO_ANCHORS):
         y, x, v = cell_value(lon, lat)
         if v is None or not (8 <= y < H - 8 and 8 <= x < W - 8):
             continue
         if claim(y, x, 30):
-            _draw_wind_label(d, x + 6, y - 12, f"{v:.0f}", font)
+            _draw_wind_label(d, x + 6, y - 12, f"{v:.0f}kt", font)
             mark(y, x, 30)
             n_strat += 1
     # high-change extras on a jittered lattice
@@ -129,7 +151,7 @@ def paint_na_wind_labels(rgba, kt_field, bounds, label_step=64,
         if n_strat + n_fill >= max_labels:
             break
         if claim(yy, xx, 48):
-            _draw_wind_label(d, xx + 6, yy - 12, f"{v:.0f}", font)
+            _draw_wind_label(d, xx + 6, yy - 12, f"{v:.0f}kt", font)
             mark(yy, xx, 48)
             n_fill += 1
     del d
@@ -380,10 +402,21 @@ def _build(bounds, W, H):
 
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
     m = np.isfinite(kt)
+    # Original dual-opacity finish, expanded: the five Great Lakes + the
+    # large Canadian lakes get the full water treatment (exact Beaufort
+    # table @205); all other land gets the saturation-boosted vivid twins
+    # @140 so each force reads the same through the extra transparency.
+    # Single legend (water colors), same as the original.
+    from build_wind import WIND_ALPHA_LAND, WIND_ALPHA_WATER, _vivid_for_land
+    from na_common import load_lakemask
+    lake = (load_lakemask() >= 0.5) & m
     forces = np.array([force_from_kt(x) for x in kt[m]])
     pal = np.array([force_rgb(f) for f in forces], dtype=np.uint8)
-    rgba[m, :3] = pal
-    rgba[m, 3] = 205
+    vivid = np.array([_vivid_for_land(FORCE_COLORS[f]) for f in forces], dtype=np.uint8)
+    idx = np.zeros((H, W), dtype=int)
+    idx[m] = np.arange(int(m.sum()))
+    rgba[m, :3] = np.where(lake[m][:, None], pal, vivid)
+    rgba[m, 3] = np.where(lake[m], WIND_ALPHA_WATER, WIND_ALPHA_LAND)
     # GL-style direction streamlets (brightness = knots) + strategic kt
     # values, then the shared coastline cut (same rules as every layer).
     from build_wind import paint_wind_streamlets
@@ -405,8 +438,11 @@ def _build(bounds, W, H):
                                   f"{CONFIG_NA['freshness_label']}  |  {data_time}", key_rows,
                                   f"Source: GLWU v2.1 + HRRR 10 m + RRFS-NA + GDPS (see provenance)  |  "
                                   f"Processed {data_time}",
-                                  note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY. "
-                                       "White arrows trace travel direction.")
+                                   note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY. "
+                                        "Great Lakes + major Canadian lakes ~80% opacity; "
+                                        "other land ~55% with intensified colors so the "
+                                        "same force reads the same (single key). White streaks trace "
+                                        "travel (brightness = knots); white numbers are actual kt.")
     scale_html = ("WIND — BEAUFORT SCALE (colors follow force, dark purple = "
                   "Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. "
                   "Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. "
@@ -417,7 +453,11 @@ def _build(bounds, W, H):
         data_time_utc=data_time, source_last_modified_utc=json.dumps(prov)[:300],
         units="kt (Beaufort 0-12)", source_resolution="GLWU ~2.5km; HRRR 3km; RRFS 13km NA",
         color_min=0, color_max=12, color_units="Beaufort force",
-        missing_data_treatment="GLWU > HRRR > RRFS > GDPS(gaps) > transparent; missing never calm.")
+        missing_data_treatment="GLWU > HRRR > RRFS > GDPS(gaps) > transparent; missing never calm. "
+            "Dual opacity (original finish): Great Lakes + major Canadian lakes (Bear, Slave, Winnipeg, "
+            "Athabasca, Manitoba, Winnipegosis, Reindeer, Wollaston, Mistassini, Nettilling, Amadjuak, "
+            "Dubawnt +) at water alpha 205 with exact Beaufort colors; other land at alpha 140 with "
+            "saturation-boosted twins (single legend).")
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["beaufort_table"] = [

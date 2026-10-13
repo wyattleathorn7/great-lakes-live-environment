@@ -26,7 +26,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
-from na_common import (apply_coast_mask, bin_points_to_canvas,
+from na_common import (apply_coast_mask, bin_points_to_canvas, load_landmask,
                          despeckle_valid, feather_merge, fetch_http,
                          fill_pinholes, gate_field_to_mask,
                          sanitize_model_vals, smooth_field)
@@ -228,12 +228,41 @@ def _build(bounds, W, H):
         prov["RRFS-TCDC"] = f"unavailable: {type(e).__name__}"
 
     layers.append((rrfs_grid, rrfs_valid))
+    # GDPS TotalCloudCover last-resort fill ONLY where GOES + RRFS both lack
+    # verified valid data (same fallback contract as air-temp/wind; the
+    # config already promises it). Bilinear resample so coarse cells render
+    # as gradient, never dots.
+    try:
+        from na_common import gdps_wcs_grid, resample_wcs_to_canvas
+        arr, _la, _lo, slat, slon = gdps_wcs_grid(
+            "GDPS_15km_TotalCloudCover", bounds, RAW_DIR)
+        raw = np.asarray(arr[0], dtype=float)
+        if np.isfinite(raw).any() and np.nanmax(raw) <= 1.0:
+            raw = raw * 100.0  # fraction -> %
+        g = resample_wcs_to_canvas(
+            sanitize_model_vals(raw, 0.0, 100.0), slat, slon, bounds)
+        g = fill_pinholes(np.clip(g, 0.0, 100.0), radius=3)
+        layers.append((g, np.isfinite(g)))
+        prov["GDPS-TCC"] = f"GDPS_15km_TotalCloudCover n={int(np.isfinite(g).sum())}"
+    except Exception as e:
+        prov["GDPS-TCC"] = f"unavailable: {type(e).__name__}: {e}"
     # Seamless cross-fade at the satellite/model boundary, then one shared
     # treatment: despeckle, display smoothing, coast gate.
     field, _v = feather_merge(layers, feather_px=12)
     own = despeckle_valid(np.isfinite(field), min_size=4)
     field[~own] = np.nan
-    field = gate_field_to_mask(smooth_field(field, size=5, passes=2))
+    # Exact air-temp footprint + 100mi expansion: selected-country feathered
+    # mask (ends at Mexico, Caribbean exclusions carved).
+    field = gate_field_to_mask(smooth_field(field, size=5, passes=2), load_landmask())
+    # Shared cache for the precipitation composite: the merged % field
+    # (NaN = missing/clear) + build time, so precipitation_na can paint the
+    # same realistic white-cloud underlay without refetching GOES/RRFS/GDPS.
+    try:
+        np.savez_compressed(os.path.join(RAW_DIR, "na_cloud_field.npz"),
+                            field=field.astype(np.float32),
+                            built_utc=dt.datetime.now(dt.timezone.utc).isoformat())
+    except Exception as e:
+        print(f"[{PRODUCT}] WARNING: cloud field cache write failed: {e}")
     n_sat = int(sat_valid.sum())
     n_mod = int(np.isfinite(field).sum() - (np.isfinite(field) & sat_valid).sum())
     if np.isfinite(field).sum() == 0:
@@ -244,7 +273,7 @@ def _build(bounds, W, H):
     # Clear (<1%) and missing stay transparent (GL convention).
     clear = np.isfinite(field) & (field < 1.0)
     rgba[clear, 3] = 0
-    rgba = apply_coast_mask(rgba)
+    rgba = apply_coast_mask(rgba, load_landmask())
     save_png(rgba, os.path.join(stage_prod, "current.png"))
 
     data_time = now_det_str()

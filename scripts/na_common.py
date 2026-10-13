@@ -148,6 +148,25 @@ def load_landmask():
 
 
 _LANDONLY = None
+_LAKES = None
+
+
+def load_lakemask():
+    """North American lake mask (wind layer only): 1.0 on the five Great
+    Lakes + Lake Nipigon + the large Canadian lakes (Bear, Slave,
+    Winnipeg, Athabasca, Manitoba, Winnipegosis, Reindeer, Wollaston,
+    Mistassini, Nettilling, Amadjuak, Dubawnt, Cedar, Southern Indian,
+    Woods), 0.0 elsewhere (assets/north_america_lakes.npy). Drives the
+    original dual-opacity finish: full water treatment on lakes,
+    semi-transparent vivid twins on land."""
+    global _LAKES
+    if _LAKES is None:
+        p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          "assets", "north_america_lakes.npy")
+        if not os.path.exists(p):
+            raise FileNotFoundError(f"NA lake mask missing: {p}")
+        _LAKES = np.load(p).astype(np.float32)
+    return _LAKES
 
 
 def load_landonly():

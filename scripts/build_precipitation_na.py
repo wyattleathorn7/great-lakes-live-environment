@@ -235,8 +235,31 @@ def _build(scan_dt, source_id, bounds, W, H):
     # cross-fade rides the coverage edge (both echo -> blend on one
     # scale, never a box seam, never double-painted).
     from scipy.ndimage import distance_transform_edt
-    from na_common import apply_coast_mask
+    from na_common import apply_coast_mask, load_landmask
+    # Exact air-temp footprint + 100mi expansion: selected-country feathered
+    # mask (ends at Mexico, Caribbean exclusions carved), NOT the global
+    # coastline mask.
     out = np.zeros((H, W, 4), dtype=np.uint8)
+    # Realistic white-cloud underlay (NOAA Science-On-a-Sphere look): the
+    # SAME merged GOES + RRFS + GDPS % field the cloud layer renders,
+    # cached by build_cloud_cover_na (fresh <30 min required). White with
+    # density-carrying alpha; radar echoes overwrite it below. Cache
+    # missing/stale -> precip-only raster (never a failure).
+    cloud_prov = "unavailable"
+    try:
+        with np.load(os.path.join(RAW_DIR, "na_cloud_field.npz")) as z:
+            cf = np.asarray(z["field"], dtype=float)
+            built = dt.datetime.fromisoformat(str(z["built_utc"]))
+        age = abs((dt.datetime.now(dt.timezone.utc) - built).total_seconds())
+        if cf.shape == (H, W) and age < 1800 and np.isfinite(cf).any():
+            m = np.isfinite(cf) & (cf >= 1.0)
+            out[m, 0:3] = 255
+            out[m, 3] = np.clip(50.0 + cf[m] * 1.4, 0, 190).astype(np.uint8)
+            cloud_prov = f"na_cloud_field age={age:.0f}s n={int(m.sum())}"
+        else:
+            cloud_prov = f"stale/incompatible (age={age:.0f}s)"
+    except Exception as e:
+        cloud_prov = f"unavailable: {type(e).__name__}"
     eccc_avail = cov & (rain_e | snow_e)
     ecol = np.zeros((H, W, 3), dtype=np.uint8)
     ealp = np.zeros((H, W), dtype=np.uint8)
@@ -263,7 +286,7 @@ def _build(scan_dt, source_id, bounds, W, H):
                                  + (1.0 - w) * iem[band, :3].astype(float)).astype(np.uint8)
         out[band, 3] = np.round(w[:, 0] * out[band, 3].astype(float)
                                 + (1.0 - w[:, 0]) * iem[band, 3].astype(float)).astype(np.uint8)
-    out = apply_coast_mask(out)
+    out = apply_coast_mask(out, load_landmask())
     n_iem = int(iem_fill.sum())
     n_eccc = int(eccc_echo.sum())
     print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} "
@@ -271,12 +294,13 @@ def _build(scan_dt, source_id, bounds, W, H):
 
     save_png(out, os.path.join(stage_prod, "current.png"))
     data_time = scan_dt.strftime("%Y-%m-%d %H:%M UTC")
-    subtitle = f"NA radar mosaic (IEM N0Q + ECCC RRAI/RSNO) | {data_time}"
+    subtitle = f"NA radar mosaic (IEM N0Q + ECCC RRAI/RSNO) + cloud underlay | {data_time}"
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
         KEY_ROWS,
         f"IEM {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} | {now_det_str()}",
-        note="No echo = transparent (no precipitation).")
+        note="No echo = transparent (no precipitation). White = cloud-cover "
+             "underlay (same merged GOES+model field as Live Cloud Cover).")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
@@ -294,13 +318,17 @@ def _build(scan_dt, source_id, bounds, W, H):
     meta["source_version"] = source_token(source_id)
     meta["na_bounds"] = bounds
     meta["stats"] = {"iem_pixels": n_iem, "eccc_pixels": n_eccc,
-                     "transparent_pixels": int(W * H - n_iem - n_eccc)}
+                      "transparent_pixels": int(W * H - n_iem - n_eccc),
+                      "cloud_underlay": cloud_prov}
     meta["provenance"] = {"iem_wms": na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H)[:200],
-                          "eccc_wms": ECCC, "eccc_time_rain": t_rain, "eccc_time_snow": t_snow}
+                          "eccc_wms": ECCC, "eccc_time_rain": t_rain, "eccc_time_snow": t_snow,
+                          "cloud_underlay": cloud_prov}
     token = meta["source_version"]
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2><p>{SCALE_HTML}</p>"
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
+                   f"<b>Cloud underlay:</b> white, same merged field as "
+                   f"Live Cloud Cover ({cloud_prov})<br>"
                    f"<b>Data time:</b> {data_time}</p>")
     meta["folder_html"] = folder_html
     write_metadata(stage_prod, meta)
