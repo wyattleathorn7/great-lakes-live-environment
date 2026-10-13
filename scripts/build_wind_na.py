@@ -426,13 +426,22 @@ def _build(bounds, W, H):
     prov = {}
     ulayers, vlayers = [], []  # (grid, joint-valid) in precedence order
 
-    def place(label, u, v, la, lo):
+    def place(label, u, v, la, lo, smooth_coarse=False):
+        from na_common import smooth_field
         u = sanitize_model_vals(u, -150.0, 150.0)
         v = sanitize_model_vals(v, -150.0, 150.0)
         gu, _ = bin_points_to_canvas(u, la, lo, bounds)
         gv, _ = bin_points_to_canvas(v, la, lo, bounds)
         gu = fill_pinholes(gu, radius=3)
         gv = fill_pinholes(gv, radius=3)
+        if smooth_coarse:
+            # Coarse 13-15 km sources on the 0.05 deg canvas print
+            # single-cell dots and block edges without this; the same
+            # NaN-aware display smoothing the cloud layer applies to its
+            # model fill. GLWU/HRRR stay raw (native resolution carries
+            # the original grain).
+            gu = smooth_field(gu, size=5, passes=2)
+            gv = smooth_field(gv, size=5, passes=2)
         joint = np.isfinite(gu) & np.isfinite(gv)
         ulayers.append((gu, joint))
         vlayers.append((gv, joint))
@@ -451,7 +460,7 @@ def _build(bounds, W, H):
         prov["hrrr"] = f"unavailable: {type(e).__name__}"
     try:
         label, u, v, la, lo = rrfs_uv_na()
-        place(label, u, v, la, lo)
+        place(label, u, v, la, lo, smooth_coarse=True)
     except Exception as e:
         prov["rrfs"] = f"unavailable: {type(e).__name__}"
     # GDPS fallback (ECCC GDPS 15km WindSpeed + WindDir 10m via WCS) ONLY
@@ -466,10 +475,11 @@ def _build(bounds, W, H):
         wdir = np.where(np.isfinite(wdir), wdir % 360.0, np.nan)
         rad = np.deg2rad(wdir)
         from na_common import resample_wcs_to_canvas as _bilin
+        from na_common import smooth_field as _smooth
         gu = _bilin(np.where(np.isfinite(spd), -spd * np.sin(rad), np.nan), slat, slon, bounds)
         gv = _bilin(np.where(np.isfinite(spd), -spd * np.cos(rad), np.nan), slat, slon, bounds)
-        gu = fill_pinholes(gu, radius=3)
-        gv = fill_pinholes(gv, radius=3)
+        gu = _smooth(fill_pinholes(gu, radius=3), size=5, passes=2)
+        gv = _smooth(fill_pinholes(gv, radius=3), size=5, passes=2)
         joint = np.isfinite(gu) & np.isfinite(gv)
         ulayers.append((gu, joint))
         vlayers.append((gv, joint))
@@ -480,9 +490,9 @@ def _build(bounds, W, H):
         raise RuntimeError(f"no wind components from any source ({prov})")
 
     # Exact-copy precedence (same as the original: first-valid wins, no
-    # blending, no smoothing): GLWU over water, then HRRR, then RRFS-NA,
-    # then GDPS gaps. The original renders raw binned values; smoothing
-    # would soften fronts and change streamlet paths, so none is applied.
+    # blending): GLWU over water, then HRRR, then RRFS-NA, then GDPS gaps.
+    # Coarse 13-15 km layers arrive pre-smoothed above (dots/blocks would
+    # otherwise print); GLWU/HRRR render raw like the original.
     U = np.full((H, W), np.nan)
     V = np.full((H, W), np.nan)
     owned = np.zeros((H, W), dtype=bool)
