@@ -148,6 +148,8 @@ def _build(bounds, W, H):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
+    # Fresh checkouts (CI runners) lack the gitignored output/raw dir.
+    os.makedirs(RAW_DIR, exist_ok=True)
     prov = {}
     sat_grids = []
 

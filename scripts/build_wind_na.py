@@ -324,6 +324,9 @@ def run():
 
 def _build(bounds, W, H):
     from geospatial_utils import draw_category_legend
+    # Fresh checkouts (CI runners) lack the gitignored output/raw dir —
+    # every GRIB/NetCDF fetch below writes there.
+    os.makedirs(RAW_DIR, exist_ok=True)
     LANDMASK = load_landonly()  # crisp: shoreline cut, no sea fringe
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
