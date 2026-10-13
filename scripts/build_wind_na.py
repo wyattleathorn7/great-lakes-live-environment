@@ -45,10 +45,11 @@ OVERLAY_NAME = "\U0001f4a8 LIVE WIND"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 
 # Strategic label anchors (lon, lat): the ORIGINAL Great Lakes fixed-city
-# anchors first (verbatim from build_wind.CITY_ANCHORS, so basin values sit
-# exactly where the original layer puts them), then major metros + corridor
-# towns across the wider NA footprint. Same font/size/seps/kt style as the
-# original split engine.
+# anchors verbatim from build_wind.CITY_ANCHORS (basin values sit exactly
+# where the original layer puts them), plus major metros across the wider
+# NA footprint in the SAME style/seps/font. No fixed lake-value anchors:
+# Canadian lakes get values from the SAME water extras engine as the basin
+# water (front-first + shuffled fill), never a separate sparse set.
 from build_wind import CITY_ANCHORS as _GL_CITY_ANCHORS
 GL_NA_ANCHORS = [(lon, lat) for (_name, lon, lat) in _GL_CITY_ANCHORS]
 METRO_ANCHORS = [
@@ -58,29 +59,25 @@ METRO_ANCHORS = [
     (-52.7, 47.6), (-157.8, 21.3), (-61.2, 14.6), (-90.5, 14.6),
 ]
 NA_CITY_ANCHORS = GL_NA_ANCHORS + METRO_ANCHORS
-# Fixed lake-value anchors (same white-mono kt style, same sep guards as
-# the city anchors): the Great Lakes basin is covered by _GL_CITY_ANCHORS;
-# these extend the identical fixed-value treatment to the large Canadian
-# lakes — Winnipeg + its scattered neighbours, Athabasca, Great Slave +
-# its scattered neighbours, Great Bear. Position fixed, value live.
-LAKE_ANCHORS = [
-    (-97.8, 51.2), (-97.0, 53.3),    # Winnipeg south / north basins
-    (-98.7, 51.0), (-100.3, 52.4),   # Manitoba, Winnipegosis
-    (-100.1, 53.6),                  # Cedar Lake
-    (-109.5, 59.2),                  # Athabasca
-    (-114.0, 61.5), (-110.8, 62.6),  # Slave main / east arm
-    (-113.3, 65.3),                  # Point Lake (Slave scattered)
-    (-120.5, 66.0), (-118.0, 65.8),  # Bear main / east
-]
 
 
-def paint_na_wind_labels(rgba, kt_field, bounds, label_step=64,
-                         font_size=7, max_labels=1200):
-    """Strategic kt values in the Great Lakes label style (white mono +
-    dark stroke): fixed city anchors first, then high-change extras on a
-    data-seeded jittered lattice with spacing guards. Returns
+def paint_na_wind_labels(rgba, kt_field, bounds, label_step=32,
+                         font_size=7, max_labels=700, extra_thresh_kt=4.0):
+    """Exact-copy of the Great Lakes split label engine (build_wind.
+    paint_wind_labels), ported to the NA canvas.
+
+    - OVER WATER (Great Lakes + Canadian lakes via lakemask): data-seeded
+      jittered step-32 candidates, front cells first (grad >= thresh,
+      sep 30), then shuffled spaced fill (sep 48). Same math as the
+      original temperature-generator emulation.
+    - OVER LAND: fixed strategic anchors (basin cities + NA metros) first
+      (sep 30), then high-change extras (sep 30 fronts, sep 48 fill).
+    Same white-mono + dark-stroke font/size, same alpha guards. Canadian
+    lakes are NOT a separate fixed set: they ride the water extras, so
+    the basin and the north look and act identically. Returns
     (rgba, n_strategic, n_fill)."""
     from build_wind import _draw_wind_label, _wind_label_font
+    from na_common import load_lakemask
     img = Image.fromarray(rgba)
     d = ImageDraw.Draw(img)
     font = _wind_label_font(font_size)
@@ -89,70 +86,166 @@ def paint_na_wind_labels(rgba, kt_field, bounds, label_step=64,
     if not ok.any():
         del d
         return np.array(img), 0, 0
+    try:
+        _lake = (load_lakemask() >= 0.5)
+        if _lake.shape != (H, W):
+            _lake = np.zeros((H, W), dtype=bool)
+        is_water = _lake & ok
+    except Exception:
+        is_water = np.zeros((H, W), dtype=bool)
     fin = kt_field[ok]
     seed = int(abs(float(fin.mean())) * 1000 + float(fin.std()) * 97) % (2 ** 32 - 1)
     rng = np.random.default_rng(seed)
-    placed = np.zeros((H, W), dtype=bool)
-    rr, cc = np.ogrid[:H, :W]
-
-    def claim(y, x, sep):
-        s = int(math.ceil(sep))
-        r0, r1 = max(0, y - s), min(H, y + s + 1)
-        c0, c1 = max(0, x - s), min(W, x + s + 1)
-        dy = rr[r0:r1, 0:1] - y
-        dx = cc[0:1, c0:c1] - x
-        return not placed[r0:r1, c0:c1][(dy * dy + dx * dx) <= sep * sep].any()
-
-    def mark(y, x, sep):
-        s = int(math.ceil(sep))
-        r0, r1 = max(0, y - s), min(H, y + s + 1)
-        c0, c1 = max(0, x - s), min(W, x + s + 1)
-        dy = rr[r0:r1, 0:1] - y
-        dx = cc[0:1, c0:c1] - x
-        placed[r0:r1, c0:c1][(dy * dy + dx * dx) <= sep * sep] = True
-
-    def cell_value(lon, lat, rad=3):
-        x = int((lon - bounds["lon_min"]) / (bounds["lon_max"] - bounds["lon_min"]) * W)
-        y = int((bounds["lat_max"] - lat) / (bounds["lat_max"] - bounds["lat_min"]) * H)
-        best = None
-        for dy in range(-rad, rad + 1):
-            for dx in range(-rad, rad + 1):
-                yy, xx = y + dy, x + dx
-                if 0 <= yy < H and 0 <= xx < W and ok[yy, xx]:
-                    best = float(kt_field[yy, xx])
-                    break
-            if best is not None:
-                break
-        return (y, x, best)
-
+    grad = np.zeros(kt_field.shape)
+    for dr, dc in ((-12, 0), (12, 0), (0, -12), (0, 12)):
+        shifted = np.roll(kt_field, shift=(-dr, -dc), axis=(0, 1))
+        diff = np.abs(kt_field - shifted)
+        both = ok & np.isfinite(shifted)
+        grad = np.maximum(grad, np.where(both, diff, 0.0))
+    step = 32  # identical lattice step to the original engine
+    placed = []
     n_strat = n_fill = 0
-    # Fixed anchors first: basin cities, then Canadian lake values, then
-    # continental metros — lakes outrank far metros in collisions.
-    for lon, lat in list(GL_NA_ANCHORS) + list(LAKE_ANCHORS) + list(METRO_ANCHORS):
-        y, x, v = cell_value(lon, lat)
-        if v is None or not (8 <= y < H - 8 and 8 <= x < W - 8):
-            continue
-        if claim(y, x, 30):
-            _draw_wind_label(d, x + 6, y - 12, f"{v:.0f}kt", font)
-            mark(y, x, 30)
-            n_strat += 1
-    # high-change extras on a jittered lattice
-    gy, gx = np.gradient(np.where(ok, kt_field, 0.0))
-    grad = np.hypot(gy, gx)
-    cand = []
-    for yy in range(label_step // 2, H, label_step):
-        for xx in range(label_step // 2, W, label_step):
-            jx = int(xx + (rng.random() - 0.5) * label_step * 0.5)
-            jy = int(yy + (rng.random() - 0.5) * label_step * 0.5)
-            if 8 <= jy < H - 8 and 8 <= jx < W - 8 and ok[jy, jx]:
-                cand.append((grad[jy, jx], jy, jx, float(kt_field[jy, jx])))
-    cand.sort(reverse=True)
-    for _, yy, xx, v in cand:
+
+    def _collides(x0, y0, x1, y1, pad=3):
+        for (a0, b0, a1, b1) in placed:
+            if not (x1 + pad < a0 or x0 - pad > a1 or y1 + pad < b0 or y0 - pad > b1):
+                return True
+        return False
+
+    def _put(cx, cy, text, sep):
+        tw = d.textlength(text, font=font)
+        th = font_size + 4
+        x = cx - tw / 2
+        y = cy - th / 2
+        if not (4 <= x < W - tw - 4 and 4 <= y < H - th - 4):
+            return False
+        if _collides(x, y, x + tw, y + th):
+            return False
+        for (a0, b0, a1, b1) in placed:
+            acx, acy = (a0 + a1) / 2, (b0 + b1) / 2
+            if math.hypot(acx - cx, acy - cy) < sep:
+                return False
+        for px, py in ((cx, cy), (x + 2, y + 2), (x + tw - 2, y + 2)):
+            ix, iy = int(np.clip(round(px), 0, W - 1)), int(np.clip(round(py), 0, H - 1))
+            if rgba[iy, ix, 3] == 0:
+                return False
+        if not np.isfinite(kt_field[int(np.clip(round(cy), 0, H - 1)),
+                                    int(np.clip(round(cx), 0, W - 1))]):
+            return False
+        _draw_wind_label(d, x, y, text, font)
+        placed.append((x, y, x + tw, y + th))
+        return True
+
+    def _snap_valid(r, c, water_wanted, rad=7):
+        for rad_i in range(rad + 1):
+            for dr in range(-rad_i, rad_i + 1):
+                for dc in (-rad_i, rad_i):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < H and 0 <= cc < W and ok[rr, cc] \
+                            and (is_water[rr, cc] if water_wanted else not is_water[rr, cc]) \
+                            and rgba[rr, cc, 3] > 0:
+                        return rr, cc
+            for dc in range(-rad_i + 1, rad_i):
+                for dr in (-rad_i, rad_i):
+                    rr, cc = r + dr, c + dc
+                    if 0 <= rr < H and 0 <= cc < W and ok[rr, cc] \
+                            and (is_water[rr, cc] if water_wanted else not is_water[rr, cc]) \
+                            and rgba[rr, cc, 3] > 0:
+                        return rr, cc
+        return None
+
+    # ---- PHASE 1: over-water extras (basin + Canadian lakes, same engine)
+    wcand = []
+    for r0 in range(0, H, step):
+        for c0 in range(0, W, step):
+            r = r0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            r, c = int(round(r)), int(round(c))
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if not ok[r, c] or rgba[r, c, 3] == 0:
+                continue
+            if not is_water[r, c]:
+                continue
+            wcand.append((grad[r, c], rng.random(), r, c))
+    wcand.sort(key=lambda t: (-t[0], t[1]))
+    for g, _, r, c in wcand:
         if n_strat + n_fill >= max_labels:
             break
-        if claim(yy, xx, 48):
-            _draw_wind_label(d, xx + 6, yy - 12, f"{v:.0f}kt", font)
-            mark(yy, xx, 48)
+        if g < extra_thresh_kt:
+            break
+        v = float(kt_field[r, c])
+        if not (0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}kt", sep=30):
+            n_strat += 1
+    wrest = [t for t in wcand if t[0] < extra_thresh_kt]
+    rng.shuffle(wrest)
+    for _, _, r, c in wrest:
+        if n_strat + n_fill >= max_labels:
+            break
+        v = float(kt_field[r, c])
+        if not (0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}kt", sep=48):
+            n_fill += 1
+
+    # ---- PHASE 2a: fixed strategic anchors over land (basin + metros)
+    lon_min, lon_max = bounds["lon_min"], bounds["lon_max"]
+    lat_min, lat_max = bounds["lat_min"], bounds["lat_max"]
+    for lon, lat in list(GL_NA_ANCHORS) + list(METRO_ANCHORS):
+        if n_strat + n_fill >= max_labels:
+            break
+        if not (lon_min <= lon <= lon_max and lat_min <= lat <= lat_max):
+            continue
+        c0 = int((lon - lon_min) / (lon_max - lon_min) * W)
+        r0 = int((lat_max - lat) / (lat_max - lat_min) * H)
+        if not (8 <= r0 < H - 8 and 8 <= c0 < W - 8):
+            continue
+        hit = _snap_valid(r0, c0, water_wanted=False)
+        if hit is None:
+            continue
+        r, c = hit
+        v = float(kt_field[r, c])
+        if not (0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}kt", sep=30):
+            n_strat += 1
+
+    # ---- PHASE 2b: land high-change extras (appear/disappear with wind)
+    lcand = []
+    for r0 in range(0, H, step):
+        for c0 in range(0, W, step):
+            r = r0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            c = c0 + step / 2.0 + (rng.random() - 0.5) * step * 0.9
+            r, c = int(round(r)), int(round(c))
+            if not (8 <= r < H - 8 and 8 <= c < W - 8):
+                continue
+            if not ok[r, c] or rgba[r, c, 3] == 0:
+                continue
+            if is_water[r, c]:
+                continue
+            lcand.append((grad[r, c], rng.random(), r, c))
+    lcand.sort(key=lambda t: (-t[0], t[1]))
+    for g, _, r, c in lcand:
+        if n_strat + n_fill >= max_labels:
+            break
+        if g < extra_thresh_kt:
+            break
+        v = float(kt_field[r, c])
+        if not (0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}kt", sep=30):
+            n_strat += 1
+    lrest = [t for t in lcand if t[0] < extra_thresh_kt]
+    rng.shuffle(lrest)
+    for _, _, r, c in lrest:
+        if n_strat + n_fill >= max_labels:
+            break
+        v = float(kt_field[r, c])
+        if not (0.0 <= v <= 120.0):
+            continue
+        if _put(c, r - 12, f"{v:.0f}kt", sep=48):
             n_fill += 1
     del d
     return np.array(img), n_strat, n_fill
@@ -392,7 +485,6 @@ def _build(bounds, W, H):
     # Fresh checkouts (CI runners) lack the gitignored output/raw dir —
     # every GRIB/NetCDF fetch below writes there.
     os.makedirs(RAW_DIR, exist_ok=True)
-    LANDMASK = load_landonly()  # crisp: shoreline cut, no sea fringe
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
@@ -452,15 +544,21 @@ def _build(bounds, W, H):
     if not ulayers:
         raise RuntimeError(f"no wind components from any source ({prov})")
 
-    # Seamless cross-fade where domains overlap (joint masks keep U/V
-    # weights identical), then one shared treatment.
-    U, own_u = feather_merge(ulayers, feather_px=12)
-    V, own_v = feather_merge(vlayers, feather_px=12)
-    own = despeckle_valid(own_u & own_v & np.isfinite(U) & np.isfinite(V), min_size=4)
-    U[~own] = np.nan
-    V[~own] = np.nan
-    Ud = gate_field_to_mask(smooth_field(U, size=5, passes=2), LANDMASK)
-    Vd = gate_field_to_mask(smooth_field(V, size=5, passes=2), LANDMASK)
+    # Exact-copy precedence (same as the original: first-valid wins, no
+    # blending, no smoothing): GLWU over water, then HRRR, then RRFS-NA,
+    # then GDPS gaps. The original renders raw binned values; smoothing
+    # would soften fronts and change streamlet paths, so none is applied.
+    U = np.full((H, W), np.nan)
+    V = np.full((H, W), np.nan)
+    owned = np.zeros((H, W), dtype=bool)
+    for gu, gv in zip([u for u, _ in ulayers], [v for _, v in vlayers]):
+        take = (~owned) & np.isfinite(gu) & np.isfinite(gv)
+        U[take] = gu[take]
+        V[take] = gv[take]
+        owned |= take
+    U[~owned] = np.nan
+    V[~owned] = np.nan
+    Ud, Vd = U, V
     spd = np.hypot(Ud, Vd)  # m/s; NaN where missing (never zero-filled)
     n_valid = int(np.isfinite(spd).sum())
     if n_valid == 0:
@@ -485,16 +583,20 @@ def _build(bounds, W, H):
     idx[m] = np.arange(int(m.sum()))
     rgba[m, :3] = np.where(lake[m][:, None], pal, vivid)
     rgba[m, 3] = np.where(lake[m], WIND_ALPHA_WATER, WIND_ALPHA_LAND)
-    # GL-style direction streamlets (brightness = knots) + strategic kt
-    # values, then the shared coastline cut (same rules as every layer).
+    # GL-style direction streamlets (brightness = knots, same pixel params
+    # as the original: seed_step 20, ds 3, 40 steps — same size/density per
+    # pixel, never enlarged) + exact-copy kt labels, then the original
+    # anti-fringe bleed (full rectangle: transparent only where missing,
+    # same as the original basin layer).
     from build_wind import paint_wind_streamlets
+    from geospatial_utils import bleed_rgb_into_transparent
     rgba, n_stream, n_heads = paint_wind_streamlets(
         rgba, np.where(m, Ud, np.nan), np.where(m, Vd, np.nan), np.where(m, kt, np.nan),
         seed_step=20, ds=3.0, max_steps=40, min_speed=0.5)
     rgba, n_strat, n_fill = paint_na_wind_labels(
         rgba, np.where(m, kt, np.nan), bounds,
-        label_step=64, font_size=7, max_labels=1200)
-    rgba = apply_coast_mask(rgba, LANDMASK)
+        label_step=32, font_size=7, max_labels=700, extra_thresh_kt=4.0)
+    rgba = bleed_rgb_into_transparent(rgba)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     print(f"[{PRODUCT}] streamlets={n_stream}/{n_heads} labels={n_strat}+{n_fill}")
     # Native-resolution basin inset: same merged field resampled to the
