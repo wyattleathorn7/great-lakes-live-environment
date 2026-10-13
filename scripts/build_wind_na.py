@@ -102,7 +102,7 @@ def paint_na_wind_labels(rgba, kt_field, bounds, label_step=32,
         diff = np.abs(kt_field - shifted)
         both = ok & np.isfinite(shifted)
         grad = np.maximum(grad, np.where(both, diff, 0.0))
-    step = 32  # identical lattice step to the original engine
+    step = label_step  # density-matched per degree (16 on NA ≈ 32 in basin)
     placed = []
     n_strat = n_fill = 0
 
@@ -394,71 +394,6 @@ def force_rgb(force):
     return _hex(FORCE_COLORS.get(int(force), "#808080"))
 
 
-def render_basin_tier(U, V, bounds, stage_prod):
-    """Native-resolution Great Lakes basin inset (1800x1175): the ORIGINAL
-    basin grid, ORIGINAL glyph engine, ORIGINAL params — the basin looks
-    exactly like the original basin product, painted from this run's merged
-    NA field (GLWU wins in-basin exactly as in the original precedence).
-    Returns (relpath, bounds4, stats). Caller must never fail the NA update
-    over this inset (wrap in try/except).
-    """
-    from geospatial_utils import (bleed_rgb_into_transparent,
-                                  load_bounds as _glb,
-                                  load_watermask as _lwm, save_png as _save)
-    from build_wind import (WIND_ALPHA_LAND, WIND_ALPHA_WATER,
-                            _vivid_for_land, inland_lake_mask,
-                            paint_wind_labels, paint_wind_streamlets)
-    from na_common import resample_wcs_to_canvas
-    glb = _glb()
-    W2, H2 = glb["canvas_width"], glb["canvas_height"]
-    dx = (bounds["lon_max"] - bounds["lon_min"]) / bounds["canvas_width"]
-    nlons = bounds["lon_min"] + (np.arange(bounds["canvas_width"]) + 0.5) * dx
-    dy = (bounds["lat_max"] - bounds["lat_min"]) / bounds["canvas_height"]
-    nlats = bounds["lat_min"] + (np.arange(bounds["canvas_height"]) + 0.5) * dy
-    Ub = resample_wcs_to_canvas(np.where(np.isfinite(U), U, np.nan),
-                                nlats, nlons, glb)
-    Vb = resample_wcs_to_canvas(np.where(np.isfinite(V), V, np.nan),
-                                nlats, nlons, glb)
-    kt = np.hypot(Ub, Vb) * MS_TO_KT
-    m = np.isfinite(kt)
-    fvec = np.vectorize(force_from_kt, otypes=[float])
-    field = np.full(kt.shape, np.nan)
-    field[m] = fvec(kt[m])
-    _wm = _lwm()
-    _lake = inland_lake_mask(glb, (H2, W2))
-    _water = (_wm >= 0.5) | _lake
-    lut_w = np.zeros((13, 3), dtype=np.uint8)
-    lut_l = np.zeros((13, 3), dtype=np.uint8)
-    for f in range(13):
-        lut_w[f] = force_rgb(f)
-        lut_l[f] = _vivid_for_land(FORCE_COLORS[f])
-    rgba = np.zeros((H2, W2, 4), dtype=np.uint8)
-    ook = np.isfinite(field)
-    fi = np.clip(np.round(field[ook]).astype(int), 0, 12)
-    _is_water = _water[ook]
-    rgba[ook, 0:3] = np.where(_is_water[:, None], lut_w[fi], lut_l[fi])
-    rgba[ook, 3] = WIND_ALPHA_LAND
-    _wfrac = np.maximum(_wm, _lake.astype(float))
-    _dual = np.round(WIND_ALPHA_LAND + (WIND_ALPHA_WATER - WIND_ALPHA_LAND)
-                     * _wfrac).astype(np.uint8)
-    _painted = rgba[:, :, 3] > 0
-    rgba[_painted, 3] = _dual[_painted]
-    rgba = bleed_rgb_into_transparent(rgba)
-    rgba, n_lines, n_heads = paint_wind_streamlets(
-        rgba, np.where(m, Ub, np.nan), np.where(m, Vb, np.nan),
-        np.where(m, kt, np.nan))
-    rgba, n_lab, n_extra = paint_wind_labels(
-        rgba, np.where(m, kt, np.nan), label_every=2, extra_step=64,
-        extra_thresh_kt=4.0, font_size=7)
-    rel = f"{PRODUCT}/basin.png"
-    _save(rgba, os.path.join(stage_prod, "basin.png"))
-    b4 = {"lon_min": glb["lon_min"], "lon_max": glb["lon_max"],
-          "lat_min": glb["lat_min"], "lat_max": glb["lat_max"]}
-    return rel, b4, {"streamlets": n_lines, "heads": n_heads,
-                     "labels": n_lab, "extra_labels": n_extra,
-                     "valid_cells": int(m.sum())}
-
-
 def main():
     try:
         return run()
@@ -583,37 +518,25 @@ def _build(bounds, W, H):
     idx[m] = np.arange(int(m.sum()))
     rgba[m, :3] = np.where(lake[m][:, None], pal, vivid)
     rgba[m, 3] = np.where(lake[m], WIND_ALPHA_WATER, WIND_ALPHA_LAND)
-    # GL-style direction streamlets (brightness = knots, same pixel params
-    # as the original: seed_step 20, ds 3, 40 steps — same size/density per
-    # pixel, never enlarged) + exact-copy kt labels, then the original
-    # anti-fringe bleed (full rectangle: transparent only where missing,
-    # same as the original basin layer).
+    # Same engines as the original, density-matched per degree (NA canvas
+    # is ~20 px/deg vs basin ~92 px/deg): streamlet seeds 12px and label
+    # lattice 16px give the same geographic spacing as the basin's 20px /
+    # 32px, so Canada and the south look like the original rectangle —
+    # never enlarged, never a sparse 4-5 values. Full rectangle:
+    # transparent only where missing, same as the original basin layer.
     from build_wind import paint_wind_streamlets
     from geospatial_utils import bleed_rgb_into_transparent
     rgba, n_stream, n_heads = paint_wind_streamlets(
         rgba, np.where(m, Ud, np.nan), np.where(m, Vd, np.nan), np.where(m, kt, np.nan),
-        seed_step=20, ds=3.0, max_steps=40, min_speed=0.5)
+        seed_step=12, ds=3.0, max_steps=40, min_speed=0.5)
     rgba, n_strat, n_fill = paint_na_wind_labels(
         rgba, np.where(m, kt, np.nan), bounds,
-        label_step=32, font_size=7, max_labels=700, extra_thresh_kt=4.0)
+        label_step=16, font_size=7, max_labels=1500, extra_thresh_kt=4.0)
     rgba = bleed_rgb_into_transparent(rgba)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     print(f"[{PRODUCT}] streamlets={n_stream}/{n_heads} labels={n_strat}+{n_fill}")
-    # Native-resolution basin inset: same merged field resampled to the
-    # ORIGINAL 1800x1175 grid through the ORIGINAL engine — the basin looks
-    # exactly like the original product. Inset failure never fails the NA
-    # update (continental base still publishes).
-    extras = []
-    basin_stats = {}
-    try:
-        rel, b4, basin_stats = render_basin_tier(U, V, bounds, stage_prod)
-        extras = [(rel, b4, 20)]
-        print(f"[{PRODUCT}] basin inset OK {basin_stats}")
-    except Exception as e:
-        traceback.print_exc()
-        print(f"[{PRODUCT}] basin inset FAILED ({type(e).__name__}: {e}); "
-              f"publishing continental base only.")
-        prov["basin_inset"] = f"unavailable: {type(e).__name__}: {e}"
+    # Single continental overlay only (no basin inset): one field, one
+    # engine, everywhere — no pasted rectangle, no seams.
 
     # Original Beaufort key rows, verbatim (same colors, same labels).
     key_rows = [(FORCE_COLORS[f], f"F{f} — {force_name(f)} ({force_range_text(f)})")
@@ -652,15 +575,12 @@ def _build(bounds, W, H):
     meta["source_id"] = src_id
     meta["source_version"] = source_token(src_id + json.dumps(prov, sort_keys=True))
     meta["na_bounds"] = bounds
-    meta["stats"] = {"valid_pixels": n_valid, "basin_inset": basin_stats}
-    if extras:
-        meta["extra_overlays"] = [{"png": e[0], "bounds": e[1],
-                                   "draw_order": e[2]} for e in extras]
+    meta["stats"] = {"valid_pixels": n_valid}
     token = meta["source_version"]
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2><p>{scale_html}</p>"
-                   f"<p>Basin inset at the original 1800x1175 resolution with "
-                   f"the original label/streamlet metrics; continental base "
-                   f"extends the same field everywhere else.</p>"
+                   f"<p>Single continental field at NA resolution; same Beaufort "
+                   f"colors, dual opacity, streamlet and label engines as the "
+                   f"original basin layer, density-matched per degree.</p>"
                    f"<p><b>Precedence:</b> {CONFIG_NA['precedence']}<br><b>Provenance:</b> {prov}</p>")
     meta["folder_html"] = folder_html
     write_metadata(stage_prod, meta)
@@ -671,8 +591,7 @@ def _build(bounds, W, H):
                          description_html(CONFIG_NA["title"], meta, SKIP_NOTE, block),
                          CONFIG_NA["refresh_interval_seconds"], token,
                          folder=(CONFIG_NA["title"], folder_html),
-                         out_dirs=outs["live"], meta=meta, bounds=bounds,
-                         extra_overlays=extras)
+                         out_dirs=outs["live"], meta=meta, bounds=bounds)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),
