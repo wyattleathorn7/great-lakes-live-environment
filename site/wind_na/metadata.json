@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP GLWU v2.1 surface U/V (Great Lakes water) + HRRR 3km 10m U/V + RRFS North American 10m U/V + ECCC GDPS fallback",
   "variable": "UGRD/VGRD 10m/surface, m/s -> kt x1.94384 -> WMO Beaufort 0-12",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
-  "data_time_utc": "2026-10-12 09:30 PM EDT",
-  "source_last_modified_utc": "{\"glwu\": \"unavailable: FileNotFoundError\", \"hrrr hrrr.20261013/00\": \"n=701862\", \"rrfs-na rrfs.20261012/00\": \"n=2632946\", \"gdps\": \"GDPS_15km_Wind_10m n=5273396\"}",
-  "processing_time_utc": "2026-10-12 09:30 PM EDT",
+  "data_time_utc": "2026-10-12 09:54 PM EDT",
+  "source_last_modified_utc": "{\"glwu 20261013/01\": \"n=13895\", \"hrrr hrrr.20261013/01\": \"n=701862\", \"rrfs-na rrfs.20261012/00\": \"n=2632946\", \"gdps\": \"GDPS_15km_Wind_10m n=5273396\"}",
+  "processing_time_utc": "2026-10-12 09:54 PM EDT",
   "units": "kt (Beaufort 0-12)",
   "spatial_resolution_source": "GLWU ~2.5km; HRRR 3km; RRFS 13km NA",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -22,7 +22,7 @@
   "color_scale_min": 0,
   "color_scale_max": 12,
   "color_scale_units": "Beaufort force",
-  "missing_data_treatment": "GLWU > HRRR > RRFS > GDPS(gaps) > transparent; missing never calm.",
+  "missing_data_treatment": "GLWU > HRRR > RRFS > GDPS(gaps) > transparent; missing never calm. Dual opacity (original finish): Great Lakes + major Canadian lakes (Bear, Slave, Winnipeg, Athabasca, Manitoba, Winnipegosis, Reindeer, Wollaston, Mistassini, Nettilling, Amadjuak, Dubawnt +) at water alpha 205 with exact Beaufort colors; other land at alpha 140 with saturation-boosted twins (single legend).",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "legend_size": [
@@ -110,8 +110,8 @@
       "color": "#3B0A54"
     }
   ],
-  "source_id": "na-wind-20261013-0130",
-  "source_version": "na-wind-20261013-0130-gdps-GDPS_15km_Wind_10m-n-5273396-glwu-unavailable-FileNotFoundError-hrrr-hrrr.20261013-00-n-701862-rrfs-na-rrfs.20261012-00-n-2632946",
+  "source_id": "na-wind-20261013-0154",
+  "source_version": "na-wind-20261013-0154-gdps-GDPS_15km_Wind_10m-n-5273396-glwu-20261013-01-n-13895-hrrr-hrrr.20261013-01-n-701862-rrfs-na-rrfs.20261012-00-n-2632946",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -128,5 +128,5 @@
   "stats": {
     "valid_pixels": 1481324
   },
-  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE</h2><p>WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. Same force always shows the same color.</p><p><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu': 'unavailable: FileNotFoundError', 'hrrr hrrr.20261013/00': 'n=701862', 'rrfs-na rrfs.20261012/00': 'n=2632946', 'gdps': 'GDPS_15km_Wind_10m n=5273396'}</p>"
+  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE</h2><p>WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. Same force always shows the same color.</p><p><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu 20261013/01': 'n=13895', 'hrrr hrrr.20261013/01': 'n=701862', 'rrfs-na rrfs.20261012/00': 'n=2632946', 'gdps': 'GDPS_15km_Wind_10m n=5273396'}</p>"
 }
