@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP GLWU v2.1 surface U/V (Great Lakes water) + HRRR 3km 10m U/V + RRFS North American 10m U/V + ECCC GDPS fallback",
   "variable": "UGRD/VGRD 10m/surface, m/s -> kt x1.94384 -> WMO Beaufort 0-12",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
-  "data_time_utc": "2026-10-14 01:30 AM EDT",
-  "source_last_modified_utc": "{\"glwu 20261014/01\": \"n=13895\", \"hrrr hrrr.20261014/04\": \"n=701862\", \"rrfs-na rrfs.20261014/00\": \"n=2632946\", \"gdps\": \"GDPS_15km_Wind_10m n=5273396\"}",
-  "processing_time_utc": "2026-10-14 01:31 AM EDT",
+  "data_time_utc": "2026-10-14 02:02 AM EDT",
+  "source_last_modified_utc": "{\"glwu 20261014/01\": \"n=13895\", \"hrrr hrrr.20261014/05\": \"n=701862\", \"rrfs-na rrfs.20261014/00\": \"n=2632946\", \"gdps\": \"GDPS_15km_Wind_10m n=5273396\"}",
+  "processing_time_utc": "2026-10-14 02:03 AM EDT",
   "units": "kt (Beaufort 0-12)",
   "spatial_resolution_source": "GLWU ~2.5km; HRRR 3km; RRFS 13km NA",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -110,8 +110,8 @@
       "color": "#3B0A54"
     }
   ],
-  "source_id": "na-wind-20261014-0530",
-  "source_version": "na-wind-20261014-0530-gdps-GDPS_15km_Wind_10m-n-5273396-glwu-20261014-01-n-13895-hrrr-hrrr.20261014-04-n-701862-rrfs-na-rrfs.20261014-00-n-2632946",
+  "source_id": "na-wind-20261014-0602",
+  "source_version": "na-wind-20261014-0602-gdps-GDPS_15km_Wind_10m-n-5273396-glwu-20261014-01-n-13895-hrrr-hrrr.20261014-05-n-701862-rrfs-na-rrfs.20261014-00-n-2632946",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -128,10 +128,10 @@
   "coverage_mode": "extended200",
   "stats": {
     "valid_pixels": 2792062,
-    "streamlets": 15533,
-    "heads": 4383,
+    "streamlets": 15490,
+    "heads": 4331,
     "labels": 1042,
-    "extra_labels": 149
+    "extra_labels": 165
   },
-  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE \u2014 Extended North America Coverage</h2><p>WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. Same force always shows the same color.</p><p><b>Coverage:</b> Extended North America Coverage<br><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu 20261014/01': 'n=13895', 'hrrr hrrr.20261014/04': 'n=701862', 'rrfs-na rrfs.20261014/00': 'n=2632946', 'gdps': 'GDPS_15km_Wind_10m n=5273396'}</p><p><b>Coverage Selector</b> \u2014 one coverage at a time (Pro switches exclusively; Web/app: uncheck the others):<br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Wind_Basin.kml\">Great Lakes Basin Coverage</a><br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Wind_NorthAmerica.kml\">North America Coverage</a><br>\u25c9 <b>Extended North America Coverage</b> (this view)<br>Add once: <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Wind_Coverage.kml\">Coverage collection file</a> (all three as toggles).</p>"
+  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE \u2014 Extended North America Coverage</h2><p>WIND \u2014 BEAUFORT SCALE (colors follow force, dark purple = Force 12 only). Speed m/s &rarr; kt (x1.94384) &rarr; WMO Beaufort 0-12. Arrows point TOWARD motion; calm (&lt;0.5 m/s) draws no arrow. Same force always shows the same color.</p><p><b>Coverage:</b> Extended North America Coverage<br><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu 20261014/01': 'n=13895', 'hrrr hrrr.20261014/05': 'n=701862', 'rrfs-na rrfs.20261014/00': 'n=2632946', 'gdps': 'GDPS_15km_Wind_10m n=5273396'}</p><p><b>Coverage Selector</b> \u2014 one coverage at a time (Pro switches exclusively; Web/app: uncheck the others):<br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Wind_Basin.kml\">Great Lakes Basin Coverage</a><br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Wind_NorthAmerica.kml\">North America Coverage</a><br>\u25c9 <b>Extended North America Coverage</b> (this view)<br>Add once: <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Wind_Coverage.kml\">Coverage collection file</a> (all three as toggles).</p>"
 }
