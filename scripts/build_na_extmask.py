@@ -87,19 +87,23 @@ SEA_FILL_POLY = [
     (-80.5, 30.5),
 ]
 
-# Eastern Pacific fill (operator's drawing, rounded in code): US West
-# Coast offshore + the full Hawaiian archipelago + the Eastern Pacific
-# tropical zone south of Mexico/Central America + the Bering Sea lobe.
-# Russian mainland inside is hard-cut afterwards.
+# Eastern Pacific fill (operator's drawing: West Coast offshore +
+# Hawaii waters + tropical zone south of Mexico/Central America, rounded
+# in code). Russian/South-American land inside is hard-cut afterwards.
 EAST_PACIFIC_POLY = [
-    (-128.0, 48.0), (-133.0, 43.0), (-131.0, 37.0), (-124.0, 31.0),
-    (-116.0, 25.0), (-110.0, 20.0), (-104.0, 15.0), (-98.0, 11.0),
-    (-93.0, 8.0), (-92.0, 5.0), (-100.0, 4.0), (-115.0, 4.0),
-    (-130.0, 6.0), (-145.0, 9.0), (-160.0, 13.0), (-172.0, 18.0),
-    (-179.0, 25.0), (-179.0, 35.0), (-176.0, 45.0), (-179.0, 52.0),
-    (-177.0, 58.0), (-172.0, 62.0), (-167.0, 60.0), (-170.0, 54.0),
-    (-166.0, 50.0), (-162.0, 49.0), (-150.0, 54.0), (-138.0, 56.0),
-    (-130.0, 52.0),
+    (-128.0, 48.0), (-134.0, 42.0), (-132.0, 35.0), (-124.0, 29.0),
+    (-115.0, 23.0), (-108.0, 18.0), (-101.0, 13.0), (-95.0, 9.0),
+    (-92.0, 6.0), (-92.0, 4.0), (-100.0, 4.0), (-115.0, 4.0),
+    (-130.0, 6.0), (-145.0, 9.0), (-160.0, 13.0), (-174.0, 18.0),
+    (-180.0, 24.0), (-180.0, 34.0), (-173.0, 40.0), (-165.0, 44.0),
+    (-158.0, 46.0), (-150.0, 48.0), (-140.0, 50.0), (-132.0, 50.0),
+]
+
+# Bering Sea lobe (operator's drawing: wraps the Aleutian chain, across
+# the southern Bering Sea to the Russian clip). Russia hard-cut applies.
+BERING_POLY = [
+    (-168.0, 58.0), (-172.0, 60.0), (-176.0, 60.0), (-179.0, 58.0),
+    (-179.0, 54.0), (-176.0, 52.0), (-172.0, 52.0), (-168.0, 54.0),
 ]
 
 # Small-island dots painted into kept land (each gets the full 200-mile
@@ -116,20 +120,36 @@ ISLET_DOTS = [
 ]
 
 
+def catmull_rom(pts, closed=False, samples=16):
+    """Spline smoothing that passes EXACTLY through every hand vertex
+    (max deviation from the drawn line: the rounding itself, far inside
+    the operator's +/-10 mile bend allowance). Replaces corner-cutting,
+    which carved bites out of long segments."""
+    import numpy as _np
+    p = [tuple(map(float, q)) for q in pts]
+    if closed:
+        p = p + [p[0], p[1], p[2]]
+    else:
+        p = [p[0]] + p + [p[-1]]
+    out = []
+    for i in range(1, len(p) - 2):
+        p0, p1, p2, p3 = p[i - 1], p[i], p[i + 1], p[i + 2]
+        for j in range(samples):
+            t = j / samples
+            t2, t3 = t * t, t * t * t
+            x = 0.5 * (2 * p1[0] + (-p0[0] + p2[0]) * t
+                       + (2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2
+                       + (-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3)
+            y = 0.5 * (2 * p1[1] + (-p0[1] + p2[1]) * t
+                       + (2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2
+                       + (-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3)
+            out.append((x, y))
+    out.append(p[-2])
+    return out
+
+
 def chaikin(pts, closed=False, iters=3):
-    """Corner-cutting smoothing: straight hand segments become rounded
-    boundaries so coverage never reads as a sharp cutout."""
-    pts = [(float(x), float(y)) for x, y in pts]
-    for _ in range(iters):
-        n = len(pts)
-        pairs = ([(pts[i], pts[(i + 1) % n]) for i in range(n)] if closed
-                 else [(pts[i], pts[i + 1]) for i in range(n - 1)])
-        out = []
-        for (ax, ay), (bx, by) in pairs:
-            out.append((0.75 * ax + 0.25 * bx, 0.75 * ay + 0.25 * by))
-            out.append((0.25 * ax + 0.75 * bx, 0.25 * ay + 0.75 * by))
-        pts = (out if closed else [pts[0]] + out + [pts[-1]])
-    return pts
+    raise RuntimeError("chaikin retired: use catmull_rom (exact vertices)")
 
 
 def load_country_shapes(shp_path, wanted):
@@ -259,16 +279,17 @@ def main(shp=None):
     xs = LON_MIN + (np.arange(W) + 0.5) * (LON_MAX - LON_MIN) / W
     ys = LAT_MAX - (np.arange(H) + 0.5) * (LAT_MAX - LAT_MIN) / H
 
-    # Full Gulf + Caribbean + Eastern Pacific water (operator coverage,
-    # Chaikin-rounded so no edge reads as a sharp cutout).
-    print("filling Gulf/Caribbean/Eastern-Pacific seas...")
-    a2[poly_mask(xs, ys, chaikin(SEA_FILL_POLY, closed=True))] = 1.0
-    a2[poly_mask(xs, ys, chaikin(EAST_PACIFIC_POLY, closed=True))] = 1.0
+    # Full Gulf + Caribbean + Eastern Pacific + Bering water (operator
+    # lines, spline-rounded through the exact vertices).
+    print("filling Gulf/Caribbean/Eastern-Pacific/Bering seas...")
+    a2[poly_mask(xs, ys, catmull_rom(SEA_FILL_POLY, closed=True))] = 1.0
+    a2[poly_mask(xs, ys, catmull_rom(EAST_PACIFIC_POLY, closed=True))] = 1.0
+    a2[poly_mask(xs, ys, catmull_rom(BERING_POLY, closed=True))] = 1.0
 
     # Open Atlantic east of the rounded cut line stays transparent —
     # water only (kept land such as Greenland/Bermuda is immune).
     print("cutting open Atlantic east of the line...")
-    cut = east_of_line(xs, ys, chaikin(CUT_LINE)) & ~kept_small
+    cut = east_of_line(xs, ys, catmull_rom(CUT_LINE)) & ~kept_small
     a2[cut] = 0.0
 
     # Hard shoreline cuts: South America, Russia, and every other
@@ -294,7 +315,7 @@ def main(shp=None):
         (-177.4, 28.2, "Midway", 1.0), (-178.4, 28.4, "Kure", 1.0),
         (-176.6, 51.9, "Adak", 1.0), (-46.0, 60.9, "EGreenland", 1.0),
         (-140.0, 15.0, "EPacific", 1.0), (-100.0, 8.0, "Tehuantepec", 1.0),
-        (-170.0, 58.0, "BeringSea", 1.0),
+        (-170.0, 58.0, "BeringSea", 1.0), (-175.0, 52.5, "AleutianWater", 1.0),
         (-60.0, 8.0, "VenezuelaLand", 0.0), (-74.0, 6.0, "ColombiaLand", 0.0),
         (-175.0, 67.0, "Chukotka", 0.0), (-40.0, 20.0, "openAtlantic", 0.0),
         (-30.0, 50.0, "midAtlanticN", 0.0), (-64.8, 32.3, "Bermuda", 1.0),
