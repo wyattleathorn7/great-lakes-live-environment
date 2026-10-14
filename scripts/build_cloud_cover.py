@@ -39,7 +39,12 @@ from gradient_scale import draw_scale_legend, render_rgba
 import goes_acm
 
 PRODUCT = "cloud_cover"
-CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+# Basin product deleted 2026-10-14 (superseded by cloud_cover_na);
+# retained as shared library for build_cloud_cover_na (CLOUD_STOPS, etc).
+try:
+    CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+except FileNotFoundError:
+    CONFIG = {}
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "Great_Lakes_Live_Cloud_Cover.kml"
 OVERLAY_NAME = "☁️ LIVE CLOUD COVER"

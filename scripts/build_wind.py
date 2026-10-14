@@ -51,7 +51,13 @@ from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
                                utcnow_iso, write_metadata, write_state)
 
 PRODUCT = "wind"
-CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+# Basin product deleted 2026-10-14 (superseded by wind_na); this module is
+# retained as a shared library for build_wind_na (CITY_ANCHORS, wind
+# rendering helpers). CONFIG is optional at import time.
+try:
+    CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+except FileNotFoundError:
+    CONFIG = {}
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "Great_Lakes_Live_Wind.kml"
 OVERLAY_NAME = "\U0001F4A8 LIVE WIND"

@@ -1,7 +1,7 @@
-# North American Expansion — four live gradients
+# Continental Expansion — four live gradients
 
 Supersedes the Great Lakes basin versions of Live Precipitation, Live Air
-Temperature, Live Cloud Cover, and Live Wind with North American
+Temperature, Live Cloud Cover, and Live Wind with Continental
 coverage on selectable boundaries. All other Great Lakes environmental
 layers are untouched.
 
@@ -9,27 +9,27 @@ layers are untouched.
 
 Every NA builder reads `coverage_mode` from its `config/*_na.json`:
 `basin` (original Great Lakes rectangle −93…−73.5 / 40.5…49.5),
-`landonly` (crisp NA land, no sea fringe — exactly the published NA air
-temperature zone), or `global` (worldwide 3600×1800 canvas, lon
-−180…180 / lat −90…90 at 0.10°/px — every valid pixel paints, gaps
-stay transparent, no mask cuts at all). Current defaults: wind,
-precipitation, and cloud cover use `global`; air temperature uses
-`landonly`. To change a layer's coverage, edit its config value and
-rebuild — no code changes needed.
+`landonly` (Continental Coverage: crisp worldwide land incl. Antarctica,
+ocean/seas cut — 3600×1800 global canvas), or `global` (worldwide
+3600×1800 canvas, lon −180…180 / lat −90…90 at 0.10°/px — every valid
+pixel paints, gaps stay transparent, no mask cuts at all). Current
+defaults: wind, precipitation, and cloud cover use `global`; air
+temperature uses `landonly`. To change a layer's coverage, edit its
+config value and rebuild — no code changes needed.
 
 ## Coverage switch (Google Earth)
 
 Each gradient's live folder holds all three coverages as hideable
-overlays — Great Lakes Basin, North America, Global —
+overlays — Great Lakes Basin, Continental, Global —
 with only the default switched on. The folder is marked radioFolder, so
 Google Earth Pro flips them exclusively; Web/app users check exactly
 one box. No links, no extra files: switching happens inside the folder
-you already added. Basin + North America are painted on the NA canvas
-from the same run's merged field; Global is painted worldwide on the
-3600×1800 canvas from the same sources (high-res nests where they
-exist, GDPS worldwide fill elsewhere), with the identical legend,
-colors, opacity, and per-degree label/streamlet density — per-coverage
-rasters under `site/<product>_{basin,northamerica,global}/`.
+you already added. Basin is painted on the NA canvas; Continental +
+Global are painted worldwide on the 3600×1800 canvas from the same
+sources (high-res nests where they exist, GDPS worldwide fill
+elsewhere), with the identical legend, colors, opacity, and per-degree
+label/streamlet density — per-coverage rasters under
+`site/<product>_{basin,continental,global}/`.
 
 ## Shared boundary (authoritative)
 
@@ -37,8 +37,9 @@ rasters under `site/<product>_{basin,northamerica,global}/`.
   3300×1600 px (0.05°/px), EPSG:4326. Read only via `scripts/na_bounds.py`.
 - `config/global_bounds.json` — lon −180…180, lat −90…90,
   3600×1800 px (0.10°/px, same grid as `aurora_global`), EPSG:4326. The
-  Global coverage variant; no mask, no cuts. Basin + North America
-  variants keep the NA canvas above.
+  Global + Continental variants; Global has no mask, Continental uses
+  `assets/global_landonly.npy` (crisp worldwide land incl. Antarctica).
+  Basin keeps the NA canvas above.
 - `config/north_america_coverage.geojson` — bbox enclosing the
   100-statute-mile (160.934 km) geodesic coastline buffer + included land
   (Alaska, Canadian mainland, Arctic islands, CONUS, Mexico, Central
@@ -62,14 +63,14 @@ rasters under `site/<product>_{basin,northamerica,global}/`.
   `precipitation` workflow jobs are `if: false`; fast-live runs the NA jobs.
 - Restore: see `archive/great_lakes_original/README.md`.
 
-## Active North American layers
+## Active Continental layers
 
 | Layer | Output | KML | Refresh |
 |---|---|---|---|
-| Live Precipitation — North America | `site/precipitation_na/` | `North_America_Live_Precipitation.kml` | 300 s |
-| Live Air Temperature — North America | `site/air_temperature_na/` | `North_America_Live_Air_Temperature.kml` | 3600 s |
-| Live Cloud Cover — North America | `site/cloud_cover_na/` | `North_America_Live_Cloud_Cover.kml` | 300 s |
-| Live Wind — North America | `site/wind_na/` | `North_America_Live_Wind.kml` | 900 s |
+| Live Precipitation — Continental | `site/precipitation_na/` | `Continental_Live_Precipitation.kml` | 300 s |
+| Live Air Temperature — Continental | `site/air_temperature_na/` | `Continental_Live_Air_Temperature.kml` | 3600 s |
+| Live Cloud Cover — Continental | `site/cloud_cover_na/` | `Continental_Live_Cloud_Cover.kml` | 300 s |
+| Live Wind — Continental | `site/wind_na/` | `Continental_Live_Wind.kml` | 900 s |
 
 Builders: `scripts/build_*_na.py` + shared `scripts/na_common.py`
 (WMS fetch, canvas binning with valid/missing separation, GRIB-missing

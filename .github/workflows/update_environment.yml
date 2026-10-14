@@ -13,10 +13,10 @@ on:
         default: "all"
         type: choice
         options: ["all", "environmental", "halfhourly", "hourly", "daily", "weekly", "yearly", "wave_height", "water_temperature", "ice_coverage",
-                    "ice_thickness", "ice_type", "wind", "leaf_color",
+                    "ice_thickness", "ice_type", "leaf_color",
                     "chlorophyll", "water_clarity", "solar_radiation",
-                    "air_temperature", "snow_coverage", "uv_index",
-                    "cloud_cover", "surface_pressure", "wave_direction", "wave_combined", "surface_currents", "precipitation", "aurora_global", "bacteria", "visibility", "humidity", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish",
+                    "snow_coverage", "uv_index",
+                    "surface_pressure", "wave_direction", "wave_combined", "surface_currents", "aurora_global", "bacteria", "visibility", "humidity", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish",
                     "wind_na", "air_temperature_na", "cloud_cover_na", "precipitation_na"]
 
 # Least privilege: product jobs only read the repo; only `publish` writes
@@ -192,41 +192,6 @@ jobs:
             kml/Great_Lakes_Live_Ice_Type.kml
           if-no-files-found: warn
 
-  wind:
-    # DISABLED 2026-10-11: Great Lakes basin wind superseded by wind_na.
-    # Preserved in archive/great_lakes_original/. Never re-enable without
-    # removing wind_na (duplicate-layer rule).
-    if: false
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Update wind
-        env:
-          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-        run: |
-          rc=0; python scripts/build_wind.py || rc=$?
-          if [ $rc -eq 2 ]; then echo "Wind source unavailable; previous raster kept."; exit 0; fi
-          exit $rc
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: site-wind
-          path: |
-            site/wind
-            output/state/wind.json
-            site/kml/Great_Lakes_Live_Wind.kml
-            site/kml/live/Great_Lakes_Live_Wind.kml
-            kml/Great_Lakes_Live_Wind.kml
-          if-no-files-found: warn
-
   leaf_color:
     if: ${{ (inputs.product == 'all' || inputs.product == 'weekly') || inputs.product == 'leaf_color' }}
     runs-on: ubuntu-24.04
@@ -359,41 +324,6 @@ jobs:
             output/state/solar_radiation
           if-no-files-found: warn
 
-  air_temperature:
-    # DISABLED 2026-10-11: Great Lakes basin air temperature superseded by
-    # air_temperature_na. See archive/great_lakes_original/.
-    if: false
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Update air temperature
-        env:
-          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-        run: |
-          rc=0; python scripts/build_air_temperature.py || rc=$?
-          if [ $rc -eq 2 ]; then echo "Air temp source unavailable; previous raster kept."; exit 0; fi
-          exit $rc
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: site-air_temperature
-          path: |
-            site/air_temperature
-            site/kml/Great_Lakes_Live_Air_Temperature.kml
-            site/kml/live/Great_Lakes_Live_Air_Temperature.kml
-            kml/Great_Lakes_Live_Air_Temperature.kml
-            output/state/air_temperature.json
-            output/state/air_temperature
-          if-no-files-found: warn
-
   snow_coverage:
     if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'snow_coverage' }}
     runs-on: ubuntu-24.04
@@ -458,40 +388,6 @@ jobs:
             kml/Great_Lakes_Live_UV_Index.kml
             output/state/uv_index.json
             output/state/uv_index
-          if-no-files-found: warn
-
-  cloud_cover:
-    # DISABLED 2026-10-11: Great Lakes basin cloud cover superseded by
-    # cloud_cover_na. See archive/great_lakes_original/.
-    if: false
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Update cloud cover
-        env:
-          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-        run: |
-          rc=0; python scripts/build_cloud_cover.py || rc=$?
-          if [ $rc -eq 2 ]; then echo "Cloud source unavailable; previous raster kept."; exit 0; fi
-          exit $rc
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: site-cloud_cover
-          path: |
-            site/cloud_cover
-            site/kml/Great_Lakes_Live_Cloud_Cover.kml
-            site/kml/live/Great_Lakes_Live_Cloud_Cover.kml
-            kml/Great_Lakes_Live_Cloud_Cover.kml
-            output/state/cloud_cover.json
           if-no-files-found: warn
 
   surface_pressure:
@@ -620,40 +516,6 @@ jobs:
             site/kml/live/Great_Lakes_Live_Surface_Currents.kml
             kml/Great_Lakes_Live_Surface_Currents.kml
             output/state/surface_currents.json
-          if-no-files-found: warn
-
-  precipitation:
-    # DISABLED 2026-10-11: Great Lakes basin precipitation superseded by
-    # precipitation_na. See archive/great_lakes_original/.
-    if: false
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Update precipitation
-        env:
-          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-        run: |
-          rc=0; python scripts/build_precipitation.py || rc=$?
-          if [ $rc -eq 2 ]; then echo "Precipitation source unavailable; previous raster kept."; exit 0; fi
-          exit $rc
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: site-precipitation
-          path: |
-            site/precipitation
-            site/kml/Great_Lakes_Live_Precipitation.kml
-            site/kml/live/Great_Lakes_Live_Precipitation.kml
-            kml/Great_Lakes_Live_Precipitation.kml
-            output/state/precipitation.json
           if-no-files-found: warn
 
   aurora_global:
@@ -972,12 +834,12 @@ jobs:
           path: |
             site/wind_na
             site/wind_na_basin
-            site/wind_na_northamerica
+            site/wind_na_continental
             site/wind_na_global
             output/state/wind_na.json
-            site/kml/North_America_Live_Wind.kml
-            site/kml/live/North_America_Live_Wind.kml
-            kml/North_America_Live_Wind.kml
+            site/kml/Continental_Live_Wind.kml
+            site/kml/live/Continental_Live_Wind.kml
+            kml/Continental_Live_Wind.kml
           if-no-files-found: warn
 
   air_temperature_na:
@@ -1007,11 +869,11 @@ jobs:
           path: |
             site/air_temperature_na
             site/air_temperature_na_basin
-            site/air_temperature_na_northamerica
+            site/air_temperature_na_continental
             site/air_temperature_na_global
-            site/kml/North_America_Live_Air_Temperature.kml
-            site/kml/live/North_America_Live_Air_Temperature.kml
-            kml/North_America_Live_Air_Temperature.kml
+            site/kml/Continental_Live_Air_Temperature.kml
+            site/kml/live/Continental_Live_Air_Temperature.kml
+            kml/Continental_Live_Air_Temperature.kml
             output/state/air_temperature_na.json
           if-no-files-found: warn
 
@@ -1042,11 +904,11 @@ jobs:
           path: |
             site/cloud_cover_na
             site/cloud_cover_na_basin
-            site/cloud_cover_na_northamerica
+            site/cloud_cover_na_continental
             site/cloud_cover_na_global
-            site/kml/North_America_Live_Cloud_Cover.kml
-            site/kml/live/North_America_Live_Cloud_Cover.kml
-            kml/North_America_Live_Cloud_Cover.kml
+            site/kml/Continental_Live_Cloud_Cover.kml
+            site/kml/live/Continental_Live_Cloud_Cover.kml
+            kml/Continental_Live_Cloud_Cover.kml
             output/state/cloud_cover_na.json
           if-no-files-found: warn
 
@@ -1077,11 +939,11 @@ jobs:
           path: |
             site/precipitation_na
             site/precipitation_na_basin
-            site/precipitation_na_northamerica
+            site/precipitation_na_continental
             site/precipitation_na_global
-            site/kml/North_America_Live_Precipitation.kml
-            site/kml/live/North_America_Live_Precipitation.kml
-            kml/North_America_Live_Precipitation.kml
+            site/kml/Continental_Live_Precipitation.kml
+            site/kml/live/Continental_Live_Precipitation.kml
+            kml/Continental_Live_Precipitation.kml
             output/state/precipitation_na.json
           if-no-files-found: warn
 
@@ -1155,7 +1017,7 @@ jobs:
           [ "$code" = "204" ] || echo "::warning::NOAA chain dispatch returned $code (expected 204)"
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, wind, leaf_color, chlorophyll, water_clarity, solar_radiation, air_temperature, snow_coverage, uv_index, cloud_cover, surface_pressure, wave_direction, wave_combined, surface_currents, precipitation, aurora_global, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, wind_na, air_temperature_na, cloud_cover_na, precipitation_na, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, leaf_color, chlorophyll, water_clarity, solar_radiation, snow_coverage, uv_index, surface_pressure, wave_direction, wave_combined, surface_currents, aurora_global, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, wind_na, air_temperature_na, cloud_cover_na, precipitation_na, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

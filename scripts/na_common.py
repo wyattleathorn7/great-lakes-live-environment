@@ -190,10 +190,11 @@ def load_extended():
 
 # Coverage switch shared by the four NA builders. Each product config
 # carries "coverage_mode": one of "basin" (original Great Lakes
-# rectangle), "landonly" (crisp NA land, no sea fringe), or "global"
-# (worldwide 3600x1800 canvas, valid data everywhere, transparent
-# elsewhere — replaced the former extended200 offshore mask). Deploy-time
-# switch: edit the product's config, rebuild, publish.
+# rectangle), "landonly" (Continental Coverage: crisp worldwide land
+# including Antarctica, ocean/seas cut — 3600x1800 global canvas), or
+# "global" (worldwide 3600x1800 canvas, valid data everywhere,
+# transparent elsewhere). Deploy-time switch: edit the product's config,
+# rebuild, publish.
 COVERAGE_MODES = ("basin", "landonly", "global")
 
 
@@ -209,7 +210,7 @@ def load_coverage_mask(mode):
         # Retired alias: extended200 became global (no mask cut).
         return None
     if mode == "landonly":
-        return load_landonly()
+        return load_continental()
     if mode == "basin":
         from na_bounds import load_na_bounds as _nab
         bounds = _nab()
@@ -272,9 +273,8 @@ def load_lakemask():
 
 
 def load_landonly():
-    """Crisp selected-country land, no offshore fringe (wind + air
-    temperature): 1.0 on kept land (Great Lakes included), 0.0 everywhere
-    else — shoreline and the Mexico border are hard cuts."""
+    """Legacy crisp NA land (kept for reference). Continental coverage now
+    uses load_continental() (worldwide land)."""
     global _LANDONLY
     if _LANDONLY is None:
         p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -283,6 +283,24 @@ def load_landonly():
             raise FileNotFoundError(f"NA land-only mask missing: {p}")
         _LANDONLY = np.load(p).astype(np.float32)
     return _LANDONLY
+
+
+_CONTINENTAL = None
+
+
+def load_continental():
+    """Continental Coverage mask: crisp worldwide land including
+    Antarctica, ocean/seas exactly 0 (assets/global_landonly.npy,
+    3600x1800 @ 0.10 deg, 1.0 on land incl. inland lakes, 0.0 on
+    ocean/seas). Hard cut, no feather — perfect ocean clipping."""
+    global _CONTINENTAL
+    if _CONTINENTAL is None:
+        p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                          "assets", "global_landonly.npy")
+        if not os.path.exists(p):
+            raise FileNotFoundError(f"Continental mask missing: {p}")
+        _CONTINENTAL = np.load(p).astype(np.float32)
+    return _CONTINENTAL
 
 
 def load_global_lakemask():

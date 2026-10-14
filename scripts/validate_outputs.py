@@ -39,8 +39,6 @@ PRODUCTS = {
                       "max_opaque_min": 0},  # off-season => transparent OK
     "ice_type": {"kml": "Great_Lakes_Live_Ice_Type.kml",
                  "max_opaque_min": 0},  # off-season => transparent OK
-    "wind": {"kml": "Great_Lakes_Live_Wind.kml",
-             "max_opaque_min": 10_000},
     "leaf_color": {"kml": "Great_Lakes_Live_Leaf_Color.kml",
                    "max_opaque_min": 10_000},
     "chlorophyll": {"kml": "Great_Lakes_Live_Chlorophyll.kml",
@@ -49,16 +47,10 @@ PRODUCTS = {
                       "max_opaque_min": 100},
     "solar_radiation": {"kml": "Great_Lakes_Live_Solar_Radiation.kml",
                         "max_opaque_min": 10_000},
-    "air_temperature": {"kml": "Great_Lakes_Live_Air_Temperature.kml",
-                        "max_opaque_min": 10_000},
     "snow_coverage": {"kml": "Great_Lakes_Live_Snow_Coverage.kml",
                        "max_opaque_min": 0},  # off-season => transparent OK
     "uv_index": {"kml": "Great_Lakes_Live_UV_Index.kml",
                  "max_opaque_min": 10_000},
-    "cloud_cover": {"kml": "Great_Lakes_Live_Cloud_Cover.kml",
-                      "max_opaque_min": 0},  # clear-sky day => transparent OK
-    "precipitation": {"kml": "Great_Lakes_Live_Precipitation.kml",
-                      "max_opaque_min": 0},  # dry over the basin => transparent OK
     "surface_pressure": {"kml": "Great_Lakes_Live_Surface_Pressure.kml",
                          "max_opaque_min": 10_000},
     "wave_direction": {"kml": "Great_Lakes_Live_Wave_Direction.kml",
@@ -85,13 +77,13 @@ PRODUCTS = {
             "max_opaque_min": 10_000},
     "dew_point": {"kml": "Great_Lakes_Live_Dew_Point.kml",
                   "max_opaque_min": 10_000},
-    "precipitation_na": {"kml": "North_America_Live_Precipitation.kml",
+    "precipitation_na": {"kml": "Continental_Live_Precipitation.kml",
                          "max_opaque_min": 0},  # dry continent => transparent OK
-    "cloud_cover_na": {"kml": "North_America_Live_Cloud_Cover.kml",
+    "cloud_cover_na": {"kml": "Continental_Live_Cloud_Cover.kml",
                        "max_opaque_min": 0},  # clear-sky => transparent OK
-    "air_temperature_na": {"kml": "North_America_Live_Air_Temperature.kml",
+    "air_temperature_na": {"kml": "Continental_Live_Air_Temperature.kml",
                            "max_opaque_min": 10_000},
-    "wind_na": {"kml": "North_America_Live_Wind.kml",
+    "wind_na": {"kml": "Continental_Live_Wind.kml",
                 "max_opaque_min": 10_000},
     "gamefish_walleye": {"kml": "WALLEYE_LIVE.kml",
                          "max_opaque_min": 10_000},
@@ -148,11 +140,11 @@ GLOBAL_GEOMETRY = {
         "edges": {"<north>": 90.0, "<south>": -90.0,
                   "<east>": 180.0, "<west>": -180.0},
     },
-    # Global is the default coverage: worldwide primaries. Air
-    # temperature defaults to North America Coverage (NA primary).
+    # Global + Continental are worldwide primaries. Air temperature
+    # defaults to Continental Coverage (worldwide land primary).
     "precipitation_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
     "cloud_cover_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
-    "air_temperature_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "air_temperature_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
     "wind_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
 }
 
@@ -240,13 +232,13 @@ def main():
                     # leaf grows on LAND: opaque must avoid open-lake water
                     bleed = int(((a[:, :, 3] > 0) & (mask > 250)).sum())
                     what = "open-lake water"
-                elif product in ("cloud_cover", "surface_pressure",
-                                   "uv_index", "air_temperature",
-                                   "solar_radiation", "precipitation",
+                elif product in ("surface_pressure",
+                                   "uv_index",
+                                   "solar_radiation",
                                    "aurora_global", "visibility", "humidity",
                                    "light_pollution",
                                    "air_quality", "condensation", "fog",
-                                    "dew_point", "wind",
+                                    "dew_point",
                                     "precipitation_na", "cloud_cover_na",
                                     "air_temperature_na", "wind_na",
                                     ):
@@ -298,13 +290,13 @@ def main():
                 failures.append(f"{product}: temp scale out of bounds {lo}-{hi}")
             if product == "ice_thickness" and not (0 <= lo < hi <= 50):
                 failures.append(f"{product}: thickness scale out of bounds {lo}-{hi}")
-            if product in ("wind", "wind_na") and (lo, hi) != (0, 12):
+            if product in ("wind_na") and (lo, hi) != (0, 12):
                 failures.append(f"{product}: wind scale must be Beaufort 0-12, got {lo}-{hi}")
             if product == "uv_index" and (lo, hi) != (0.0, 12.0):
                 failures.append(f"{product}: UV scale must be 0-12, got {lo}-{hi}")
-            if product in ("cloud_cover", "cloud_cover_na") and (lo, hi) != (0.0, 100.0):
+            if product in ("cloud_cover_na") and (lo, hi) != (0.0, 100.0):
                 failures.append(f"{product}: cloud scale must be 0-100 %, got {lo}-{hi}")
-            if product in ("precipitation", "precipitation_na") and (lo, hi) != (5.0, 75.0):
+            if product in ("precipitation_na") and (lo, hi) != (5.0, 75.0):
                 failures.append(f"{product}: precipitation scale must be 5-75 dBZ, got {lo}-{hi}")
             if product == "surface_pressure" and (lo, hi) != (980.0, 1040.0):
                 failures.append(f"{product}: pressure scale must be 980-1040 hPa, got {lo}-{hi}")
@@ -366,8 +358,7 @@ def main():
                 for _k in ("low", "high", "percentiles"):
                     if _k not in _h:
                         failures.append(f"{product}: historical missing '{_k}'")
-            if product in ("chlorophyll", "water_clarity", "solar_radiation",
-                           "air_temperature"):
+            if product in ("chlorophyll", "water_clarity", "solar_radiation"):
                 _h = meta.get("historical", {})
                 for _k in ("low", "high", "percentiles"):
                     if _k not in _h:
@@ -549,7 +540,7 @@ def main():
                         failures.append(f"{product}: want exactly one coverage "
                                         f"switched ON and two OFF in {kp}")
                     for _cov in ("Global Coverage",
-                                 "North America Coverage",
+                                 "Continental Coverage",
                                  "Great Lakes Basin Coverage"):
                         if _cov not in text:
                             failures.append(f"{product}: live KML missing "

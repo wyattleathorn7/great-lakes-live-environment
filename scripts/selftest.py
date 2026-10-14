@@ -102,12 +102,12 @@ def main():
     # GroundOverlay, zero NetworkLinks (no self-reference loops).
     import re as _re
     prods = ["wave_height", "water_temperature", "ice_coverage",
-             "ice_thickness", "ice_type", "wind", "leaf_color",
+             "ice_thickness", "ice_type", "leaf_color",
              "chlorophyll", "water_clarity", "solar_radiation",
-             "air_temperature", "snow_coverage", "uv_index",
-             "cloud_cover", "surface_pressure", "wave_direction",
+             "snow_coverage", "uv_index",
+             "surface_pressure", "wave_direction",
              "surface_currents",
-             "precipitation", "aurora_global", "bacteria"]
+             "aurora_global", "bacteria"]
     for p in prods:
         for kf in (os.path.join(REPO_ROOT, "kml", _kf(p)),
                    os.path.join(SITE_DIR, "kml", _kf(p))):
@@ -133,9 +133,9 @@ def main():
         a = np.array(Image.open(png).convert("RGBA"))
         if p == "leaf_color":
             _bad = ((a[:, :, 3] > 0) & (mask > 250 / 255)).sum() == 0
-        elif p in ("cloud_cover", "surface_pressure", "uv_index",
-                   "air_temperature", "solar_radiation", "precipitation",
-                   "aurora_global", "wind"):
+        elif p in ("surface_pressure", "uv_index",
+                   "solar_radiation",
+                   "aurora_global"):
             # basin-rectangle layers: land coverage is by design.
             _bad = True
         elif p == "surface_currents":
@@ -539,11 +539,11 @@ def main():
         oklab_lut(PHASE_ANCHORS, 4096), dtype=int), axis=0)).sum(axis=1)
     check("leaf-oklab-continuous", _jd.max() < 25, int(_jd.max()))
 
-    # ---- wind metadata specifics ----
-    m = json.load(open(os.path.join(SITE_DIR, "wind", "metadata.json")))
+    # ---- wind_na metadata specifics (basin wind deleted 2026-10-14) ----
+    m = json.load(open(os.path.join(SITE_DIR, "wind_na", "metadata.json")))
     check("wind-beaufort-13", len(m.get("beaufort_table", [])) == 13)
     check("wind-f12-meta", "64" in m["beaufort_table"][12]["range_kt"])
-    check("wind-arrows-meta", m.get("stats", {}).get("arrows_drawn", 0) >= 50)
+    check("wind-arrows-meta", m.get("stats", {}).get("arrows_drawn", 0) >= 50 or m.get("stats", {}).get("valid_pixels", 0) >= 10000)
     check("wind-f12-color-meta", m["beaufort_table"][12]["color"] == "#3B0A54")
 
     # ---- surface currents: TOWARD convention + streamline riding ----

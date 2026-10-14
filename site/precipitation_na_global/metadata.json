@@ -1,0 +1,56 @@
+{
+  "product": "precipitation_na_global",
+  "title": "LIVE PRECIPITATION \u2014 Global Coverage",
+  "freshness": "LIVE / CURRENT OBSERVATION (NEXRAD + ECCC NA radar, 5-6 min mosaic)",
+  "noaa_source": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it + ECCC GDPS 15km PrecipRate worldwide model fill (Global only)",
+  "product_name": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it + ECCC GDPS 15km PrecipRate worldwide model fill (Global only)",
+  "variable": "N0Q base reflectivity dBZ (IEM domain gaps); ECCC precipitation-rate rain (mm/h)/snow (cm/h) mapped to dBZ through the ECCC 14-color class rates with the NWS Z=300R^1.4 equivalence (equal ECCC colors = equal severity = equal dBZ for rain and snow). One 5-75 dBZ key for both sources.",
+  "source_url": "https://mesonet.agron.iastate.edu/current/radar.phtml",
+  "data_time_utc": "2026-10-14 20:10 UTC",
+  "source_last_modified_utc": "ECCC rain 2026-10-14T20:06:00Z; snow 2026-10-14T20:06:00Z",
+  "processing_time_utc": "2026-10-14 04:13 PM EDT",
+  "units": "dBZ (both sources on the original N0Q key)",
+  "spatial_resolution_source": "IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km NA composite 6-min (rates -> dBZ via NWS Z=300R^1.4); canvas 3300x1600 (0.05 deg/px)",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "crs": "EPSG:4326",
+  "render_bounds": {
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5
+  },
+  "color_scale_min": 5.0,
+  "color_scale_max": 75.0,
+  "color_scale_units": "dBZ",
+  "missing_data_treatment": "ECCC wins where RADAR_COVERAGE_*.INV is transparent (verified authoritative coverage); IEM N0Q fills ECCC gaps natively; 10-px cross-fade on the coverage edge; transparent elsewhere; never zero-filled.",
+  "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
+  "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
+  "legend_scale_html": "Precipitation intensity (NEXRAD N0Q base reflectivity, dBZ, OBSERVED radar echo): <b>LOWEST 5 Very Light</b> cyan/blue (drizzle, mist) &rarr; <b>Light</b> greens (~20-30: light rain/snow) &rarr; <b>Moderate</b> dark green (~30-40: steady rain/snow) &rarr; <b>Heavy</b> yellow/orange (~40-50: heavy rain) &rarr; <b>Severe</b> red (~50-60: severe storms, hail possible) &rarr; <b>Intense</b> magenta/purple (~60-70: violent storms, large hail) &rarr; <b>HIGHEST+ 70+ Extreme</b> white (destructive hail, debris). Same dBZ always shows the same color in every season \u2014 rain, snow, lake-effect snow, thunderstorms. No echo (no precipitation) stays see-through so the map underneath shows.",
+  "source_id": "na-precip-20261014-2010",
+  "source_version": "na-precip-20261014-2010",
+  "na_bounds": {
+    "canvas_height": 1800,
+    "canvas_width": 3600,
+    "crs": "EPSG:4326",
+    "lat_max": 90.0,
+    "lat_min": -90.0,
+    "lon_max": 180.0,
+    "lon_min": -180.0,
+    "note": "Authoritative common geography for the GLOBAL coverage variant of the four live gradients (wind_na, precipitation_na, cloud_cover_na, air_temperature_na). Same 0.10 deg/px grid as aurora_global. Basin + North America variants keep their existing canvases; only the former extended200 variant moves here. Areas without valid source data stay transparent.",
+    "resolution_deg_per_pixel": 0.1
+  },
+  "coverage_mode": "global",
+  "stats": {
+    "opaque_pixels": 4473257,
+    "transparent_pixels": 2006743,
+    "cloud_underlay": "ir-cache age=1164s; GDPS_15km_PrecipRate (m/s->mm/h) fill px=2018845"
+  },
+  "provenance": {
+    "iem_wms": "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=nexrad-n0q-900913&STYLES=&SRS=EPSG:4326&BBOX=-180.0,5.0,-15.0,85.0&WIDTH=3300&HEIGHT=1600&F",
+    "eccc_wms": "https://geo.weather.gc.ca/geomet",
+    "eccc_time_rain": "2026-10-14T20:06:00Z",
+    "eccc_time_snow": "2026-10-14T20:06:00Z",
+    "cloud_underlay": "ir-cache age=1164s; GDPS_15km_PrecipRate (m/s->mm/h) fill px=2018845"
+  },
+  "folder_html": "<h2>LIVE PRECIPITATION \u2014 Global Coverage</h2><p><b>Sources:</b> Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it + ECCC GDPS 15km PrecipRate worldwide model fill (Global only)<br><b>Precedence:</b> ECCC (rates -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; IEM N0Q (native rendering, itself the original legend) fills ECCC gaps; 10-px cross-fade on the coverage edge; transparent elsewhere. GDPS_15km_PrecipRate model fill (mm/h -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) where radar is blind, Global coverage only.<br><b>Coverage:</b> Global Coverage<br><b>Cloud underlay:</b> real GOES-19/18 Band-13 infrared satellite texture (ir-cache age=1164s; GDPS_15km_PrecipRate (m/s->mm/h) fill px=2018845)<br><b>Data time:</b> 2026-10-14 20:10 UTC</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25c9 <b>Global Coverage</b> (shown)<br>\u25cb Continental Coverage<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
+}

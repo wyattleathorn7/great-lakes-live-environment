@@ -38,7 +38,12 @@ from gradient_scale import (fmt_val,
 from hrrr import fetch_messages, latest_cycle, read_messages
 
 PRODUCT = "air_temperature"
-CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+# Basin product deleted 2026-10-14 (superseded by air_temperature_na);
+# retained as shared library for build_air_temperature_na (TEMP_BANDS, etc).
+try:
+    CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+except FileNotFoundError:
+    CONFIG = {}
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "Great_Lakes_Live_Air_Temperature.kml"
 OVERLAY_NAME = "\U0001F321\uFE0F LIVE AIR TEMPERATURE"

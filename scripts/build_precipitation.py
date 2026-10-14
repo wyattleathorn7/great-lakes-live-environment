@@ -53,7 +53,12 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, USER_AGENT, base_metadata,
 from geospatial_utils import _legend_font, draw_category_legend  # noqa: F401 (shared helpers)
 
 PRODUCT = "precipitation"
-CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+# Basin product deleted 2026-10-14 (superseded by precipitation_na);
+# retained as shared library for build_precipitation_na (KEY_ROWS, etc).
+try:
+    CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
+except FileNotFoundError:
+    CONFIG = {}
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "Great_Lakes_Live_Precipitation.kml"
 OVERLAY_NAME = "\U0001f327\ufe0f LIVE PRECIPITATION"

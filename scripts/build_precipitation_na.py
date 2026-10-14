@@ -44,10 +44,12 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata, now_det_str,
                               write_state)
 
 PRODUCT = "precipitation_na"
-CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", "precipitation.json")))
+# Basin config deleted 2026-10-14; only CONFIG_NA is used (KEY_ROWS/SCALE_HTML
+# come from build_precipitation shared library).
+CONFIG = {}
 CONFIG_NA = json.load(open(os.path.join(REPO_ROOT, "config", "precipitation_na.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
-KML_FILE = "North_America_Live_Precipitation.kml"
+KML_FILE = "Continental_Live_Precipitation.kml"
 OVERLAY_NAME = "\U0001f327\ufe0f LIVE PRECIPITATION"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 
@@ -441,16 +443,16 @@ def _build(scan_dt, source_id, bounds, W, H):
                     for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
                       for m in COVERAGE_DISPLAY}
-    VARIANT_BOUNDS = {"basin": bounds, "landonly": bounds, "global": gbounds,
+    VARIANT_BOUNDS = {"basin": bounds, "landonly": gbounds, "global": gbounds,
                       "extended200": gbounds}
-    # Per-variant composite: basin + NA use the NA radar composite
-    # (pixels identical to before); global uses the worldwide composite
-    # with GDPS model fill. Same key, same underlay engine.
-    VARIANT_BASE = {"basin": base, "landonly": base, "global": gbase,
+    # Per-variant composite: basin uses the NA radar composite;
+    # continental + global use the worldwide composite with GDPS model
+    # fill (continental additionally gated to worldwide land).
+    VARIANT_BASE = {"basin": base, "landonly": gbase, "global": gbase,
                     "extended200": gbase}
-    VARIANT_DIMS = {"basin": (W, H), "landonly": (W, H), "global": (GW, GH),
+    VARIANT_DIMS = {"basin": (W, H), "landonly": (GW, GH), "global": (GW, GH),
                     "extended200": (GW, GH)}
-    VARIANT_PROV = {"basin": cloud_prov, "landonly": cloud_prov,
+    VARIANT_PROV = {"basin": cloud_prov, "landonly": gcloud_prov,
                     "global": gcloud_prov, "extended200": gcloud_prov}
     data_time = scan_dt.strftime("%Y-%m-%d %H:%M UTC")
     subtitle = f"NA radar mosaic (IEM N0Q + ECCC RRAI/RSNO) + cloud underlay | {data_time}"

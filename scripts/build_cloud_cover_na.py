@@ -44,7 +44,7 @@ import goes_acm
 PRODUCT = "cloud_cover_na"
 CONFIG_NA = json.load(open(os.path.join(REPO_ROOT, "config", "cloud_cover_na.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
-KML_FILE = "North_America_Live_Cloud_Cover.kml"
+KML_FILE = "Continental_Live_Cloud_Cover.kml"
 OVERLAY_NAME = "☁️ LIVE CLOUD COVER"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 
@@ -333,7 +333,7 @@ def _build(bounds, W, H):
                     for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
                       for m in COVERAGE_DISPLAY}
-    VARIANT_BOUNDS = {"basin": bounds, "landonly": bounds, "global": gbounds,
+    VARIANT_BOUNDS = {"basin": bounds, "landonly": gbounds, "global": gbounds,
                       "extended200": gbounds}
     data_time = now_det_str()
     scale_html = ("Cloud cover (%, OBSERVED neighborhood fraction from "
@@ -348,11 +348,11 @@ def _build(bounds, W, H):
     src_id = f"na-cloud-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
     token = source_token(src_id + json.dumps(prov, sort_keys=True))
 
-    # Per-coverage rasters: the primary live folder references these
-    # PNGs as its three hideable overlays. Global renders worldwide.
+    # Per-coverage rasters: basin on NA canvas; continental + global on
+    # worldwide canvas (continental gated to worldwide land).
     for mode in COVERAGE_DISPLAY:
-        src_field = gfield_merged if mode == "global" else field
-        src_sat = gsat_valid if mode == "global" else sat_valid
+        src_field = gfield_merged if mode in ("global", "landonly") else field
+        src_sat = gsat_valid if mode in ("global", "landonly") else sat_valid
         field_m = gate_field_to_coverage(src_field, mode)
         n_mod = int(np.isfinite(field_m).sum()
                     - (np.isfinite(field_m) & src_sat).sum())
@@ -390,8 +390,8 @@ def _build(bounds, W, H):
             f"<b>Provenance:</b> {prov}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
 
-    src_field = gfield_merged if default_cover == "global" else field
-    src_sat = gsat_valid if default_cover == "global" else sat_valid
+    src_field = gfield_merged if default_cover in ("global", "landonly") else field
+    src_sat = gsat_valid if default_cover in ("global", "landonly") else sat_valid
     field = gate_field_to_coverage(src_field, default_cover)
     n_mod = int(np.isfinite(field).sum() - (np.isfinite(field) & src_sat).sum())
     n_sat = int(src_sat.sum())

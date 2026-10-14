@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>☁️ LIVE CLOUD COVER</name>
+    <description><![CDATA[<p><b>Status:</b> LIVE / CURRENT OBSERVATION + MODEL FILL (GOES FD 10-min + RRFS/GDPS fallback)</p><p><b>Source:</b> NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback<br/><a href="https://www.goes.noaa.gov/">https://www.goes.noaa.gov/</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of all other layers.</p><p><i>Not endorsed by NOAA.</i></p><p><b>Coverage</b> — one at a time, switched right here in this folder:<br>◉ <b>Global Coverage</b> (shown)<br>○ Continental Coverage<br>○ Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>]]></description>
+    <Folder>
+      <name>LIVE CLOUD COVER</name>
+      <description><![CDATA[<p><b>Coverage:</b> Global Coverage<br><b>Precedence:</b> 1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.<br><b>Provenance:</b> {'GOES-19': '2026-10-14 20:00Z valid-cells=3904271/g=2342887', 'GOES-18': '2026-10-14 20:00Z valid-cells=3435476/g=2343135', 'RRFS-TCDC': 'rrfs.20261014 n=2632946/g=1195390', 'GDPS-TCC': 'GDPS_15km_TotalCloudCover n=5273396/g=6479996'}</p><p><b>Coverage</b> — one at a time, switched right here in this folder:<br>◉ <b>Global Coverage</b> (shown)<br>○ Continental Coverage<br>○ Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>]]></description>
+      <Style>
+        <ListStyle>
+          <listItemType>radioFolder</listItemType>
+        </ListStyle>
+      </Style>
+      <GroundOverlay>
+        <name>☁️ LIVE CLOUD COVER</name>
+        <visibility>1</visibility>
+        <drawOrder>10</drawOrder>
+        <Icon>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/cloud_cover_na/current.png?v=na-cloud-20261014-2014-GDPS-TCC-GDPS_15km_TotalCloudCover-n-5273396-g-6479996-GOES-18-2026-10-14-20-00Z-valid-cells-3435476-g-2343135-GOES-19-2026-10-14-20-00Z-valid-cells-3904271-g-2342887-RRFS-TCDC-rrfs.20261014-n-2632946-g-1195390</href>
+          <refreshMode>onInterval</refreshMode>
+          <refreshInterval>300</refreshInterval>
+        </Icon>
+        <LatLonBox>
+          <north>90.0</north>
+          <south>-90.0</south>
+          <east>180.0</east>
+          <west>-180.0</west>
+        </LatLonBox>
+      </GroundOverlay>
+      <GroundOverlay>
+        <name>Continental Coverage</name>
+        <visibility>0</visibility>
+        <drawOrder>11</drawOrder>
+        <Icon>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/cloud_cover_na_continental/current.png?v=na-cloud-20261014-2014-GDPS-TCC-GDPS_15km_TotalCloudCover-n-5273396-g-6479996-GOES-18-2026-10-14-20-00Z-valid-cells-3435476-g-2343135-GOES-19-2026-10-14-20-00Z-valid-cells-3904271-g-2342887-RRFS-TCDC-rrfs.20261014-n-2632946-g-1195390</href>
+          <refreshMode>onInterval</refreshMode>
+          <refreshInterval>300</refreshInterval>
+        </Icon>
+        <LatLonBox>
+          <north>90.0</north>
+          <south>-90.0</south>
+          <east>180.0</east>
+          <west>-180.0</west>
+        </LatLonBox>
+      </GroundOverlay>
+      <GroundOverlay>
+        <name>Great Lakes Basin Coverage</name>
+        <visibility>0</visibility>
+        <drawOrder>12</drawOrder>
+        <Icon>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/cloud_cover_na_basin/current.png?v=na-cloud-20261014-2014-GDPS-TCC-GDPS_15km_TotalCloudCover-n-5273396-g-6479996-GOES-18-2026-10-14-20-00Z-valid-cells-3435476-g-2343135-GOES-19-2026-10-14-20-00Z-valid-cells-3904271-g-2342887-RRFS-TCDC-rrfs.20261014-n-2632946-g-1195390</href>
+          <refreshMode>onInterval</refreshMode>
+          <refreshInterval>300</refreshInterval>
+        </Icon>
+        <LatLonBox>
+          <north>85.0</north>
+          <south>5.0</south>
+          <east>-15.0</east>
+          <west>-180.0</west>
+        </LatLonBox>
+      </GroundOverlay>
+    </Folder>
+  </Document>
+</kml>

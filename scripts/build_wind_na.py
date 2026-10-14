@@ -40,7 +40,7 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata, now_det_str,
 PRODUCT = "wind_na"
 CONFIG_NA = json.load(open(os.path.join(REPO_ROOT, "config", "wind_na.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
-KML_FILE = "North_America_Live_Wind.kml"
+KML_FILE = "Continental_Live_Wind.kml"
 OVERLAY_NAME = "\U0001f4a8 LIVE WIND"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 
@@ -528,9 +528,10 @@ def _build(bounds, W, H):
                     for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
                       for m in COVERAGE_DISPLAY}
-    # Per-variant canvas: basin + landonly stay on the NA canvas;
-    # global renders worldwide (no mask, no lake cut).
-    VARIANT_BOUNDS = {"basin": bounds, "landonly": bounds, "global": gbounds,
+    # Per-variant canvas: basin stays on the NA canvas; landonly is now
+    # Continental Coverage on the worldwide canvas; global renders
+    # worldwide (no mask, no lake cut beyond NA lakes).
+    VARIANT_BOUNDS = {"basin": bounds, "landonly": gbounds, "global": gbounds,
                       "extended200": gbounds}
     variant_titles = {m: f"{CONFIG_NA['title']} \u2014 {COVERAGE_LABELS[m]}"
                       for m in COVERAGE_DISPLAY}
@@ -556,6 +557,8 @@ def _build(bounds, W, H):
         labels). Returns (rgba, kt_gated, stats)."""
         if mode == "global":
             return _render_global()
+        if mode == "landonly":
+            return _render_continental()
         Ug = gate_field_to_coverage(U, mode)
         Vg = gate_field_to_coverage(V, mode)
         spd_m = np.hypot(Ug, Vg)
@@ -612,6 +615,39 @@ def _build(bounds, W, H):
             rgba_g, np.where(m_g, kt_g, np.nan), gbounds,
             label_step=8, font_size=7, max_labels=1500, extra_thresh_kt=4.0)
         rgba_g = apply_coverage_mask(rgba_g, "global")
+        return rgba_g, kt_g, {"valid_pixels": int(m_g.sum()),
+                              "streamlets": n_stream, "heads": n_heads,
+                              "labels": n_strat, "extra_labels": n_fill}
+
+    def _render_continental():
+        """Continental Coverage on the worldwide canvas: same Beaufort
+        colors/streamlets/labels as global, but gated to crisp worldwide
+        land (incl. Antarctica, ocean/seas cut)."""
+        from build_wind import (WIND_ALPHA_LAND, WIND_ALPHA_WATER,
+                                _vivid_for_land)
+        from na_common import (gate_field_to_coverage, load_global_lakemask)
+        Ug_c = gate_field_to_coverage(UG, "landonly")
+        Vg_c = gate_field_to_coverage(VG, "landonly")
+        spd_g = np.hypot(Ug_c, Vg_c)
+        kt_g = spd_g * MS_TO_KT
+        m_g = np.isfinite(kt_g)
+        lake_g = load_global_lakemask() & m_g
+        forces_g = np.array([force_from_kt(x) for x in kt_g[m_g]])
+        pal_g = np.array([force_rgb(f) for f in forces_g], dtype=np.uint8)
+        vivid_g = np.array([_vivid_for_land(FORCE_COLORS[f]) for f in forces_g],
+                           dtype=np.uint8)
+        rgba_g = np.zeros((GH, GW, 4), dtype=np.uint8)
+        rgba_g[m_g, :3] = np.where(lake_g[m_g][:, None], pal_g, vivid_g)
+        rgba_g[m_g, 3] = np.where(lake_g[m_g], WIND_ALPHA_WATER,
+                                  WIND_ALPHA_LAND)
+        rgba_g, n_stream, n_heads = paint_wind_streamlets(
+            rgba_g, np.where(m_g, Ug_c, np.nan), np.where(m_g, Vg_c, np.nan),
+            np.where(m_g, kt_g, np.nan),
+            seed_step=6, ds=3.0, max_steps=40, min_speed=0.5)
+        rgba_g, n_strat, n_fill = paint_na_wind_labels(
+            rgba_g, np.where(m_g, kt_g, np.nan), gbounds,
+            label_step=8, font_size=7, max_labels=1500, extra_thresh_kt=4.0)
+        rgba_g = apply_coverage_mask(rgba_g, "landonly")
         return rgba_g, kt_g, {"valid_pixels": int(m_g.sum()),
                               "streamlets": n_stream, "heads": n_heads,
                               "labels": n_strat, "extra_labels": n_fill}

@@ -45,7 +45,7 @@ from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata, now_det_str,
 PRODUCT = "air_temperature_na"
 CONFIG_NA = json.load(open(os.path.join(REPO_ROOT, "config", "air_temperature_na.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
-KML_FILE = "North_America_Live_Air_Temperature.kml"
+KML_FILE = "Continental_Live_Air_Temperature.kml"
 OVERLAY_NAME = "\U0001f321\ufe0f LIVE AIR TEMPERATURE"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 K2F = lambda k: (k - 273.15) * 9.0 / 5.0 + 32.0
@@ -234,17 +234,17 @@ def _build(bounds, W, H, prev):
                     for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
                       for m in COVERAGE_DISPLAY}
-    VARIANT_BOUNDS = {"basin": bounds, "landonly": bounds, "global": gbounds,
+    VARIANT_BOUNDS = {"basin": bounds, "landonly": gbounds, "global": gbounds,
                       "extended200": gbounds}
     data_time = now_det_str()
     scale_html = SCALE_HTML
     src_id = f"na-tmp-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
     token = source_token(src_id + json.dumps(prov, sort_keys=True))
 
-    # Per-coverage rasters: the primary live folder references these
-    # PNGs as its three hideable overlays. Global renders worldwide.
+    # Per-coverage rasters: basin on NA canvas; continental + global on
+    # worldwide canvas (continental gated to worldwide land).
     for mode in COVERAGE_DISPLAY:
-        src = disp_global if mode == "global" else disp_full
+        src = disp_global if mode in ("global", "landonly") else disp_full
         disp_m = gate_field_to_coverage(src, mode)
         n_valid_m = int(np.isfinite(disp_m).sum())
         print(f"[{PRODUCT}] variant {mode}: px={n_valid_m}")
@@ -278,10 +278,10 @@ def _build(bounds, W, H, prev):
             f"<b>Provenance:</b> {prov}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
 
-    disp_src = disp_global if default_cover == "global" else disp_full
+    disp_src = disp_global if default_cover in ("global", "landonly") else disp_full
     disp = gate_field_to_coverage(disp_src, default_cover)
     n_valid = int(np.isfinite(disp).sum())
-    def_h, def_w = (GH, GW) if default_cover == "global" else (H, W)
+    def_h, def_w = (GH, GW) if default_cover in ("global", "landonly") else (H, W)
     print(f"[{PRODUCT}] display px={n_valid} "
           f"({100.0*n_valid/(def_w*def_h):.2f}%) prov={prov}")
 
