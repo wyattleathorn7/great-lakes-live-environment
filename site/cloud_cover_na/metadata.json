@@ -6,9 +6,9 @@
   "product_name": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
   "variable": "BCM binary mask (0=clear_or_probably_clear, 1=cloudy_or_probably_cloudy) gated DQF==0 -> % per canvas neighborhood; model TCDC % in fallback domain",
   "source_url": "https://www.goes.noaa.gov/",
-  "data_time_utc": "2026-10-13 12:19 PM EDT",
-  "source_last_modified_utc": "{\"GOES-19\": \"2026-10-13 16:00Z valid-cells=3904271\", \"GOES-18\": \"2026-10-13 16:00Z valid-cells=3435426\", \"RRFS-TCDC\": \"rrfs.20261013 n=2632946\", \"GDPS-TCC\": \"GDPS_15km_TotalCloudCover n=5273396\"}",
-  "processing_time_utc": "2026-10-13 12:19 PM EDT",
+  "data_time_utc": "2026-10-14 10:07 AM EDT",
+  "source_last_modified_utc": "{\"GOES-19\": \"2026-10-14 13:50Z valid-cells=3904271\", \"GOES-18\": \"2026-10-14 13:50Z valid-cells=3435426\", \"RRFS-TCDC\": \"rrfs.20261014 n=2632946\", \"GDPS-TCC\": \"GDPS_15km_TotalCloudCover n=5273396\"}",
+  "processing_time_utc": "2026-10-14 10:08 AM EDT",
   "units": "%",
   "spatial_resolution_source": "GOES FD ~2km; RRFS 13km NA; canvas 3300x1600",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,8 +30,8 @@
     230
   ],
   "legend_scale_html": "Cloud cover (%, OBSERVED neighborhood fraction from GOES: share of 2 km satellite pixels flagged cloudy around each point): <b>LOWEST 0 clear</b> transparent &rarr; thin cloud <b>dark-blue/blue/cyan</b> &rarr; <b>40 green</b> &rarr; <b>55 yellow</b> &rarr; <b>70 orange</b> &rarr; <b>82 red</b> &rarr; <b>90 magenta</b> &rarr; <b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same color; clear areas stay see-through. Satellite retrieval where GOES is valid, model fill elsewhere (see provenance).",
-  "source_id": "na-cloud-20261013-1619",
-  "source_version": "na-cloud-20261013-1619-GDPS-TCC-GDPS_15km_TotalCloudCover-n-5273396-GOES-18-2026-10-13-16-00Z-valid-cells-3435426-GOES-19-2026-10-13-16-00Z-valid-cells-3904271-RRFS-TCDC-rrfs.20261013-n-2632946",
+  "source_id": "na-cloud-20261014-1407",
+  "source_version": "na-cloud-20261014-1407-GDPS-TCC-GDPS_15km_TotalCloudCover-n-5273396-GOES-18-2026-10-14-13-50Z-valid-cells-3435426-GOES-19-2026-10-14-13-50Z-valid-cells-3904271-RRFS-TCDC-rrfs.20261014-n-2632946",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -50,5 +50,5 @@
     "satellite_pixels": 4846329,
     "model_fill_pixels": 276587
   },
-  "folder_html": "<h2>LIVE CLOUD COVER</h2><p><b>Coverage:</b> Extended North America Coverage<br><b>Precedence:</b> 1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.<br><b>Provenance:</b> {'GOES-19': '2026-10-13 16:00Z valid-cells=3904271', 'GOES-18': '2026-10-13 16:00Z valid-cells=3435426', 'RRFS-TCDC': 'rrfs.20261013 n=2632946', 'GDPS-TCC': 'GDPS_15km_TotalCloudCover n=5273396'}</p><p><b>Coverage Selector</b> \u2014 pick one coverage at a time:<br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Cloud_Cover_Basin.kml\">Great Lakes Basin Coverage</a><br>\u25cb <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Cloud_Cover_NorthAmerica.kml\">North America Coverage</a><br>\u25c9 <b>Extended North America Coverage</b> (this view)<br>Pro switches automatically. In Web/app, open the <b>Coverage Selector folder</b> in Layers and check exactly one box.<br>Add once: <a href=\"https://wyattleathorn7.github.io/great-lakes-live-environment/kml/North_America_Live_Cloud_Cover_Coverage.kml\">Coverage collection file</a> (all three as toggles).</p>"
+  "folder_html": "<h2>LIVE CLOUD COVER</h2><p><b>Coverage:</b> Extended North America Coverage<br><b>Precedence:</b> 1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.<br><b>Provenance:</b> {'GOES-19': '2026-10-14 13:50Z valid-cells=3904271', 'GOES-18': '2026-10-14 13:50Z valid-cells=3435426', 'RRFS-TCDC': 'rrfs.20261014 n=2632946', 'GDPS-TCC': 'GDPS_15km_TotalCloudCover n=5273396'}</p><p><b>Coverage Selector</b> \u2014 one coverage at a time:<br>\u25cb Great Lakes Basin Coverage<br>\u25cb North America Coverage<br>\u25c9 <b>Extended North America Coverage</b> (this view)<br>Pro switches automatically. In Web/app, open the <b>Coverage Selector folder</b> in Layers and check exactly one box.</p>"
 }
