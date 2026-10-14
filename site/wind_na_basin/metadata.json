@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP GLWU v2.1 surface U/V (Great Lakes water) + HRRR 3km 10m U/V + RRFS North American 10m U/V + ECCC GDPS fallback",
   "variable": "UGRD/VGRD 10m/surface, m/s -> kt x1.94384 -> WMO Beaufort 0-12",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
-  "data_time_utc": "2026-10-14 12:00 AM EDT",
+  "data_time_utc": "2026-10-14 12:30 AM EDT",
   "source_last_modified_utc": "{\"glwu 20261014/01\": \"n=13895\", \"hrrr hrrr.20261014/03\": \"n=701862\", \"rrfs-na rrfs.20261014/00\": \"n=2632946\", \"gdps\": \"GDPS_15km_Wind_10m n=5273396\"}",
-  "processing_time_utc": "2026-10-14 12:00 AM EDT",
+  "processing_time_utc": "2026-10-14 12:30 AM EDT",
   "units": "kt (Beaufort 0-12)",
   "spatial_resolution_source": "GLWU ~2.5km; HRRR 3km; RRFS 13km NA",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -110,8 +110,8 @@
       "color": "#3B0A54"
     }
   ],
-  "source_id": "na-wind-20261014-0400",
-  "source_version": "na-wind-20261014-0400-gdps-GDPS_15km_Wind_10m-n-5273396-glwu-20261014-01-n-13895-hrrr-hrrr.20261014-03-n-701862-rrfs-na-rrfs.20261014-00-n-2632946",
+  "source_id": "na-wind-20261014-0430",
+  "source_version": "na-wind-20261014-0430-gdps-GDPS_15km_Wind_10m-n-5273396-glwu-20261014-01-n-13895-hrrr-hrrr.20261014-03-n-701862-rrfs-na-rrfs.20261014-00-n-2632946",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
