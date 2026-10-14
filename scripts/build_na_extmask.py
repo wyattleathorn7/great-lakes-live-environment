@@ -59,16 +59,18 @@ KEPT = NA_COUNTRIES | CAM_COUNTRIES
 # France): keep ONLY the pieces inside this Caribbean box.
 FRA_CARIBBEAN_BOX = (-70.0, 10.0, -58.0, 19.0)  # lon_min, lat_min, lon_max, lat_max
 
-# Refined Atlantic cut line (operator's drawing, refined to keep the
-# entire Leeward chain west of the cut): open Atlantic east of this
-# polyline stays transparent (applied below lat 31 so Bermuda and the
-# northern offshore keep their 200-mile rule).
+# Refined Atlantic cut line (operator's drawings): Greenland Sea down
+# the open Atlantic to Guyana. Ocean east of this polyline stays
+# transparent; kept land (Greenland, Bermuda, the Leewards) is immune
+# via the kept-land guard, so only water is ever cut.
 CUT_LINE = [
-    (-80.8, 32.3), (-78.5, 29.5), (-75.5, 26.0), (-72.0, 23.0),
+    (-40.0, 68.0), (-42.0, 64.0), (-44.0, 60.0), (-47.0, 56.0),
+    (-50.0, 51.0), (-53.0, 46.0), (-56.0, 41.0), (-59.0, 37.0),
+    (-62.0, 33.5), (-66.0, 32.0), (-70.0, 31.0), (-74.0, 30.0),
+    (-78.5, 29.5), (-75.5, 26.0), (-72.0, 23.0),
     (-68.5, 20.8), (-64.5, 19.5), (-61.9, 18.2), (-60.5, 15.5),
     (-59.2, 12.5), (-60.0, 9.0), (-59.0, 6.0),
 ]
-CUT_LAT_MAX = 31.0
 
 # Marginal-seas fill (operator's coverage: full Gulf of Mexico/America +
 # Caribbean Sea up to the South American shoreline). South-American and
@@ -84,6 +86,50 @@ SEA_FILL_POLY = [
     (-85.0, 30.0), (-82.5, 28.0), (-81.0, 25.5), (-80.0, 27.5),
     (-80.5, 30.5),
 ]
+
+# Eastern Pacific fill (operator's drawing, rounded in code): US West
+# Coast offshore + the full Hawaiian archipelago + the Eastern Pacific
+# tropical zone south of Mexico/Central America + the Bering Sea lobe.
+# Russian mainland inside is hard-cut afterwards.
+EAST_PACIFIC_POLY = [
+    (-128.0, 48.0), (-133.0, 43.0), (-131.0, 37.0), (-124.0, 31.0),
+    (-116.0, 25.0), (-110.0, 20.0), (-104.0, 15.0), (-98.0, 11.0),
+    (-93.0, 8.0), (-92.0, 5.0), (-100.0, 4.0), (-115.0, 4.0),
+    (-130.0, 6.0), (-145.0, 9.0), (-160.0, 13.0), (-172.0, 18.0),
+    (-179.0, 25.0), (-179.0, 35.0), (-176.0, 45.0), (-179.0, 52.0),
+    (-177.0, 58.0), (-172.0, 62.0), (-167.0, 60.0), (-170.0, 54.0),
+    (-166.0, 50.0), (-162.0, 49.0), (-150.0, 54.0), (-138.0, 56.0),
+    (-130.0, 52.0),
+]
+
+# Small-island dots painted into kept land (each gets the full 200-mile
+# buffer): the full Hawaiian archipelago to Kure (the state was missing
+# beyond the main islands) + far-west Aleutians/Bering Sea islets that
+# 50 m data undersamples. (lon, lat) with a 0.15 deg disc.
+ISLET_DOTS = [
+    (-159.5, 22.0), (-160.2, 21.9), (-161.9, 23.1), (-163.9, 23.0),
+    (-164.6, 23.6), (-166.3, 23.9), (-166.0, 25.0), (-170.6, 25.4),
+    (-171.7, 25.8), (-173.9, 26.0), (-175.8, 27.8), (-177.4, 28.2),
+    (-178.4, 28.4),
+    (-179.6, 51.8), (-178.0, 51.6), (-176.6, 51.9), (-174.0, 52.3),
+    (-170.5, 63.5), (-172.9, 60.4), (-170.2, 57.1), (-166.0, 60.5),
+]
+
+
+def chaikin(pts, closed=False, iters=3):
+    """Corner-cutting smoothing: straight hand segments become rounded
+    boundaries so coverage never reads as a sharp cutout."""
+    pts = [(float(x), float(y)) for x, y in pts]
+    for _ in range(iters):
+        n = len(pts)
+        pairs = ([(pts[i], pts[(i + 1) % n]) for i in range(n)] if closed
+                 else [(pts[i], pts[i + 1]) for i in range(n - 1)])
+        out = []
+        for (ax, ay), (bx, by) in pairs:
+            out.append((0.75 * ax + 0.25 * bx, 0.75 * ay + 0.25 * by))
+            out.append((0.25 * ax + 0.75 * bx, 0.25 * ay + 0.75 * by))
+        pts = (out if closed else [pts[0]] + out + [pts[-1]])
+    return pts
 
 
 def load_country_shapes(shp_path, wanted):
@@ -157,12 +203,11 @@ def poly_mask(xs, ys, poly):
         np.stack([xx.ravel(), yy.ravel()], axis=1)).reshape(xx.shape)
 
 
-def east_of_line(xs, ys):
-    """True where a cell is east of CUT_LINE (open Atlantic side), for
-    latitudes below CUT_LAT_MAX. Above it the 200-mile rule owns."""
+def east_of_line(xs, ys, line):
+    """True where a cell is east of a cut polyline (open-ocean side)."""
     import numpy as _np
-    lons = _np.array([p[0] for p in CUT_LINE])
-    lats = _np.array([p[1] for p in CUT_LINE])
+    lons = _np.array([p[0] for p in line])
+    lats = _np.array([p[1] for p in line])
     yy = ys[:, None]
     line_lon = _np.full((len(ys), 1), _np.nan)
     for i in range(len(lons) - 1):
@@ -172,7 +217,7 @@ def east_of_line(xs, ys):
             continue
         t = (yy[band, 0] - lats[i]) / (lats[i + 1] - lats[i])
         line_lon[band, 0] = lons[i] + t * (lons[i + 1] - lons[i])
-    return (ys[:, None] < CUT_LAT_MAX) & _np.isfinite(line_lon) & (xs[None, :] > line_lon)
+    return _np.isfinite(line_lon) & (xs[None, :] > line_lon)
 
 
 def main(shp=None):
@@ -195,23 +240,36 @@ def main(shp=None):
     w2, h2 = W * SUPER, H * SUPER
     print(f"rasterizing kept land {w2}x{h2}...")
     land = rasterize_land(geoms, w2, h2)
+    # Small-island dots: full Hawaiian archipelago + far-west
+    # Aleutian/Bering islets (0.15 deg discs; each owns a 200-mile zone).
+    res_deg = (LON_MAX - LON_MIN) / w2
+    _yy, _xx = np.ogrid[:h2, :w2]
+    for lon, lat in ISLET_DOTS:
+        _cx = (lon - LON_MIN) / (LON_MAX - LON_MIN) * w2
+        _cy = (LAT_MAX - lat) / (LAT_MAX - LAT_MIN) * h2
+        _r = 0.15 / res_deg
+        land[(_yy - _cy) ** 2 + (_xx - _cx) ** 2 <= _r * _r] = True
     print(f"kept-land frac: {land.mean():.4f}")
     print("distance transform (banded)...")
-    res_deg = (LON_MAX - LON_MIN) / w2
     dist = ocean_distance_km(land, res_deg)
     alpha = 1.0 - smoothstep(BUFFER_KM, FEATHER_KM, dist)
     a2 = alpha.reshape(H, SUPER, W, SUPER).mean(axis=(1, 3)).astype(np.float32)
+    kept_small = land.reshape(H, SUPER, W, SUPER).max(axis=(1, 3)) > 0
 
     xs = LON_MIN + (np.arange(W) + 0.5) * (LON_MAX - LON_MIN) / W
     ys = LAT_MAX - (np.arange(H) + 0.5) * (LAT_MAX - LAT_MIN) / H
 
-    # Full Gulf + Caribbean water (operator's coverage, refined line).
-    print("filling Gulf/Caribbean seas...")
-    a2[poly_mask(xs, ys, SEA_FILL_POLY)] = 1.0
+    # Full Gulf + Caribbean + Eastern Pacific water (operator coverage,
+    # Chaikin-rounded so no edge reads as a sharp cutout).
+    print("filling Gulf/Caribbean/Eastern-Pacific seas...")
+    a2[poly_mask(xs, ys, chaikin(SEA_FILL_POLY, closed=True))] = 1.0
+    a2[poly_mask(xs, ys, chaikin(EAST_PACIFIC_POLY, closed=True))] = 1.0
 
-    # Open Atlantic east of the refined line stays transparent.
+    # Open Atlantic east of the rounded cut line stays transparent —
+    # water only (kept land such as Greenland/Bermuda is immune).
     print("cutting open Atlantic east of the line...")
-    a2[east_of_line(xs, ys)] = 0.0
+    cut = east_of_line(xs, ys, chaikin(CUT_LINE)) & ~kept_small
+    a2[cut] = 0.0
 
     # Hard shoreline cuts: South America, Russia, and every other
     # non-kept landmass read exactly 0 (water paints up to their
@@ -233,6 +291,10 @@ def main(shp=None):
         (-66.4, 18.2, "PuertoRico", 1.0), (-61.9, 17.1, "Antigua", 1.0),
         (-59.6, 13.1, "Barbados", 1.0), (-61.3, 10.4, "Trinidad", 1.0),
         (-112.5, 41.2, "GSLwater", 1.0),
+        (-177.4, 28.2, "Midway", 1.0), (-178.4, 28.4, "Kure", 1.0),
+        (-176.6, 51.9, "Adak", 1.0), (-46.0, 60.9, "EGreenland", 1.0),
+        (-140.0, 15.0, "EPacific", 1.0), (-100.0, 8.0, "Tehuantepec", 1.0),
+        (-170.0, 58.0, "BeringSea", 1.0),
         (-60.0, 8.0, "VenezuelaLand", 0.0), (-74.0, 6.0, "ColombiaLand", 0.0),
         (-175.0, 67.0, "Chukotka", 0.0), (-40.0, 20.0, "openAtlantic", 0.0),
         (-30.0, 50.0, "midAtlanticN", 0.0), (-64.8, 32.3, "Bermuda", 1.0),
