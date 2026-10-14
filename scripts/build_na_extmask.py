@@ -88,15 +88,21 @@ SEA_FILL_POLY = [
 ]
 
 # Eastern Pacific fill (operator's drawing: West Coast offshore +
-# Hawaii waters + tropical zone south of Mexico/Central America, rounded
-# in code). Russian/South-American land inside is hard-cut afterwards.
+# Hawaii waters + tropical zone south of Mexico/Central America,
+# rounded in code). Its eastern edge hugs the Pacific coastline (~2 deg
+# offshore) so fill and coastal buffer always overlap with no gap band;
+# Russian/South-American land inside is hard-cut afterwards.
 EAST_PACIFIC_POLY = [
-    (-128.0, 48.0), (-134.0, 42.0), (-132.0, 35.0), (-124.0, 29.0),
-    (-115.0, 23.0), (-108.0, 18.0), (-101.0, 13.0), (-95.0, 9.0),
-    (-92.0, 6.0), (-92.0, 4.0), (-100.0, 4.0), (-115.0, 4.0),
-    (-130.0, 6.0), (-145.0, 9.0), (-160.0, 13.0), (-174.0, 18.0),
-    (-180.0, 24.0), (-180.0, 34.0), (-173.0, 40.0), (-165.0, 44.0),
-    (-158.0, 46.0), (-150.0, 48.0), (-140.0, 50.0), (-132.0, 50.0),
+    (-128.0, 48.0), (-122.5, 34.0), (-119.5, 32.0), (-118.0, 30.0),
+    (-116.0, 28.0), (-114.0, 26.0), (-112.5, 24.0), (-111.9, 22.9),
+    (-108.0, 20.5), (-105.5, 19.0), (-103.0, 18.0), (-100.5, 17.0),
+    (-98.0, 16.2), (-95.5, 15.2), (-93.5, 14.2), (-91.5, 13.2),
+    (-89.5, 12.0), (-87.5, 11.0), (-85.5, 9.8), (-83.5, 8.8),
+    (-81.5, 8.2), (-79.8, 8.0), (-85.0, 5.5), (-95.0, 4.5),
+    (-110.0, 4.0), (-125.0, 5.0), (-140.0, 7.0), (-155.0, 10.0),
+    (-168.0, 13.0), (-178.0, 18.0), (-180.0, 26.0), (-180.0, 36.0),
+    (-174.0, 42.0), (-166.0, 46.0), (-156.0, 49.0), (-146.0, 52.0),
+    (-136.0, 54.0), (-128.0, 51.0),
 ]
 
 # Bering Sea lobe (operator's drawing: wraps the Aleutian chain, across
@@ -280,11 +286,27 @@ def main(shp=None):
     ys = LAT_MAX - (np.arange(H) + 0.5) * (LAT_MAX - LAT_MIN) / H
 
     # Full Gulf + Caribbean + Eastern Pacific + Bering water (operator
-    # lines, spline-rounded through the exact vertices).
+    # lines, spline-rounded through the exact vertices), with a ~15 km
+    # outward ramp (inside the bend allowance) so no fill edge prints
+    # as a sharp cutout.
     print("filling Gulf/Caribbean/Eastern-Pacific/Bering seas...")
-    a2[poly_mask(xs, ys, catmull_rom(SEA_FILL_POLY, closed=True))] = 1.0
-    a2[poly_mask(xs, ys, catmull_rom(EAST_PACIFIC_POLY, closed=True))] = 1.0
-    a2[poly_mask(xs, ys, catmull_rom(BERING_POLY, closed=True))] = 1.0
+    fillmask = (
+        poly_mask(xs, ys, catmull_rom(SEA_FILL_POLY, closed=True))
+        | poly_mask(xs, ys, catmull_rom(EAST_PACIFIC_POLY, closed=True))
+        | poly_mask(xs, ys, catmull_rom(BERING_POLY, closed=True)))
+    from scipy.ndimage import distance_transform_edt as _edt
+    _do = np.full(fillmask.shape, np.inf, dtype=np.float32)
+    _rows = np.linspace(0, H, 9).astype(int)
+    for _b in range(8):
+        _r0 = max(0, _rows[_b] - 60)
+        _r1 = min(H, _rows[_b + 1] + 60)
+        _latc = np.radians(LAT_MAX - (_r0 + _r1) / 2 * (LAT_MAX - LAT_MIN) / H)
+        _d = _edt(~fillmask[_r0:_r1],
+                  sampling=(111.195 * 0.05,
+                            111.195 * 0.05 * max(0.2, float(np.cos(_latc)))))
+        _do[_r0:_r1] = np.minimum(_do[_r0:_r1], _d.astype(np.float32))
+    a2 = np.maximum(a2, (1.0 - smoothstep(0.0, 15.0, _do)).astype(np.float32))
+    a2[fillmask] = 1.0
 
     # Open Atlantic east of the rounded cut line stays transparent —
     # water only (kept land such as Greenland/Bermuda is immune).
