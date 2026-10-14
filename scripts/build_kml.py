@@ -363,32 +363,28 @@ COVERAGE_DIR_SUFFIX = {
 def coverage_selector_html(current_mode, entry_kmls, selector_kml):
     """HTML block for live descriptions, directly underneath the legend.
 
-    ``entry_kmls`` maps mode -> entry KML filename; ``selector_kml`` is
-    the radioFolder collection file. The current coverage renders as a
-    filled bullet (no link); the others link to their entry files, and
-    the collection file (add once, toggle inside) is linked last.
-    Plain anchors only (no script): Google Earth Pro treats the
-    collection as an exclusive radio group; Web/app users toggle the
-    folder's checkboxes by hand.
+    Plain state text plus checkbox instructions — deliberately link-free:
+    in Google Earth Web a hyperlink navigates the whole browser tab away
+    from the map (there is no way back into the project except Back), and
+    no link can switch layers inside Web anyway. Switching happens in the
+    Layers panel: the Coverage collection folder holds all three (Pro
+    flips them exclusively via radioFolder; Web users check exactly one).
+    ``entry_kmls`` / ``selector_kml`` are accepted for signature
+    compatibility and ignored.
     """
-    base = pages_base()
     rows = []
     for mode in COVERAGE_ORDER:
         label = COVERAGE_LABELS[mode]
         if mode == current_mode:
             rows.append(f"\u25c9 <b>{label}</b> (this view)")
         else:
-            rows.append(
-                f"\u25cb <a href=\"{base}/kml/{entry_kmls[mode]}\">"
-                f"{label}</a>")
+            rows.append(f"\u25cb {label}")
     return (
-        f"<p><b>Coverage Selector</b> \u2014 pick one coverage at a time:<br>"
+        f"<p><b>Coverage Selector</b> \u2014 one coverage at a time:<br>"
         + "<br>".join(rows) + "<br>"
         f"Pro switches automatically. In Web/app, open the "
         f"<b>Coverage Selector folder</b> in Layers and check exactly one "
-        f"box.<br>"
-        f"Add once: <a href=\"{base}/kml/{selector_kml}\">Coverage "
-        f"collection file</a> (all three as toggles).</p>"
+        f"box.</p>"
     )
 
 

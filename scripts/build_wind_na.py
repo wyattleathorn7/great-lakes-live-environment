@@ -25,8 +25,9 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from na_bounds import load_na_bounds
 from na_common import (apply_coverage_mask, bin_points_to_canvas,
-                       fetch_http, fill_pinholes, gate_field_to_coverage,
-                       gdps_wcs_grid, sanitize_model_vals, smooth_field)
+                       feather_merge, fetch_http, fill_pinholes,
+                       gate_field_to_coverage, gdps_wcs_grid,
+                       sanitize_model_vals, smooth_field)
 from beaufort import FORCE_COLORS, MS_TO_KT, force_from_kt, force_name, force_range_text
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
@@ -488,18 +489,14 @@ def _build(bounds, W, H):
     if not ulayers:
         raise RuntimeError(f"no wind components from any source ({prov})")
 
-    # Exact-copy precedence (same as the original: first-valid wins, no
-    # blending): GLWU over water, then HRRR, then RRFS-NA, then GDPS gaps.
+    # Exact-copy precedence (same as the original: first-valid wins):
+    # GLWU over water, then HRRR, then RRFS-NA, then GDPS gaps, with a
+    # narrow cross-fade where domains overlap so rectangular source edges
+    # (e.g. the HRRR boundary) never print as visible seams.
     # Coarse 13-15 km layers arrive pre-smoothed above (dots/blocks would
     # otherwise print); GLWU/HRRR render raw like the original.
-    U = np.full((H, W), np.nan)
-    V = np.full((H, W), np.nan)
-    owned = np.zeros((H, W), dtype=bool)
-    for gu, gv in zip([u for u, _ in ulayers], [v for _, v in vlayers]):
-        take = (~owned) & np.isfinite(gu) & np.isfinite(gv)
-        U[take] = gu[take]
-        V[take] = gv[take]
-        owned |= take
+    U, _ = feather_merge(ulayers, feather_px=12)
+    V, _ = feather_merge(vlayers, feather_px=12)
     from na_common import gate_field_to_coverage
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
                            COVERAGE_ORDER, COVERAGE_SUFFIX,
