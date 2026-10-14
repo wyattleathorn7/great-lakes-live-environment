@@ -205,39 +205,30 @@ def _build(bounds, W, H, prev):
     print(f"[{PRODUCT}] raw px={n_raw} prov={prov}")
 
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
-                           COVERAGE_ORDER, COVERAGE_SUFFIX,
-                           build_coverage_selector,
-                           coverage_selector_html)
+                           COVERAGE_DISPLAY, coverage_selector_html)
     default_cover = CONFIG_NA.get("coverage_mode", "landonly")
-    variant_kmls = {m: KML_FILE.replace(".kml", f"_{COVERAGE_SUFFIX[m]}.kml")
-                    for m in COVERAGE_ORDER}
     variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
-                    for m in COVERAGE_ORDER}
-    variant_titles = {m: f"{CONFIG_NA['title']} \u2014 {COVERAGE_LABELS[m]}"
-                      for m in COVERAGE_ORDER}
-    selector_kml = KML_FILE.replace(".kml", "_Coverage.kml")
+                    for m in COVERAGE_DISPLAY}
+    variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
+                      for m in COVERAGE_DISPLAY}
     data_time = now_det_str()
     scale_html = SCALE_HTML
     src_id = f"na-tmp-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
     token = source_token(src_id + json.dumps(prov, sort_keys=True))
 
-    for mode in COVERAGE_ORDER:
+    # Per-coverage rasters: the primary live folder references these
+    # PNGs as its three hideable overlays.
+    for mode in COVERAGE_DISPLAY:
         disp_m = gate_field_to_coverage(disp_full, mode)
         n_valid_m = int(np.isfinite(disp_m).sum())
         print(f"[{PRODUCT}] variant {mode}: px={n_valid_m}")
         rgba_m = render_rgba(np.clip(disp_m, -60.0, 150.0), TEMP_SMOOTH_STOPS, 205)
         rgba_m = apply_coverage_mask(rgba_m, mode)
-        vprod, vtitle, vkml = (variant_dirs[mode], variant_titles[mode],
-                               variant_kmls[mode])
+        vprod = variant_dirs[mode]
+        vtitle = variant_titles[mode]
         vdir = os.path.join(stage, "site", vprod)
         os.makedirs(vdir, exist_ok=True)
         save_png(rgba_m, os.path.join(vdir, "current.png"))
-        lw, lh = draw_banded_key(
-            os.path.join(vdir, "legend.png"), vtitle,
-            f"2 m air temperature (degF)  |  {data_time}",
-            TEMP_BANDS, KEY_ZONES,
-            f"Source: NOAA HRRR + RRFS-NA + ECCC GDPS (see provenance)  |  "
-            f"Processed {now_det_str()}")
         vmeta = base_metadata(
             vprod, vtitle, CONFIG_NA["freshness_label"],
             CONFIG_NA["source_name"], CONFIG_NA["primary_url"],
@@ -248,35 +239,18 @@ def _build(bounds, W, H, prev):
             source_resolution="HRRR 3km; RRFS 13km NA / 3km nests; GDPS 15km fallback",
             color_min=-60.0, color_max=150.0, color_units="degF",
             missing_data_treatment="HRRR valid > RRFS valid > GDPS (verified gaps only) > transparent; never blended.")
-        vmeta["legend_size"] = [lw, lh]
         vmeta["legend_scale_html"] = scale_html
         vmeta["source_id"] = src_id
         vmeta["source_version"] = token
         vmeta["na_bounds"] = bounds
         vmeta["coverage_mode"] = mode
         vmeta["stats"] = {"valid_pixels": n_valid_m, "raw_pixels": n_raw}
-        vfolder = (f"<h2>{vtitle}</h2>"
-                   f"<p><b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
-                   f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
-                   f"<b>Provenance:</b> {prov}</p>")
-        vmeta["folder_html"] = vfolder + coverage_selector_html(
-            mode, variant_kmls, selector_kml)
+        vmeta["folder_html"] = (
+            f"<h2>{vtitle}</h2>"
+            f"<p><b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
+            f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
+            f"<b>Provenance:</b> {prov}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
-        vblock = legend_block(f"{vprod}/legend.png", token, scale_html)
-        vouts = live_out_dirs(stage, vkml)
-        _vtext = build_kml(
-            vprod, vkml, OVERLAY_NAME, f"{vprod}/current.png",
-            f"{vprod}/legend.png",
-            description_html(vtitle, vmeta, SKIP_NOTE, "")
-            + coverage_selector_html(mode, variant_kmls, selector_kml),
-            CONFIG_NA["refresh_interval_seconds"], token,
-            folder=(vtitle, vmeta["folder_html"]),
-            out_dirs=vouts["live"], meta=vmeta, bounds=bounds)
-        assert_no_vector_geometry(_vtext)
-        build_entry_kml(vprod, vkml, OVERLAY_NAME,
-                        entry_description_html(vtitle, vmeta, SKIP_NOTE),
-                        CONFIG_NA["refresh_interval_seconds"],
-                        out_dirs=vouts["entry"])
 
     disp = gate_field_to_coverage(disp_full, default_cover)
     n_valid = int(np.isfinite(disp).sum())
@@ -311,30 +285,25 @@ def _build(bounds, W, H, prev):
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2>"
                    f"<p><b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br><b>Provenance:</b> {prov}</p>")
-    meta["folder_html"] = folder_html + coverage_selector_html(
-        default_cover, variant_kmls, selector_kml)
+    meta["folder_html"] = folder_html + coverage_selector_html(default_cover)
     write_metadata(stage_prod, meta)
-    block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     outs = live_out_dirs(stage, KML_FILE)
+    extras = [(COVERAGE_LABELS[m], f"{variant_dirs[m]}/current.png",
+               bounds, 11 + i, 0)
+              for i, m in enumerate([m for m in COVERAGE_DISPLAY
+                                     if m != default_cover])]
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
                          f"{PRODUCT}/legend.png",
                          description_html(CONFIG_NA["title"], meta, SKIP_NOTE, "")
-                         + coverage_selector_html(default_cover, variant_kmls,
-                                                  selector_kml),
+                         + coverage_selector_html(default_cover),
                          CONFIG_NA["refresh_interval_seconds"], token,
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
-                         out_dirs=outs["live"], meta=meta, bounds=bounds)
+                         out_dirs=outs["live"], meta=meta, bounds=bounds,
+                         extra_overlays=extras, folder_radio=True)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),
                     CONFIG_NA["refresh_interval_seconds"], out_dirs=outs["entry"])
-    build_coverage_selector(
-        CONFIG_NA["title"], selector_kml,
-        [(m, variant_kmls[m]) for m in COVERAGE_ORDER],
-        CONFIG_NA["refresh_interval_seconds"],
-        out_dirs=[os.path.join(stage, "kml", selector_kml),
-                  os.path.join(stage, "site", "kml", selector_kml)],
-        default_mode=default_cover)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": data_time, "source_id": src_id,
                           "processing_time_utc": meta["processing_time_utc"]})

@@ -6,9 +6,9 @@
   "product_name": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
   "variable": "BCM binary mask (0=clear_or_probably_clear, 1=cloudy_or_probably_cloudy) gated DQF==0 -> % per canvas neighborhood; model TCDC % in fallback domain",
   "source_url": "https://www.goes.noaa.gov/",
-  "data_time_utc": "2026-10-14 10:07 AM EDT",
-  "source_last_modified_utc": "{\"GOES-19\": \"2026-10-14 13:50Z valid-cells=3904271\", \"GOES-18\": \"2026-10-14 13:50Z valid-cells=3435426\", \"RRFS-TCDC\": \"rrfs.20261014 n=2632946\", \"GDPS-TCC\": \"GDPS_15km_TotalCloudCover n=5273396\"}",
-  "processing_time_utc": "2026-10-14 10:08 AM EDT",
+  "data_time_utc": "2026-10-14 11:21 AM EDT",
+  "source_last_modified_utc": "{\"GOES-19\": \"2026-10-14 15:00Z valid-cells=3904271\", \"GOES-18\": \"2026-10-14 15:00Z valid-cells=3435426\", \"RRFS-TCDC\": \"rrfs.20261014 n=2632946\", \"GDPS-TCC\": \"GDPS_15km_TotalCloudCover n=5273396\"}",
+  "processing_time_utc": "2026-10-14 11:21 AM EDT",
   "units": "%",
   "spatial_resolution_source": "GOES FD ~2km; RRFS 13km NA; canvas 3300x1600",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,13 +25,9 @@
   "missing_data_treatment": "GOES BCM/DQF==0 valid > RRFS TCDC > GDPS (verified gaps) > transparent; missing never 0%.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "legend_size": [
-    640,
-    230
-  ],
   "legend_scale_html": "Cloud cover (%, OBSERVED neighborhood fraction from GOES: share of 2 km satellite pixels flagged cloudy around each point): <b>LOWEST 0 clear</b> transparent &rarr; thin cloud <b>dark-blue/blue/cyan</b> &rarr; <b>40 green</b> &rarr; <b>55 yellow</b> &rarr; <b>70 orange</b> &rarr; <b>82 red</b> &rarr; <b>90 magenta</b> &rarr; <b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same color; clear areas stay see-through. Satellite retrieval where GOES is valid, model fill elsewhere (see provenance).",
-  "source_id": "na-cloud-20261014-1407",
-  "source_version": "na-cloud-20261014-1407-GDPS-TCC-GDPS_15km_TotalCloudCover-n-5273396-GOES-18-2026-10-14-13-50Z-valid-cells-3435426-GOES-19-2026-10-14-13-50Z-valid-cells-3904271-RRFS-TCDC-rrfs.20261014-n-2632946",
+  "source_id": "na-cloud-20261014-1521",
+  "source_version": "na-cloud-20261014-1521-GDPS-TCC-GDPS_15km_TotalCloudCover-n-5273396-GOES-18-2026-10-14-15-00Z-valid-cells-3435426-GOES-19-2026-10-14-15-00Z-valid-cells-3904271-RRFS-TCDC-rrfs.20261014-n-2632946",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -50,5 +46,5 @@
     "satellite_pixels": 4846329,
     "model_fill_pixels": 0
   },
-  "folder_html": "<h2>LIVE CLOUD COVER \u2014 Great Lakes Basin Coverage</h2><p><b>Coverage:</b> Great Lakes Basin Coverage<br><b>Precedence:</b> 1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.<br><b>Provenance:</b> {'GOES-19': '2026-10-14 13:50Z valid-cells=3904271', 'GOES-18': '2026-10-14 13:50Z valid-cells=3435426', 'RRFS-TCDC': 'rrfs.20261014 n=2632946', 'GDPS-TCC': 'GDPS_15km_TotalCloudCover n=5273396'}</p><p><b>Coverage Selector</b> \u2014 one coverage at a time:<br>\u25c9 <b>Great Lakes Basin Coverage</b> (this view)<br>\u25cb North America Coverage<br>\u25cb Extended North America Coverage<br>Pro switches automatically. In Web/app, open the <b>Coverage Selector folder</b> in Layers and check exactly one box.</p>"
+  "folder_html": "<h2>LIVE CLOUD COVER \u2014 Great Lakes Basin Coverage</h2><p><b>Coverage:</b> Great Lakes Basin Coverage<br><b>Precedence:</b> 1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.<br><b>Provenance:</b> {'GOES-19': '2026-10-14 15:00Z valid-cells=3904271', 'GOES-18': '2026-10-14 15:00Z valid-cells=3435426', 'RRFS-TCDC': 'rrfs.20261014 n=2632946', 'GDPS-TCC': 'GDPS_15km_TotalCloudCover n=5273396'}</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Extended North America Coverage<br>\u25cb North America Coverage<br>\u25c9 <b>Great Lakes Basin Coverage</b> (shown)<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
 }

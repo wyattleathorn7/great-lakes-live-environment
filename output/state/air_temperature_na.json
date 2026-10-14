@@ -1,5 +1,11 @@
 {
+<<<<<<< HEAD
   "model_cycle": "2026-10-14 11:00 AM EDT",
   "source_id": "na-tmp-20261014-1500",
   "processing_time_utc": "2026-10-14 11:01 AM EDT"
+=======
+  "model_cycle": "2026-10-14 11:22 AM EDT",
+  "source_id": "na-tmp-20261014-1522",
+  "processing_time_utc": "2026-10-14 11:22 AM EDT"
+>>>>>>> 6b225cc9 (In-folder coverage switch: 3 hideable overlays + radioFolder in primary live file, zero links)
 }

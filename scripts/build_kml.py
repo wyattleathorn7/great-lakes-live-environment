@@ -131,7 +131,8 @@ def _write(xml, out_dirs):
 
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
               description_html, refresh_interval, cache_token, out_dirs=None,
-              folder=None, meta=None, bounds=None, extra_overlays=None):
+              folder=None, meta=None, bounds=None, extra_overlays=None,
+              folder_radio=False):
     """Write the LIVE overlay file (one GroundOverlay, versioned PNG href).
 
     ``cache_token`` MUST be the deterministic source version
@@ -142,10 +143,13 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     already titles the layer, so both Document and Folder descriptions
     lead with the Legend block.     ``bounds`` overrides the common canvas
     (global-canvas products); defaults to the shared Great Lakes bounds.
-    ``extra_overlays`` (optional) appends further versioned GroundOverlays
-    as [(png_relpath, bounds_dict, draw_order), ...] — e.g. a
-    native-resolution basin inset above a continental base. Same cache
-    token, same refresh cadence; raster-only, never vectors.
+    ``extra_overlays`` (optional) appends further versioned GroundOverlays:
+    3-tuples (png_relpath, bounds_dict, draw_order) reuse the base name
+    and load visible; 5-tuples (name, png_relpath, bounds_dict,
+    draw_order, visible_flag) name each overlay and set its initial
+    visibility (1/0). ``folder_radio`` marks the Folder radioFolder so
+    Google Earth Pro shows its children exclusively (Web/app shows the
+    same children as manual checkboxes).
     """
     if bounds is None:
         bounds = load_bounds()
@@ -162,9 +166,11 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     desc.text = None
     document.append(desc)
 
-    def _overlay(name, url, b, order):
+    def _overlay(name, url, b, order, visible=None):
         ground = _q("GroundOverlay")
         ground.append(_q("name", name))
+        if visible is not None:
+            ground.append(_q("visibility", str(visible)))
         ground.append(_q("drawOrder", str(order)))
         icon = _q("Icon")
         icon.append(_q("href", url))
@@ -179,7 +185,15 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
         ground.append(box)
         return ground
 
-    ground = _overlay(overlay_name, png_url, bounds, 10)
+    def _norm(extra):
+        # 3-tuple (legacy): base name, visible. 5-tuple: name + flag.
+        if len(extra) == 5:
+            return extra
+        png_rel, b, order = extra
+        return (overlay_name, png_rel, b, order, 1)
+
+    ground = _overlay(overlay_name, png_url, bounds, 10,
+                      1 if extra_overlays else None)
     descriptions = [header + description_html]
     if folder is not None:
         folder_el = _q("Folder")
@@ -187,17 +201,23 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
         _fdesc = _q("description")
         _fdesc.text = None
         folder_el.append(_fdesc)
+        if folder_radio:
+            style = _q("Style")
+            list_style = _q("ListStyle")
+            list_style.append(_q("listItemType", "radioFolder"))
+            style.append(list_style)
+            folder_el.append(style)
         folder_el.append(ground)
-        for png_rel, b, order in (extra_overlays or []):
+        for name, png_rel, b, order, vis in (_norm(e) for e in (extra_overlays or [])):
             folder_el.append(_overlay(
-                overlay_name, f"{base}/{png_rel}?v={cache_token}", b, order))
+                name, f"{base}/{png_rel}?v={cache_token}", b, order, vis))
         document.append(folder_el)
         descriptions.append(header + strip_old_stamps(folder[1]))
     else:
         document.append(ground)
-        for png_rel, b, order in (extra_overlays or []):
+        for name, png_rel, b, order, vis in (_norm(e) for e in (extra_overlays or [])):
             document.append(_overlay(
-                overlay_name, f"{base}/{png_rel}?v={cache_token}", b, order))
+                name, f"{base}/{png_rel}?v={cache_token}", b, order, vis))
 
     xml = _serialize(doc, descriptions)
     if out_dirs is None:
@@ -336,7 +356,7 @@ def live_out_dirs(stage, kml_filename):
     }
 
 
-# Coverage Selector (all four North American gradients). One coverage at
+# Coverage switch (all four North American gradients). One coverage at
 # a time: Great Lakes Basin Coverage (original rectangle), North America
 # Coverage (crisp NA land zone), Extended North America Coverage
 # (200-mile offshore + full Gulf/Caribbean). Mode keys match
@@ -347,12 +367,9 @@ COVERAGE_LABELS = {
     "landonly": "North America Coverage",
     "extended200": "Extended North America Coverage",
 }
-# File/dir suffixes per mode (variant KMLs, site dirs, metadata keys).
-COVERAGE_SUFFIX = {
-    "basin": "Basin",
-    "landonly": "NorthAmerica",
-    "extended200": "Extended",
-}
+# Display order inside the live folder (Extended first, as requested).
+COVERAGE_DISPLAY = ("extended200", "landonly", "basin")
+# Dir suffixes per mode (per-coverage raster dirs + metadata keys).
 COVERAGE_DIR_SUFFIX = {
     "basin": "basin",
     "landonly": "northamerica",
@@ -360,97 +377,29 @@ COVERAGE_DIR_SUFFIX = {
 }
 
 
-def coverage_selector_html(current_mode, entry_kmls, selector_kml):
+def coverage_selector_html(current_mode):
     """HTML block for live descriptions, directly underneath the legend.
 
-    Plain state text plus checkbox instructions — deliberately link-free:
-    in Google Earth Web a hyperlink navigates the whole browser tab away
-    from the map (there is no way back into the project except Back), and
-    no link can switch layers inside Web anyway. Switching happens in the
-    Layers panel: the Coverage collection folder holds all three (Pro
-    flips them exclusively via radioFolder; Web users check exactly one).
-    ``entry_kmls`` / ``selector_kml`` are accepted for signature
-    compatibility and ignored.
+    Plain state text plus switching instructions — deliberately
+    link-free: in Google Earth Web a hyperlink navigates the whole
+    browser tab away from the map, and no link can switch layers inside
+    Web anyway. The three coverages sit as hideable layers in this very
+    folder: Pro flips them exclusively (radioFolder); Web/app users check
+    exactly one box.
     """
     rows = []
-    for mode in COVERAGE_ORDER:
+    for mode in COVERAGE_DISPLAY:
         label = COVERAGE_LABELS[mode]
         if mode == current_mode:
-            rows.append(f"\u25c9 <b>{label}</b> (this view)")
+            rows.append(f"\u25c9 <b>{label}</b> (shown)")
         else:
             rows.append(f"\u25cb {label}")
     return (
-        f"<p><b>Coverage Selector</b> \u2014 one coverage at a time:<br>"
+        f"<p><b>Coverage</b> \u2014 one at a time, switched right here "
+        f"in this folder:<br>"
         + "<br>".join(rows) + "<br>"
-        f"Pro switches automatically. In Web/app, open the "
-        f"<b>Coverage Selector folder</b> in Layers and check exactly one "
-        f"box.</p>"
+        f"Pro switches exclusively. Web/app: check exactly one box.</p>"
     )
-
-
-def build_coverage_selector(title, selector_filename, variants,
-                            refresh_interval, out_dirs=None,
-                            default_mode=None):
-    """Write the coverage collection file (radioFolder of NetworkLinks).
-
-    ``variants`` = [(mode, live_kml_filename), ...] in display order.
-    Exactly one child shows at a time in Google Earth Pro (radioFolder);
-    Web/app shows the same children as manual checkboxes. Raster-only
-    rule holds: links only, zero GroundOverlay / vectors here (imagery
-    stays in the per-coverage live files so the Web per-document image
-    cap can never trip).
-
-    ``default_mode`` (or the first variant) loads switched ON while the
-    others load OFF, so adding the collection never stacks all three
-    gradients at once in any client.
-    """
-    doc = _q("kml")
-    document = _q("Document")
-    doc.append(document)
-    document.append(_q("name", f"{title} \u2014 Coverage Selector"))
-    desc = _q("description")
-    desc.text = None
-    document.append(desc)
-
-    folder_el = _q("Folder")
-    folder_el.append(_q("name", "Coverage Selector"))
-    _fdesc = _q("description")
-    _fdesc.text = None
-    folder_el.append(_fdesc)
-    style = _q("Style")
-    list_style = _q("ListStyle")
-    list_style.append(_q("listItemType", "radioFolder"))
-    style.append(list_style)
-    folder_el.append(style)
-
-    base = pages_base()
-    if default_mode is None:
-        default_mode = variants[0][0]
-    fdescs = []
-    for mode, live_kml in variants:
-        link = _q("NetworkLink")
-        link.append(_q("name", COVERAGE_LABELS[mode]))
-        link.append(_q("visibility",
-                       "1" if mode == default_mode else "0"))
-        url = _q("Link")
-        url.append(_q("href", f"{base}/kml/live/{live_kml}"))
-        url.append(_q("refreshMode", "onInterval"))
-        url.append(_q("refreshInterval", str(refresh_interval)))
-        link.append(url)
-        folder_el.append(link)
-    document.append(folder_el)
-
-    fdesc_html = (
-        f"<p><b>Coverage Selector</b> \u2014 pick one coverage "
-        f"(exclusive in Google Earth Pro; manual checkboxes in Web/app).</p>")
-    xml = _serialize(doc, [fdesc_html, fdesc_html])
-    if out_dirs is None:
-        out_dirs = [os.path.join(KML_DIR, selector_filename),
-                    os.path.join(SITE_DIR, "kml", selector_filename)]
-    _write(xml, out_dirs)
-    assert_no_vector_geometry(xml)
-    assert "<GroundOverlay" not in xml, "selector must not carry imagery"
-    return xml
 
 
 def refresh_kml_base_url(product, kml_filename, overlay_name, title,

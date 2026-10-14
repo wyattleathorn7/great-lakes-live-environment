@@ -499,17 +499,12 @@ def _build(bounds, W, H):
     V, _ = feather_merge(vlayers, feather_px=12)
     from na_common import gate_field_to_coverage
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
-                           COVERAGE_ORDER, COVERAGE_SUFFIX,
-                           build_coverage_selector,
-                           coverage_selector_html)
+                           COVERAGE_DISPLAY, coverage_selector_html)
     default_cover = CONFIG_NA.get("coverage_mode", "extended200")
-    variant_kmls = {m: KML_FILE.replace(".kml", f"_{COVERAGE_SUFFIX[m]}.kml")
-                    for m in COVERAGE_ORDER}
     variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
-                    for m in COVERAGE_ORDER}
+                    for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} \u2014 {COVERAGE_LABELS[m]}"
-                      for m in COVERAGE_ORDER}
-    selector_kml = KML_FILE.replace(".kml", "_Coverage.kml")
+                      for m in COVERAGE_DISPLAY}
 
     # Original Beaufort key rows, verbatim (same colors, same labels).
     key_rows = [(FORCE_COLORS[f], f"F{f} — {force_name(f)} ({force_range_text(f)})")
@@ -555,27 +550,24 @@ def _build(bounds, W, H):
                               "streamlets": n_stream, "heads": n_heads,
                               "labels": n_strat, "extra_labels": n_fill}
 
-    for mode in COVERAGE_ORDER:
+    # Per-coverage rasters: the primary live folder references these
+    # PNGs as its three hideable overlays, so every coverage is painted
+    # even though only one file is ever added.
+    variant_rgba = {}
+    variant_kt = {}
+    variant_stats = {}
+    for mode in COVERAGE_DISPLAY:
         rgba_m, kt_m, st = _render_variant(mode)
-        vprod, vtitle, vkml = (variant_dirs[mode], variant_titles[mode],
-                               variant_kmls[mode])
+        variant_rgba[mode] = rgba_m
+        variant_kt[mode] = kt_m
+        variant_stats[mode] = st
+        vprod, vtitle = variant_dirs[mode], variant_titles[mode]
         vdir = os.path.join(stage, "site", vprod)
         os.makedirs(vdir, exist_ok=True)
         save_png(rgba_m, os.path.join(vdir, "current.png"))
         print(f"[{PRODUCT}] variant {mode}: streamlets={st['streamlets']}/"
               f"{st['heads']} labels={st['labels']}+{st['extra_labels']} "
               f"px={st['valid_pixels']}")
-        lw, lh = draw_category_legend(
-            os.path.join(vdir, "legend.png"), vtitle,
-            f"{CONFIG_NA['freshness_label']}  |  {data_time}", key_rows,
-            f"Source: GLWU v2.1 + HRRR 10 m + RRFS-NA + GDPS (see provenance)  |  "
-            f"Processed {data_time}",
-            note="Dark purple = Force 12 hurricane-force (≥64 kt) ONLY. "
-                 "Great Lakes + major Canadian lakes ~80% opacity; "
-                 "other land ~55% with intensified colors so the "
-                 "same force reads the same (single key). White streaks trace "
-                 "travel (brightness = knots); white numbers are actual kt. "
-                 f"Coverage: {COVERAGE_LABELS[mode]}.")
         vmeta = base_metadata(
             vprod, vtitle, CONFIG_NA["freshness_label"],
             CONFIG_NA["source_name"], CONFIG_NA["source_url"],
@@ -588,7 +580,6 @@ def _build(bounds, W, H):
             missing_data_treatment="GLWU > HRRR > RRFS > GDPS(gaps) > transparent; missing never calm. "
                 "Dual opacity (original finish): lakes at water alpha 205 with exact Beaufort colors; "
                 "other land at alpha 140 with saturation-boosted twins (single legend).")
-        vmeta["legend_size"] = [lw, lh]
         vmeta["legend_scale_html"] = scale_html
         vmeta["beaufort_table"] = [
             {"force": f, "description": force_name(f),
@@ -599,32 +590,19 @@ def _build(bounds, W, H):
         vmeta["na_bounds"] = bounds
         vmeta["coverage_mode"] = mode
         vmeta["stats"] = st
-        vfolder = (f"<h2>{vtitle}</h2>"
-                   f"<p><b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
-                   f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
-                   f"<b>Provenance:</b> {prov}</p>")
-        vmeta["folder_html"] = vfolder + coverage_selector_html(
-            mode, variant_kmls, selector_kml)
+        vmeta["folder_html"] = (
+            f"<h2>{vtitle}</h2>"
+            f"<p><b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
+            f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
+            f"<b>Provenance:</b> {prov}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
-        vblock = legend_block(f"{vprod}/legend.png", token, scale_html)
-        vouts = live_out_dirs(stage, vkml)
-        _vtext = build_kml(
-            vprod, vkml, OVERLAY_NAME, f"{vprod}/current.png",
-            f"{vprod}/legend.png",
-            description_html(vtitle, vmeta, SKIP_NOTE, "")
-            + coverage_selector_html(mode, variant_kmls, selector_kml),
-            CONFIG_NA["refresh_interval_seconds"], token,
-            folder=(vtitle, vmeta["folder_html"]),
-            out_dirs=vouts["live"], meta=vmeta, bounds=bounds)
-        assert_no_vector_geometry(_vtext)
-        build_entry_kml(vprod, vkml, OVERLAY_NAME,
-                        entry_description_html(vtitle, vmeta, SKIP_NOTE),
-                        CONFIG_NA["refresh_interval_seconds"],
-                        out_dirs=vouts["entry"])
 
-    # Primary (default coverage): legacy paths/URLs, same pixels as the
-    # matching variant. Single continental overlay, no inset.
-    rgba, kt_def, st_def = _render_variant(default_cover)
+    # Primary (default coverage): legacy paths/URLs. Its live folder
+    # holds all three coverages as hideable overlays (default ON, the
+    # other two OFF; radioFolder flips them exclusively in Pro).
+    rgba = variant_rgba[default_cover]
+    kt_def = variant_kt[default_cover]
+    st_def = variant_stats[default_cover]
     m = np.isfinite(kt_def)
     n_valid = int(m.sum())
     print(f"[{PRODUCT}] valid px={n_valid} ({100*n_valid/(W*H):.2f}%) prov={prov}")
@@ -673,30 +651,27 @@ def _build(bounds, W, H):
                    f"original basin layer, density-matched per degree.</p>"
                    f"<p><b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br><b>Provenance:</b> {prov}</p>")
-    meta["folder_html"] = folder_html + coverage_selector_html(
-        default_cover, variant_kmls, selector_kml)
+    meta["folder_html"] = folder_html + coverage_selector_html(default_cover)
     write_metadata(stage_prod, meta)
-    block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
     outs = live_out_dirs(stage, KML_FILE)
+    # All three coverages as hideable overlays in this folder (default
+    # ON, others OFF; radioFolder flips exclusively in Pro).
+    extras = [(COVERAGE_LABELS[m], f"{variant_dirs[m]}/current.png",
+               bounds, 11 + i, 0)
+              for i, m in enumerate([m for m in COVERAGE_DISPLAY
+                                     if m != default_cover])]
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
                          f"{PRODUCT}/legend.png",
                          description_html(CONFIG_NA["title"], meta, SKIP_NOTE, "")
-                         + coverage_selector_html(default_cover, variant_kmls,
-                                                  selector_kml),
+                         + coverage_selector_html(default_cover),
                          CONFIG_NA["refresh_interval_seconds"], token,
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
-                         out_dirs=outs["live"], meta=meta, bounds=bounds)
+                         out_dirs=outs["live"], meta=meta, bounds=bounds,
+                         extra_overlays=extras, folder_radio=True)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),
                     CONFIG_NA["refresh_interval_seconds"], out_dirs=outs["entry"])
-    build_coverage_selector(
-        CONFIG_NA["title"], selector_kml,
-        [(m, variant_kmls[m]) for m in COVERAGE_ORDER],
-        CONFIG_NA["refresh_interval_seconds"],
-        out_dirs=[os.path.join(stage, "kml", selector_kml),
-                  os.path.join(stage, "site", "kml", selector_kml)],
-        default_mode=default_cover)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": data_time, "source_id": src_id,
                           "processing_time_utc": meta["processing_time_utc"]})
