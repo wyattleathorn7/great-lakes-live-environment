@@ -1,11 +1,5 @@
 {
-<<<<<<< HEAD
-  "model_cycle": "2026-10-14 11:00 AM EDT",
-  "source_id": "na-wind-20261014-1500",
-  "processing_time_utc": "2026-10-14 11:02 AM EDT"
-=======
-  "model_cycle": "2026-10-14 11:19 AM EDT",
-  "source_id": "na-wind-20261014-1519",
-  "processing_time_utc": "2026-10-14 11:19 AM EDT"
->>>>>>> 6b225cc9 (In-folder coverage switch: 3 hideable overlays + radioFolder in primary live file, zero links)
+  "model_cycle": "2026-10-14 11:31 AM EDT",
+  "source_id": "na-wind-20261014-1531",
+  "processing_time_utc": "2026-10-14 11:31 AM EDT"
 }
