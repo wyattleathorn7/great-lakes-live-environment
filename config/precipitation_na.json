@@ -1,6 +1,6 @@
 {
-  "coverage": "Shared North American boundary config/north_america_bounds.json (lon -180..-15, lat 5..85, 3300x1600). No shoreline cut. Gaps transparent.",
-  "coverage_mode": "extended200",
+  "coverage": "Worldwide config/global_bounds.json (lon -180..180, lat -90..90, 3600x1800) + NA nest. No shoreline cut. Gaps transparent.",
+  "coverage_mode": "global",
   "display_units": "dBZ-equivalent qualitative intensity (IEM domain) + compatible ECCC intensity (outside IEM domain)",
   "eccc_coverage_layers": [
     "RADAR_COVERAGE_RRAI",
@@ -22,10 +22,10 @@
   },
   "iem_layer": "nexrad-n0q-900913",
   "iem_wms_url": "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi",
-  "precedence": "ECCC (rates -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; IEM N0Q (native rendering, itself the original legend) fills ECCC gaps; 10-px cross-fade on the coverage edge; transparent elsewhere.",
+  "precedence": "ECCC (rates -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; IEM N0Q (native rendering, itself the original legend) fills ECCC gaps; 10-px cross-fade on the coverage edge; transparent elsewhere. GDPS_15km_PrecipRate model fill (mm/h -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) where radar is blind, Global coverage only.",
   "product": "precipitation_na",
   "refresh_interval_seconds": 300,
-  "source_name": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it",
+  "source_name": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) outside it + ECCC GDPS 15km PrecipRate worldwide model fill (Global only)",
   "source_url": "https://mesonet.agron.iastate.edu/current/radar.phtml",
   "source_url_eccc": "https://open.canada.ca/data/en/dataset/37aecae5-7783-4274-b595-df02aa003ac3",
   "title": "LIVE PRECIPITATION",

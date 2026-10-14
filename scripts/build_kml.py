@@ -356,24 +356,26 @@ def live_out_dirs(stage, kml_filename):
     }
 
 
-# Coverage switch (all four North American gradients). One coverage at
-# a time: Great Lakes Basin Coverage (original rectangle), North America
-# Coverage (crisp NA land zone), Extended North America Coverage
-# (200-mile offshore + full Gulf/Caribbean). Mode keys match
-# na_common.COVERAGE_MODES.
-COVERAGE_ORDER = ("basin", "landonly", "extended200")
+# Coverage switch (all four live gradients). One coverage at a time:
+# Great Lakes Basin Coverage (original rectangle), North America
+# Coverage (crisp NA land zone), Global Coverage (worldwide 3600x1800,
+# valid data everywhere — replaced the former Extended mask). Mode keys
+# match na_common.COVERAGE_MODES (extended200 kept as a retired alias).
+COVERAGE_ORDER = ("basin", "landonly", "global")
 COVERAGE_LABELS = {
     "basin": "Great Lakes Basin Coverage",
     "landonly": "North America Coverage",
-    "extended200": "Extended North America Coverage",
+    "global": "Global Coverage",
+    "extended200": "Global Coverage",
 }
-# Display order inside the live folder (Extended first, as requested).
-COVERAGE_DISPLAY = ("extended200", "landonly", "basin")
+# Display order inside the live folder (Global first, as requested).
+COVERAGE_DISPLAY = ("global", "landonly", "basin")
 # Dir suffixes per mode (per-coverage raster dirs + metadata keys).
 COVERAGE_DIR_SUFFIX = {
     "basin": "basin",
     "landonly": "northamerica",
-    "extended200": "extended",
+    "global": "global",
+    "extended200": "global",
 }
 
 

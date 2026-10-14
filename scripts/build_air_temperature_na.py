@@ -148,11 +148,15 @@ def _build(bounds, W, H, prev):
     # Coverage switch (config coverage_mode, default landonly: the crisp
     # NA land zone with no sea fringe, exactly as published).
     cover = CONFIG_NA.get("coverage_mode", "landonly")
+    from na_bounds import load_global_bounds
+    gbounds = load_global_bounds()
+    GW, GH = gbounds["canvas_width"], gbounds["canvas_height"]
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
 
     layers = []  # (grid, valid) in precedence order: HRRR > RRFS > GDPS
+    glayers = []  # same precedence on the worldwide canvas
     prov = {}
     # 1) HRRR (highest precedence).
     try:
@@ -161,36 +165,47 @@ def _build(bounds, W, H, prev):
         g, c = bin_points_to_canvas(K2F(v), la, lo, bounds)
         g = fill_pinholes(g, radius=3)
         layers.append((g, np.isfinite(g)))
-        prov["hrrr"] = f"{label} n={int(np.isfinite(g).sum())}"
+        gg, _ = bin_points_to_canvas(K2F(v), la, lo, gbounds)
+        gg = fill_pinholes(gg, radius=3)
+        glayers.append((gg, np.isfinite(gg)))
+        prov["hrrr"] = f"{label} n={int(np.isfinite(g).sum())}/g={int(np.isfinite(gg).sum())}"
     except Exception as e:
         prov["hrrr"] = f"unavailable: {type(e).__name__}"
     # 2) RRFS nests + NA grid (same model family: first-valid among them).
     try:
         rg = np.full((H, W), np.nan)
+        rgg = np.full((GH, GW), np.nan)
         for label, v, la, lo, cyc in rrfs_newest_tmp(RAW_DIR):
             v = sanitize_model_vals(v, 180.0, 330.0)
             g, c = bin_points_to_canvas(K2F(v), la, lo, bounds)
             m = np.isfinite(g) & ~np.isfinite(rg)
             rg[m] = g[m]
-            prov[f"rrfs_{label}"] = f"n={int(m.sum())}"
+            gg2, _ = bin_points_to_canvas(K2F(v), la, lo, gbounds)
+            mg = np.isfinite(gg2) & ~np.isfinite(rgg)
+            rgg[mg] = gg2[mg]
+            prov[f"rrfs_{label}"] = f"n={int(m.sum())}/g={int(mg.sum())}"
         rg = fill_pinholes(rg, radius=3)
         layers.append((rg, np.isfinite(rg)))
+        rgg = fill_pinholes(rgg, radius=3)
+        glayers.append((rgg, np.isfinite(rgg)))
     except Exception as e:
         prov["rrfs"] = f"unavailable: {type(e).__name__}"
     # 3) GDPS fallback: ECCC GDPS 15km AirTemp 2m via WCS — ONLY where
-    #    HRRR+RRFS have no verified valid data (verified RRFS gap:
-    #    Central America land, e.g. San Jose/Panama, is 9999 in RRFS-NA).
-    try:
-        arr, la, lo, lat1d, lon1d = gdps_wcs_grid("GDPS_15km_AirTemp_2m", bounds, RAW_DIR)
-        band0 = sanitize_model_vals(np.asarray(arr[0], dtype=float), -80.0, 60.0)
-        # Bilinear (not nearest-bin): coarse GDPS cells must render as a
-        # smooth gradient, never single-cell dots.
+    #    HRRR+RRFS have no verified valid data. Worldwide on the global
+    #    canvas (same WCS, global bbox), NA gaps on the NA canvas.
+    def _gdps_tmp(target_bounds):
         from na_common import resample_wcs_to_canvas
-        g = resample_wcs_to_canvas(band0 + 273.15, lat1d, lon1d, bounds)
+        arr, la, lo, lat1d, lon1d = gdps_wcs_grid("GDPS_15km_AirTemp_2m", target_bounds, RAW_DIR)
+        band0 = sanitize_model_vals(np.asarray(arr[0], dtype=float), -80.0, 60.0)
+        g = resample_wcs_to_canvas(band0 + 273.15, lat1d, lon1d, target_bounds)
         g = K2F(np.where(np.isfinite(g), g, np.nan))
-        g = fill_pinholes(g, radius=3)
+        return fill_pinholes(g, radius=3)
+    try:
+        g = _gdps_tmp(bounds)
         layers.append((g, np.isfinite(g)))
-        prov["gdps"] = f"GDPS_15km_AirTemp_2m n={int(np.isfinite(g).sum())}"
+        gg = _gdps_tmp(gbounds)
+        glayers.append((gg, np.isfinite(gg)))
+        prov["gdps"] = f"GDPS_15km_AirTemp_2m n={int(np.isfinite(g).sum())}/g={int(np.isfinite(gg).sum())}"
     except Exception as e:
         prov["gdps"] = f"unavailable: {type(e).__name__}: {e}"
     if not layers or not any(np.isfinite(g).any() for g, _ in layers):
@@ -203,23 +218,34 @@ def _build(bounds, W, H, prev):
     n_raw = int(own.sum())
     disp_full = smooth_field(f_grid, size=5, passes=2)
     print(f"[{PRODUCT}] raw px={n_raw} prov={prov}")
+    # Worldwide merge on the global canvas (same precedence, tighter
+    # feather at 0.10 deg/px).
+    gf_grid, gown = feather_merge(glayers, feather_px=6)
+    gown = despeckle_valid(gown, min_size=4) & np.isfinite(gf_grid)
+    gf_grid[~gown] = np.nan
+    disp_global = smooth_field(gf_grid, size=5, passes=2)
 
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
                            COVERAGE_DISPLAY, coverage_selector_html)
     default_cover = CONFIG_NA.get("coverage_mode", "landonly")
+    if default_cover == "extended200":
+        default_cover = "global"
     variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
                     for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
                       for m in COVERAGE_DISPLAY}
+    VARIANT_BOUNDS = {"basin": bounds, "landonly": bounds, "global": gbounds,
+                      "extended200": gbounds}
     data_time = now_det_str()
     scale_html = SCALE_HTML
     src_id = f"na-tmp-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
     token = source_token(src_id + json.dumps(prov, sort_keys=True))
 
     # Per-coverage rasters: the primary live folder references these
-    # PNGs as its three hideable overlays.
+    # PNGs as its three hideable overlays. Global renders worldwide.
     for mode in COVERAGE_DISPLAY:
-        disp_m = gate_field_to_coverage(disp_full, mode)
+        src = disp_global if mode == "global" else disp_full
+        disp_m = gate_field_to_coverage(src, mode)
         n_valid_m = int(np.isfinite(disp_m).sum())
         print(f"[{PRODUCT}] variant {mode}: px={n_valid_m}")
         rgba_m = render_rgba(np.clip(disp_m, -60.0, 150.0), TEMP_SMOOTH_STOPS, 205)
@@ -242,7 +268,7 @@ def _build(bounds, W, H, prev):
         vmeta["legend_scale_html"] = scale_html
         vmeta["source_id"] = src_id
         vmeta["source_version"] = token
-        vmeta["na_bounds"] = bounds
+        vmeta["na_bounds"] = VARIANT_BOUNDS[mode]
         vmeta["coverage_mode"] = mode
         vmeta["stats"] = {"valid_pixels": n_valid_m, "raw_pixels": n_raw}
         vmeta["folder_html"] = (
@@ -252,10 +278,12 @@ def _build(bounds, W, H, prev):
             f"<b>Provenance:</b> {prov}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
 
-    disp = gate_field_to_coverage(disp_full, default_cover)
+    disp_src = disp_global if default_cover == "global" else disp_full
+    disp = gate_field_to_coverage(disp_src, default_cover)
     n_valid = int(np.isfinite(disp).sum())
+    def_h, def_w = (GH, GW) if default_cover == "global" else (H, W)
     print(f"[{PRODUCT}] display px={n_valid} "
-          f"({100.0*n_valid/(W*H):.2f}%) prov={prov}")
+          f"({100.0*n_valid/(def_w*def_h):.2f}%) prov={prov}")
 
     rgba = render_rgba(np.clip(disp, -60.0, 150.0), TEMP_SMOOTH_STOPS, 205)
     rgba = apply_coverage_mask(rgba, default_cover)
@@ -279,7 +307,7 @@ def _build(bounds, W, H, prev):
     meta["legend_scale_html"] = scale_html
     meta["source_id"] = src_id
     meta["source_version"] = token
-    meta["na_bounds"] = bounds
+    meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
     meta["coverage_mode"] = default_cover
     meta["stats"] = {"valid_pixels": n_valid, "raw_pixels": n_raw}
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2>"
@@ -289,7 +317,7 @@ def _build(bounds, W, H, prev):
     write_metadata(stage_prod, meta)
     outs = live_out_dirs(stage, KML_FILE)
     extras = [(COVERAGE_LABELS[m], f"{variant_dirs[m]}/current.png",
-               bounds, 11 + i, 0)
+               VARIANT_BOUNDS[m], 11 + i, 0)
               for i, m in enumerate([m for m in COVERAGE_DISPLAY
                                      if m != default_cover])]
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
@@ -298,7 +326,8 @@ def _build(bounds, W, H, prev):
                          + coverage_selector_html(default_cover),
                          CONFIG_NA["refresh_interval_seconds"], token,
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
-                         out_dirs=outs["live"], meta=meta, bounds=bounds,
+                         out_dirs=outs["live"], meta=meta,
+                         bounds=VARIANT_BOUNDS[default_cover],
                          extra_overlays=extras, folder_radio=True)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,

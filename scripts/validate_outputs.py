@@ -139,16 +139,21 @@ META_REQUIRED = ["product", "title", "freshness", "noaa_source", "variable",
 _NA_SIZE = (3300, 1600)
 _NA_EDGES = {"<north>": 85.0, "<south>": 5.0,
              "<east>": -15.0, "<west>": -180.0}
+_GLOBAL_SIZE = (3600, 1800)
+_GLOBAL_EDGES = {"<north>": 90.0, "<south>": -90.0,
+                 "<east>": 180.0, "<west>": -180.0}
 GLOBAL_GEOMETRY = {
     "aurora_global": {
         "size": (3600, 1800),
         "edges": {"<north>": 90.0, "<south>": -90.0,
                   "<east>": 180.0, "<west>": -180.0},
     },
-    "precipitation_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
-    "cloud_cover_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    # Global is the default coverage: worldwide primaries. Air
+    # temperature defaults to North America Coverage (NA primary).
+    "precipitation_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
+    "cloud_cover_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
     "air_temperature_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
-    "wind_na": {"size": _NA_SIZE, "edges": _NA_EDGES},
+    "wind_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
 }
 
 
@@ -543,7 +548,7 @@ def main():
                             or text.count("<visibility>0</visibility>") != 2:
                         failures.append(f"{product}: want exactly one coverage "
                                         f"switched ON and two OFF in {kp}")
-                    for _cov in ("Extended North America Coverage",
+                    for _cov in ("Global Coverage",
                                  "North America Coverage",
                                  "Great Lakes Basin Coverage"):
                         if _cov not in text:

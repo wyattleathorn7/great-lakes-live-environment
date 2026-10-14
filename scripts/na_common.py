@@ -167,6 +167,7 @@ def load_landmask():
 
 _LANDONLY = None
 _LAKES = None
+_GLAKES = None
 _EXTENDED = None
 
 
@@ -189,16 +190,24 @@ def load_extended():
 
 # Coverage switch shared by the four NA builders. Each product config
 # carries "coverage_mode": one of "basin" (original Great Lakes
-# rectangle), "landonly" (crisp NA land, no sea fringe), or
-# "extended200" (200-mile offshore + full Gulf/Caribbean). Deploy-time
+# rectangle), "landonly" (crisp NA land, no sea fringe), or "global"
+# (worldwide 3600x1800 canvas, valid data everywhere, transparent
+# elsewhere — replaced the former extended200 offshore mask). Deploy-time
 # switch: edit the product's config, rebuild, publish.
-COVERAGE_MODES = ("basin", "landonly", "extended200")
+COVERAGE_MODES = ("basin", "landonly", "global")
 
 
 def load_coverage_mask(mode):
     """Feathered 0..1 canvas mask for a coverage mode."""
+    if mode == "global":
+        # Worldwide: no artificial cut — every valid pixel paints.
+        # Shape must match the calling canvas; builders pass the mask
+        # through apply/gate helpers that broadcast, so return None as
+        # the "no mask" sentinel and let the helpers no-op.
+        return None
     if mode == "extended200":
-        return load_extended()
+        # Retired alias: extended200 became global (no mask cut).
+        return None
     if mode == "landonly":
         return load_landonly()
     if mode == "basin":
@@ -223,8 +232,11 @@ def load_coverage_mask(mode):
 
 def apply_coverage_mask(rgba, mode):
     """Alpha-cut + edge-RGB bleed for a coverage mode (same anti-fringe
-    contract as apply_coast_mask)."""
+    contract as apply_coast_mask). The global mode is a no-op beyond the
+    bleed (no artificial edge exists)."""
     from geospatial_utils import bleed_rgb_into_transparent
+    if mode in ("global", "extended200"):
+        return bleed_rgb_into_transparent(rgba.copy())
     out = rgba.copy()
     out[:, :, 3] = np.round(
         out[:, :, 3].astype(np.float32) * load_coverage_mask(mode)).astype(np.uint8)
@@ -233,6 +245,9 @@ def apply_coverage_mask(rgba, mode):
 
 def gate_field_to_coverage(field, mode):
     """NaN-out field values where the coverage mask is exactly 0."""
+    if mode in ("global", "extended200"):
+        # Worldwide: every valid pixel paints; nothing to gate.
+        return field.copy()
     f = field.copy()
     f[load_coverage_mask(mode) <= 0.0] = np.nan
     return f
@@ -263,11 +278,52 @@ def load_landonly():
     global _LANDONLY
     if _LANDONLY is None:
         p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                         "assets", "north_america_landonly.npy")
+                          "assets", "north_america_landonly.npy")
         if not os.path.exists(p):
             raise FileNotFoundError(f"NA land-only mask missing: {p}")
         _LANDONLY = np.load(p).astype(np.float32)
     return _LANDONLY
+
+
+def load_global_lakemask():
+    """Lake mask on the worldwide canvas (wind global variant only).
+
+    The NA lake mask (3300x1600 @ 0.05 deg) max-pooled 2x2 into the NA
+    footprint of the 3600x1800 @ 0.10 deg global grid (rows 50..850,
+    cols 0..1650); zeros elsewhere (no worldwide lake survey exists).
+    Lets the global variant keep the EXACT dual-opacity finish where it
+    overlaps North America: Great Lakes + Canadian lakes at water alpha
+    with exact Beaufort colors, everything else vivid land twins.
+    """
+    global _GLAKES
+    if _GLAKES is None:
+        from na_bounds import load_global_bounds, load_na_bounds
+        gb = load_global_bounds()
+        nb = load_na_bounds()
+        GH, GW = gb["canvas_height"], gb["canvas_width"]
+        out = np.zeros((GH, GW), dtype=np.float32)
+        lake = load_lakemask()
+        H, W = lake.shape
+        small = lake.reshape(H // 2, 2, W // 2, 2).max(axis=(1, 3))
+        r0 = int((gb["lat_max"] - nb["lat_max"])
+                 / (gb["lat_max"] - gb["lat_min"]) * GH)
+        r1 = int((gb["lat_max"] - nb["lat_min"])
+                 / (gb["lat_max"] - gb["lat_min"]) * GH)
+        c0 = int((nb["lon_min"] - gb["lon_min"])
+                 / (gb["lon_max"] - gb["lon_min"]) * GW)
+        c1 = int((nb["lon_max"] - gb["lon_min"])
+                 / (gb["lon_max"] - gb["lon_min"]) * GW)
+        rh, cw = r1 - r0, c1 - c0
+        sh, sw = small.shape
+        if (rh, cw) != (sh, sw):
+            import math
+            rr = min(rh, sh)
+            cc = min(cw, sw)
+            out[r0:r0 + rr, c0:c0 + cc] = small[:rr, :cc]
+        else:
+            out[r0:r1, c0:c1] = small
+        _GLAKES = (out >= 0.5)
+    return _GLAKES
 
 
 def apply_coast_mask(rgba, mask=None):

@@ -178,7 +178,8 @@ def _ir_underlay(bounds, W, H):
     from na_common import (bin_points_to_canvas, fill_pinholes,
                            gate_field_to_coverage)
     try:
-        with np.load(os.path.join(RAW_DIR, "na_cloud_ir.npz")) as z:
+        with np.load(os.path.join(
+                RAW_DIR, f"na_cloud_ir_{W}x{H}.npz")) as z:
             cb = np.asarray(z["bright"], dtype=float)
             ca = np.asarray(z["alpha"], dtype=float)
             built = dt.datetime.fromisoformat(str(z["built_utc"]))
@@ -217,10 +218,11 @@ def _ir_underlay(bounds, W, H):
     bright[m] = np.clip((288.0 - cold[m]) * 4.0, 0.0, 255.0)
     alpha[m] = np.clip((282.0 - cold[m]) * 4.5, 0.0, 215.0)
     alpha[m & (alpha < 3.0)] = np.nan  # warm surface: fully transparent
-    bright = gate_field_to_coverage(bright, CONFIG_NA.get("coverage_mode", "extended200"))
-    alpha = gate_field_to_coverage(alpha, CONFIG_NA.get("coverage_mode", "extended200"))
+    bright = gate_field_to_coverage(bright, "global")
+    alpha = gate_field_to_coverage(alpha, "global")
     try:
-        np.savez_compressed(os.path.join(RAW_DIR, "na_cloud_ir.npz"),
+        np.savez_compressed(os.path.join(
+            RAW_DIR, f"na_cloud_ir_{W}x{H}.npz"),
                             bright=bright.astype(np.float32),
                             alpha=alpha.astype(np.float32),
                             built_utc=dt.datetime.now(dt.timezone.utc).isoformat())
@@ -249,15 +251,13 @@ def run():
         return 2
 
 
-def _build(scan_dt, source_id, bounds, W, H):
-    from geospatial_utils import _legend_font, draw_category_legend
-    stage = stage_dir(PRODUCT)
-    stage_prod = os.path.join(stage, "site", PRODUCT)
-    os.makedirs(stage_prod, exist_ok=True)
-    dom = CONFIG_NA["iem_effective_domain"]
-
-    # 1) IEM full-NA GetMap (CONUS echoes land inside its domain).
-    iem_path = os.path.join(RAW_DIR, "precip_na_iem.png")
+def _compose_radar(scan_dt, bounds, W, H, tag):
+    """Radar composite on ANY canvas bbox (NA or worldwide): the exact
+    same IEM + ECCC WMS code, IR underlay, and one-legend compose as the
+    original basin layer. Returns
+    (base_rgba, n_iem, n_eccc, cloud_prov, t_rain, t_snow)."""
+    # 1) IEM GetMap (CONUS echoes land inside its domain).
+    iem_path = os.path.join(RAW_DIR, f"precip_{tag}_iem.png")
     wms_getmap(na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H), iem_path)
     iem = load_rgba(iem_path, (W, H))
     iem_echo = iem[:, :, 3] > 0
@@ -280,7 +280,7 @@ def _build(scan_dt, source_id, bounds, W, H):
             ("snow", "RADAR_1KM_RSNO", "Radar-Snow_14colors", True),
             ("covr", "RADAR_COVERAGE_RRAI.INV", "", False),
             ("covs", "RADAR_COVERAGE_RSNO.INV", "", False)):
-        p = os.path.join(RAW_DIR, f"precip_na_eccc_{key}.png")
+        p = os.path.join(RAW_DIR, f"precip_{tag}_eccc_{key}.png")
         wms_getmap(na_wms_111(ECCC, layer, bounds, W, H,
                               extra="&INTERPOLATION=TRUE" if interp else "",
                               style=style), p)
@@ -363,15 +363,95 @@ def _build(scan_dt, source_id, bounds, W, H):
     n_eccc = int(eccc_echo.sum())
     print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} "
           f"({100.0*(n_iem+n_eccc)/(W*H):.2f}% canvas)")
+    return out, n_iem, n_eccc, cloud_prov, t_rain, t_snow
+
+
+def _gdps_precip_fill(base, bounds, W, H):
+    """GDPS model precip fill on the worldwide composite ONLY where
+    radar is blind: GDPS_15km_PrecipRate WCS -> mm/h (adaptive units,
+    ECCC publishes a bogus uom) -> dBZ via the NWS Z=300R^1.4 bridge
+    -> the ORIGINAL N0Q key bins (same colors as radar). Observed
+    radar echoes always win; rates below 0.1 mm/h stay transparent
+    like a no-echo. Returns (base, prov). Never raises."""
+    import numpy as _np
+    try:
+        from na_common import (fill_pinholes, gdps_wcs_grid,
+                               resample_wcs_to_canvas, sanitize_model_vals,
+                               smooth_field)
+        arr, _la, _lo, slat, slon = gdps_wcs_grid(
+            "GDPS_15km_PrecipRate", bounds, RAW_DIR)
+        raw = _np.asarray(arr[0], dtype=float)
+        vmax = float(_np.nanmax(raw)) if _np.isfinite(raw).any() else float("nan")
+        if not _np.isfinite(vmax):
+            return base, "GDPS PrecipRate empty"
+        if vmax < 0.5:
+            rate, unit = raw * 3.6e6, "m/s->mm/h"
+        else:
+            rate, unit = raw, "mm/h native"
+        rate = sanitize_model_vals(rate, 0.0, 500.0)
+        g = resample_wcs_to_canvas(rate, slat, slon, bounds)
+        g = smooth_field(fill_pinholes(g, radius=3), size=5, passes=2)
+        wet = _np.isfinite(g) & (g >= 0.1)
+        blind = wet & ~(base[:, :, 3] > 0)
+        n = int(blind.sum())
+        if n:
+            dbz = _np.array([_rate_to_dbz(float(x)) for x in g[blind]])
+            keypal = _np.array([c for c, _ in KEY_ROWS], dtype=_np.uint8)
+            idx = _np.zeros(dbz.shape, dtype=int)
+            for i, z in enumerate(dbz):
+                b = 0
+                for lo in KEY_BINS[1:]:
+                    if z >= lo:
+                        b += 1
+                    else:
+                        break
+                idx[i] = min(b, len(keypal) - 1)
+            base[blind, :3] = keypal[idx]
+            base[blind, 3] = 190
+        return base, f"GDPS_15km_PrecipRate ({unit}) fill px={n}"
+    except Exception as e:
+        return base, f"GDPS fill unavailable:{type(e).__name__}"
+
+
+def _build(scan_dt, source_id, bounds, W, H):
+    from geospatial_utils import _legend_font, draw_category_legend
+    from na_bounds import load_global_bounds
+    gbounds = load_global_bounds()
+    GW, GH = gbounds["canvas_width"], gbounds["canvas_height"]
+    stage = stage_dir(PRODUCT)
+    stage_prod = os.path.join(stage, "site", PRODUCT)
+    os.makedirs(stage_prod, exist_ok=True)
+    base, n_iem, n_eccc, cloud_prov, t_rain, t_snow = _compose_radar(
+        scan_dt, bounds, W, H, "na")
+    # Worldwide composite: the SAME WMS radar code at the global bbox
+    # (echoes land where radar exists, transparent elsewhere) + the
+    # worldwide IR underlay, then GDPS model fill where radar is blind.
+    gbase, gn_iem, gn_eccc, gcloud_prov, _, _ = _compose_radar(
+        scan_dt, gbounds, GW, GH, "global")
+    gbase, gdps_prov = _gdps_precip_fill(gbase, gbounds, GW, GH)
+    gcloud_prov = f"{gcloud_prov}; {gdps_prov}"
 
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
                            COVERAGE_DISPLAY, coverage_selector_html)
     from na_common import apply_coverage_mask
-    default_cover = CONFIG_NA.get("coverage_mode", "extended200")
+    default_cover = CONFIG_NA.get("coverage_mode", "global")
+    if default_cover == "extended200":
+        default_cover = "global"
     variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
                     for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
                       for m in COVERAGE_DISPLAY}
+    VARIANT_BOUNDS = {"basin": bounds, "landonly": bounds, "global": gbounds,
+                      "extended200": gbounds}
+    # Per-variant composite: basin + NA use the NA radar composite
+    # (pixels identical to before); global uses the worldwide composite
+    # with GDPS model fill. Same key, same underlay engine.
+    VARIANT_BASE = {"basin": base, "landonly": base, "global": gbase,
+                    "extended200": gbase}
+    VARIANT_DIMS = {"basin": (W, H), "landonly": (W, H), "global": (GW, GH),
+                    "extended200": (GW, GH)}
+    VARIANT_PROV = {"basin": cloud_prov, "landonly": cloud_prov,
+                    "global": gcloud_prov, "extended200": gcloud_prov}
     data_time = scan_dt.strftime("%Y-%m-%d %H:%M UTC")
     subtitle = f"NA radar mosaic (IEM N0Q + ECCC RRAI/RSNO) + cloud underlay | {data_time}"
     token = source_token(source_id)
@@ -379,7 +459,9 @@ def _build(scan_dt, source_id, bounds, W, H):
     # Per-coverage rasters: the primary live folder references these
     # PNGs as its three hideable overlays.
     for mode in COVERAGE_DISPLAY:
-        out_m = apply_coverage_mask(base, mode)
+        vw, vh = VARIANT_DIMS[mode]
+        out_m = apply_coverage_mask(VARIANT_BASE[mode], mode)
+        vprov = VARIANT_PROV[mode]
         vprod = variant_dirs[mode]
         vtitle = variant_titles[mode]
         vdir = os.path.join(stage, "site", vprod)
@@ -403,26 +485,29 @@ def _build(scan_dt, source_id, bounds, W, H):
         vmeta["legend_scale_html"] = SCALE_HTML
         vmeta["source_id"] = source_id
         vmeta["source_version"] = token
-        vmeta["na_bounds"] = bounds
+        vmeta["na_bounds"] = VARIANT_BOUNDS[mode]
         vmeta["coverage_mode"] = mode
         vmeta["stats"] = {"opaque_pixels": n_opaque,
-                          "transparent_pixels": int(W * H - n_opaque),
-                          "cloud_underlay": cloud_prov}
+                          "transparent_pixels": int(vw * vh - n_opaque),
+                          "cloud_underlay": vprov}
         vmeta["provenance"] = {"iem_wms": na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H)[:200],
                                "eccc_wms": ECCC, "eccc_time_rain": t_rain,
                                "eccc_time_snow": t_snow,
-                               "cloud_underlay": cloud_prov}
+                               "cloud_underlay": vprov}
         vmeta["folder_html"] = (
             f"<h2>{vtitle}</h2>"
             f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
             f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
             f"<b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
             f"<b>Cloud underlay:</b> real GOES-19/18 Band-13 infrared "
-            f"satellite texture ({cloud_prov})<br>"
+            f"satellite texture ({vprov})<br>"
             f"<b>Data time:</b> {data_time}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
 
-    out = apply_coverage_mask(base, default_cover)
+    def_base = VARIANT_BASE[default_cover]
+    def_prov = VARIANT_PROV[default_cover]
+    def_w, def_h = VARIANT_DIMS[default_cover]
+    out = apply_coverage_mask(def_base, default_cover)
     save_png(out, os.path.join(stage_prod, "current.png"))
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
@@ -445,27 +530,27 @@ def _build(scan_dt, source_id, bounds, W, H):
     meta["legend_scale_html"] = SCALE_HTML
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
-    meta["na_bounds"] = bounds
+    meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
     meta["stats"] = {"iem_pixels": n_iem, "eccc_pixels": n_eccc,
-                      "transparent_pixels": int(W * H - n_iem - n_eccc),
-                      "cloud_underlay": cloud_prov}
+                      "transparent_pixels": int(def_w * def_h - n_iem - n_eccc),
+                      "cloud_underlay": def_prov}
     meta["provenance"] = {"iem_wms": na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H)[:200],
                           "eccc_wms": ECCC, "eccc_time_rain": t_rain, "eccc_time_snow": t_snow,
-                          "cloud_underlay": cloud_prov}
+                          "cloud_underlay": def_prov}
     token = meta["source_version"]
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2>"
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
                    f"<b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
                    f"<b>Cloud underlay:</b> real GOES-19/18 Band-13 infrared "
-                   f"satellite texture ({cloud_prov})<br>"
+                   f"satellite texture ({def_prov})<br>"
                    f"<b>Data time:</b> {data_time}</p>")
     meta["folder_html"] = folder_html + coverage_selector_html(default_cover)
     meta["coverage_mode"] = default_cover
     write_metadata(stage_prod, meta)
     outs = live_out_dirs(stage, KML_FILE)
     extras = [(COVERAGE_LABELS[m], f"{variant_dirs[m]}/current.png",
-               bounds, 11 + i, 0)
+               VARIANT_BOUNDS[m], 11 + i, 0)
               for i, m in enumerate([m for m in COVERAGE_DISPLAY
                                      if m != default_cover])]
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
@@ -474,7 +559,8 @@ def _build(scan_dt, source_id, bounds, W, H):
                          + coverage_selector_html(default_cover),
                          CONFIG_NA["refresh_interval_seconds"], token,
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
-                         out_dirs=outs["live"], meta=meta, bounds=bounds,
+                         out_dirs=outs["live"], meta=meta,
+                         bounds=VARIANT_BOUNDS[default_cover],
                          extra_overlays=extras, folder_radio=True)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,

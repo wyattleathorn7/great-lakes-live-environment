@@ -13,8 +13,10 @@ import os
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 NA_BOUNDS_PATH = os.path.join(REPO_ROOT, "config", "north_america_bounds.json")
+GLOBAL_BOUNDS_PATH = os.path.join(REPO_ROOT, "config", "global_bounds.json")
 
 _NA_BOUNDS = None
+_GLOBAL_BOUNDS = None
 
 
 def load_na_bounds():
@@ -23,6 +25,19 @@ def load_na_bounds():
         with open(NA_BOUNDS_PATH) as f:
             _NA_BOUNDS = json.load(f)
     return _NA_BOUNDS
+
+
+def load_global_bounds():
+    """Global coverage canvas (former extended200 variant's replacement).
+
+    3600x1800, lon -180..180, lat -90..90, 0.10 deg/px — same grid as
+    aurora_global. Basin + North America variants are untouched.
+    """
+    global _GLOBAL_BOUNDS
+    if _GLOBAL_BOUNDS is None:
+        with open(GLOBAL_BOUNDS_PATH) as f:
+            _GLOBAL_BOUNDS = json.load(f)
+    return _GLOBAL_BOUNDS
 
 
 def na_canvas_indices(bounds=None):

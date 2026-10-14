@@ -150,8 +150,12 @@ def _build(bounds, W, H):
     os.makedirs(stage_prod, exist_ok=True)
     # Fresh checkouts (CI runners) lack the gitignored output/raw dir.
     os.makedirs(RAW_DIR, exist_ok=True)
+    from na_bounds import load_global_bounds
+    gbounds = load_global_bounds()
+    GW, GH = gbounds["canvas_width"], gbounds["canvas_height"]
     prov = {}
     sat_grids = []
+    gsat_grids = []
 
     for name, bucket, prefix, sat in FD_SOURCES:
         try:
@@ -165,7 +169,10 @@ def _build(bounds, W, H):
             g, c = bin_points_to_canvas(cloudy, lats, lons, bounds, agg="mean",
                                         splat_radius=2)
             sat_grids.append(g)
-            prov[name] = f"{scan:%Y-%m-%d %H:%MZ} valid-cells={int(np.isfinite(g).sum())}"
+            gg, _ = bin_points_to_canvas(cloudy, lats, lons, gbounds, agg="mean",
+                                         splat_radius=1)
+            gsat_grids.append(gg)
+            prov[name] = f"{scan:%Y-%m-%d %H:%MZ} valid-cells={int(np.isfinite(g).sum())}/g={int(np.isfinite(gg).sum())}"
         except Exception as e:
             prov[name] = f"unavailable: {type(e).__name__}: {e}"
 
@@ -179,6 +186,16 @@ def _build(bounds, W, H):
         field[m] = frac[m] * 100.0
         sat_valid[m] = True
     layers = [(field, sat_valid)]
+    gfield = np.full((GH, GW), np.nan)
+    gsat_valid = np.zeros((GH, GW), dtype=bool)
+    if gsat_grids:
+        gstack = np.stack([np.where(np.isfinite(g), g, np.nan) for g in gsat_grids])
+        with np.errstate(invalid="ignore"):
+            gfrac = np.nanmean(gstack, axis=0)
+        gm = np.isfinite(gfrac)
+        gfield[gm] = gfrac[gm] * 100.0
+        gsat_valid[gm] = True
+    glayers = [(gfield, gsat_valid)]
     # RRFS TCDC fallback where GOES missing.
     rrfc = 0
     rrfs_grid = np.full((H, W), np.nan)
@@ -220,6 +237,14 @@ def _build(bounds, W, H):
                                             np.asarray(lons, float), bounds)
                 g = fill_pinholes(g, radius=3)
                 m = np.isfinite(g)
+                gg, _ = bin_points_to_canvas(vals, np.asarray(lats, float),
+                                             np.asarray(lons, float), gbounds)
+                gg = fill_pinholes(gg, radius=3)
+                gm = np.isfinite(gg)
+                grrfs_grid = np.full((GH, GW), np.nan)
+                grrfs_grid[gm] = np.clip(gg[gm], 0, 100)
+                grrfs_grid = smooth_field(grrfs_grid, size=5, passes=2)
+                glayers.append((grrfs_grid, np.isfinite(grrfs_grid)))
                 rrfs_grid[m] = np.clip(g[m], 0, 100)
                 rrfs_valid[m] = True
                 # Display-smoothing on the MODEL layer only: the coarse
@@ -228,7 +253,7 @@ def _build(bounds, W, H):
                 # original layer's look).
                 rrfs_grid = smooth_field(rrfs_grid, size=5, passes=2)
                 rrfc = int(m.sum())
-                prov["RRFS-TCDC"] = f"{dd} n={rrfc}"
+                prov["RRFS-TCDC"] = f"{dd} n={rrfc}/g={int(gm.sum())}"
                 got = True
                 break
             if got:
@@ -241,21 +266,26 @@ def _build(bounds, W, H):
     layers.append((rrfs_grid, rrfs_valid))
     # GDPS TotalCloudCover last-resort fill ONLY where GOES + RRFS both lack
     # verified valid data (same fallback contract as air-temp/wind; the
-    # config already promises it). Bilinear resample so coarse cells render
+    # config already promises it). Worldwide on the global canvas via a
+    # second WCS bbox. Bilinear resample so coarse cells render
     # as gradient, never dots.
-    try:
+    def _gdps_tcc(target_bounds):
         from na_common import gdps_wcs_grid, resample_wcs_to_canvas
         arr, _la, _lo, slat, slon = gdps_wcs_grid(
-            "GDPS_15km_TotalCloudCover", bounds, RAW_DIR)
+            "GDPS_15km_TotalCloudCover", target_bounds, RAW_DIR)
         raw = np.asarray(arr[0], dtype=float)
         if np.isfinite(raw).any() and np.nanmax(raw) <= 1.0:
             raw = raw * 100.0  # fraction -> %
         g = resample_wcs_to_canvas(
-            sanitize_model_vals(raw, 0.0, 100.0), slat, slon, bounds)
-        g = smooth_field(fill_pinholes(np.clip(g, 0.0, 100.0), radius=3),
-                         size=5, passes=2)
+            sanitize_model_vals(raw, 0.0, 100.0), slat, slon, target_bounds)
+        return smooth_field(fill_pinholes(np.clip(g, 0.0, 100.0), radius=3),
+                            size=5, passes=2)
+    try:
+        g = _gdps_tcc(bounds)
         layers.append((g, np.isfinite(g)))
-        prov["GDPS-TCC"] = f"GDPS_15km_TotalCloudCover n={int(np.isfinite(g).sum())}"
+        gg = _gdps_tcc(gbounds)
+        glayers.append((gg, np.isfinite(gg)))
+        prov["GDPS-TCC"] = f"GDPS_15km_TotalCloudCover n={int(np.isfinite(g).sum())}/g={int(np.isfinite(gg).sum())}"
     except Exception as e:
         prov["GDPS-TCC"] = f"unavailable: {type(e).__name__}: {e}"
     # Per-pixel provenance mask (same precedence as the merge: sat wins,
@@ -280,7 +310,10 @@ def _build(bounds, W, H):
     # the raw observed neighborhood fraction (its grain IS the product),
     # and model layers arrive pre-smoothed above. Gaps stay transparent.
     field, _v = feather_merge(layers, feather_px=12)
-    default_cover = CONFIG_NA.get("coverage_mode", "extended200")
+    gfield_merged, _gv = feather_merge(glayers, feather_px=6)
+    default_cover = CONFIG_NA.get("coverage_mode", "global")
+    if default_cover == "extended200":
+        default_cover = "global"
     # Shared cache for the precipitation composite: the UNGATED merged %
     # field (NaN = missing/clear) + build time (precipitation_na applies
     # its own coverage mask, so the cache must not be pre-clipped).
@@ -300,6 +333,8 @@ def _build(bounds, W, H):
                     for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
                       for m in COVERAGE_DISPLAY}
+    VARIANT_BOUNDS = {"basin": bounds, "landonly": bounds, "global": gbounds,
+                      "extended200": gbounds}
     data_time = now_det_str()
     scale_html = ("Cloud cover (%, OBSERVED neighborhood fraction from "
                   "GOES: share of 2 km satellite pixels flagged cloudy "
@@ -314,11 +349,13 @@ def _build(bounds, W, H):
     token = source_token(src_id + json.dumps(prov, sort_keys=True))
 
     # Per-coverage rasters: the primary live folder references these
-    # PNGs as its three hideable overlays.
+    # PNGs as its three hideable overlays. Global renders worldwide.
     for mode in COVERAGE_DISPLAY:
-        field_m = gate_field_to_coverage(field, mode)
+        src_field = gfield_merged if mode == "global" else field
+        src_sat = gsat_valid if mode == "global" else sat_valid
+        field_m = gate_field_to_coverage(src_field, mode)
         n_mod = int(np.isfinite(field_m).sum()
-                    - (np.isfinite(field_m) & sat_valid).sum())
+                    - (np.isfinite(field_m) & src_sat).sum())
         print(f"[{PRODUCT}] variant {mode}: model-fill px={n_mod}")
         rgba_m = render_rgba(field_m, CLOUD_STOPS, 205)
         clear_m = np.isfinite(field_m) & (field_m < 1.0)
@@ -342,7 +379,7 @@ def _build(bounds, W, H):
         vmeta["legend_scale_html"] = scale_html
         vmeta["source_id"] = src_id
         vmeta["source_version"] = token
-        vmeta["na_bounds"] = bounds
+        vmeta["na_bounds"] = VARIANT_BOUNDS[mode]
         vmeta["coverage_mode"] = mode
         vmeta["stats"] = {"satellite_pixels": n_sat,
                           "model_fill_pixels": n_mod}
@@ -353,8 +390,11 @@ def _build(bounds, W, H):
             f"<b>Provenance:</b> {prov}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
 
-    field = gate_field_to_coverage(field, default_cover)
-    n_mod = int(np.isfinite(field).sum() - (np.isfinite(field) & sat_valid).sum())
+    src_field = gfield_merged if default_cover == "global" else field
+    src_sat = gsat_valid if default_cover == "global" else sat_valid
+    field = gate_field_to_coverage(src_field, default_cover)
+    n_mod = int(np.isfinite(field).sum() - (np.isfinite(field) & src_sat).sum())
+    n_sat = int(src_sat.sum())
     print(f"[{PRODUCT}] sat px={n_sat} model-fill px={n_mod} prov={prov}")
 
     rgba = render_rgba(field, CLOUD_STOPS, 205)
@@ -381,7 +421,7 @@ def _build(bounds, W, H):
     meta["legend_scale_html"] = scale_html
     meta["source_id"] = src_id
     meta["source_version"] = token
-    meta["na_bounds"] = bounds
+    meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
     meta["coverage_mode"] = default_cover
     meta["stats"] = {"satellite_pixels": n_sat, "model_fill_pixels": n_mod}
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2>"
@@ -391,7 +431,7 @@ def _build(bounds, W, H):
     write_metadata(stage_prod, meta)
     outs = live_out_dirs(stage, KML_FILE)
     extras = [(COVERAGE_LABELS[m], f"{variant_dirs[m]}/current.png",
-               bounds, 11 + i, 0)
+               VARIANT_BOUNDS[m], 11 + i, 0)
               for i, m in enumerate([m for m in COVERAGE_DISPLAY
                                      if m != default_cover])]
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
@@ -400,7 +440,8 @@ def _build(bounds, W, H):
                          + coverage_selector_html(default_cover),
                          CONFIG_NA["refresh_interval_seconds"], token,
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
-                         out_dirs=outs["live"], meta=meta, bounds=bounds,
+                         out_dirs=outs["live"], meta=meta,
+                         bounds=VARIANT_BOUNDS[default_cover],
                          extra_overlays=extras, folder_radio=True)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,

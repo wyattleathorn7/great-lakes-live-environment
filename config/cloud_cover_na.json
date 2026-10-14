@@ -1,8 +1,8 @@
 {
-  "coverage": "Shared North American boundary config/north_america_bounds.json (lon -180..-15, lat 5..85, 3300x1600). Full rectangle; missing stays transparent, never 0%.",
-  "coverage_mode": "extended200",
+  "coverage": "Worldwide config/global_bounds.json (lon -180..180, lat -90..90, 3600x1800) + NA nest. Full rectangle; missing stays transparent, never 0%.",
+  "coverage_mode": "global",
   "display_units": "% cloud cover",
-  "fallback_note": "RRFS TCDC entire-atmosphere analysis (%) where no valid GOES mask exists. GDPS TotalCloudCover only for verified remaining gaps.",
+  "fallback_note": "RRFS TCDC entire-atmosphere analysis (%) where no valid GOES mask exists (NA domain). GDPS TotalCloudCover worldwide on the Global coverage, NA gaps otherwise.",
   "fallback_rrfs": "NOAA RRFS TCDC entire atmosphere (considered as a single layer), analysis step, %",
   "fallback_rrfs_url": "https://gsl.noaa.gov/rrfs/",
   "fallback_url": "https://open.canada.ca/data/en/dataset/c041e79a-914a-5a4e-a485-9cbc506195df",

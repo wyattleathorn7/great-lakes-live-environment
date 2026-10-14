@@ -973,7 +973,7 @@ jobs:
             site/wind_na
             site/wind_na_basin
             site/wind_na_northamerica
-            site/wind_na_extended
+            site/wind_na_global
             output/state/wind_na.json
             site/kml/North_America_Live_Wind.kml
             site/kml/live/North_America_Live_Wind.kml
@@ -1008,7 +1008,7 @@ jobs:
             site/air_temperature_na
             site/air_temperature_na_basin
             site/air_temperature_na_northamerica
-            site/air_temperature_na_extended
+            site/air_temperature_na_global
             site/kml/North_America_Live_Air_Temperature.kml
             site/kml/live/North_America_Live_Air_Temperature.kml
             kml/North_America_Live_Air_Temperature.kml
@@ -1043,7 +1043,7 @@ jobs:
             site/cloud_cover_na
             site/cloud_cover_na_basin
             site/cloud_cover_na_northamerica
-            site/cloud_cover_na_extended
+            site/cloud_cover_na_global
             site/kml/North_America_Live_Cloud_Cover.kml
             site/kml/live/North_America_Live_Cloud_Cover.kml
             kml/North_America_Live_Cloud_Cover.kml
@@ -1078,7 +1078,7 @@ jobs:
             site/precipitation_na
             site/precipitation_na_basin
             site/precipitation_na_northamerica
-            site/precipitation_na_extended
+            site/precipitation_na_global
             site/kml/North_America_Live_Precipitation.kml
             site/kml/live/North_America_Live_Precipitation.kml
             kml/North_America_Live_Precipitation.kml
