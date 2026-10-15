@@ -98,9 +98,9 @@ SCALE_HTML = (
     "converted from rain rates via Z=300R^1.4 (ECCC publishes mm/h, not "
     "dBZ — high-rate classes saturate near ~57 dBZ, so ECCC never paints "
     "the white extreme row); ECCC snow rows are snow-rate classes in cm/h "
-    "(official 14-class scale, not dBZ); pale-tinted colors are GFS MODEL "
-    "estimates (6-h mean rates, snow at 10:1 snow-to-liquid ratio), "
-    "never radar.")
+    "(official 14-class scale, not dBZ); GFS MODEL estimates (6-h mean "
+    "rates, snow at 10:1 snow-to-liquid ratio) render in the same colors "
+    "where no radar covers — model output, never radar.")
 
 
 def wms_url():

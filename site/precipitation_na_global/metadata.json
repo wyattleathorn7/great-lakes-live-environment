@@ -2,13 +2,13 @@
   "product": "precipitation_na_global",
   "title": "LIVE PRECIPITATION \u2014 Global Coverage",
   "freshness": "LIVE / CURRENT OBSERVATION (NEXRAD + ECCC NA radar, 5-6 min mosaic)",
-  "noaa_source": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) / precipitation type (Radar_1km_SfcPrecipType) outside it + EUMETNET OPERA EU DBZH composite (CC BY 4.0) in remaining radar gaps + NOAA GFS translucent model estimates (public domain) in verified radar gaps only",
-  "product_name": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) / precipitation type (Radar_1km_SfcPrecipType) outside it + EUMETNET OPERA EU DBZH composite (CC BY 4.0) in remaining radar gaps + NOAA GFS translucent model estimates (public domain) in verified radar gaps only",
+  "noaa_source": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) / precipitation type (Radar_1km_SfcPrecipType) outside it + EUMETNET OPERA EU DBZH composite (CC BY 4.0) in remaining radar gaps + NOAA GFS model estimates, same colors (public domain) in verified radar gaps only",
+  "product_name": "Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) / precipitation type (Radar_1km_SfcPrecipType) outside it + EUMETNET OPERA EU DBZH composite (CC BY 4.0) in remaining radar gaps + NOAA GFS model estimates, same colors (public domain) in verified radar gaps only",
   "variable": "N0Q base reflectivity dBZ (IEM domain gaps); ECCC precipitation-rate rain (mm/h)/snow (cm/h) mapped to dBZ through the ECCC 14-color class rates with the NWS Z=300R^1.4 equivalence (equal ECCC colors = equal severity = equal dBZ for rain and snow); ECCC SfcPrecipType gates snow-blue rendering. One 5-75 dBZ key for rain + 8-step blue snow ramp at matched severity.",
   "source_url": "https://mesonet.agron.iastate.edu/current/radar.phtml",
-  "data_time_utc": "2026-10-15 16:55 UTC",
-  "source_last_modified_utc": "ECCC rain 2026-10-15T16:54:00Z; snow 2026-10-15T16:54:00Z; type 2026-10-15T16:48:00Z",
-  "processing_time_utc": "2026-10-15 12:58 PM EDT",
+  "data_time_utc": "2026-10-15 17:25 UTC",
+  "source_last_modified_utc": "ECCC rain 2026-10-15T17:18:00Z; snow 2026-10-15T17:18:00Z; type 2026-10-15T17:12:00Z",
+  "processing_time_utc": "2026-10-15 01:25 PM EDT",
   "units": "dBZ key: IEM/OPERA measured; ECCC Z-R estimated equivalents",
   "spatial_resolution_source": "IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km rain/snow/type 6-min (rain rates -> estimated dBZ via NWS Z=300R^1.4; snow classes cm/h -> snow rows directly)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,9 +25,9 @@
   "missing_data_treatment": "ECCC type-gated (SfcPrecipType snow -> blue ramp; other types -> dBZ key) where RADAR_COVERAGE_*.INV is transparent; IEM N0Q fills ECCC gaps natively (type undifferentiated); 10-px cross-fade on the coverage edge; radar-only composite (no cloud underlay, no model fill); transparent elsewhere; never zero-filled.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "legend_scale_html": "Precipitation intensity (NEXRAD N0Q base reflectivity, dBZ, OBSERVED radar echo): <b>LOWEST 5 Very Light</b> cyan/blue (drizzle, mist) &rarr; <b>Light</b> greens (~20-30: light rain/snow) &rarr; <b>Moderate</b> dark green (~30-40: steady rain/snow) &rarr; <b>Heavy</b> yellow/orange (~40-50: heavy rain) &rarr; <b>Severe</b> red (~50-60: severe storms, hail possible) &rarr; <b>Intense</b> magenta/purple (~60-70: violent storms, large hail) &rarr; <b>HIGHEST+ 70+ Extreme</b> white (destructive hail, debris). Same dBZ always shows the same color in every season \u2014 rain, snow, lake-effect snow, thunderstorms. No echo (no precipitation) stays see-through so the map underneath shows. Measurement types differ by source: IEM N0Q and OPERA are MEASURED reflectivity (dBZ); ECCC rain colors are ESTIMATED dBZ equivalents converted from rain rates via Z=300R^1.4 (ECCC publishes mm/h, not dBZ \u2014 high-rate classes saturate near ~57 dBZ, so ECCC never paints the white extreme row); ECCC snow rows are snow-rate classes in cm/h (official 14-class scale, not dBZ); pale-tinted colors are GFS MODEL estimates (6-h mean rates, snow at 10:1 snow-to-liquid ratio), never radar. ECCC snow echoes render blue ONLY where SfcPrecipType classifies snow (or the snow product alone echoes; mixed/freezing rain render on the dBZ key). Snow rows are ECCC snow-rate classes in cm/h (official 14-class scale); GFS snow ranks water-equivalent rate at 10:1 SLR on the same bands.",
-  "source_id": "na-precip-20261015-1655",
-  "source_version": "na-precip-20261015-1655",
+  "legend_scale_html": "Precipitation intensity (NEXRAD N0Q base reflectivity, dBZ, OBSERVED radar echo): <b>LOWEST 5 Very Light</b> cyan/blue (drizzle, mist) &rarr; <b>Light</b> greens (~20-30: light rain/snow) &rarr; <b>Moderate</b> dark green (~30-40: steady rain/snow) &rarr; <b>Heavy</b> yellow/orange (~40-50: heavy rain) &rarr; <b>Severe</b> red (~50-60: severe storms, hail possible) &rarr; <b>Intense</b> magenta/purple (~60-70: violent storms, large hail) &rarr; <b>HIGHEST+ 70+ Extreme</b> white (destructive hail, debris). Same dBZ always shows the same color in every season \u2014 rain, snow, lake-effect snow, thunderstorms. No echo (no precipitation) stays see-through so the map underneath shows. Measurement types differ by source: IEM N0Q and OPERA are MEASURED reflectivity (dBZ); ECCC rain colors are ESTIMATED dBZ equivalents converted from rain rates via Z=300R^1.4 (ECCC publishes mm/h, not dBZ \u2014 high-rate classes saturate near ~57 dBZ, so ECCC never paints the white extreme row); ECCC snow rows are snow-rate classes in cm/h (official 14-class scale, not dBZ); GFS MODEL estimates (6-h mean rates, snow at 10:1 snow-to-liquid ratio) render in the same colors where no radar covers \u2014 model output, never radar. ECCC snow echoes render blue ONLY where SfcPrecipType classifies snow (or the snow product alone echoes; mixed/freezing rain render on the dBZ key). Snow rows are ECCC snow-rate classes in cm/h (official 14-class scale); GFS snow ranks water-equivalent rate at 10:1 SLR on the same bands.",
+  "source_id": "na-precip-20261015-1725",
+  "source_version": "na-precip-20261015-1725",
   "na_bounds": {
     "canvas_height": 1800,
     "canvas_width": 3600,
@@ -41,16 +41,16 @@
   },
   "coverage_mode": "global",
   "stats": {
-    "opaque_pixels": 422816,
-    "transparent_pixels": 6057184,
+    "opaque_pixels": 422156,
+    "transparent_pixels": 6057844,
     "underlay": "none (radar-only composite)"
   },
   "provenance": {
     "iem_wms": "https://mesonet.agron.iastate.edu/cgi-bin/wms/nexrad/n0q.cgi?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetMap&LAYERS=nexrad-n0q-900913&STYLES=&SRS=EPSG:4326&BBOX=-180.0,5.0,-15.0,85.0&WIDTH=3300&HEIGHT=1600&F",
     "eccc_wms": "https://geo.weather.gc.ca/geomet",
-    "eccc_time_rain": "2026-10-15T16:54:00Z",
-    "eccc_time_snow": "2026-10-15T16:54:00Z",
-    "eccc_time_type": "2026-10-15T16:48:00Z",
+    "eccc_time_rain": "2026-10-15T17:18:00Z",
+    "eccc_time_snow": "2026-10-15T17:18:00Z",
+    "eccc_time_type": "2026-10-15T17:12:00Z",
     "underlay": "none (radar-only composite)"
   },
   "source_registry": [
@@ -58,7 +58,7 @@
       "id": "iem_n0q",
       "footprint": "CONUS (lon -130..-65, lat 22..50)",
       "product_type": "radar reflectivity (dBZ)",
-      "data_time": "2026-10-15 16:55 UTC",
+      "data_time": "2026-10-15 17:25 UTC",
       "license": "Public domain (NOAA/Iowa State IEM)",
       "snow_capability": "none (reflectivity only)",
       "status": "ok"
@@ -67,7 +67,7 @@
       "id": "eccc_radar",
       "footprint": "North America (dynamic INV mask)",
       "product_type": "radar rain/snow rate + precipitation type",
-      "data_time": "rain 2026-10-15T16:54:00Z; snow 2026-10-15T16:54:00Z; type 2026-10-15T16:48:00Z",
+      "data_time": "rain 2026-10-15T17:18:00Z; snow 2026-10-15T17:18:00Z; type 2026-10-15T17:12:00Z",
       "license": "ECCC GeoMet (open data)",
       "snow_capability": "classified (SfcPrecipType-gated blues)",
       "status": "ok"
@@ -76,7 +76,7 @@
       "id": "opera_eu",
       "footprint": "Europe + N. Atlantic (LAEA 1km)",
       "product_type": "radar reflectivity (dBZ)",
-      "data_time": "OPERA DBZH 16:50Z px=18158 (CC BY 4.0 EUMETNET)",
+      "data_time": "OPERA DBZH 17:20Z px=18431 (CC BY 4.0 EUMETNET)",
       "license": "CC BY 4.0 (EUMETNET OPERA)",
       "snow_capability": "none (reflectivity only)",
       "status": "ok"
@@ -85,11 +85,11 @@
       "id": "gfs_model",
       "footprint": "worldwide 0.25deg (radar gaps only)",
       "product_type": "model estimate (PRATE + CSNOW/CRAIN flags)",
-      "data_time": "GFS 20261015 12z est rain px=261676 snow px=122471 (public domain)",
+      "data_time": "GFS 20261015 12z est rain px=261871 snow px=122491 (public domain)",
       "license": "Public domain (NOAA GFS)",
       "snow_capability": "estimated (CSNOW-gated translucent blues)",
       "status": "ok"
     }
   ],
-  "folder_html": "<h2>LIVE PRECIPITATION \u2014 Global Coverage</h2><p><b>Sources:</b> Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) / precipitation type (Radar_1km_SfcPrecipType) outside it + EUMETNET OPERA EU DBZH composite (CC BY 4.0) in remaining radar gaps + NOAA GFS translucent model estimates (public domain) in verified radar gaps only<br><b>Precedence:</b> ECCC rain (rates -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; ECCC snow renders in the blue snow ramp at the same severity rank ONLY where Radar_1km_SfcPrecipType classifies snow (mixed/freezing rain render on the dBZ key); IEM N0Q (native rendering, itself the original legend, type undifferentiated) fills ECCC gaps; OPERA EU DBZH fills remaining non-NA radar gaps on the N0Q key (undifferentiated); translucent GFS model estimates (CSNOW-gated snow blues, CRAIN N0Q) only in verified radar gaps; transparent elsewhere.<br><b>Coverage:</b> Global Coverage<br><b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); pale wash = GFS model estimates in verified radar gaps<br><b>Data time:</b> 2026-10-15 16:55 UTC</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25c9 <b>Global Coverage</b> (shown)<br>\u25cb Continental Coverage<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
+  "folder_html": "<h2>LIVE PRECIPITATION \u2014 Global Coverage</h2><p><b>Sources:</b> Iowa Environmental Mesonet CONUS NEXRAD N0Q base reflectivity (NOAA WSR-88D) inside its domain + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) / precipitation type (Radar_1km_SfcPrecipType) outside it + EUMETNET OPERA EU DBZH composite (CC BY 4.0) in remaining radar gaps + NOAA GFS model estimates, same colors (public domain) in verified radar gaps only<br><b>Precedence:</b> ECCC rain (rates -> dBZ via NWS Z=300R^1.4 onto the original N0Q key) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; ECCC snow renders in the blue snow ramp at the same severity rank ONLY where Radar_1km_SfcPrecipType classifies snow (mixed/freezing rain render on the dBZ key); IEM N0Q (native rendering, itself the original legend, type undifferentiated) fills ECCC gaps; OPERA EU DBZH fills remaining non-NA radar gaps on the N0Q key (undifferentiated); GFS model estimates (CSNOW-gated snow blues, CRAIN key colors, same colors as radar) only in verified radar gaps; transparent elsewhere.<br><b>Coverage:</b> Global Coverage<br><b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); GFS model estimates (not radar) in verified radar gaps, same colors<br><b>Data time:</b> 2026-10-15 17:25 UTC</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25c9 <b>Global Coverage</b> (shown)<br>\u25cb Continental Coverage<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
 }

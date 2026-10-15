@@ -164,25 +164,11 @@ GDPS_FILL_ALPHA = 120
 KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
 
 
-# Estimated (GFS model) swatches: pale-tinted (white-mixed) versions of
-# the observed key/snow at the same rank order, so estimates never read
-# as radar now that ALL echo pixels share one uniform alpha (Goal 2).
-# White-mix (not grey-mix) preserves each color's hue family — grey-mix
-# turned pale snow estimates into literal grey (188,201,206), which
-# rendered as unexplained grey-white blobs. The map rendering applies
-# the same _mute_est() mix, so swatches match pixels.
-def _mute_est(rgb):
-    import numpy as np
-    c = np.asarray(rgb, dtype=float)
-    return np.round(c * 0.55 + 255.0 * 0.45).astype(np.uint8)
-
-
-EST_ROWS = [
-    (tuple(int(v) for v in _mute_est((255, 255, 0))),
-     "Estimated rain (GFS model) — muted key colors, same order, NOT radar"),
-    (tuple(int(v) for v in _mute_est((50, 155, 235))),
-     "Estimated snow (GFS model) — muted blues, same order, NOT radar"),
-]
+# GFS model estimates render in the SAME key/snow colors as radar
+# (per user direction): no muted/pale estimate swatches, no separate
+# estimate rows — one visual scale everywhere. Estimates keep the same
+# severity mapping and are disclosed as model output in the subtitle,
+# folder text, metadata source registry, and docs (never radar).
 
 # Shared snow sentence for legend HTML (variant + primary metadata).
 SNOW_SENT = (" ECCC snow echoes render blue ONLY where SfcPrecipType classifies snow "
@@ -602,7 +588,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                 _dbz = np.array([_rate_to_dbz(float(x))
                                  for x in _g_rate[_rain_est]])
                 _idx = np.array([_bin_for_dbz(z) for z in _dbz])
-                out[_rain_est, :3] = _mute_est(_keypal[_idx])
+                out[_rain_est, :3] = _keypal[_idx]
                 out[_rain_est, 3] = MODEL_ALPHA
                 n_rain_est = int(_rain_est.sum())
             if _snow_est.any():
@@ -613,7 +599,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                 _srows = np.array([_snow_row_for_class(
                     _snow_class_for_rate_cm(float(x)))
                     for x in _g_rate[_snow_est]])
-                out[_snow_est, :3] = _mute_est(SNOW_PAL[_srows])
+                out[_snow_est, :3] = SNOW_PAL[_srows]
                 out[_snow_est, 3] = MODEL_ALPHA
                 n_snow_est = int(_snow_est.sum())
             gfs_prov = (f"GFS {_yyyymmdd} {_hh}z est rain px={n_rain_est} "
@@ -730,7 +716,7 @@ def _build(scan_dt, source_id, bounds, W, H):
                       "extended200": gbounds}
     # Per-variant composite: basin uses the NA radar composite;
     # continental + global use the worldwide composite (IEM+ECCC+OPERA
-    # radar + translucent GFS estimates in verified radar gaps;
+    # radar + GFS estimates (same colors) in verified radar gaps;
     # continental additionally gated to worldwide land).
     VARIANT_BASE = {"basin": base, "landonly": gbase, "global": gbase,
                     "extended200": gbase}
@@ -813,8 +799,8 @@ def _build(scan_dt, source_id, bounds, W, H):
             f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
             f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
             f"<b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
-            f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); pale wash = "
-            f"GFS model estimates in verified radar gaps<br>"
+            f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); GFS model estimates "
+            f"(not radar) in verified radar gaps, same colors<br>"
             f"<b>Data time:</b> {data_time}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
 
@@ -825,10 +811,10 @@ def _build(scan_dt, source_id, bounds, W, H):
     save_png(out, os.path.join(stage_prod, "current.png"))
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
-        KEY_ROWS + SNOW_ROWS + EST_ROWS,
+        KEY_ROWS + SNOW_ROWS,
         f"IEM {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} / type {t_type} | {now_det_str()}",
         note="No echo = transparent. Blues = classified snow only. "
-             "ECCC rain = est. dBZ. Muted = GFS est.")
+             "ECCC rain = est. dBZ.")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
@@ -838,12 +824,12 @@ def _build(scan_dt, source_id, bounds, W, H):
         color_min=5.0, color_max=75.0, color_units="dBZ",
         missing_data_treatment=("ECCC wins where RADAR_COVERAGE_*.INV is transparent "
                                 "(verified authoritative coverage); IEM N0Q fills ECCC gaps natively; "
-                                "OPERA EU radar fills remaining non-NA gaps; translucent GFS model estimates "
+                                "OPERA EU radar fills remaining non-NA gaps; GFS model estimates "
                                 "only in verified radar gaps; transparent elsewhere; "
                                 "never zero-filled."))
     meta["legend_size"] = [lw, lh]
-    meta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT + " Muted colors = "
-        "GFS model estimates (same order, not radar).")
+    meta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT + " GFS model estimates "
+        "(not radar) render in the same colors where no radar covers.")
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
@@ -862,8 +848,8 @@ def _build(scan_dt, source_id, bounds, W, H):
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
                    f"<b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
-                   f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); pale wash = "
-                   f"GFS model estimates in verified radar gaps<br>"
+                   f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); GFS model estimates "
+                   f"(not radar) in verified radar gaps, same colors<br>"
                    f"<b>Data time:</b> {data_time}</p>")
     meta["folder_html"] = folder_html + coverage_selector_html(default_cover)
     meta["coverage_mode"] = default_cover

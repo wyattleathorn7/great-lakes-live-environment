@@ -1082,7 +1082,7 @@ around them with a per-run source registry (`metadata.source_registry`).
 No single genuine global snowfall *radar* product was verified to
 exist. Best feasible multi-source architecture (implemented):
 ECCC SfcPrecipType-classified snow (observed, vivid blues) >
-GFS CSNOW-estimated snow (translucent blues, radar gaps only) >
+GFS CSNOW-estimated snow (same blues, radar gaps only) >
 transparent. RainViewer snow is a color scheme, not a data field;
 SFR needs PDA access; OPERA exposes no type product here.
 
