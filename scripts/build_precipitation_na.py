@@ -10,12 +10,14 @@ Precedence (explicit, documented):
   3) Transparent elsewhere (no source coverage: northern Arctic, oceans
      beyond radar range, Greenland interior).
 
-ECCC rates are mapped to the 11-step key as ESTIMATED dBZ equivalents via
-the NWS NEXRAD Z-R bridge (Z=300R^1.4) — ECCC publishes rain rates
-(mm/h), not reflectivity, so these colors must never be read as measured
-dBZ (ECCC classes saturate near ~57 dBZ). Equal colors across the
-transition do NOT claim identical dBZ. Snow renders blue ONLY where
-SfcPrecipType classifies snow (severity-rank matched, not dBZ).
+ECCC RAIN rates (mm/h) map to ESTIMATED dBZ equivalents via the NWS
+NEXRAD Z-R bridge (Z=300R^1.4) — ECCC publishes rates, not
+reflectivity, so these colors must never be read as measured dBZ
+(ECCC rain classes saturate near ~57 dBZ). ECCC SNOW classes (cm/h,
+official 14-class scale) map DIRECTLY to snow rows by class order —
+never through rain thresholds. Snow renders blue ONLY where
+SfcPrecipType classifies snow (or the snow product alone echoes);
+unknown type never defaults to snow.
 
 Exit codes: 0 updated; 2 source/validation failure (previous kept);
 1 unexpected error.
@@ -110,20 +112,48 @@ def _rate_to_dbz(r_mmh):
     return 10.0 * math.log10(300.0 * max(r_mmh, 1e-6) ** 1.4)
 
 
-# dBZ value of each ECCC class lower bound under the Z-R bridge.
+# dBZ value of each ECCC RAIN class lower bound under the Z-R bridge
+# (rain path only — snow never uses this).
 ECCC_CLASS_DBZ = [_rate_to_dbz(r) for r in ECCC_RAIN_RATES]
 
-# Snow-only key (ECCC RSNO snow echoes): blue ramp, same severity order
-# as the N0Q key so equal rank = equal severity across types.
+# ECCC snow-rate class lower bounds (cm/h), read directly off the
+# official GetLegendGraphic for style Radar-Snow_14colors (bottom to
+# top of the ramp, same order as ECCC_CLASS_RGB):
+#   0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0, 7.5, 10.0, 20.0
+# Class i spans [RATE, next RATE). ECCC derives these from reflectivity
+# with a snow-specific Z-S relationship (per ECCC docs, rain uses mm/h
+# and snow cm/h with two different relationships) — so snow classes map
+# to snow rows DIRECTLY by class order, never through the rain Z-R bridge.
+ECCC_SNOW_RATES = [0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0,
+                   5.0, 7.5, 10.0, 20.0]
+
+
+def _snow_row_for_class(c):
+    """Snow severity row (0..7) straight from the ECCC snow-rate class
+    (0..13): order-preserving, no rain-threshold detour."""
+    return min(len(SNOW_PAL) - 1, max(0, int(c)) * len(SNOW_PAL) // 14)
+
+
+def _snow_class_for_rate_cm(r):
+    """ECCC snow-rate class for a snow-depth rate in cm/h (upper-bound
+    clip: >= 20 cm/h is class 13). Used for GFS estimates, whose
+    water-equivalent rate converts at the standard 10:1 snow-to-liquid
+    ratio (1 mm water ~= 1 cm snow) onto this same scale."""
+    import bisect
+    return min(13, max(0, bisect.bisect_right(ECCC_SNOW_RATES, r) - 1))
+
+# Snow rows carry real ECCC snow-rate ranges (cm/h class breaks from the
+# official Radar-Snow_14colors legend; GFS estimates use water-equivalent
+# rate at 10:1 SLR on the same bands — see _snow_class_for_rate_cm).
 SNOW_ROWS = [
-    ("#E0F7FF", "Snow Very light — ice haze"),
-    ("#A5E8FF", "Snow Light — pale cyan"),
-    ("#67CEFF", "Snow Light–moderate — sky blue"),
-    ("#329BFF", "Snow Moderate — azure"),
-    ("#2463EB", "Snow Moderate–heavy — royal blue"),
-    ("#5145CD", "Snow Heavy — deep indigo"),
-    ("#873FDB", "Snow Very heavy — violet"),
-    ("#D946EF", "Snow Extreme — magenta"),
+    ("#E0F7FF", "Snow Very light 0.1–0.3 cm/h — ice haze"),
+    ("#A5E8FF", "Snow Light 0.3–0.75 cm/h — pale cyan"),
+    ("#67CEFF", "Snow Light–moderate 0.75–1.5 cm/h — sky blue"),
+    ("#329BFF", "Snow Moderate 1.5–2.0 cm/h — azure"),
+    ("#2463EB", "Snow Moderate–heavy 2.0–4.0 cm/h — royal blue"),
+    ("#5145CD", "Snow Heavy 4.0–7.5 cm/h — deep indigo"),
+    ("#873FDB", "Snow Very heavy 7.5–20 cm/h — violet"),
+    ("#D946EF", "Snow Extreme 20+ cm/h — magenta"),
 ]
 
 # GDPS model fill renders translucent so model guidance never reads as
@@ -134,14 +164,17 @@ GDPS_FILL_ALPHA = 120
 KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
 
 
-# Estimated (GFS model) swatches: muted (grey-mixed) versions of the
-# observed key at the same rank order, so estimates never read as radar
-# now that ALL echo pixels share one uniform alpha (Goal 2). The map
-# rendering applies the same _mute_est() mix, so swatches match pixels.
+# Estimated (GFS model) swatches: pale-tinted (white-mixed) versions of
+# the observed key/snow at the same rank order, so estimates never read
+# as radar now that ALL echo pixels share one uniform alpha (Goal 2).
+# White-mix (not grey-mix) preserves each color's hue family — grey-mix
+# turned pale snow estimates into literal grey (188,201,206), which
+# rendered as unexplained grey-white blobs. The map rendering applies
+# the same _mute_est() mix, so swatches match pixels.
 def _mute_est(rgb):
     import numpy as np
     c = np.asarray(rgb, dtype=float)
-    return np.round(c * 0.55 + 145.0 * 0.45).astype(np.uint8)
+    return np.round(c * 0.55 + 255.0 * 0.45).astype(np.uint8)
 
 
 EST_ROWS = [
@@ -153,7 +186,9 @@ EST_ROWS = [
 
 # Shared snow sentence for legend HTML (variant + primary metadata).
 SNOW_SENT = (" ECCC snow echoes render blue ONLY where SfcPrecipType classifies snow "
-    "(mixed/freezing rain render on the dBZ key at matched severity).")
+    "(or the snow product alone echoes; mixed/freezing rain render on the dBZ key). "
+    "Snow rows are ECCC snow-rate classes in cm/h (official 14-class scale); "
+    "GFS snow ranks water-equivalent rate at 10:1 SLR on the same bands.")
 
 
 def _hex_to_rgb(h):
@@ -172,10 +207,6 @@ def _bin_for_dbz(z):
         else:
             break
     return min(b, len(KEY_ROWS) - 1)
-
-
-def _snow_row_for_bin(b):
-    return min(len(SNOW_PAL) - 1, b * len(SNOW_PAL) // len(KEY_ROWS))
 
 
 def eccc_time_default(layer, timeout=30):
@@ -414,10 +445,14 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
         tcls = _d2.argmin(axis=1)
         tcls[(_d2.min(axis=1) > SFC_TYPE_MAX_DIST ** 2) | ~topq] = -1
         snow_win = np.isin(tcls, SFC_SNOW)
-        # Fallback for type-unclassified echoes: snow product showing
-        # equal-or-higher severity renders blue (previous behavior).
+        # Fallback for type-unclassified echoes: the snow product echoes
+        # ONLY for snow, so a snow-only echo (rain product silent) is
+        # safely blue. Rain+ambiguous echoes stay on the key: rain and
+        # snow classes use incompatible units (mm/h vs cm/h), so comparing
+        # their class indices for severity is meaningless, and unknown
+        # type must never default to snow.
         snow_win = snow_win | ((tcls < 0) & (paths["snow"][eccc_avail, 3] > 0)
-                               & (cls_s >= cls_r))
+                               & ~(paths["rain"][eccc_avail, 3] > 0))
         keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
         cols = np.zeros((rpx.shape[0], 3), dtype=np.uint8)
         # Echo-grounded severity: a product showing no echo here must not
@@ -430,10 +465,12 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
         dbz = np.array(ECCC_CLASS_DBZ)[sev]
         for i, z in enumerate(dbz):
             cols[i] = keypal[_bin_for_dbz(z)]
-        dbz_s = np.array(ECCC_CLASS_DBZ)[sev[snow_win]]
+        # Observed snow severity: straight from the ECCC snow-rate CLASS
+        # (cm/h, official 14-class scale) — never through the rain Z-R
+        # bridge, whose mm/h thresholds do not apply to snowfall.
         snow_cols = np.zeros((int(snow_win.sum()), 3), dtype=np.uint8)
-        for i, z in enumerate(dbz_s):
-            snow_cols[i] = SNOW_PAL[_snow_row_for_bin(_bin_for_dbz(z))]
+        for i, c in enumerate(cls_s[snow_win]):
+            snow_cols[i] = SNOW_PAL[_snow_row_for_class(c)]
         cols[snow_win] = snow_cols
         ecol[eccc_avail] = cols
         ealp[eccc_avail] = np.maximum(paths["rain"][eccc_avail, 3],
@@ -569,10 +606,13 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                 out[_rain_est, 3] = MODEL_ALPHA
                 n_rain_est = int(_rain_est.sum())
             if _snow_est.any():
-                _dbz = np.array([_rate_to_dbz(float(x))
-                                 for x in _g_rate[_snow_est]])
-                _srows = np.array([_snow_row_for_bin(_bin_for_dbz(z))
-                                   for z in _dbz])
+                # GFS snow severity: PRATE is a water-equivalent RATE
+                # (mm/h), CSNOW is only a presence/absence flag — so rank
+                # the water rate at 10:1 snow-to-liquid ratio onto the
+                # same ECCC cm/h snow-class bands (documented approx.).
+                _srows = np.array([_snow_row_for_class(
+                    _snow_class_for_rate_cm(float(x)))
+                    for x in _g_rate[_snow_est]])
                 out[_snow_est, :3] = _mute_est(SNOW_PAL[_srows])
                 out[_snow_est, 3] = MODEL_ALPHA
                 n_snow_est = int(_snow_est.sum())
@@ -750,7 +790,7 @@ def _build(scan_dt, source_id, bounds, W, H):
             data_time_utc=data_time,
             source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}; type {t_type}",
             units="dBZ key: IEM/OPERA measured; ECCC Z-R estimated equivalents",
-            source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km rain/snow/type 6-min (rates -> estimated dBZ via NWS Z=300R^1.4; snow blues at matched rank, not dBZ)",
+            source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km rain/snow/type 6-min (rain rates -> estimated dBZ via NWS Z=300R^1.4; snow classes cm/h -> snow rows directly)",
             color_min=5.0, color_max=75.0, color_units="dBZ",
             missing_data_treatment=("ECCC type-gated (SfcPrecipType snow -> blue ramp; other types -> dBZ key) where RADAR_COVERAGE_*.INV is transparent; IEM N0Q fills ECCC gaps natively (type undifferentiated); "
                                     "10-px cross-fade on the coverage edge; radar-only composite (no cloud underlay, no model fill); transparent elsewhere; "

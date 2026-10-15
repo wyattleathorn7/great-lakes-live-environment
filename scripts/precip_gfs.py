@@ -5,12 +5,17 @@ from NOMADS (same pattern as the RRFS fetches): PRATE (total
 precipitation rate) + categorical CSNOW / CRAIN / CFRZR / CICEP flags.
 
 Rendered ONLY where verified radar (IEM/ECCC/OPERA) has no coverage,
-translucent and explicitly labeled model-ESTIMATED (never radar):
-  CSNOW=1 & wet        -> estimated snow (blue ramp, translucent)
-  CRAIN/CFRZR/CICEP=1 (CSNOW=0) & wet -> estimated rain (N0Q key, translucent)
-Wet = PRATE >= 0.1 mm/h. Per snow rules: type comes from the model
-flags themselves (never inferred from reflectivity or temperature
-here — no temperature profile is consulted at all).
+pale-tinted and explicitly labeled model-ESTIMATED (never radar):
+  CSNOW=1 & wet        -> estimated snow (pale-tinted blues, same order)
+  CRAIN/CFRZR/CICEP=1 (CSNOW=0) & wet -> estimated rain (pale key, same order)
+Wet = PRATE >= 0.1 mm/h. Semantics (verified): CSNOW/CRAIN/CFRZR/CICEP
+are CATEGORICAL presence/absence flags (yes=1/no=0, WMO GRIB2 code
+table 4.222) — they carry no amount. Amount/severity comes from PRATE
+(kg/m2/s water-equivalent rate): for snow, ranked at the standard 10:1
+snow-to-liquid ratio onto the ECCC cm/h snow-class bands. Per snow
+rules: type comes from the model flags themselves (never inferred
+from reflectivity or temperature here — no temperature profile is
+consulted at all).
 """
 
 import datetime as dt

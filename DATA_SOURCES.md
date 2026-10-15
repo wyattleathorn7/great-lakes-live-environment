@@ -1022,9 +1022,13 @@ the other products and the Pages publish proceed normally.
   (colors extracted from the official GetLegendGraphic images) to its
   rate class, then to ESTIMATED dBZ equivalents via the NWS NEXRAD Z-R
   bridge (Z=300R^1.4; ECCC publishes rates, not reflectivity — its 14
-  classes map to bins 0..7 and saturate near ~57 dBZ, so ECCC colors
-  must never be read as measured dBZ; equal ECCC colors = equal
-  severity, not equal dBZ),
+  rain classes map to bins 0..7 and saturate near ~57 dBZ, so ECCC
+  colors must never be read as measured dBZ). Snow is separate: RSNO
+  classes (cm/h, official 14-class scale verified from the
+  Radar-Snow_14colors legend) map directly to the 8 snow rows by class
+  order (0.1–0.3 … 20+ cm/h), never through rain thresholds; blue only
+  where SfcPrecipType classifies snow (legend order verified) or the
+  snow product alone echoes — unknown type stays on the key.
   then into the original 5-75 dBZ key bins. Precedence follows verified
   ECCC dynamic coverage (75% of CONUS included) with IEM N0Q native
   rendering filling ECCC gaps; IEM gap pixels repaint into key rows
