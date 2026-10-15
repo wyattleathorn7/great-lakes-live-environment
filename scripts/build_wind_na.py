@@ -516,8 +516,11 @@ def _build(bounds, W, H):
     # otherwise print); GLWU/HRRR render raw like the original.
     U, _ = feather_merge(ulayers, feather_px=12)
     V, _ = feather_merge(vlayers, feather_px=12)
-    UG, _ = feather_merge(gulayers, feather_px=6)
-    VG, _ = feather_merge(gvlayers, feather_px=6)
+    from na_common import blend_antimeridian
+    UG, _ = feather_merge(gulayers, feather_px=12)
+    VG, _ = feather_merge(gvlayers, feather_px=12)
+    UG = blend_antimeridian(UG)
+    VG = blend_antimeridian(VG)
     from na_common import gate_field_to_coverage
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
                            COVERAGE_DISPLAY, coverage_selector_html)
@@ -586,7 +589,7 @@ def _build(bounds, W, H):
 
     # Continental + Global variants render more transparent than the basin
     # original so the base map stays readable worldwide.
-    NA_ALPHA_SCALE = 0.7
+    NA_ALPHA_SCALE = 0.55
 
     def _render_global():
         """Worldwide variant on the 3600x1800 global canvas: same

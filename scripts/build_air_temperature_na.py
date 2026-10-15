@@ -224,6 +224,8 @@ def _build(bounds, W, H, prev):
     gown = despeckle_valid(gown, min_size=4) & np.isfinite(gf_grid)
     gf_grid[~gown] = np.nan
     disp_global = smooth_field(gf_grid, size=5, passes=2)
+    from na_common import blend_antimeridian as _blend_aml
+    disp_global = _blend_aml(disp_global)
 
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
                            COVERAGE_DISPLAY, coverage_selector_html)

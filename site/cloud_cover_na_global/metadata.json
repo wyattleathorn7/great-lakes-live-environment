@@ -6,11 +6,11 @@
   "product_name": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
   "variable": "BCM binary mask (0=clear_or_probably_clear, 1=cloudy_or_probably_cloudy) gated DQF==0 -> % per canvas neighborhood; model TCDC % in fallback domain",
   "source_url": "https://www.goes.noaa.gov/",
-  "data_time_utc": "2026-10-14 08:55 PM EDT",
-  "source_last_modified_utc": "{\"GOES-19\": \"2026-10-15 00:40Z valid-cells=3904271/g=2369946\", \"GOES-18\": \"2026-10-15 00:40Z valid-cells=3435476/g=2371598\", \"RRFS-TCDC\": \"rrfs.20261014 n=2632946/g=1195390\", \"GDPS-TCC\": \"GDPS_15km_TotalCloudCover n=5273396/g=6479996\"}",
-  "processing_time_utc": "2026-10-14 08:55 PM EDT",
-  "units": "%",
-  "spatial_resolution_source": "GOES FD ~2km; RRFS 13km NA; canvas 3300x1600",
+  "data_time_utc": "2026-10-15 09:24 AM EDT",
+  "source_last_modified_utc": "ir-cache age=500s",
+  "processing_time_utc": "2026-10-15 09:24 AM EDT",
+  "units": "IR brightness (white=cold cloud tops)",
+  "spatial_resolution_source": "GOES-19/18 Band-13 10.3um full-disk",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
   "crs": "EPSG:4326",
   "render_bounds": {
@@ -22,12 +22,12 @@
   "color_scale_min": 0.0,
   "color_scale_max": 100.0,
   "color_scale_units": "%",
-  "missing_data_treatment": "GOES BCM/DQF==0 valid > RRFS TCDC > GDPS (verified gaps) > transparent; missing never 0%.",
+  "missing_data_treatment": "Realistic IR cloud tops only; no model fill; transparent = clear or no coverage.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "legend_scale_html": "Cloud cover (%, OBSERVED neighborhood fraction from GOES: share of 2 km satellite pixels flagged cloudy around each point): <b>LOWEST 0 clear</b> transparent &rarr; thin cloud <b>dark-blue/blue/cyan</b> &rarr; <b>40 green</b> &rarr; <b>55 yellow</b> &rarr; <b>70 orange</b> &rarr; <b>82 red</b> &rarr; <b>90 magenta</b> &rarr; <b>HIGHEST+ 100 overcast</b> dark-purple. Same % always shows the same color; clear areas stay see-through. Satellite retrieval where GOES is valid, model fill elsewhere (see provenance).",
-  "source_id": "na-cloud-20261015-0055",
-  "source_version": "na-cloud-20261015-0055-GDPS-TCC-GDPS_15km_TotalCloudCover-n-5273396-g-6479996-GOES-18-2026-10-15-00-40Z-valid-cells-3435476-g-2371598-GOES-19-2026-10-15-00-40Z-valid-cells-3904271-g-2369946-RRFS-TCDC-rrfs.20261014-n-2632946-g-1195390",
+  "legend_scale_html": "White = cloud (GOES-19/18 infrared, day + night); transparent = clear sky or no satellite coverage.",
+  "source_id": "na-cloud-real-20261015-1324",
+  "source_version": "na-cloud-real-20261015-1324ir-cache-age-527sir-cache-age-500s",
   "na_bounds": {
     "canvas_height": 1800,
     "canvas_width": 3600,
@@ -41,8 +41,7 @@
   },
   "coverage_mode": "global",
   "stats": {
-    "satellite_pixels": 4846329,
-    "model_fill_pixels": 3115536
+    "ir_pixels": 2405836
   },
-  "folder_html": "<h2>LIVE CLOUD COVER \u2014 Global Coverage</h2><p><b>Coverage:</b> Global Coverage<br><b>Precedence:</b> 1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.<br><b>Provenance:</b> {'GOES-19': '2026-10-15 00:40Z valid-cells=3904271/g=2369946', 'GOES-18': '2026-10-15 00:40Z valid-cells=3435476/g=2371598', 'RRFS-TCDC': 'rrfs.20261014 n=2632946/g=1195390', 'GDPS-TCC': 'GDPS_15km_TotalCloudCover n=5273396/g=6479996'}</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25c9 <b>Global Coverage</b> (shown)<br>\u25cb Continental Coverage<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
+  "folder_html": "<h2>LIVE CLOUD COVER \u2014 Global Coverage</h2><p><b>Coverage:</b> Global Coverage<br><b>Provenance:</b> ir-cache age=500s</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25c9 <b>Global Coverage</b> (shown)<br>\u25cb Continental Coverage<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
 }

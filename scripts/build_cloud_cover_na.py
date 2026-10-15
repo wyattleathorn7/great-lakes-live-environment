@@ -153,6 +153,13 @@ def _build(bounds, W, H):
     from na_bounds import load_global_bounds
     gbounds = load_global_bounds()
     GW, GH = gbounds["canvas_width"], gbounds["canvas_height"]
+    # EXPERIMENT (reversible): realistic white clouds instead of the
+    # 0-100% gradient. The full gradient pipeline below is untouched;
+    # flip config render_style to "gradient" to restore it (original
+    # legend archived at archive/cloud_cover_gradient_legend.png).
+    if CONFIG_NA.get("render_style", "realistic") == "realistic":
+        return _build_realistic(bounds, W, H, gbounds, GW, GH,
+                                stage, stage_prod)
     prov = {}
     sat_grids = []
     gsat_grids = []
@@ -311,6 +318,8 @@ def _build(bounds, W, H):
     # and model layers arrive pre-smoothed above. Gaps stay transparent.
     field, _v = feather_merge(layers, feather_px=12)
     gfield_merged, _gv = feather_merge(glayers, feather_px=12)
+    from na_common import blend_antimeridian as _blend_aml
+    gfield_merged = _blend_aml(gfield_merged)
     default_cover = CONFIG_NA.get("coverage_mode", "global")
     if default_cover == "extended200":
         default_cover = "global"
@@ -451,7 +460,144 @@ def _build(bounds, W, H):
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"model_cycle": data_time, "source_id": src_id,
                           "processing_time_utc": meta["processing_time_utc"]})
-    print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files).")
+    print(f"[{PRODUCT}] UPDATED OK realistic ({len(promoted)} files).")
+    return 0
+
+
+def _build_realistic(bounds, W, H, gbounds, GW, GH, stage, stage_prod):
+    """Realistic-cloud render: GOES-19/18 Band-13 IR texture (the same
+    source as the former precipitation underlay) as white clouds,
+    day+night. No gradient, no model fill; gaps stay transparent.
+    Per-coverage variants + KML contract mirror the gradient path."""
+    from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
+                           COVERAGE_DISPLAY, coverage_selector_html)
+    from build_precipitation_na import _ir_underlay
+    from geospatial_utils import draw_category_legend
+    variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
+                    for m in COVERAGE_DISPLAY}
+    variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
+                      for m in COVERAGE_DISPLAY}
+    VARIANT_BOUNDS = {"basin": bounds, "landonly": gbounds, "global": gbounds,
+                      "extended200": gbounds}
+    # Same IR texture on the NA canvas (basin) and worldwide
+    # (continental + global); shared cache with precipitation.
+    try:
+        nb, na, nprov = _ir_underlay(bounds, W, H)
+    except Exception as e:
+        raise RuntimeError(f"no GOES-IR texture for realistic clouds: {e}")
+    try:
+        gb, ga, gprov = _ir_underlay(gbounds, GW, GH)
+    except Exception as e:
+        raise RuntimeError(f"no global GOES-IR texture: {e}")
+    SRC = {"basin": (nb, na, nprov), "landonly": (gb, ga, gprov),
+           "global": (gb, ga, gprov), "extended200": (gb, ga, gprov)}
+    default_cover = CONFIG_NA.get("coverage_mode", "global")
+    if default_cover == "extended200":
+        default_cover = "global"
+    data_time = now_det_str()
+    src_id = f"na-cloud-real-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
+    token = source_token(src_id + nprov + gprov)
+
+    def _render_ir(b, a):
+        from scipy.ndimage import distance_transform_edt
+        rgba = np.zeros((b.shape[0], b.shape[1], 4), dtype=np.uint8)
+        m = np.isfinite(b) & np.isfinite(a) & (a > 0)
+        # Feather the disk edge so coverage ends dissolve instead of
+        # cutting a hard line (satellite disks end mid-ocean).
+        d = distance_transform_edt(m)
+        fade = np.clip(d / 12.0, 0.0, 1.0)
+        rgba[m, 0:3] = np.round(b[m])[:, None].astype(np.uint8)
+        rgba[m, 3] = np.round(a[m] * fade[m]).astype(np.uint8)
+        rgba[m & (rgba[:, :, 3] < 3), 3] = 0
+        return rgba, int((rgba[:, :, 3] > 0).sum())
+
+    for mode in COVERAGE_DISPLAY:
+        b, a, pv = SRC[mode]
+        rgba_m, n_px = _render_ir(b, a)
+        rgba_m = apply_coverage_mask(rgba_m, mode)
+        vprod, vtitle = variant_dirs[mode], variant_titles[mode]
+        vdir = os.path.join(stage, "site", vprod)
+        os.makedirs(vdir, exist_ok=True)
+        save_png(rgba_m, os.path.join(vdir, "current.png"))
+        print(f"[{PRODUCT}] realistic variant {mode}: px={n_px}")
+        vmeta = base_metadata(
+            vprod, vtitle, CONFIG_NA["freshness_label"],
+            CONFIG_NA["source_name"], CONFIG_NA["source_url"],
+            CONFIG_NA["variable"],
+            data_time_utc=data_time,
+            source_last_modified_utc=pv[:300],
+            units="IR brightness (white=cold cloud tops)",
+            source_resolution="GOES-19/18 Band-13 10.3um full-disk",
+            color_min=0.0, color_max=100.0, color_units="%",
+            missing_data_treatment="Realistic IR cloud tops only; no model fill; transparent = clear or no coverage.")
+        vmeta["legend_scale_html"] = ("White = cloud (GOES-19/18 infrared, "
+            "day + night); transparent = clear sky or no satellite coverage.")
+        vmeta["source_id"] = src_id
+        vmeta["source_version"] = token
+        vmeta["na_bounds"] = VARIANT_BOUNDS[mode]
+        vmeta["coverage_mode"] = mode
+        vmeta["stats"] = {"ir_pixels": n_px}
+        vmeta["folder_html"] = (
+            f"<h2>{vtitle}</h2>"
+            f"<p><b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
+            f"<b>Provenance:</b> {pv}</p>") + coverage_selector_html(mode)
+        write_metadata(vdir, vmeta)
+
+    b, a, pv = SRC[default_cover]
+    rgba, n_px = _render_ir(b, a)
+    rgba = apply_coverage_mask(rgba, default_cover)
+    save_png(rgba, os.path.join(stage_prod, "current.png"))
+    lw, lh = draw_category_legend(
+        os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"],
+        f"Realistic clouds (GOES IR) | {data_time}",
+        [("#FFFFFF", "White = cloud tops (GOES-19/18 Band-13, day+night)")],
+        f"Source: NOAA GOES-East/GOES-West full-disk infrared  |  "
+        f"Processed {now_det_str()}",
+        note="Transparent = clear sky or no satellite coverage (no model fill).")
+    meta = base_metadata(
+        PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
+        CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
+        data_time_utc=data_time, source_last_modified_utc=pv[:300],
+        units="IR brightness (white=cold cloud tops)",
+        source_resolution="GOES-19/18 Band-13 10.3um full-disk",
+        color_min=0.0, color_max=100.0, color_units="%",
+        missing_data_treatment="Realistic IR cloud tops only; no model fill; transparent = clear or no coverage.")
+    meta["legend_size"] = [lw, lh]
+    meta["legend_scale_html"] = ("White = cloud (GOES-19/18 infrared, "
+        "day + night); transparent = clear sky or no satellite coverage.")
+    meta["source_id"] = src_id
+    meta["source_version"] = token
+    meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
+    meta["coverage_mode"] = default_cover
+    meta["stats"] = {"ir_pixels": n_px}
+    meta["folder_html"] = (f"<h2>{CONFIG_NA['title']}</h2>"
+                   f"<p><b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
+                   f"<b>Provenance:</b> {pv}</p>")
+    meta["folder_html"] = meta["folder_html"] + coverage_selector_html(default_cover)
+    write_metadata(stage_prod, meta)
+    outs = live_out_dirs(stage, KML_FILE)
+    extras = [(COVERAGE_LABELS[m], f"{variant_dirs[m]}/current.png",
+               VARIANT_BOUNDS[m], 11 + i, 0)
+              for i, m in enumerate([m for m in COVERAGE_DISPLAY
+                                     if m != default_cover])]
+    kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
+                         f"{PRODUCT}/legend.png",
+                         description_html(CONFIG_NA["title"], meta, SKIP_NOTE, "")
+                         + coverage_selector_html(default_cover),
+                         CONFIG_NA["refresh_interval_seconds"], token,
+                         folder=(CONFIG_NA["title"], meta["folder_html"]),
+                         out_dirs=outs["live"], meta=meta,
+                         bounds=VARIANT_BOUNDS[default_cover],
+                         extra_overlays=extras, folder_radio=True,
+                         primary_name=COVERAGE_LABELS[default_cover])
+    assert_no_vector_geometry(kml_text)
+    build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
+                    entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),
+                    CONFIG_NA["refresh_interval_seconds"], out_dirs=outs["entry"])
+    promoted = promote_stage(PRODUCT)
+    write_state(PRODUCT, {"model_cycle": data_time, "source_id": src_id,
+                          "processing_time_utc": meta["processing_time_utc"]})
+    print(f"[{PRODUCT}] UPDATED OK realistic ({len(promoted)} files).")
     return 0
 
 

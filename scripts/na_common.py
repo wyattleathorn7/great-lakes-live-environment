@@ -429,6 +429,38 @@ def feather_merge(layers, feather_px=12):
     return merged, valid
 
 
+def blend_antimeridian(field, pixels=4):
+    """Kill the ±180° canvas-edge discontinuity on worldwide grids.
+
+    Non-wrapping smoothing/resampling lets the west edge (lon −180)
+    and east edge (lon +180) diverge, printing as a sharp vertical
+    line down the Pacific. Mirror-average a `pixels`-wide band on both
+    edges (NaN-aware) so the two sides agree. Returns a new array;
+    non-2D or narrow inputs pass through untouched.
+    """
+    f = np.asarray(field, dtype=float)
+    if f.ndim != 2 or f.shape[1] < 2 * pixels + 1:
+        return field
+    out = f.copy()
+    left = out[:, :pixels]
+    right = out[:, -pixels:]
+    with np.errstate(invalid="ignore"):
+        for i in range(pixels):
+            a = left[:, i]
+            b = right[:, pixels - 1 - i]
+            m = np.isfinite(a) | np.isfinite(b)
+            avg = (np.where(np.isfinite(a), a, 0.0)
+                   + np.where(np.isfinite(b), b, 0.0)) / np.maximum(
+                       np.isfinite(a).astype(float)
+                       + np.isfinite(b).astype(float), 1.0)
+            avg[~m] = np.nan
+            left[m, i] = avg[m]
+            right[m, pixels - 1 - i] = avg[m]
+    out[:, :pixels] = left
+    out[:, -pixels:] = right
+    return out
+
+
 def resample_wcs_to_canvas(vals2d, src_lats1d, src_lons1d, bounds):
     """Bilinear resample of a regular lat/lon source grid (e.g. GDPS WCS
     0.15 deg) onto the NA canvas. Coarse cells become smooth gradients

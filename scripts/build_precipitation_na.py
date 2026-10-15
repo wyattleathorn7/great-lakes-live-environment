@@ -79,6 +79,25 @@ ECCC_CLASS_RGB = [
 ECCC_RAIN_RATES = [0.1, 1.0, 2.0, 4.0, 8.0, 12.0, 16.0, 24.0, 32.0, 50.0,
                    64.0, 100.0, 125.0, 200.0]  # mm/h class lower bounds
 
+# ECCC surface precipitation-type classes (Radar_1km_SfcPrecipType,
+# style SfcPrecipType_Dis), exact legend RGB in legend order.
+SFC_TYPE_RGB = [
+    (254, 30, 13),    # 0 Moderate/Heavy Freezing Rain
+    (254, 203, 200),  # 1 Light Freezing Rain
+    (254, 192, 7),    # 2 Hail/Rain
+    (0, 128, 0),      # 3 Heavy Rain
+    (0, 203, 0),      # 4 Moderate Rain
+    (154, 253, 154),  # 5 Light Rain
+    (155, 39, 175),   # 6 Heavy Mixed Rain/Snow
+    (195, 109, 210),  # 7 Moderate Mixed Rain/Snow
+    (224, 189, 230),  # 8 Light Mixed Rain/Snow
+    (0, 0, 224),      # 9 Heavy Snow
+    (71, 164, 240),   # 10 Moderate Snow
+    (127, 223, 235),  # 11 Light Snow
+]
+SFC_SNOW = (9, 10, 11)
+SFC_TYPE_MAX_DIST = 60.0  # beyond this -> unclassified (background etc.)
+
 
 def _rate_to_dbz(r_mmh):
     """NWS NEXRAD Z-R equivalence (Z=300R^1.4): the documented bridge that
@@ -295,7 +314,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
     """Radar composite on ANY canvas bbox (NA or worldwide): the exact
     same IEM + ECCC WMS code, IR underlay, and one-legend compose as the
     original basin layer. Returns
-    (base_rgba, n_iem, n_eccc, cloud_prov, t_rain, t_snow)."""
+    (base_rgba, n_iem, n_eccc, cloud_prov, t_rain, t_snow, t_type)."""
     # 1) IEM GetMap (CONUS echoes land inside its domain).
     iem_path = os.path.join(RAW_DIR, f"precip_{tag}_iem.png")
     wms_getmap(na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H), iem_path)
@@ -314,10 +333,12 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
     # documented smoother resampling for GetMap.
     t_rain = eccc_time_default("RADAR_1KM_RRAI")
     t_snow = eccc_time_default("RADAR_1KM_RSNO")
+    t_type = eccc_time_default("Radar_1km_SfcPrecipType")
     paths = {}
     for key, layer, style, interp in (
             ("rain", "RADAR_1KM_RRAI", "Radar-Rain_14colors", True),
             ("snow", "RADAR_1KM_RSNO", "Radar-Snow_14colors", True),
+            ("ptype", "Radar_1km_SfcPrecipType", "SfcPrecipType_Dis", False),
             ("covr", "RADAR_COVERAGE_RRAI.INV", "", False),
             ("covs", "RADAR_COVERAGE_RSNO.INV", "", False)):
         p = os.path.join(RAW_DIR, f"precip_{tag}_eccc_{key}.png")
@@ -345,21 +366,10 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
     from scipy.ndimage import distance_transform_edt
     from na_common import apply_coverage_mask
     out = np.zeros((H, W, 4), dtype=np.uint8)
-    # Real satellite cloud underlay (NOAA Science-On-a-Sphere look):
-    # GOES-19/18 Band-13 infrared texture first (day + night); the merged
-    # GOES+model % field as flat white only if IR is unavailable; radar
-    # echoes overwrite either below. Underlay missing -> precip-only raster
-    # (never a failure).
-    cloud_prov = "unavailable"
-    try:
-        ib, ia, cloud_prov = _ir_underlay(bounds, W, H)
-        m = np.isfinite(ib) & np.isfinite(ia) & (ia > 0)
-        out[m, 0:3] = np.round(ib[m])[:, None].astype(np.uint8)
-        out[m, 3] = np.round(ia[m]).astype(np.uint8)
-    except Exception as e:
-        # No flat-colour fallback: without real satellite texture the
-        # underlay stays transparent so radar echoes read as radar.
-        cloud_prov = f"IR unavailable:{type(e).__name__} (no underlay)"
+    # Radar-only composite: no cloud underlay (clouds live in the cloud
+    # cover layer now). Transparent where no radar echo; radar echoes
+    # overwrite below.
+    cloud_prov = "none (radar-only composite)"
     eccc_avail = cov & (rain_e | snow_e)
     ecol = np.zeros((H, W, 3), dtype=np.uint8)
     ealp = np.zeros((H, W), dtype=np.uint8)
@@ -370,10 +380,22 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
         spx = paths["snow"][eccc_avail].astype(float)[:, :3]
         cls_r = ((rpx[:, None, :] - pal[None, :, :]) ** 2).sum(axis=2).argmin(axis=1)
         cls_s = ((spx[:, None, :] - pal[None, :, :]) ** 2).sum(axis=2).argmin(axis=1)
-        # Snow wins where the snow product shows equal-or-higher severity
-        # class; those pixels render in the snow-blue ramp at the same
-        # severity rank instead of the rain dBZ key.
-        snow_win = (paths["snow"][eccc_avail, 3] > 0) & (cls_s >= cls_r)
+        # Authoritative type gate (ECCC SfcPrecipType): snow blues render
+        # ONLY where the type product classifies snow. Mixed/freezing
+        # rain/hail render on the N0Q key at matched severity; pixels
+        # the type product leaves unclassified fall back to the severity
+        # heuristic below. Never assume an echo is rain.
+        tpal = np.array(SFC_TYPE_RGB, dtype=float)
+        tpx = paths["ptype"][eccc_avail].astype(float)[:, :3]
+        topq = paths["ptype"][eccc_avail, 3] > 0
+        _d2 = ((tpx[:, None, :] - tpal[None, :, :]) ** 2).sum(axis=2)
+        tcls = _d2.argmin(axis=1)
+        tcls[(_d2.min(axis=1) > SFC_TYPE_MAX_DIST ** 2) | ~topq] = -1
+        snow_win = np.isin(tcls, SFC_SNOW)
+        # Fallback for type-unclassified echoes: snow product showing
+        # equal-or-higher severity renders blue (previous behavior).
+        snow_win = snow_win | ((tcls < 0) & (paths["snow"][eccc_avail, 3] > 0)
+                               & (cls_s >= cls_r))
         keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
         cols = np.zeros((rpx.shape[0], 3), dtype=np.uint8)
         dbz_r = np.array(ECCC_CLASS_DBZ)[cls_r]
@@ -409,7 +431,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
     n_eccc = int(eccc_echo.sum())
     print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} snow px={n_snow} "
           f"({100.0*(n_iem+n_eccc)/(W*H):.2f}% canvas)")
-    return out, n_iem, n_eccc, cloud_prov, t_rain, t_snow
+    return out, n_iem, n_eccc, cloud_prov, t_rain, t_snow, t_type
 
 
 def _gdps_precip_fill(base, bounds, W, H):
@@ -467,15 +489,16 @@ def _build(scan_dt, source_id, bounds, W, H):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
-    base, n_iem, n_eccc, cloud_prov, t_rain, t_snow = _compose_radar(
+    base, n_iem, n_eccc, cloud_prov, t_rain, t_snow, t_type = _compose_radar(
         scan_dt, bounds, W, H, "na")
     # Worldwide composite: the SAME WMS radar code at the global bbox
     # (echoes land where radar exists, transparent elsewhere) + the
     # worldwide IR underlay, then GDPS model fill where radar is blind.
-    gbase, gn_iem, gn_eccc, gcloud_prov, _, _ = _compose_radar(
+    gbase, gn_iem, gn_eccc, gcloud_prov, _, _, _ = _compose_radar(
         scan_dt, gbounds, GW, GH, "global")
-    gbase, gdps_prov = _gdps_precip_fill(gbase, gbounds, GW, GH)
-    gcloud_prov = f"{gcloud_prov}; {gdps_prov}"
+    # No GDPS model fill: radar-only composite (restorable via
+    # _gdps_precip_fill). Transparent where radar is blind.
+    gcloud_prov = f"{gcloud_prov}; GDPS fill off (radar-only)"
 
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
                            COVERAGE_DISPLAY, coverage_selector_html)
@@ -499,7 +522,7 @@ def _build(scan_dt, source_id, bounds, W, H):
     VARIANT_PROV = {"basin": cloud_prov, "landonly": gcloud_prov,
                     "global": gcloud_prov, "extended200": gcloud_prov}
     data_time = scan_dt.strftime("%Y-%m-%d %H:%M UTC")
-    subtitle = f"NA radar mosaic (IEM N0Q + ECCC RRAI/RSNO) + cloud underlay | {data_time}"
+    subtitle = f"NA radar mosaic (IEM N0Q + ECCC RRAI/RSNO/type) | {data_time}"
     token = source_token(source_id)
 
     # Per-coverage rasters: the primary live folder references these
@@ -520,7 +543,7 @@ def _build(scan_dt, source_id, bounds, W, H):
             CONFIG_NA["source_name"], CONFIG_NA["source_url"],
             CONFIG_NA["variable"],
             data_time_utc=data_time,
-            source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}",
+            source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}; type {t_type}",
             units="dBZ (both sources on the original N0Q key)",
             source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km NA composite 6-min (rates -> dBZ via NWS Z=300R^1.4); canvas 3300x1600 (0.05 deg/px)",
             color_min=5.0, color_max=75.0, color_units="dBZ",
@@ -538,15 +561,14 @@ def _build(scan_dt, source_id, bounds, W, H):
                           "cloud_underlay": vprov}
         vmeta["provenance"] = {"iem_wms": na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H)[:200],
                                "eccc_wms": ECCC, "eccc_time_rain": t_rain,
-                               "eccc_time_snow": t_snow,
+                               "eccc_time_snow": t_snow, "eccc_time_type": t_type,
                                "cloud_underlay": vprov}
         vmeta["folder_html"] = (
             f"<h2>{vtitle}</h2>"
             f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
             f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
             f"<b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
-            f"<b>Cloud underlay:</b> real GOES-19/18 Band-13 infrared "
-            f"satellite texture ({vprov})<br>"
+            f"<b>Radar note:</b> radar echoes only; no cloud underlay, no model fill<br>"
             f"<b>Data time:</b> {data_time}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
 
@@ -558,14 +580,12 @@ def _build(scan_dt, source_id, bounds, W, H):
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
         KEY_ROWS + SNOW_ROWS,
-        f"IEM {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} | {now_det_str()}",
-        note="No echo = transparent. Gray = real GOES IR cloud texture. "
-             "Blues = ECCC snow (severity-matched). Pale = GDPS model fill "
-             "where radar is blind.")
+        f"IEM {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} / type {t_type} | {now_det_str()}",
+        note="No echo = transparent. Blues = ECCC classified snow.")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
-        data_time_utc=data_time, source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}",
+        data_time_utc=data_time, source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}; type {t_type}",
         units="dBZ (both sources on the original N0Q key)",
         source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km NA composite 6-min (rates -> dBZ via NWS Z=300R^1.4); canvas 3300x1600 (0.05 deg/px)",
         color_min=5.0, color_max=75.0, color_units="dBZ",
@@ -585,15 +605,14 @@ def _build(scan_dt, source_id, bounds, W, H):
                       "transparent_pixels": int(def_w * def_h - n_iem - n_eccc),
                       "cloud_underlay": def_prov}
     meta["provenance"] = {"iem_wms": na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H)[:200],
-                          "eccc_wms": ECCC, "eccc_time_rain": t_rain, "eccc_time_snow": t_snow,
+                          "eccc_wms": ECCC, "eccc_time_rain": t_rain, "eccc_time_snow": t_snow, "eccc_time_type": t_type,
                           "cloud_underlay": def_prov}
     token = meta["source_version"]
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2>"
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
                    f"<b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
-                   f"<b>Cloud underlay:</b> real GOES-19/18 Band-13 infrared "
-                   f"satellite texture ({def_prov})<br>"
+                   f"<b>Radar note:</b> radar echoes only; no cloud underlay, no model fill<br>"
                    f"<b>Data time:</b> {data_time}</p>")
     meta["folder_html"] = folder_html + coverage_selector_html(default_cover)
     meta["coverage_mode"] = default_cover
