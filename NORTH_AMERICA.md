@@ -89,7 +89,7 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
   neither covers (e.g. Iceland) → muted GFS estimates
   (CSNOW-gated snow blues / CRAIN key colors grey-mixed, ≥0.25 mm/h,
   organized systems only) in verified radar gaps → transparent.
-  All echo pixels share one uniform alpha (85/255); estimates stay
+  All echo pixels share one uniform alpha (160/255); estimates stay
   distinguishable by their muted colors, not by transparency.
   Rain renders on the original N0Q key; snow renders in the blue snow
   ramp only where `Radar_1km_SfcPrecipType` classifies snow (same

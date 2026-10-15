@@ -29,7 +29,10 @@ WET_MM_H = 0.1
 # (0.25 mm/h ≈ light returns): model drizzle at the instrument floor
 # renders as salt-and-pepper noise, not systems.
 DISPLAY_WET_MM_H = 0.25
-MODEL_ALPHA = 85
+# Uniform overlay standard for ALL precipitation echo pixels (radar and
+# estimates alike): 160/255 (~63% opacity). The builder caps every echo
+# pixel at this value, so radar regions and model regions always match.
+MODEL_ALPHA = 160
 LICENSE = "Public domain (NOAA/NCEP GFS)"
 FOOTPRINT = "Worldwide (0.25 deg global grid)"
 

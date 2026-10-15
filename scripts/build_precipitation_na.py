@@ -586,7 +586,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
     # carries NO <color> opacity element, so PNG alpha is the single and
     # only transparency control. Radar echoes used to paint at alpha 255
     # (IEM native / ECCC source / OPERA) while GFS estimates paint at
-    # MODEL_ALPHA=85 — that gap is exactly why North America looked more
+    # MODEL_ALPHA — that gap is exactly why North America looked more
     # opaque than the global layer. Cap every echo pixel at MODEL_ALPHA
     # (min, not assignment: WMS-feathered echo edges below the cap and
     # fully transparent no-data pixels pass through untouched, GFS pixels

@@ -1070,7 +1070,7 @@ around them with a per-run source registry (`metadata.source_registry`).
   per cycle. PRATE (kg/m²/s -> mm/h) + categorical CSNOW/CRAIN/CFRZR/
   CICEP. Display threshold 0.25 mm/h + organized-systems QC (>=12
   cells). Painted ONLY in verified radar gaps (outside IEM domain,
-  ECCC coverage, OPERA coverage), translucent (alpha 85), snow via
+  ECCC coverage, OPERA coverage), uniform alpha 160 with radar, snow via
   CSNOW-gated blues, rain via N0Q — always labeled estimates.
   Public domain. Config `model_fill: false` disables it.
 
