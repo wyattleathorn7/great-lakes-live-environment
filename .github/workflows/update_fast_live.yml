@@ -46,13 +46,14 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      # Slim deps: this builder imports only numpy/PIL + local modules.
-      # (Full requirements.txt carries eccodes/rasterio/planetary/etc.
-      # for the heavy products; installing all of it 3x per 5-minute
-      # cycle is the bulk of runner time. Keep this list covering the
-      # job's imports.)
+      # Slim deps: keep this list covering the job's imports —
+      # build_precipitation_na needs scipy (crossfade/resample/despeckle),
+      # rasterio (+affine) for the OPERA reproject, and eccodes for GFS
+      # GRIB reads. (Full requirements.txt carries planetary/etc. for the
+      # heavy products; installing all of it 3x per 5-minute cycle is the
+      # bulk of runner time.)
       - name: Install dependencies
-        run: pip install "numpy>=1.26" "pillow>=10.1"
+        run: pip install "numpy>=1.26" "pillow>=10.1" "scipy>=1.10" "rasterio>=1.3" "eccodes>=2.30"
       - name: Update NA precipitation
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
@@ -86,9 +87,10 @@ jobs:
           python-version: "3.12"
           cache: pip
       # Slim deps: the GOES fetcher needs h5netcdf (+ its h5py backend)
-      # and pyproj on top of numpy/PIL (see note on precipitation above).
+      # and pyproj on top of numpy/PIL, plus scipy for the IR render
+      # (see note on precipitation above).
       - name: Install dependencies
-        run: pip install "numpy>=1.26" "pillow>=10.1" "h5netcdf>=1.0" "h5py>=3.0" "pyproj>=3.6"
+        run: pip install "numpy>=1.26" "pillow>=10.1" "h5netcdf>=1.0" "h5py>=3.0" "pyproj>=3.6" "scipy>=1.10"
       - name: Update NA cloud cover
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
