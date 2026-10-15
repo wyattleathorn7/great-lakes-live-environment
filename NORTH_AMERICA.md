@@ -85,10 +85,11 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
 
 - **Precipitation:** IEM N0Q inside lon −130…−65 / lat 22…50 (dry = valid,
   suppresses ECCC) → ECCC RRAI/RSNO outside it where `RADAR_COVERAGE_*.INV`
-  is transparent (verified authoritative coverage) → GDPS_15km_PrecipRate
-  model fill (mm/h → dBZ via NWS Z=300R^1.4 onto the original N0Q key)
-  where radar is blind (global variant only) → transparent.
-  ECCC colors are qualitative rank-maps, not dBZ.
+  is transparent (verified authoritative coverage) → transparent.
+  Rain renders on the original N0Q key; snow renders in the blue snow
+  ramp only where `Radar_1km_SfcPrecipType` classifies snow (same
+  severity rank). Radar-only composite: no cloud underlay, no model
+  fill. ECCC colors are qualitative rank-maps, not dBZ.
 - **Air temperature:** HRRR → RRFS-NA (para feed until prod HTTPS opens) →
   GDPS WCS worldwide → transparent. Same 5°F bands.
 - **Cloud cover:** GOES-19 + GOES-18 full-disk BCM/DQF → RRFS TCDC →

@@ -132,25 +132,9 @@ GDPS_FILL_ALPHA = 120
 KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
 
 
-def eccc_class_to_key(eccc_rgb):
-    """Map ECCC-rendered RGB -> original N0Q KEY_ROWS color via nearest
-    documented class color -> rate -> dBZ -> key bin. Returns (N,3)."""
-    pal = np.array(ECCC_CLASS_RGB, dtype=float)
-    px = np.asarray(eccc_rgb, dtype=float).reshape(-1, 3)
-    d2 = ((px[:, None, :] - pal[None, :, :]) ** 2).sum(axis=2)
-    cls = d2.argmin(axis=1)
-    dbz = np.array(ECCC_CLASS_DBZ)[cls]
-    keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
-    out = np.zeros((px.shape[0], 3), dtype=np.uint8)
-    for i, z in enumerate(dbz):
-        b = 0
-        for lo in KEY_BINS[1:]:
-            if z >= lo:
-                b += 1
-            else:
-                break
-        out[i] = keypal[min(b, len(keypal) - 1)]
-    return out
+# Shared snow sentence for legend HTML (variant + primary metadata).
+SNOW_SENT = (" ECCC snow echoes render blue ONLY where SfcPrecipType classifies snow "
+    "(mixed/freezing rain render on the dBZ key at matched severity).")
 
 
 def _hex_to_rgb(h):
@@ -231,8 +215,9 @@ def _ir_underlay(bounds, W, H):
     """Real satellite cloud texture: GOES-19/18 full-disk Band-13 (10.3 um
     clean LWIR) brightness temperatures, coldest-wins merged, enhanced to
     grayscale (cold opaque white -> warm transparent so the base map shows
-    through). Works day and night. Returns (bright, alpha, prov). Raises
-    only if NO sat yields data (caller falls back to the % underlay)."""
+    through). Works day and night. Returns (bright, alpha, prov). Shared
+    with the cloud-cover realistic renderer (same cache files); the
+    precipitation composite itself is radar-only and never calls this."""
     import goes_acm
     from na_common import (bin_points_to_canvas, fill_pinholes,
                            gate_field_to_coverage)
@@ -398,10 +383,17 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                                & (cls_s >= cls_r))
         keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
         cols = np.zeros((rpx.shape[0], 3), dtype=np.uint8)
-        dbz_r = np.array(ECCC_CLASS_DBZ)[cls_r]
-        for i, z in enumerate(dbz_r):
+        # Echo-grounded severity: a product showing no echo here must not
+        # contribute its (meaningless) background color to the rank.
+        has_r = paths["rain"][eccc_avail, 3] > 0
+        has_s = paths["snow"][eccc_avail, 3] > 0
+        sev = np.maximum(np.where(has_r, cls_r, -1),
+                         np.where(has_s, cls_s, -1))
+        sev = np.clip(sev, 0, len(ECCC_CLASS_DBZ) - 1)
+        dbz = np.array(ECCC_CLASS_DBZ)[sev]
+        for i, z in enumerate(dbz):
             cols[i] = keypal[_bin_for_dbz(z)]
-        dbz_s = np.array(ECCC_CLASS_DBZ)[cls_s[snow_win]]
+        dbz_s = np.array(ECCC_CLASS_DBZ)[sev[snow_win]]
         snow_cols = np.zeros((int(snow_win.sum()), 3), dtype=np.uint8)
         for i, z in enumerate(dbz_s):
             snow_cols[i] = SNOW_PAL[_snow_row_for_bin(_bin_for_dbz(z))]
@@ -545,24 +537,23 @@ def _build(scan_dt, source_id, bounds, W, H):
             data_time_utc=data_time,
             source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}; type {t_type}",
             units="dBZ (both sources on the original N0Q key)",
-            source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km NA composite 6-min (rates -> dBZ via NWS Z=300R^1.4); canvas 3300x1600 (0.05 deg/px)",
+            source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km rain/snow/type 6-min (rates -> dBZ via NWS Z=300R^1.4; snow blues at matched rank)",
             color_min=5.0, color_max=75.0, color_units="dBZ",
-            missing_data_treatment=("ECCC wins where RADAR_COVERAGE_*.INV is transparent "
-                                    "(verified authoritative coverage); IEM N0Q fills ECCC gaps natively; "
-                                    "10-px cross-fade on the coverage edge; transparent elsewhere; "
+            missing_data_treatment=("ECCC type-gated (SfcPrecipType snow -> blue ramp; other types -> dBZ key) where RADAR_COVERAGE_*.INV is transparent; IEM N0Q fills ECCC gaps natively (type undifferentiated); "
+                                    "10-px cross-fade on the coverage edge; radar-only composite (no cloud underlay, no model fill); transparent elsewhere; "
                                     "never zero-filled."))
-        vmeta["legend_scale_html"] = SCALE_HTML
+        vmeta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT)
         vmeta["source_id"] = source_id
         vmeta["source_version"] = token
         vmeta["na_bounds"] = VARIANT_BOUNDS[mode]
         vmeta["coverage_mode"] = mode
         vmeta["stats"] = {"opaque_pixels": n_opaque,
                           "transparent_pixels": int(vw * vh - n_opaque),
-                          "cloud_underlay": vprov}
+                          "underlay": vprov}
         vmeta["provenance"] = {"iem_wms": na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H)[:200],
                                "eccc_wms": ECCC, "eccc_time_rain": t_rain,
                                "eccc_time_snow": t_snow, "eccc_time_type": t_type,
-                               "cloud_underlay": vprov}
+                               "underlay": vprov}
         vmeta["folder_html"] = (
             f"<h2>{vtitle}</h2>"
             f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
@@ -594,19 +585,16 @@ def _build(scan_dt, source_id, bounds, W, H):
                                 "10-px cross-fade on the coverage edge; transparent elsewhere; "
                                 "never zero-filled."))
     meta["legend_size"] = [lw, lh]
-    meta["legend_scale_html"] = (SCALE_HTML + " ECCC snow echoes render in "
-        "the blue snow ramp below at the same severity rank (ice haze "
-        "&rarr; magenta extreme). Pale echoes are GDPS model fill where "
-        "radar is blind — vivid echoes are observed radar.")
+    meta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT)
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
     meta["stats"] = {"iem_pixels": n_iem, "eccc_pixels": n_eccc,
                       "transparent_pixels": int(def_w * def_h - n_iem - n_eccc),
-                      "cloud_underlay": def_prov}
+                      "underlay": def_prov}
     meta["provenance"] = {"iem_wms": na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H)[:200],
                           "eccc_wms": ECCC, "eccc_time_rain": t_rain, "eccc_time_snow": t_snow, "eccc_time_type": t_type,
-                          "cloud_underlay": def_prov}
+                          "underlay": def_prov}
     token = meta["source_version"]
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2>"
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"

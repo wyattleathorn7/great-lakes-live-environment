@@ -888,7 +888,11 @@ the other products and the Pages publish proceed normally.
   suppresses ECCC underneath — no duplicates) > ECCC rain/snow (max echo)
   outside it where covered > transparent. ECCC rates rank-mapped to the
   11-step N0Q key QUALITATIVELY (documented in legend/metadata; equal
-  colors ≠ identical dBZ). No precip-type classification added.
+  colors ≠ identical dBZ). Snow blues render ONLY where ECCC
+  `Radar_1km_SfcPrecipType` (6-min, `SfcPrecipType_Dis` style) classifies
+  snow; mixed/freezing rain render on the dBZ key at matched severity.
+  Radar-only composite: no cloud underlay, no model fill (GDPS fill
+  disabled; restorable in `_gdps_precip_fill`).
 - **Refresh:** 300 s (IEM 5-min, ECCC 6-min). Live build 2026-10-11:
   IEM 62,234 px + ECCC 17,572 px, Canadian echoes verified.
 
