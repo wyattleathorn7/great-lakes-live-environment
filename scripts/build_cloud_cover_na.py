@@ -170,7 +170,7 @@ def _build(bounds, W, H):
                                         splat_radius=2)
             sat_grids.append(g)
             gg, _ = bin_points_to_canvas(cloudy, lats, lons, gbounds, agg="mean",
-                                         splat_radius=1)
+                                         splat_radius=2)
             gsat_grids.append(gg)
             prov[name] = f"{scan:%Y-%m-%d %H:%MZ} valid-cells={int(np.isfinite(g).sum())}/g={int(np.isfinite(gg).sum())}"
         except Exception as e:
@@ -279,7 +279,7 @@ def _build(bounds, W, H):
         g = resample_wcs_to_canvas(
             sanitize_model_vals(raw, 0.0, 100.0), slat, slon, target_bounds)
         return smooth_field(fill_pinholes(np.clip(g, 0.0, 100.0), radius=3),
-                            size=5, passes=2)
+                            size=7, passes=2)
     try:
         g = _gdps_tcc(bounds)
         layers.append((g, np.isfinite(g)))
@@ -310,7 +310,7 @@ def _build(bounds, W, H):
     # the raw observed neighborhood fraction (its grain IS the product),
     # and model layers arrive pre-smoothed above. Gaps stay transparent.
     field, _v = feather_merge(layers, feather_px=12)
-    gfield_merged, _gv = feather_merge(glayers, feather_px=6)
+    gfield_merged, _gv = feather_merge(glayers, feather_px=12)
     default_cover = CONFIG_NA.get("coverage_mode", "global")
     if default_cover == "extended200":
         default_cover = "global"
@@ -442,7 +442,8 @@ def _build(bounds, W, H):
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
                          out_dirs=outs["live"], meta=meta,
                          bounds=VARIANT_BOUNDS[default_cover],
-                         extra_overlays=extras, folder_radio=True)
+                         extra_overlays=extras, folder_radio=True,
+                         primary_name=COVERAGE_LABELS[default_cover])
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),

@@ -92,6 +92,23 @@ def _rate_to_dbz(r_mmh):
 # dBZ value of each ECCC class lower bound under the Z-R bridge.
 ECCC_CLASS_DBZ = [_rate_to_dbz(r) for r in ECCC_RAIN_RATES]
 
+# Snow-only key (ECCC RSNO snow echoes): blue ramp, same severity order
+# as the N0Q key so equal rank = equal severity across types.
+SNOW_ROWS = [
+    ("#E0F7FF", "Snow Very light — ice haze"),
+    ("#A5E8FF", "Snow Light — pale cyan"),
+    ("#67CEFF", "Snow Light–moderate — sky blue"),
+    ("#329BFF", "Snow Moderate — azure"),
+    ("#2463EB", "Snow Moderate–heavy — royal blue"),
+    ("#5145CD", "Snow Heavy — deep indigo"),
+    ("#873FDB", "Snow Very heavy — violet"),
+    ("#D946EF", "Snow Extreme — magenta"),
+]
+
+# GDPS model fill renders translucent so model guidance never reads as
+# observed radar (vivid = radar echo, pale = model fill where blind).
+GDPS_FILL_ALPHA = 120
+
 # Original N0Q key bins (must match KEY_ROWS ranges in order).
 KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
 
@@ -99,7 +116,6 @@ KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
 def eccc_class_to_key(eccc_rgb):
     """Map ECCC-rendered RGB -> original N0Q KEY_ROWS color via nearest
     documented class color -> rate -> dBZ -> key bin. Returns (N,3)."""
-    import numpy as np
     pal = np.array(ECCC_CLASS_RGB, dtype=float)
     px = np.asarray(eccc_rgb, dtype=float).reshape(-1, 3)
     d2 = ((px[:, None, :] - pal[None, :, :]) ** 2).sum(axis=2)
@@ -116,6 +132,28 @@ def eccc_class_to_key(eccc_rgb):
                 break
         out[i] = keypal[min(b, len(keypal) - 1)]
     return out
+
+
+def _hex_to_rgb(h):
+    h = h.lstrip("#")
+    return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+
+
+SNOW_PAL = np.array([_hex_to_rgb(c) for c, _ in SNOW_ROWS], dtype=np.uint8)
+
+
+def _bin_for_dbz(z):
+    b = 0
+    for lo in KEY_BINS[1:]:
+        if z >= lo:
+            b += 1
+        else:
+            break
+    return min(b, len(KEY_ROWS) - 1)
+
+
+def _snow_row_for_bin(b):
+    return min(len(SNOW_PAL) - 1, b * len(SNOW_PAL) // len(KEY_ROWS))
 
 
 def eccc_time_default(layer, timeout=30):
@@ -319,31 +357,37 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
         out[m, 0:3] = np.round(ib[m])[:, None].astype(np.uint8)
         out[m, 3] = np.round(ia[m]).astype(np.uint8)
     except Exception as e:
-        cloud_prov = f"IR unavailable:{type(e).__name__}; trying % field"
-        try:
-            with np.load(os.path.join(RAW_DIR, "na_cloud_field.npz")) as z:
-                cf = np.asarray(z["field"], dtype=float)
-                built = dt.datetime.fromisoformat(str(z["built_utc"]))
-            age = abs((dt.datetime.now(dt.timezone.utc) - built).total_seconds())
-            if cf.shape == (H, W) and age < 1800 and np.isfinite(cf).any():
-                m = np.isfinite(cf) & (cf >= 1.0)
-                out[m, 0:3] = 255
-                out[m, 3] = np.clip(50.0 + cf[m] * 1.4, 0, 190).astype(np.uint8)
-                cloud_prov = f"% na_cloud_field age={age:.0f}s n={int(m.sum())}"
-            else:
-                cloud_prov = f"% stale/incompatible (age={age:.0f}s)"
-        except Exception as e2:
-            cloud_prov = f"unavailable: {type(e2).__name__}"
+        # No flat-colour fallback: without real satellite texture the
+        # underlay stays transparent so radar echoes read as radar.
+        cloud_prov = f"IR unavailable:{type(e).__name__} (no underlay)"
     eccc_avail = cov & (rain_e | snow_e)
     ecol = np.zeros((H, W, 3), dtype=np.uint8)
     ealp = np.zeros((H, W), dtype=np.uint8)
+    n_snow = 0
     if eccc_avail.any():
-        both = np.maximum(paths["rain"][eccc_avail].astype(float),
-                          paths["snow"][eccc_avail].astype(float))
-        cols = eccc_class_to_key(both[:, :3])
+        pal = np.array(ECCC_CLASS_RGB, dtype=float)
+        rpx = paths["rain"][eccc_avail].astype(float)[:, :3]
+        spx = paths["snow"][eccc_avail].astype(float)[:, :3]
+        cls_r = ((rpx[:, None, :] - pal[None, :, :]) ** 2).sum(axis=2).argmin(axis=1)
+        cls_s = ((spx[:, None, :] - pal[None, :, :]) ** 2).sum(axis=2).argmin(axis=1)
+        # Snow wins where the snow product shows equal-or-higher severity
+        # class; those pixels render in the snow-blue ramp at the same
+        # severity rank instead of the rain dBZ key.
+        snow_win = (paths["snow"][eccc_avail, 3] > 0) & (cls_s >= cls_r)
+        keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
+        cols = np.zeros((rpx.shape[0], 3), dtype=np.uint8)
+        dbz_r = np.array(ECCC_CLASS_DBZ)[cls_r]
+        for i, z in enumerate(dbz_r):
+            cols[i] = keypal[_bin_for_dbz(z)]
+        dbz_s = np.array(ECCC_CLASS_DBZ)[cls_s[snow_win]]
+        snow_cols = np.zeros((int(snow_win.sum()), 3), dtype=np.uint8)
+        for i, z in enumerate(dbz_s):
+            snow_cols[i] = SNOW_PAL[_snow_row_for_bin(_bin_for_dbz(z))]
+        cols[snow_win] = snow_cols
         ecol[eccc_avail] = cols
         ealp[eccc_avail] = np.maximum(paths["rain"][eccc_avail, 3],
                                       paths["snow"][eccc_avail, 3])
+        n_snow = int(snow_win.sum())
     if eccc_echo.any():
         out[eccc_echo, :3] = ecol[eccc_echo]
         out[eccc_echo, 3] = ealp[eccc_echo]
@@ -363,7 +407,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
     base = out  # unmasked composite; each coverage masks its own copy
     n_iem = int(iem_fill.sum())
     n_eccc = int(eccc_echo.sum())
-    print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} "
+    print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} snow px={n_snow} "
           f"({100.0*(n_iem+n_eccc)/(W*H):.2f}% canvas)")
     return out, n_iem, n_eccc, cloud_prov, t_rain, t_snow
 
@@ -409,7 +453,7 @@ def _gdps_precip_fill(base, bounds, W, H):
                         break
                 idx[i] = min(b, len(keypal) - 1)
             base[blind, :3] = keypal[idx]
-            base[blind, 3] = 190
+            base[blind, 3] = GDPS_FILL_ALPHA
         return base, f"GDPS_15km_PrecipRate ({unit}) fill px={n}"
     except Exception as e:
         return base, f"GDPS fill unavailable:{type(e).__name__}"
@@ -513,10 +557,11 @@ def _build(scan_dt, source_id, bounds, W, H):
     save_png(out, os.path.join(stage_prod, "current.png"))
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
-        KEY_ROWS,
+        KEY_ROWS + SNOW_ROWS,
         f"IEM {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} | {now_det_str()}",
-        note="No echo = transparent (no precipitation). Gray shading = real "
-             "GOES-19/18 infrared satellite cloud texture (Band 13, day+night).")
+        note="No echo = transparent. Gray = real GOES IR cloud texture. "
+             "Blues = ECCC snow (severity-matched). Pale = GDPS model fill "
+             "where radar is blind.")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
@@ -529,7 +574,10 @@ def _build(scan_dt, source_id, bounds, W, H):
                                 "10-px cross-fade on the coverage edge; transparent elsewhere; "
                                 "never zero-filled."))
     meta["legend_size"] = [lw, lh]
-    meta["legend_scale_html"] = SCALE_HTML
+    meta["legend_scale_html"] = (SCALE_HTML + " ECCC snow echoes render in "
+        "the blue snow ramp below at the same severity rank (ice haze "
+        "&rarr; magenta extreme). Pale echoes are GDPS model fill where "
+        "radar is blind — vivid echoes are observed radar.")
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
@@ -563,7 +611,8 @@ def _build(scan_dt, source_id, bounds, W, H):
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
                          out_dirs=outs["live"], meta=meta,
                          bounds=VARIANT_BOUNDS[default_cover],
-                         extra_overlays=extras, folder_radio=True)
+                         extra_overlays=extras, folder_radio=True,
+                         primary_name=COVERAGE_LABELS[default_cover])
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),

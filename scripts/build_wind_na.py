@@ -584,6 +584,10 @@ def _build(bounds, W, H):
                               "streamlets": n_stream, "heads": n_heads,
                               "labels": n_strat, "extra_labels": n_fill}
 
+    # Continental + Global variants render more transparent than the basin
+    # original so the base map stays readable worldwide.
+    NA_ALPHA_SCALE = 0.7
+
     def _render_global():
         """Worldwide variant on the 3600x1800 global canvas: same
         Beaufort colors + streamlet/label engines, density-matched per
@@ -605,8 +609,9 @@ def _build(bounds, W, H):
                            dtype=np.uint8)
         rgba_g = np.zeros((GH, GW, 4), dtype=np.uint8)
         rgba_g[m_g, :3] = np.where(lake_g[m_g][:, None], pal_g, vivid_g)
-        rgba_g[m_g, 3] = np.where(lake_g[m_g], WIND_ALPHA_WATER,
-                                  WIND_ALPHA_LAND)
+        rgba_g[m_g, 3] = np.round(np.where(
+            lake_g[m_g], WIND_ALPHA_WATER, WIND_ALPHA_LAND)
+            * NA_ALPHA_SCALE).astype(np.uint8)
         rgba_g, n_stream, n_heads = paint_wind_streamlets(
             rgba_g, np.where(m_g, UG, np.nan), np.where(m_g, VG, np.nan),
             np.where(m_g, kt_g, np.nan),
@@ -638,8 +643,9 @@ def _build(bounds, W, H):
                            dtype=np.uint8)
         rgba_g = np.zeros((GH, GW, 4), dtype=np.uint8)
         rgba_g[m_g, :3] = np.where(lake_g[m_g][:, None], pal_g, vivid_g)
-        rgba_g[m_g, 3] = np.where(lake_g[m_g], WIND_ALPHA_WATER,
-                                  WIND_ALPHA_LAND)
+        rgba_g[m_g, 3] = np.round(np.where(
+            lake_g[m_g], WIND_ALPHA_WATER, WIND_ALPHA_LAND)
+            * NA_ALPHA_SCALE).astype(np.uint8)
         rgba_g, n_stream, n_heads = paint_wind_streamlets(
             rgba_g, np.where(m_g, Ug_c, np.nan), np.where(m_g, Vg_c, np.nan),
             np.where(m_g, kt_g, np.nan),
@@ -774,7 +780,8 @@ def _build(bounds, W, H):
                          CONFIG_NA["refresh_interval_seconds"], token,
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
                          out_dirs=outs["live"], meta=meta, bounds=primary_bounds,
-                         extra_overlays=extras, folder_radio=True)
+                         extra_overlays=extras, folder_radio=True,
+                         primary_name=COVERAGE_LABELS[default_cover])
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),

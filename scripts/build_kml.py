@@ -132,7 +132,7 @@ def _write(xml, out_dirs):
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
               description_html, refresh_interval, cache_token, out_dirs=None,
               folder=None, meta=None, bounds=None, extra_overlays=None,
-              folder_radio=False):
+              folder_radio=False, primary_name=None):
     """Write the LIVE overlay file (one GroundOverlay, versioned PNG href).
 
     ``cache_token`` MUST be the deterministic source version
@@ -192,7 +192,7 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
         png_rel, b, order = extra
         return (overlay_name, png_rel, b, order, 1)
 
-    ground = _overlay(overlay_name, png_url, bounds, 10,
+    ground = _overlay(primary_name or overlay_name, png_url, bounds, 10,
                       1 if extra_overlays else None)
     descriptions = [header + description_html]
     if folder is not None:

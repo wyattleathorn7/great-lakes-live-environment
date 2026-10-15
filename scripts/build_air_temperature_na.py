@@ -328,7 +328,8 @@ def _build(bounds, W, H, prev):
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
                          out_dirs=outs["live"], meta=meta,
                          bounds=VARIANT_BOUNDS[default_cover],
-                         extra_overlays=extras, folder_radio=True)
+                         extra_overlays=extras, folder_radio=True,
+                         primary_name=COVERAGE_LABELS[default_cover])
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),
