@@ -44,7 +44,7 @@ import goes_acm
 PRODUCT = "cloud_cover_na"
 CONFIG_NA = json.load(open(os.path.join(REPO_ROOT, "config", "cloud_cover_na.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
-KML_FILE = "Continental_Live_Cloud_Cover.kml"
+KML_FILE = "North_America_Live_Cloud_Cover.kml"
 OVERLAY_NAME = "☁️ LIVE CLOUD COVER"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 

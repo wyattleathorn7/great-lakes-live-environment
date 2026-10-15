@@ -6,7 +6,7 @@
     <NetworkLink>
       <name>🌧️ LIVE PRECIPITATION — auto-refresh</name>
       <Link>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/Continental_Live_Precipitation.kml</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Precipitation.kml</href>
         <refreshMode>onInterval</refreshMode>
         <refreshInterval>300</refreshInterval>
       </Link>

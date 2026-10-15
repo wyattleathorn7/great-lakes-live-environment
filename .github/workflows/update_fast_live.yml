@@ -69,9 +69,9 @@ jobs:
             site/precipitation_na_basin
             site/precipitation_na_continental
             site/precipitation_na_global
-            site/kml/Continental_Live_Precipitation.kml
-            site/kml/live/Continental_Live_Precipitation.kml
-            kml/Continental_Live_Precipitation.kml
+            site/kml/North_America_Live_Precipitation.kml
+            site/kml/live/North_America_Live_Precipitation.kml
+            kml/North_America_Live_Precipitation.kml
             output/state/precipitation_na.json
           if-no-files-found: warn
 
@@ -105,9 +105,9 @@ jobs:
             site/cloud_cover_na_basin
             site/cloud_cover_na_continental
             site/cloud_cover_na_global
-            site/kml/Continental_Live_Cloud_Cover.kml
-            site/kml/live/Continental_Live_Cloud_Cover.kml
-            kml/Continental_Live_Cloud_Cover.kml
+            site/kml/North_America_Live_Cloud_Cover.kml
+            site/kml/live/North_America_Live_Cloud_Cover.kml
+            kml/North_America_Live_Cloud_Cover.kml
             output/state/cloud_cover_na.json
           if-no-files-found: warn
 

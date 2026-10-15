@@ -67,10 +67,10 @@ label/streamlet density — per-coverage rasters under
 
 | Layer | Output | KML | Refresh |
 |---|---|---|---|
-| Live Precipitation — Continental | `site/precipitation_na/` | `Continental_Live_Precipitation.kml` | 300 s |
-| Live Air Temperature — Continental | `site/air_temperature_na/` | `Continental_Live_Air_Temperature.kml` | 3600 s |
-| Live Cloud Cover — Continental | `site/cloud_cover_na/` | `Continental_Live_Cloud_Cover.kml` | 300 s |
-| Live Wind — Continental | `site/wind_na/` | `Continental_Live_Wind.kml` | 900 s |
+| Live Precipitation — Continental | `site/precipitation_na/` | `North_America_Live_Precipitation.kml` | 300 s |
+| Live Air Temperature — Continental | `site/air_temperature_na/` | `North_America_Live_Air_Temperature.kml` | 3600 s |
+| Live Cloud Cover — Continental | `site/cloud_cover_na/` | `North_America_Live_Cloud_Cover.kml` | 300 s |
+| Live Wind — Continental | `site/wind_na/` | `North_America_Live_Wind.kml` | 900 s |
 
 Builders: `scripts/build_*_na.py` + shared `scripts/na_common.py`
 (WMS fetch, canvas binning with valid/missing separation, GRIB-missing

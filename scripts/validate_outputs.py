@@ -77,13 +77,13 @@ PRODUCTS = {
             "max_opaque_min": 10_000},
     "dew_point": {"kml": "Great_Lakes_Live_Dew_Point.kml",
                   "max_opaque_min": 10_000},
-    "precipitation_na": {"kml": "Continental_Live_Precipitation.kml",
+    "precipitation_na": {"kml": "North_America_Live_Precipitation.kml",
                          "max_opaque_min": 0},  # dry continent => transparent OK
-    "cloud_cover_na": {"kml": "Continental_Live_Cloud_Cover.kml",
+    "cloud_cover_na": {"kml": "North_America_Live_Cloud_Cover.kml",
                        "max_opaque_min": 0},  # clear-sky => transparent OK
-    "air_temperature_na": {"kml": "Continental_Live_Air_Temperature.kml",
+    "air_temperature_na": {"kml": "North_America_Live_Air_Temperature.kml",
                            "max_opaque_min": 10_000},
-    "wind_na": {"kml": "Continental_Live_Wind.kml",
+    "wind_na": {"kml": "North_America_Live_Wind.kml",
                 "max_opaque_min": 10_000},
     "gamefish_walleye": {"kml": "WALLEYE_LIVE.kml",
                          "max_opaque_min": 10_000},

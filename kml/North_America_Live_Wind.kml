@@ -6,7 +6,7 @@
     <NetworkLink>
       <name>💨 LIVE WIND — auto-refresh</name>
       <Link>
-        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/Continental_Live_Wind.kml</href>
+        <href>https://wyattleathorn7.github.io/great-lakes-live-environment/kml/live/North_America_Live_Wind.kml</href>
         <refreshMode>onInterval</refreshMode>
         <refreshInterval>900</refreshInterval>
       </Link>

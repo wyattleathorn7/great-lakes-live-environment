@@ -49,7 +49,7 @@ PRODUCT = "precipitation_na"
 CONFIG = {}
 CONFIG_NA = json.load(open(os.path.join(REPO_ROOT, "config", "precipitation_na.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
-KML_FILE = "Continental_Live_Precipitation.kml"
+KML_FILE = "North_America_Live_Precipitation.kml"
 OVERLAY_NAME = "\U0001f327\ufe0f LIVE PRECIPITATION"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 
