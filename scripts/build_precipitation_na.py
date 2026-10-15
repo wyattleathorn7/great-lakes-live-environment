@@ -132,6 +132,13 @@ GDPS_FILL_ALPHA = 120
 KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
 
 
+# Estimated (GFS model, translucent on the map) swatches: muted versions
+# of the observed key so estimates never read as radar.
+EST_ROWS = [
+    ((204, 204, 0), "Estimated rain (GFS model, translucent)"),
+    ((41, 124, 204), "Estimated snow (GFS model, translucent)"),
+]
+
 # Shared snow sentence for legend HTML (variant + primary metadata).
 SNOW_SENT = (" ECCC snow echoes render blue ONLY where SfcPrecipType classifies snow "
     "(mixed/freezing rain render on the dBZ key at matched severity).")
@@ -418,12 +425,147 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                                  + (1.0 - w) * iem[band, :3].astype(float)).astype(np.uint8)
         out[band, 3] = np.round(w[:, 0] * out[band, 3].astype(float)
                                 + (1.0 - w[:, 0]) * iem[band, 3].astype(float)).astype(np.uint8)
+    # ---- OPERA European radar composite (EUMETNET, CC BY 4.0): genuine
+    # dBZ echoes fill only verified non-NA-radar gaps (e.g. Iceland,
+    # N. Atlantic fringe). Undifferentiated type -> N0Q key only, never
+    # snow blues. Dry OPERA cells suppress model fill below.
+    opera_prov = "OPERA unavailable"
+    opera_cov = np.zeros((H, W), dtype=bool)
+    n_opera = 0
+    opera_ts = None
+    try:
+        from precip_opera import (fetch as _op_fetch, latest_key as _op_key,
+                                  reproject_to_canvas as _op_reproj)
+        opera_ts, opera_key = _op_key(scan_dt)
+        _op_dest, _op_cached = _op_fetch(opera_key, RAW_DIR)
+        _odbz, _ocov, _oecho = _op_reproj(_op_dest, bounds, W, H)
+        allowed = ~cov & (out[:, :, 3] == 0)
+        paint = _oecho & allowed
+        if paint.any():
+            _keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
+            _cols = np.zeros((int(paint.sum()), 3), dtype=np.uint8)
+            for _i, _z in enumerate(_odbz[paint]):
+                _cols[_i] = _keypal[_bin_for_dbz(float(_z))]
+            out[paint, :3] = _cols
+            out[paint, 3] = 255
+        opera_cov = _ocov
+        n_opera = int(paint.sum())
+        opera_prov = (f"OPERA DBZH {opera_ts:%H:%MZ} "
+                      f"px={n_opera} (CC BY 4.0 EUMETNET)")
+    except Exception as e:
+        opera_prov = f"OPERA unavailable:{type(e).__name__}"
+    # ---- GFS model estimates (NOAA, public domain): translucent snow
+    # (CSNOW-gated blues) + rain (N0Q) ONLY where no radar covers
+    # (IEM domain, ECCC coverage, OPERA coverage all false). Estimated,
+    # never radar; restorable/off-switch via config model_fill.
+    gfs_prov = "GFS unavailable"
+    n_snow_est = 0
+    n_rain_est = 0
+    if CONFIG_NA.get("model_fill", True):
+        try:
+            from na_common import bin_points_to_canvas as _bin_canvas
+            from na_common import sanitize_model_vals as _san
+            from na_common import smooth_field as _smooth
+            from precip_gfs import (DISPLAY_WET_MM_H, MODEL_ALPHA,
+                                     fetch_cycle as _gfs_fetch,
+                                     latest_cycle as _gfs_cyc,
+                                     read_fields as _gfs_read)
+            _yyyymmdd, _hh = _gfs_cyc(scan_dt)
+            _gdest, _gcached = _gfs_fetch(_yyyymmdd, _hh, RAW_DIR)
+            _F = _gfs_read(_gdest)
+            # GFS is a complete regular 0.25 deg grid: place values
+            # order-independently, then bilinear-resample (continuous
+            # fields, no singleton speckles to clean up afterwards).
+            from na_common import resample_wcs_to_canvas as _resamp
+            def _grid2d(_name):
+                _vv, _la, _lo = _F[_name]
+                _g = np.full((721, 1440), np.nan)
+                _ii = np.clip(np.round((90.0 - np.asarray(_la)) / 0.25),
+                              0, 720).astype(int)
+                _jj = np.clip(np.round((((np.asarray(_lo) + 360.0) % 360.0))
+                                          / 0.25), 0, 1439).astype(int)
+                _g[_ii, _jj] = np.asarray(_vv, dtype=float)
+                return np.roll(_g, 720, axis=1)  # 0..360 -> -180..180
+            _lats1d = np.arange(90.0, -90.001, -0.25)
+            _lons1d = np.arange(-180.0, 180.0, 0.25)
+            _g_rate = _resamp(_san(_grid2d("prate") * 3600.0, 0.0, 500.0),
+                              _lats1d, _lons1d, bounds)
+            _flag = {}
+            for _fn in ("csnow", "crain", "cfrzr", "cicep"):
+                _g2 = _grid2d(_fn)
+                _ii = np.clip(np.round(
+                    (90.0 - (bounds["lat_max"] - (np.arange(H) + 0.5)
+                             * (bounds["lat_max"] - bounds["lat_min"]) / H))
+                    / 0.25), 0, 720).astype(int)
+                _jj = np.clip(np.round(
+                    ((bounds["lon_min"] + (np.arange(W) + 0.5)
+                      * (bounds["lon_max"] - bounds["lon_min"]) / W) + 180.0)
+                    / 0.25), 0, 1439).astype(int)
+                _flag[_fn] = np.isfinite(_g2[np.ix_(_ii, _jj)]) & (
+                    _g2[np.ix_(_ii, _jj)] >= 0.5)
+            _dom = CONFIG_NA.get("iem_effective_domain", {})
+            _iem_dom = np.zeros((H, W), dtype=bool)
+            try:
+                _c0 = max(0, int((_dom["lon_min"] - bounds["lon_min"])
+                                 / (bounds["lon_max"] - bounds["lon_min"]) * W))
+                _c1 = min(W, int((_dom["lon_max"] - bounds["lon_min"])
+                                 / (bounds["lon_max"] - bounds["lon_min"]) * W))
+                _r0 = max(0, int((bounds["lat_max"] - _dom["lat_max"])
+                                 / (bounds["lat_max"] - bounds["lat_min"]) * H))
+                _r1 = min(H, int((bounds["lat_max"] - _dom["lat_min"])
+                                 / (bounds["lat_max"] - bounds["lat_min"]) * H))
+                _iem_dom[_r0:_r1, _c0:_c1] = True
+            except Exception:
+                pass
+            _radar_cov = _iem_dom | cov | opera_cov
+            _wet = (np.isfinite(_g_rate) & (_g_rate >= DISPLAY_WET_MM_H)
+                    & ~_radar_cov)
+            _snow_est = _wet & _flag["csnow"]
+            _rain_est = _wet & ~_snow_est & (_flag["crain"] | _flag["cfrzr"]
+                                            | _flag["cicep"])
+            # QC on continuous model fields only: keep organized systems
+            # (>=12 cells, ~1.2 deg across), drop drizzle speckles. Radar
+            # echoes are never despeckled.
+            from na_common import despeckle_valid as _desp
+            _keep = _desp(_snow_est | _rain_est, min_size=12)
+            _snow_est = _snow_est & _keep
+            _rain_est = _rain_est & _keep
+            _keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
+            if _rain_est.any():
+                _dbz = np.array([_rate_to_dbz(float(x))
+                                 for x in _g_rate[_rain_est]])
+                _idx = np.array([_bin_for_dbz(z) for z in _dbz])
+                out[_rain_est, :3] = _keypal[_idx]
+                out[_rain_est, 3] = MODEL_ALPHA
+                n_rain_est = int(_rain_est.sum())
+            if _snow_est.any():
+                _dbz = np.array([_rate_to_dbz(float(x))
+                                 for x in _g_rate[_snow_est]])
+                _srows = np.array([_snow_row_for_bin(_bin_for_dbz(z))
+                                   for z in _dbz])
+                out[_snow_est, :3] = SNOW_PAL[_srows]
+                out[_snow_est, 3] = MODEL_ALPHA
+                n_snow_est = int(_snow_est.sum())
+            gfs_prov = (f"GFS {_yyyymmdd} {_hh}z est rain px={n_rain_est} "
+                        f"snow px={n_snow_est} (public domain)")
+        except Exception as e:
+            gfs_prov = f"GFS unavailable:{type(e).__name__}"
+    else:
+        gfs_prov = "GFS model fill off (config)"
     base = out  # unmasked composite; each coverage masks its own copy
     n_iem = int(iem_fill.sum())
     n_eccc = int(eccc_echo.sum())
     print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} snow px={n_snow} "
-          f"({100.0*(n_iem+n_eccc)/(W*H):.2f}% canvas)")
-    return out, n_iem, n_eccc, cloud_prov, t_rain, t_snow, t_type
+          f"OPERA px={n_opera} GFSest r/s={n_rain_est}/{n_snow_est} "
+          f"({100.0*(n_iem+n_eccc)/(W*H):.2f}% canvas radar)")
+    info = {"n_iem": n_iem, "n_eccc": n_eccc, "n_snow": n_snow,
+            "n_opera": n_opera, "n_rain_est": n_rain_est,
+            "n_snow_est": n_snow_est, "cloud_prov": cloud_prov,
+            "t_rain": t_rain, "t_snow": t_snow, "t_type": t_type,
+            "opera_prov": opera_prov, "gfs_prov": gfs_prov,
+            "opera_ts": (opera_ts.strftime("%Y-%m-%d %H:%M UTC")
+                         if opera_ts else "unavailable")}
+    return out, info
 
 
 def _gdps_precip_fill(base, bounds, W, H):
@@ -481,16 +623,15 @@ def _build(scan_dt, source_id, bounds, W, H):
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     os.makedirs(stage_prod, exist_ok=True)
-    base, n_iem, n_eccc, cloud_prov, t_rain, t_snow, t_type = _compose_radar(
-        scan_dt, bounds, W, H, "na")
-    # Worldwide composite: the SAME WMS radar code at the global bbox
-    # (echoes land where radar exists, transparent elsewhere) + the
-    # worldwide IR underlay, then GDPS model fill where radar is blind.
-    gbase, gn_iem, gn_eccc, gcloud_prov, _, _, _ = _compose_radar(
-        scan_dt, gbounds, GW, GH, "global")
-    # No GDPS model fill: radar-only composite (restorable via
-    # _gdps_precip_fill). Transparent where radar is blind.
-    gcloud_prov = f"{gcloud_prov}; GDPS fill off (radar-only)"
+    base, info = _compose_radar(scan_dt, bounds, W, H, "na")
+    n_iem, n_eccc = info["n_iem"], info["n_eccc"]
+    n_snow = info["n_snow"]
+    cloud_prov = info["cloud_prov"]
+    t_rain, t_snow, t_type = info["t_rain"], info["t_snow"], info["t_type"]
+    # Worldwide composite: IEM + ECCC + OPERA radar where each covers,
+    # GFS model estimates only in verified radar gaps.
+    gbase, ginfo = _compose_radar(scan_dt, gbounds, GW, GH, "global")
+    gcloud_prov = ginfo["cloud_prov"]
 
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
                            COVERAGE_DISPLAY, coverage_selector_html)
@@ -505,8 +646,9 @@ def _build(scan_dt, source_id, bounds, W, H):
     VARIANT_BOUNDS = {"basin": bounds, "landonly": gbounds, "global": gbounds,
                       "extended200": gbounds}
     # Per-variant composite: basin uses the NA radar composite;
-    # continental + global use the worldwide composite with GDPS model
-    # fill (continental additionally gated to worldwide land).
+    # continental + global use the worldwide composite (IEM+ECCC+OPERA
+    # radar + translucent GFS estimates in verified radar gaps;
+    # continental additionally gated to worldwide land).
     VARIANT_BASE = {"basin": base, "landonly": gbase, "global": gbase,
                     "extended200": gbase}
     VARIANT_DIMS = {"basin": (W, H), "landonly": (GW, GH), "global": (GW, GH),
@@ -514,8 +656,36 @@ def _build(scan_dt, source_id, bounds, W, H):
     VARIANT_PROV = {"basin": cloud_prov, "landonly": gcloud_prov,
                     "global": gcloud_prov, "extended200": gcloud_prov}
     data_time = scan_dt.strftime("%Y-%m-%d %H:%M UTC")
-    subtitle = f"NA radar mosaic (IEM N0Q + ECCC RRAI/RSNO/type) | {data_time}"
+    subtitle = (f"Radar mosaic (IEM N0Q + ECCC RRAI/RSNO/type + OPERA EU) "
+                f"+ GFS estimates | {data_time}")
     token = source_token(source_id)
+    # Global source registry (per-run health + provenance for the map).
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    registry = [
+        {"id": "iem_n0q", "footprint": "CONUS (lon -130..-65, lat 22..50)",
+         "product_type": "radar reflectivity (dBZ)", "data_time": data_time,
+         "license": "Public domain (NOAA/Iowa State IEM)",
+         "snow_capability": "none (reflectivity only)",
+         "status": "ok" if info["n_iem"] or ginfo["n_iem"] else "no-echo"},
+        {"id": "eccc_radar", "footprint": "North America (dynamic INV mask)",
+         "product_type": "radar rain/snow rate + precipitation type",
+         "data_time": f"rain {t_rain}; snow {t_snow}; type {t_type}",
+         "license": "ECCC GeoMet (open data)",
+         "snow_capability": "classified (SfcPrecipType-gated blues)",
+         "status": "ok" if info["n_eccc"] or ginfo["n_eccc"] else "no-echo"},
+        {"id": "opera_eu", "footprint": "Europe + N. Atlantic (LAEA 1km)",
+         "product_type": "radar reflectivity (dBZ)",
+         "data_time": ginfo["opera_prov"], "license": "CC BY 4.0 (EUMETNET OPERA)",
+         "snow_capability": "none (reflectivity only)",
+         "status": ("ok" if ginfo.get("n_opera", 0) or info.get("n_opera", 0)
+                    else "no-echo/unavailable")},
+        {"id": "gfs_model", "footprint": "worldwide 0.25deg (radar gaps only)",
+         "product_type": "model estimate (PRATE + CSNOW/CRAIN flags)",
+         "data_time": ginfo["gfs_prov"], "license": "Public domain (NOAA GFS)",
+         "snow_capability": "estimated (CSNOW-gated translucent blues)",
+         "status": ("ok" if ginfo.get("n_rain_est", 0) or ginfo.get("n_snow_est", 0)
+                    else "no-estimates/unavailable")},
+    ]
 
     # Per-coverage rasters: the primary live folder references these
     # PNGs as its three hideable overlays.
@@ -554,12 +724,14 @@ def _build(scan_dt, source_id, bounds, W, H):
                                "eccc_wms": ECCC, "eccc_time_rain": t_rain,
                                "eccc_time_snow": t_snow, "eccc_time_type": t_type,
                                "underlay": vprov}
+        vmeta["source_registry"] = registry
         vmeta["folder_html"] = (
             f"<h2>{vtitle}</h2>"
             f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
             f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
             f"<b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
-            f"<b>Radar note:</b> radar echoes only; no cloud underlay, no model fill<br>"
+            f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); pale wash = "
+            f"GFS model estimates in verified radar gaps<br>"
             f"<b>Data time:</b> {data_time}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
 
@@ -570,9 +742,10 @@ def _build(scan_dt, source_id, bounds, W, H):
     save_png(out, os.path.join(stage_prod, "current.png"))
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
-        KEY_ROWS + SNOW_ROWS,
+        KEY_ROWS + SNOW_ROWS + EST_ROWS,
         f"IEM {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} / type {t_type} | {now_det_str()}",
-        note="No echo = transparent. Blues = ECCC classified snow.")
+        note="No echo = transparent. Blues = ECCC classified snow. "
+             "Pale = GFS model estimates (not radar).")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
@@ -582,25 +755,32 @@ def _build(scan_dt, source_id, bounds, W, H):
         color_min=5.0, color_max=75.0, color_units="dBZ",
         missing_data_treatment=("ECCC wins where RADAR_COVERAGE_*.INV is transparent "
                                 "(verified authoritative coverage); IEM N0Q fills ECCC gaps natively; "
-                                "10-px cross-fade on the coverage edge; transparent elsewhere; "
+                                "OPERA EU radar fills remaining non-NA gaps; translucent GFS model estimates "
+                                "only in verified radar gaps; transparent elsewhere; "
                                 "never zero-filled."))
     meta["legend_size"] = [lw, lh]
-    meta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT)
+    meta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT + " Pale wash = "
+        "GFS model estimates (translucent, not radar).")
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
     meta["stats"] = {"iem_pixels": n_iem, "eccc_pixels": n_eccc,
-                      "transparent_pixels": int(def_w * def_h - n_iem - n_eccc),
-                      "underlay": def_prov}
+                     "opera_pixels": ginfo.get("n_opera", 0),
+                     "gfs_est_rain": ginfo.get("n_rain_est", 0),
+                     "gfs_est_snow": ginfo.get("n_snow_est", 0),
+                     "transparent_pixels": int(def_w * def_h - n_iem - n_eccc),
+                     "underlay": def_prov}
     meta["provenance"] = {"iem_wms": na_wms_111(IEM, "nexrad-n0q-900913", bounds, W, H)[:200],
                           "eccc_wms": ECCC, "eccc_time_rain": t_rain, "eccc_time_snow": t_snow, "eccc_time_type": t_type,
                           "underlay": def_prov}
+    meta["source_registry"] = registry
     token = meta["source_version"]
     folder_html = (f"<h2>{CONFIG_NA['title']}</h2>"
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
                    f"<b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
-                   f"<b>Radar note:</b> radar echoes only; no cloud underlay, no model fill<br>"
+                   f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); pale wash = "
+                   f"GFS model estimates in verified radar gaps<br>"
                    f"<b>Data time:</b> {data_time}</p>")
     meta["folder_html"] = folder_html + coverage_selector_html(default_cover)
     meta["coverage_mode"] = default_cover

@@ -1044,3 +1044,61 @@ the other products and the Pages publish proceed normally.
 - **Bilinear GDPS:** `na_common.resample_wcs_to_canvas` (axis-order and
   NaN hardened) replaces nearest-binning for GDPS temperature and winds;
   Cuba now renders solid with a smooth 6-color gradient.
+
+## 30. Worldwide precipitation expansion — source inventory (verified live 2026-10-15)
+
+North American sources (§17, §23: IEM N0Q + ECCC RRAI/RSNO/SfcPrecipType)
+are unchanged and keep top precedence. New worldwide layers integrate
+around them with a per-run source registry (`metadata.source_registry`).
+
+### Integrated (tested end-to-end, in the live pipeline)
+- **EUMETNET OPERA EU DBZH composite** (`scripts/precip_opera.py`):
+  anonymous S3 listing + HTTPS fetch, no credentials,
+  `s3.waw3-1.cloudferro.com/openradar-24h/YYYY/MM/DD/OPERA/COMP/OPERA@<ts>@0@DBZH.tiff`,
+  5-min cadence, ~3.5 MB/file, 1 km LAEA (55N/10E), band 1 = dBZ
+  (-9999000 = dry/undetect = valid, NaN = outside coverage), nearest-
+  neighbour reproject to canvas (no invented intermediates). Echoes
+  (>=5 dBZ) paint only where IEM/ECCC have no coverage; type
+  undifferentiated -> N0Q key only, never snow blues. License CC BY 4.0
+  (attributed "EUMETNET OPERA" in metadata/prov).
+- **NOAA GFS 0.25° f000 analysis** (`scripts/precip_gfs.py`): NOMADS
+  byte-range GRIB fetch (same pattern as RRFS), 6-hourly cycles, cached
+  per cycle. PRATE (kg/m²/s -> mm/h) + categorical CSNOW/CRAIN/CFRZR/
+  CICEP. Display threshold 0.25 mm/h + organized-systems QC (>=12
+  cells). Painted ONLY in verified radar gaps (outside IEM domain,
+  ECCC coverage, OPERA coverage), translucent (alpha 85), snow via
+  CSNOW-gated blues, rain via N0Q — always labeled estimates.
+  Public domain. Config `model_fill: false` disables it.
+
+### Snowfall finding
+No single genuine global snowfall *radar* product was verified to
+exist. Best feasible multi-source architecture (implemented):
+ECCC SfcPrecipType-classified snow (observed, vivid blues) >
+GFS CSNOW-estimated snow (translucent blues, radar gaps only) >
+transparent. RainViewer snow is a color scheme, not a data field;
+SFR needs PDA access; OPERA exposes no type product here.
+
+### Investigated but NOT integrated (with reason)
+- **RainViewer**: API live and tested, but free terms cover personal/
+  educational use (this project republishes publicly), max zoom 7,
+  and its snow option is a palette, not classification.
+- **ECMWF Open Data**: rate-limited our probes (HTTP 429) during the
+  inventory; full-cube GRIB downloads are also too heavy and 6-hourly
+  for a 5-min layer. GFS covers the model role instead.
+- **NASA GPM IMERG**: requires NASA Earthdata credentials; not
+  integrated (no anonymous access). Total precipitation alone is not
+  a snowfall classifier in any case.
+- **NOAA SFR (ATMS)**: confirmed real product, but no open HTTP
+  endpoint found (PDA/CLASS-gated distribution).
+- **JMA / KMA**: viewer-only web apps found; no open radar API
+  verified (KMA radar APIs need portal keys/approval).
+- **BoM (Australia)**: anonymous FTP PNGs verified live, but
+  pre-rendered images with baked-in map backgrounds — compositing
+  them means blending finished pictures (the failure mode we're
+  removing). Deferred pending a values-based feed.
+- **SMHI (Sweden)**: open API + documented dBZ decoding verified,
+  but Sweden sits fully inside OPERA coverage — zero new geography
+  for added complexity. Documented as backup.
+- **REDEMET (Brazil) / SMN (Mexico) / MetService (NZ) / African
+  services**: no open machine-readable radar feed verified;
+  web viewers only. Regions stay transparent (honest gaps).
