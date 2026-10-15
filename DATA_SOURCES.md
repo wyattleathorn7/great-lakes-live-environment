@@ -1020,14 +1020,18 @@ the other products and the Pages publish proceed normally.
   (`Radar-Rain_14colors`, `Radar-Snow_14colors`, INTERPOLATION=TRUE);
   every rendered color inverts EXACTLY through the published ramp
   (colors extracted from the official GetLegendGraphic images) to its
-  rate class, then to dBZ via the NWS NEXRAD Z-R bridge (Z=300R^1.4;
-  equal ECCC colors = equal severity = equal dBZ for rain and snow),
+  rate class, then to ESTIMATED dBZ equivalents via the NWS NEXRAD Z-R
+  bridge (Z=300R^1.4; ECCC publishes rates, not reflectivity — its 14
+  classes map to bins 0..7 and saturate near ~57 dBZ, so ECCC colors
+  must never be read as measured dBZ; equal ECCC colors = equal
+  severity, not equal dBZ),
   then into the original 5-75 dBZ key bins. Precedence follows verified
   ECCC dynamic coverage (75% of CONUS included) with IEM N0Q native
   rendering filling ECCC gaps; IEM gap pixels repaint into key rows
-  (vivid cores by chromaticity, washed pixels clamped to rows 0..3, so
-  washed overview pixels can never paint as severe). 10-px cross-fade
-  rides the coverage edge. IEM overview-scale muting is inherent to the
+  (vivid cores by chromaticity with absolute-distance tie-break,
+  near-white opaque pixels kept at the Extreme row since white has no
+  chroma; washed pixels clamped to rows 0..3, so washed overview pixels
+  can never paint as severe). 10-px cross-fade rides the coverage edge. IEM overview-scale muting is inherent to the
   source's continental rendering (verified identical across the dynamic
   `nexrad-n0q-conus` layer and 20-degree tiles); no values are invented.
 - **Wind, original rules:** seed_step 20, ds 3.0, max 40 steps, font 7,

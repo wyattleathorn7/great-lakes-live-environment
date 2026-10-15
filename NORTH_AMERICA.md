@@ -86,12 +86,15 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
 - **Precipitation:** IEM N0Q inside lon −130…−65 / lat 22…50 (dry = valid,
   suppresses ECCC) → ECCC RRAI/RSNO outside it where `RADAR_COVERAGE_*.INV`
   is transparent (verified authoritative coverage) → OPERA EU DBZH where
-  neither covers (e.g. Iceland) → translucent GFS estimates
-  (CSNOW-gated snow blues / CRAIN N0Q, ≥0.25 mm/h, organized systems
-  only) in verified radar gaps → transparent.
+  neither covers (e.g. Iceland) → muted GFS estimates
+  (CSNOW-gated snow blues / CRAIN key colors grey-mixed, ≥0.25 mm/h,
+  organized systems only) in verified radar gaps → transparent.
+  All echo pixels share one uniform alpha (85/255); estimates stay
+  distinguishable by their muted colors, not by transparency.
   Rain renders on the original N0Q key; snow renders in the blue snow
   ramp only where `Radar_1km_SfcPrecipType` classifies snow (same
-  severity rank). ECCC colors are qualitative rank-maps, not dBZ.
+  severity rank). ECCC colors are Z-R estimated dBZ equivalents
+  (saturate ~57 dBZ), not measured dBZ.
 - **Air temperature:** HRRR → RRFS-NA (para feed until prod HTTPS opens) →
   GDPS WCS worldwide → transparent. Same 5°F bands.
 - **Cloud cover:** GOES-19 + GOES-18 full-disk BCM/DQF → RRFS TCDC →

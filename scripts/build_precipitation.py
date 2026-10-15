@@ -74,9 +74,9 @@ KEY_ROWS = [
     ((0, 128, 0), "Moderate ~30-40 dBZ — moderate rain / snow"),
     ((255, 255, 0), "Heavy ~40-45 dBZ — heavy rain"),
     ((255, 165, 0), "Heavy ~45-50 dBZ — very heavy rain"),
-    ((255, 0, 0), "Severe ~50-60 dBZ — severe storms, hail possible"),
+    ((255, 0, 0), "Severe ~50-55 dBZ — severe storms, hail possible"),
     ((192, 0, 0), "Severe ~55-60 dBZ — intense downpours, hail likely"),
-    ((255, 0, 255), "Intense ~60-70 dBZ — violent storms, large hail"),
+    ((255, 0, 255), "Intense ~60-65 dBZ — violent storms, large hail"),
     ((139, 0, 255), "Intense ~65-70 dBZ — damaging hail, flash flooding"),
     ((255, 255, 255), "Extreme 70+ dBZ — destructive hail / tornadic debris"),
 ]
@@ -92,7 +92,14 @@ SCALE_HTML = (
     "<b>HIGHEST+ 70+ Extreme</b> white (destructive hail, debris). "
     "Same dBZ always shows the same color in every season — rain, snow, "
     "lake-effect snow, thunderstorms. No echo (no precipitation) stays "
-    "see-through so the map underneath shows.")
+    "see-through so the map underneath shows. "
+    "Measurement types differ by source: IEM N0Q and OPERA are MEASURED "
+    "reflectivity (dBZ); ECCC rain colors are ESTIMATED dBZ equivalents "
+    "converted from rain rates via Z=300R^1.4 (ECCC publishes mm/h, not "
+    "dBZ — high-rate classes saturate near ~57 dBZ, so ECCC never paints "
+    "the white extreme row); ECCC snow blues are severity-rank matched, "
+    "not dBZ; pale/muted colors are GFS MODEL estimates (6-h mean rates), "
+    "never radar.")
 
 
 def wms_url():

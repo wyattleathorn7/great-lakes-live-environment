@@ -10,10 +10,12 @@ Precedence (explicit, documented):
   3) Transparent elsewhere (no source coverage: northern Arctic, oceans
      beyond radar range, Greenland interior).
 
-ECCC rates are mapped to the same 11-step key QUALITATIVELY (echo-rank
--> key color); equal colors across the transition do NOT claim identical
-dBZ. Rain/snow products are combined as intensity only — no precip-type
-classification is added (per task scope).
+ECCC rates are mapped to the 11-step key as ESTIMATED dBZ equivalents via
+the NWS NEXRAD Z-R bridge (Z=300R^1.4) — ECCC publishes rain rates
+(mm/h), not reflectivity, so these colors must never be read as measured
+dBZ (ECCC classes saturate near ~57 dBZ). Equal colors across the
+transition do NOT claim identical dBZ. Snow renders blue ONLY where
+SfcPrecipType classifies snow (severity-rank matched, not dBZ).
 
 Exit codes: 0 updated; 2 source/validation failure (previous kept);
 1 unexpected error.
@@ -132,11 +134,21 @@ GDPS_FILL_ALPHA = 120
 KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
 
 
-# Estimated (GFS model, translucent on the map) swatches: muted versions
-# of the observed key so estimates never read as radar.
+# Estimated (GFS model) swatches: muted (grey-mixed) versions of the
+# observed key at the same rank order, so estimates never read as radar
+# now that ALL echo pixels share one uniform alpha (Goal 2). The map
+# rendering applies the same _mute_est() mix, so swatches match pixels.
+def _mute_est(rgb):
+    import numpy as np
+    c = np.asarray(rgb, dtype=float)
+    return np.round(c * 0.55 + 145.0 * 0.45).astype(np.uint8)
+
+
 EST_ROWS = [
-    ((204, 204, 0), "Estimated rain (GFS model, translucent)"),
-    ((41, 124, 204), "Estimated snow (GFS model, translucent)"),
+    (tuple(int(v) for v in _mute_est((255, 255, 0))),
+     "Estimated rain (GFS model) — muted key colors, same order, NOT radar"),
+    (tuple(int(v) for v in _mute_est((50, 155, 235))),
+     "Estimated snow (GFS model) — muted blues, same order, NOT radar"),
 ]
 
 # Shared snow sentence for legend HTML (variant + primary metadata).
@@ -181,22 +193,40 @@ def eccc_time_default(layer, timeout=30):
 def key_from_iem_wash(rgb):
     """Map IEM overview-scale pixels into N0Q key rows without inventing
     intensity. Vivid pixels (real chroma: storm cores survive overview
-    minification) match by chromaticity to the exact key row. Washed-out
-    pixels (overview blur destroyed their color) fall back to a
-    luminance rank clamped to rows 0..3 (very light..moderate): a washed
-    pixel can never paint as severe/intense/extreme."""
+    minification) match by chromaticity to key rows 0..9, breaking
+    same-hue ties (bright vs dark red) by absolute distance so dark-red
+    echoes keep their ~55-60 row. The white Extreme row is EXCLUDED from
+    chromaticity matching: white (1,1,1) sits angularly near every
+    desaturated blue/grey, so washed echo edges (e.g. steel-blue
+    (95,115,167)) would otherwise misrender as 70+ dBZ Extreme — 521
+    such pixels in one global scan. Near-white opaque pixels (min
+    channel >= 235) map to Extreme directly instead: white IS the
+    Extreme key color and has no chroma by definition, so without this
+    true white cores would fall into the washed clamp and render as
+    Moderate. Washed-out pixels (overview blur destroyed their color)
+    fall back to a luminance rank clamped to rows 0..3
+    (very light..moderate): a washed pixel can never paint as
+    severe/intense/extreme."""
     import numpy as np
     keypal = np.array([c for c, _ in KEY_ROWS], dtype=float)
     knorm = keypal / np.maximum(keypal.max(axis=1, keepdims=True), 1.0)
     px = np.asarray(rgb, dtype=float).reshape(-1, 3)
     mx = px.max(axis=1, keepdims=True)
+    mn = px.min(axis=1)
     pn = px / np.maximum(mx, 1.0)
     chroma = px.max(axis=1) - px.min(axis=1)
     d2 = ((pn[:, None, :] - knorm[None, :, :]) ** 2).sum(axis=2)
-    cls = d2.argmin(axis=1)
+    d2[:, -1] = np.inf  # Extreme/white never wins chromaticity (see above)
+    d2abs = ((px[:, None, :] - keypal[None, :, :]) ** 2).sum(axis=2)
+    d2abs[:, -1] = np.inf
+    tied = d2 <= (d2.min(axis=1, keepdims=True) + 1e-9)
+    cls = np.where(tied, d2abs, np.inf).argmin(axis=1)
+    near_white = mn >= 235.0
+    cls = np.where(near_white, len(KEY_ROWS) - 1, cls)
+    vivid = (chroma > 60.0) | near_white
     lum = (0.299 * px[:, 0] + 0.587 * px[:, 1] + 0.114 * px[:, 2]) / 255.0
     soft = np.clip((lum * 3.99).astype(int), 0, 3)
-    cls = np.where(chroma > 60.0, cls, soft)
+    cls = np.where(vivid, cls, soft)
     return np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)[cls].reshape(
         np.asarray(rgb).shape)
 
@@ -535,7 +565,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                 _dbz = np.array([_rate_to_dbz(float(x))
                                  for x in _g_rate[_rain_est]])
                 _idx = np.array([_bin_for_dbz(z) for z in _dbz])
-                out[_rain_est, :3] = _keypal[_idx]
+                out[_rain_est, :3] = _mute_est(_keypal[_idx])
                 out[_rain_est, 3] = MODEL_ALPHA
                 n_rain_est = int(_rain_est.sum())
             if _snow_est.any():
@@ -543,7 +573,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                                  for x in _g_rate[_snow_est]])
                 _srows = np.array([_snow_row_for_bin(_bin_for_dbz(z))
                                    for z in _dbz])
-                out[_snow_est, :3] = SNOW_PAL[_srows]
+                out[_snow_est, :3] = _mute_est(SNOW_PAL[_srows])
                 out[_snow_est, 3] = MODEL_ALPHA
                 n_snow_est = int(_snow_est.sum())
             gfs_prov = (f"GFS {_yyyymmdd} {_hh}z est rain px={n_rain_est} "
@@ -552,6 +582,19 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
             gfs_prov = f"GFS unavailable:{type(e).__name__}"
     else:
         gfs_prov = "GFS model fill off (config)"
+    # ---- Uniform overlay transparency (Goal 2): the KML GroundOverlay
+    # carries NO <color> opacity element, so PNG alpha is the single and
+    # only transparency control. Radar echoes used to paint at alpha 255
+    # (IEM native / ECCC source / OPERA) while GFS estimates paint at
+    # MODEL_ALPHA=85 — that gap is exactly why North America looked more
+    # opaque than the global layer. Cap every echo pixel at MODEL_ALPHA
+    # (min, not assignment: WMS-feathered echo edges below the cap and
+    # fully transparent no-data pixels pass through untouched, GFS pixels
+    # already at the cap are untouched, and nothing is ever double-
+    # scaled). Compositing above is overwrite-by-precedence (never alpha
+    # blending of two echo layers), so overlaps cannot darken.
+    _a = out[:, :, 3]
+    out[_a > MODEL_ALPHA, 3] = MODEL_ALPHA
     base = out  # unmasked composite; each coverage masks its own copy
     n_iem = int(iem_fill.sum())
     n_eccc = int(eccc_echo.sum())
@@ -706,8 +749,8 @@ def _build(scan_dt, source_id, bounds, W, H):
             CONFIG_NA["variable"],
             data_time_utc=data_time,
             source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}; type {t_type}",
-            units="dBZ (both sources on the original N0Q key)",
-            source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km rain/snow/type 6-min (rates -> dBZ via NWS Z=300R^1.4; snow blues at matched rank)",
+            units="dBZ key: IEM/OPERA measured; ECCC Z-R estimated equivalents",
+            source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km rain/snow/type 6-min (rates -> estimated dBZ via NWS Z=300R^1.4; snow blues at matched rank, not dBZ)",
             color_min=5.0, color_max=75.0, color_units="dBZ",
             missing_data_treatment=("ECCC type-gated (SfcPrecipType snow -> blue ramp; other types -> dBZ key) where RADAR_COVERAGE_*.INV is transparent; IEM N0Q fills ECCC gaps natively (type undifferentiated); "
                                     "10-px cross-fade on the coverage edge; radar-only composite (no cloud underlay, no model fill); transparent elsewhere; "
@@ -744,14 +787,14 @@ def _build(scan_dt, source_id, bounds, W, H):
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
         KEY_ROWS + SNOW_ROWS + EST_ROWS,
         f"IEM {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} / type {t_type} | {now_det_str()}",
-        note="No echo = transparent. Blues = ECCC classified snow. "
-             "Pale = GFS model estimates (not radar).")
+        note="No echo = transparent. Blues = classified snow only. "
+             "ECCC rain = est. dBZ. Muted = GFS est.")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
         data_time_utc=data_time, source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}; type {t_type}",
-        units="dBZ (both sources on the original N0Q key)",
-        source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km NA composite 6-min (rates -> dBZ via NWS Z=300R^1.4); canvas 3300x1600 (0.05 deg/px)",
+        units="dBZ key: IEM/OPERA measured; ECCC Z-R estimated equivalents",
+        source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km NA composite 6-min (rates -> estimated dBZ via NWS Z=300R^1.4); canvas 3300x1600 (0.05 deg/px)",
         color_min=5.0, color_max=75.0, color_units="dBZ",
         missing_data_treatment=("ECCC wins where RADAR_COVERAGE_*.INV is transparent "
                                 "(verified authoritative coverage); IEM N0Q fills ECCC gaps natively; "
@@ -759,8 +802,8 @@ def _build(scan_dt, source_id, bounds, W, H):
                                 "only in verified radar gaps; transparent elsewhere; "
                                 "never zero-filled."))
     meta["legend_size"] = [lw, lh]
-    meta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT + " Pale wash = "
-        "GFS model estimates (translucent, not radar).")
+    meta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT + " Muted colors = "
+        "GFS model estimates (same order, not radar).")
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
