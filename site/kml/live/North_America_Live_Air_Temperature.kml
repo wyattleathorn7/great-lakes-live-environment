@@ -16,7 +16,7 @@
         <visibility>1</visibility>
         <drawOrder>10</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na/current.png?v=na-tmp-20261015-0202-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261015-01-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261015-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261015-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261015-00-n-573803-g-636144</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na/current.png?v=na-tmp-20261015-0230-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261015-01-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261015-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261015-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261015-00-n-573803-g-636144</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>3600</refreshInterval>
         </Icon>
@@ -32,7 +32,7 @@
         <visibility>0</visibility>
         <drawOrder>11</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na_global/current.png?v=na-tmp-20261015-0202-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261015-01-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261015-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261015-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261015-00-n-573803-g-636144</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na_global/current.png?v=na-tmp-20261015-0230-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261015-01-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261015-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261015-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261015-00-n-573803-g-636144</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>3600</refreshInterval>
         </Icon>
@@ -48,7 +48,7 @@
         <visibility>0</visibility>
         <drawOrder>12</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na_basin/current.png?v=na-tmp-20261015-0202-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261015-01-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261015-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261015-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261015-00-n-573803-g-636144</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na_basin/current.png?v=na-tmp-20261015-0230-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261015-01-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261015-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261015-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261015-00-n-573803-g-636144</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>3600</refreshInterval>
         </Icon>
