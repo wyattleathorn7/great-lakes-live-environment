@@ -19,7 +19,7 @@
         <Icon>
           <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/current.png?v=glsea-Fri-16-Oct-2026-06-50-38-GMT-r13-tempvals-tx2</href>
           <refreshMode>onInterval</refreshMode>
-          <refreshInterval>21600</refreshInterval>
+          <refreshInterval>3600</refreshInterval>
         </Icon>
         <LatLonBox>
           <north>49.5</north>
@@ -36,7 +36,7 @@
         <Icon>
           <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_continental/current.png?v=mur-2026-10-15T09-00-00Z-r13-tempvals-continental</href>
           <refreshMode>onInterval</refreshMode>
-          <refreshInterval>21600</refreshInterval>
+          <refreshInterval>3600</refreshInterval>
         </Icon>
         <LatLonBox>
           <north>90.0</north>
@@ -53,7 +53,7 @@
         <Icon>
           <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_global/current.png?v=blended-2026-10-14T12-00-00Z-mur-2026-10-15T09-00-00Z-r13-tempvals-global-nofloor</href>
           <refreshMode>onInterval</refreshMode>
-          <refreshInterval>21600</refreshInterval>
+          <refreshInterval>3600</refreshInterval>
         </Icon>
         <LatLonBox>
           <north>90.0</north>

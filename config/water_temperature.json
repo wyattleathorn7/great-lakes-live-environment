@@ -13,7 +13,7 @@
     "max": "adaptive ceil(p99), clamped <= 86",
     "units": "degF"
   },
-  "refresh_interval_seconds": 21600,
+  "refresh_interval_seconds": 3600,
   "coverage_mode": "basin",
   "ocean_source_name": "NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C)",
   "ocean_source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwBLENDEDsstDLDaily",
