@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3km 2m analysis (CONUS domain) + NOAA RRFS North American output (broad domain) + ECCC GDPS 15km fallback",
   "variable": "TMP 2 m above ground, K -> degF; FIXED banded 5F key -60..150F for all sources",
   "source_url": "https://gsl.noaa.gov/rrfs/",
-  "data_time_utc": "2026-10-15 11:30 PM EDT",
-  "source_last_modified_utc": "{\"hrrr\": \"hrrr hrrr.20261016/02 n=701862/g=176900\", \"rrfs_rrfs-na rrfs.20261016/00\": \"n=573803/g=636144\", \"rrfs_rrfs-conus rrfs.20261016/00\": \"n=576889/g=54111\", \"rrfs_rrfs-ak rrfs.20261016/00\": \"n=678937/g=142730\", \"gdps\": \"GDPS_15km_AirTemp_2m n=5273396/g=6479996\"}",
-  "processing_time_utc": "2026-10-15 11:30 PM EDT",
+  "data_time_utc": "2026-10-16 12:00 AM EDT",
+  "source_last_modified_utc": "{\"hrrr\": \"hrrr hrrr.20261016/03 n=701862/g=176900\", \"rrfs_rrfs-na rrfs.20261016/00\": \"n=573803/g=636144\", \"rrfs_rrfs-conus rrfs.20261016/00\": \"n=576889/g=54111\", \"rrfs_rrfs-ak rrfs.20261016/00\": \"n=678937/g=142730\", \"gdps\": \"GDPS_15km_AirTemp_2m n=5273396/g=6479996\"}",
+  "processing_time_utc": "2026-10-16 12:00 AM EDT",
   "units": "degF",
   "spatial_resolution_source": "HRRR 3km; RRFS 13km NA / 3km nests; GDPS 15km fallback",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -26,8 +26,8 @@
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "legend_scale_html": "2 m air temperature (degF), FIXED key (-60..150 F) with a STEADY gradient on the map: the raster blends smoothly through blue-white extreme cold &rarr; gray-blue subfreezing &rarr; <b>royal-blue freezing wall (30-40)</b> &rarr; frigid turquoise/blues (40-55) &rarr; transitional lime/teals (55-70) &rarr; mellow yellows (70-85) &rarr; warming orange/golds (85-100) &rarr; <b>scorching pink/reds (100+) to HIGHEST+ 150</b>, passing exactly through every key color (key bars show the <b>LOWEST -60</b> to <b>HIGHEST+ 150</b> band centers). Same temperature always shows the same color; every color is brightened so nothing renders dark. Freezing (32 F) sits inside the royal-blue wall.",
-  "source_id": "na-tmp-20261016-0330",
-  "source_version": "na-tmp-20261016-0330-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261016-02-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261016-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261016-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261016-00-n-573803-g-636144",
+  "source_id": "na-tmp-20261016-0400",
+  "source_version": "na-tmp-20261016-0400-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261016-03-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261016-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261016-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261016-00-n-573803-g-636144",
   "na_bounds": {
     "canvas_height": 1800,
     "canvas_width": 3600,
@@ -44,5 +44,5 @@
     "valid_pixels": 2177380,
     "raw_pixels": 5273977
   },
-  "folder_html": "<h2>LIVE AIR TEMPERATURE \u2014 Continental Coverage</h2><p><b>Coverage:</b> Continental Coverage<br><b>Precedence:</b> HRRR valid > RRFS-NA valid > GDPS valid > transparent. Explicit per-pixel validity masks; never blended, never duplicated.<br><b>Provenance:</b> {'hrrr': 'hrrr hrrr.20261016/02 n=701862/g=176900', 'rrfs_rrfs-na rrfs.20261016/00': 'n=573803/g=636144', 'rrfs_rrfs-conus rrfs.20261016/00': 'n=576889/g=54111', 'rrfs_rrfs-ak rrfs.20261016/00': 'n=678937/g=142730', 'gdps': 'GDPS_15km_AirTemp_2m n=5273396/g=6479996'}</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25c9 <b>Continental Coverage</b> (shown)<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
+  "folder_html": "<h2>LIVE AIR TEMPERATURE \u2014 Continental Coverage</h2><p><b>Coverage:</b> Continental Coverage<br><b>Precedence:</b> HRRR valid > RRFS-NA valid > GDPS valid > transparent. Explicit per-pixel validity masks; never blended, never duplicated.<br><b>Provenance:</b> {'hrrr': 'hrrr hrrr.20261016/03 n=701862/g=176900', 'rrfs_rrfs-na rrfs.20261016/00': 'n=573803/g=636144', 'rrfs_rrfs-conus rrfs.20261016/00': 'n=576889/g=54111', 'rrfs_rrfs-ak rrfs.20261016/00': 'n=678937/g=142730', 'gdps': 'GDPS_15km_AirTemp_2m n=5273396/g=6479996'}</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25c9 <b>Continental Coverage</b> (shown)<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
 }
