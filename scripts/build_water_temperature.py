@@ -991,42 +991,51 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         f"<p>Legends live only in the three coverage cards below — click "
         f"a coverage row to read its legend. View one coverage at a time."
         f"</p>") + coverage_selector_html("basin")
+    from geospatial_utils import load_bounds as _glb
+    _basin_bounds = _glb()
     meta["folder_html"] = folder_html
     meta["folder_radio"] = True
-    meta["primary_name"] = WT_LABELS["basin"]
-    meta["overlay_description"] = basin_odesc
+    # Document order mirrors the working NA gradients top-down:
+    # Extended Oceanic, Continental Lake, Great Lakes Basin LAST, with
+    # Basin the flagged default. Refresh restores the bottom (Basin) row.
+    meta["na_bounds"] = dict(gbounds)
+    meta["primary_name"] = WT_LABELS["global"]
+    meta["primary_visibility"] = 0
+    meta["primary_version_token"] = _ocean_token
+    meta["primary_png"] = f"{WT_DIRS['global']}/current.png"
+    meta["primary_legend"] = f"{WT_DIRS['global']}/legend.png"
+    meta["overlay_description"] = glo_odesc
     meta["extra_overlays"] = [
         {"name": WT_LABELS["landonly"],
          "png": f"{WT_DIRS['landonly']}/current.png",
-         "bounds": dict(gbounds), "draw_order": 9, "visibility": 0,
+         "bounds": dict(gbounds), "draw_order": 11, "visibility": 0,
          "overlay_description": con_odesc, "version_token": _lake_token},
-        {"name": WT_LABELS["global"],
-         "png": f"{WT_DIRS['global']}/current.png",
-         "bounds": dict(gbounds), "draw_order": 8, "visibility": 0,
-         "overlay_description": glo_odesc, "version_token": _ocean_token},
+        {"name": WT_LABELS["basin"],
+         "png": f"{PRODUCT}/current.png",
+         "bounds": dict(_basin_bounds), "draw_order": 12, "visibility": 1,
+         "overlay_description": basin_odesc, "version_token": token},
     ]
     write_metadata(stage_prod, meta)  # re-write incl. folder + overlays
     outs = live_out_dirs(stage, "Great_Lakes_Live_Water_Temperature.kml")
     kml_text = build_kml(
         PRODUCT, "Great_Lakes_Live_Water_Temperature.kml",
         "\U0001F321\uFE0F LIVE WATER TEMPERATURE",
-        f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
+        f"{WT_DIRS['global']}/current.png",
+        f"{WT_DIRS['global']}/legend.png",
         doc_html,
-        CONFIG["refresh_interval_seconds"], token,
+        CONFIG["refresh_interval_seconds"], _ocean_token,
         out_dirs=outs["live"],
+        bounds=dict(gbounds),
         folder=(CONFIG["title"], folder_html), meta=meta,
-        # z-order: Great Lakes (primary, drawOrder 10) paints above
-        # Continental (9) above Oceanic (8), so even a client that shows
-        # every overlay at once reads as Great Lakes-first; the visibility
-        # flags still give single-coverage behavior where honored.
         extra_overlays=[(WT_LABELS["landonly"],
                          f"{WT_DIRS['landonly']}/current.png",
-                         dict(gbounds), 9, 0, con_odesc, _lake_token),
-                        (WT_LABELS["global"],
-                         f"{WT_DIRS['global']}/current.png",
-                         dict(gbounds), 8, 0, glo_odesc, _ocean_token)],
-        folder_radio=True, primary_name=WT_LABELS["basin"],
-        overlay_descriptions=basin_odesc)
+                         dict(gbounds), 11, 0, con_odesc, _lake_token),
+                        (WT_LABELS["basin"],
+                         f"{PRODUCT}/current.png",
+                         dict(_basin_bounds), 12, 1, basin_odesc, token)],
+        folder_radio=True, primary_name=WT_LABELS["global"],
+        primary_visibility=0,
+        overlay_descriptions=glo_odesc)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(
         PRODUCT, "Great_Lakes_Live_Water_Temperature.kml",

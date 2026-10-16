@@ -132,7 +132,8 @@ def _write(xml, out_dirs):
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
               description_html, refresh_interval, cache_token, out_dirs=None,
               folder=None, meta=None, bounds=None, extra_overlays=None,
-              folder_radio=False, primary_name=None, overlay_descriptions=None):
+              folder_radio=False, primary_name=None, overlay_descriptions=None,
+              primary_visibility=None):
     """Write the LIVE overlay file (one GroundOverlay, versioned PNG href).
 
     ``cache_token`` MUST be the deterministic source version
@@ -214,8 +215,10 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
         return (overlay_name, png_rel, b, order, 1, None, None)
 
     _extras = [e for e in (_norm(e) for e in (extra_overlays or []))]
+    if primary_visibility is None:
+        primary_visibility = 1 if extra_overlays else None
     ground = _overlay(primary_name or overlay_name, png_url, bounds, 10,
-                      1 if extra_overlays else None, overlay_descriptions)
+                      primary_visibility, overlay_descriptions)
     descriptions = [header + description_html]
     if folder is not None:
         folder_el = _q("Folder")
@@ -465,6 +468,9 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
             pass
     version = source_token(meta.get("source_version") or
                            meta.get("processing_time_utc", ""))
+    # The primary overlay may carry its own coverage token (stored at
+    # build); legacy products fall back to the single source version.
+    primary_token = meta.get("primary_version_token") or version
     block = legend_block(f"{product}/legend.png", version,
                          meta.get("legend_scale_html", ""))
     # Products whose live Document carries custom (legend-free) guidance
@@ -483,14 +489,16 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
                for e in (meta.get("extra_overlays") or []) ]
     from geospatial_utils import load_bounds as _glb
     build_kml(product, kml_filename, overlay_name,
-              f"{product}/current.png", f"{product}/legend.png",
+              meta.get("primary_png") or f"{product}/current.png",
+              meta.get("primary_legend") or f"{product}/legend.png",
               doc_html,
-              refresh_interval, version,
+              refresh_interval, primary_token,
               folder=(title, folder) if folder else None, meta=meta,
               bounds=meta.get("na_bounds") or _glb(),
               extra_overlays=extras,
               folder_radio=bool(meta.get("folder_radio")),
               primary_name=meta.get("primary_name"),
+              primary_visibility=meta.get("primary_visibility"),
               overlay_descriptions=meta.get("overlay_description"))
     build_entry_kml(product, kml_filename, overlay_name,
                     entry_description_html(title, meta, note),

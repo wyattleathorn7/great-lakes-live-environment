@@ -12,27 +12,27 @@
         </ListStyle>
       </Style>
       <GroundOverlay>
-        <name>Great Lakes Coverage</name>
-        <visibility>1</visibility>
-        <description><![CDATA[<p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=glsea-Fri-16-Oct-2026-06-50-38-GMT-r13-tempvals-tx2" width="600" alt="legend"><br>Surface water temperature (°F): cold <b>49°F</b> (deep blue) → <b>58°F</b> → warm <b>67°F</b> (red). Lakewide mean this run: <b>58.4°F</b>. White halo numbers are actual °F at that spot. The bar ends are recomputed every run from that day's water (1st/99th percentiles, clamped 32–86°F): blue always means the coldest water present and red the warmest, but the same color can stand for a different °F on different days — only the printed numbers are absolute.</p><p><b>Coverage:</b> Great Lakes Coverage</p><p><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href="https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a><br/>GLSEA 2026-10-16 02:50 AM EDT</p><p>Colors run cold (deep blue) → warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in °F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>]]></description>
+        <name>Extended Oceanic Coverage</name>
+        <visibility>0</visibility>
+        <description><![CDATA[<p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_global/legend.png?v=blended-2026-10-14T12-00-00Z-mur-2026-10-15T09-00-00Z-r13-tempvals-global-nofloor" width="600" alt="legend"><br>Surface water temperature (°F) — Extended Oceanic Coverage: cold <b>28°F</b> (deep blue) → <b>57°F</b> → warm <b>86°F</b> (red). Mean this run: <b>57.8°F</b>. White halo numbers are actual °F at that spot. Endpoints are recomputed every run from all valid water across this coverage's supported global dataset (oceans and seas from blended SST, inland lakes from MUR, Great Lakes from GLSEA; each observation counted once; 1st/99th percentiles with floor/ceil rounding; low end unclamped so polar water (~28°F) reads correctly, high end clamped 86°F; linear mapping between them). The same color stands for a different °F than in the other coverages — only the printed numbers are absolute. Unsupported or unobserved water stays transparent and is never fabricated.</p><p><b>Coverage:</b> Extended Oceanic Coverage</p><p><b>Status:</b> LATEST AVAILABLE (daily analyses; blended typically ~3-day latency, MUR typically ~2-day latency)</p><p><b>Source:</b> JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)<br/><a href="https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41">https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41</a><br/>MUR 2026-10-15 05:00 AM EDT (lakes) + blended 2026-10-14 08:00 AM EDT (oceans/seas); Great Lakes GLSEA 2026-10-16 02:50 AM EDT</p><p>Colors run cold (deep blue) → warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in °F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>]]></description>
         <drawOrder>10</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/current.png?v=glsea-Fri-16-Oct-2026-06-50-38-GMT-r13-tempvals-tx2</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_global/current.png?v=blended-2026-10-14T12-00-00Z-mur-2026-10-15T09-00-00Z-r13-tempvals-global-nofloor</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>3600</refreshInterval>
         </Icon>
         <LatLonBox>
-          <north>49.5</north>
-          <south>40.5</south>
-          <east>-73.5</east>
-          <west>-93.0</west>
+          <north>90.0</north>
+          <south>-90.0</south>
+          <east>180.0</east>
+          <west>-180.0</west>
         </LatLonBox>
       </GroundOverlay>
       <GroundOverlay>
         <name>Continental Lake Coverage</name>
         <visibility>0</visibility>
         <description><![CDATA[<p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_continental/legend.png?v=mur-2026-10-15T09-00-00Z-r13-tempvals-continental" width="600" alt="legend"><br>Surface water temperature (°F) — Continental Lake Coverage: cold <b>32°F</b> (deep blue) → <b>57°F</b> → warm <b>82°F</b> (red). Mean this run: <b>55.4°F</b>. White halo numbers are actual °F at that spot. Endpoints are recomputed every run from this coverage's own tracked inland-lake water only (MUR open-lake cells plus Great Lakes GLSEA cells; 1st/99th percentiles, clamped 32–86°F, linear mapping between them). Ocean water is excluded from this distribution, so the same color stands for a different °F than in the other coverages — only the printed numbers are absolute. Lakes below the fetch sampling, frozen lakes outside the open-lake mask state, and rivers stay transparent and are never fabricated.</p><p><b>Coverage:</b> Continental Lake Coverage</p><p><b>Status:</b> LATEST AVAILABLE (daily analyses; blended typically ~3-day latency, MUR typically ~2-day latency)</p><p><b>Source:</b> JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)<br/><a href="https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41">https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41</a><br/>MUR 2026-10-15 05:00 AM EDT; Great Lakes GLSEA 2026-10-16 02:50 AM EDT</p><p>Colors run cold (deep blue) → warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in °F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>]]></description>
-        <drawOrder>9</drawOrder>
+        <drawOrder>11</drawOrder>
         <Icon>
           <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_continental/current.png?v=mur-2026-10-15T09-00-00Z-r13-tempvals-continental</href>
           <refreshMode>onInterval</refreshMode>
@@ -46,20 +46,20 @@
         </LatLonBox>
       </GroundOverlay>
       <GroundOverlay>
-        <name>Extended Oceanic Coverage</name>
-        <visibility>0</visibility>
-        <description><![CDATA[<p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_global/legend.png?v=blended-2026-10-14T12-00-00Z-mur-2026-10-15T09-00-00Z-r13-tempvals-global-nofloor" width="600" alt="legend"><br>Surface water temperature (°F) — Extended Oceanic Coverage: cold <b>28°F</b> (deep blue) → <b>57°F</b> → warm <b>86°F</b> (red). Mean this run: <b>57.8°F</b>. White halo numbers are actual °F at that spot. Endpoints are recomputed every run from all valid water across this coverage's supported global dataset (oceans and seas from blended SST, inland lakes from MUR, Great Lakes from GLSEA; each observation counted once; 1st/99th percentiles with floor/ceil rounding; low end unclamped so polar water (~28°F) reads correctly, high end clamped 86°F; linear mapping between them). The same color stands for a different °F than in the other coverages — only the printed numbers are absolute. Unsupported or unobserved water stays transparent and is never fabricated.</p><p><b>Coverage:</b> Extended Oceanic Coverage</p><p><b>Status:</b> LATEST AVAILABLE (daily analyses; blended typically ~3-day latency, MUR typically ~2-day latency)</p><p><b>Source:</b> JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)<br/><a href="https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41">https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41</a><br/>MUR 2026-10-15 05:00 AM EDT (lakes) + blended 2026-10-14 08:00 AM EDT (oceans/seas); Great Lakes GLSEA 2026-10-16 02:50 AM EDT</p><p>Colors run cold (deep blue) → warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in °F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>]]></description>
-        <drawOrder>8</drawOrder>
+        <name>Great Lakes Coverage</name>
+        <visibility>1</visibility>
+        <description><![CDATA[<p><b>Legend</b><br><img src="https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=glsea-Fri-16-Oct-2026-06-50-38-GMT-r13-tempvals-tx2" width="600" alt="legend"><br>Surface water temperature (°F): cold <b>49°F</b> (deep blue) → <b>58°F</b> → warm <b>67°F</b> (red). Lakewide mean this run: <b>58.4°F</b>. White halo numbers are actual °F at that spot. The bar ends are recomputed every run from that day's water (1st/99th percentiles, clamped 32–86°F): blue always means the coldest water present and red the warmest, but the same color can stand for a different °F on different days — only the printed numbers are absolute.</p><p><b>Coverage:</b> Great Lakes Coverage</p><p><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href="https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a><br/>GLSEA 2026-10-16 02:50 AM EDT</p><p>Colors run cold (deep blue) → warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in °F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>]]></description>
+        <drawOrder>12</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_global/current.png?v=blended-2026-10-14T12-00-00Z-mur-2026-10-15T09-00-00Z-r13-tempvals-global-nofloor</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/current.png?v=glsea-Fri-16-Oct-2026-06-50-38-GMT-r13-tempvals-tx2</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>3600</refreshInterval>
         </Icon>
         <LatLonBox>
-          <north>90.0</north>
-          <south>-90.0</south>
-          <east>180.0</east>
-          <west>-180.0</west>
+          <north>49.5</north>
+          <south>40.5</south>
+          <east>-73.5</east>
+          <west>-93.0</west>
         </LatLonBox>
       </GroundOverlay>
     </Folder>
