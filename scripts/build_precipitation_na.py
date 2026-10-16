@@ -2,12 +2,17 @@
 
 Precedence (explicit, documented):
   1) IEM CONUS NEXRAD N0Q (WMS nexrad-n0q-900913) INSIDE the IEM effective
-     domain (lon -130..-65, lat 22..50): native IEM palette pixels win.
+     domain (lon -130..-65, lat 22..50, gated to land+~200km offshore):
+     native IEM palette pixels win.
   2) ECCC NA Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) + snow
      (RADAR_1KM_RSNO, cm/h) OUTSIDE the IEM domain, gated by the
      authoritative dynamic coverage layers (RADAR_COVERAGE_RRAI/RSNO) —
      never by alpha-zero (dry pixels are valid observations).
-  3) Transparent elsewhere (no source coverage: northern Arctic, oceans
+  3) OPERA EU DBZH composite where neither covers (Europe fringe).
+  4) JMA Japan nowcast intensity where none of the above cover
+     (Japan + vicinity box).
+  5) Translucent GFS model estimates only in verified radar gaps.
+  6) Transparent elsewhere (no source coverage: northern Arctic, oceans
      beyond radar range, Greenland interior).
 
 ECCC RAIN rates (mm/h) map to ESTIMATED dBZ equivalents via the NWS
@@ -543,6 +548,38 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                       f"px={n_opera} (CC BY 4.0 EUMETNET)")
     except Exception as e:
         opera_prov = f"OPERA unavailable:{type(e).__name__}"
+    # ---- JMA Japan nowcast (JMA, attribution required): radar-analysis
+    # echoes fill only verified non-NA/EU-radar gaps (Japan + vicinity).
+    # Intensity classes (mm/h) -> Z-R estimated dBZ, same bridge as ECCC
+    # rain; undifferentiated type -> N0Q key only, never snow blues. Dry
+    # JMA cells suppress model fill below.
+    jma_prov = "JMA unavailable"
+    jma_cov = np.zeros((H, W), dtype=bool)
+    n_jma = 0
+    jma_ts = None
+    try:
+        from precip_jma import (JMA_RATES as _j_rates,
+                                fetch as _j_fetch,
+                                latest_time as _j_time,
+                                mosaic_to_canvas as _j_mosaic)
+        jma_ts = _j_time(scan_dt)
+        _j_paths = _j_fetch(jma_ts, RAW_DIR)
+        _jcls, _jcov, _jecho = _j_mosaic(_j_paths, bounds, W, H)
+        allowed = ~cov & (out[:, :, 3] == 0)
+        paint = _jecho & allowed
+        if paint.any():
+            _keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
+            _cols = np.zeros((int(paint.sum()), 3), dtype=np.uint8)
+            for _i, _c in enumerate(_jcls[paint]):
+                _dbz = _rate_to_dbz(float(_j_rates[int(_c)]))
+                _cols[_i] = _keypal[_bin_for_dbz(_dbz)]
+            out[paint, :3] = _cols
+            out[paint, 3] = 255
+        jma_cov = _jcov
+        n_jma = int(paint.sum())
+        jma_prov = (f"JMA nowcast {jma_ts} px={n_jma} (JMA)")
+    except Exception as e:
+        jma_prov = f"JMA unavailable:{type(e).__name__}"
     # ---- GFS model estimates (NOAA, public domain): translucent snow
     # (CSNOW-gated blues) + rain (N0Q) ONLY where no radar covers
     # (IEM domain, ECCC coverage, OPERA coverage all false). Estimated,
@@ -621,7 +658,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
             # land + ~200 km offshore so far-field ocean never suppresses
             # GFS. Land behavior is unchanged (land always passes).
             _iem_dom &= _iem_nearshore_mask(bounds, W, H)
-            _radar_cov = _iem_dom | cov | opera_cov
+            _radar_cov = _iem_dom | cov | opera_cov | jma_cov
             _wet = (np.isfinite(_g_rate) & (_g_rate >= DISPLAY_WET_MM_H)
                     & ~_radar_cov)
             _snow_est = _wet & _flag["csnow"]
@@ -676,13 +713,15 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
     n_iem = int(iem_fill.sum())
     n_eccc = int(eccc_echo.sum())
     print(f"[{PRODUCT}] IEM px={n_iem} ECCC px={n_eccc} snow px={n_snow} "
-          f"OPERA px={n_opera} GFSest r/s={n_rain_est}/{n_snow_est} "
+          f"OPERA px={n_opera} JMA px={n_jma} GFSest r/s={n_rain_est}/{n_snow_est} "
           f"({100.0*(n_iem+n_eccc)/(W*H):.2f}% canvas radar)")
     info = {"n_iem": n_iem, "n_eccc": n_eccc, "n_snow": n_snow,
-            "n_opera": n_opera, "n_rain_est": n_rain_est,
+            "n_opera": n_opera, "n_jma": n_jma,
+            "n_rain_est": n_rain_est,
             "n_snow_est": n_snow_est, "cloud_prov": cloud_prov,
             "t_rain": t_rain, "t_snow": t_snow, "t_type": t_type,
-            "opera_prov": opera_prov, "gfs_prov": gfs_prov,
+            "opera_prov": opera_prov, "jma_prov": jma_prov,
+            "gfs_prov": gfs_prov,
             "opera_ts": (opera_ts.strftime("%Y-%m-%d %H:%M UTC")
                          if opera_ts else "unavailable")}
     return out, info
@@ -776,7 +815,7 @@ def _build(scan_dt, source_id, bounds, W, H):
     VARIANT_PROV = {"basin": cloud_prov, "landonly": gcloud_prov,
                     "global": gcloud_prov, "extended200": gcloud_prov}
     data_time = scan_dt.strftime("%Y-%m-%d %H:%M UTC")
-    subtitle = (f"Radar mosaic (IEM N0Q + ECCC RRAI/RSNO/type + OPERA EU) "
+    subtitle = (f"Radar mosaic (IEM N0Q + ECCC RRAI/RSNO/type + OPERA EU + JMA JP) "
                 f"+ GFS estimates | {data_time}")
     token = source_token(source_id)
     # Global source registry (per-run health + provenance for the map).
@@ -797,7 +836,13 @@ def _build(scan_dt, source_id, bounds, W, H):
          "product_type": "radar reflectivity (dBZ)",
          "data_time": ginfo["opera_prov"], "license": "CC BY 4.0 (EUMETNET OPERA)",
          "snow_capability": "none (reflectivity only)",
-         "status": ("ok" if ginfo.get("n_opera", 0) or info.get("n_opera", 0)
+          "status": ("ok" if ginfo.get("n_opera", 0) or info.get("n_opera", 0)
+                     else "no-echo/unavailable")},
+        {"id": "jma_jp", "footprint": "Japan + vicinity (lon 122..148, lat 24..46)",
+         "product_type": "radar-analysis intensity (mm/h classes)",
+         "data_time": ginfo["jma_prov"], "license": "JMA (attribution required)",
+         "snow_capability": "none (intensity only)",
+         "status": ("ok" if ginfo.get("n_jma", 0) or info.get("n_jma", 0)
                     else "no-echo/unavailable")},
         {"id": "gfs_model", "footprint": "worldwide 0.25deg (radar gaps only)",
          "product_type": "model estimate (PRATE + CSNOW/CRAIN flags)",
@@ -830,7 +875,8 @@ def _build(scan_dt, source_id, bounds, W, H):
             source_resolution="IEM ~1km CONUS mosaic 5-min (native rendering); ECCC 1km rain/snow/type 6-min (rain rates -> estimated dBZ via NWS Z=300R^1.4; snow classes cm/h -> snow rows directly)",
             color_min=5.0, color_max=75.0, color_units="dBZ",
             missing_data_treatment=("ECCC type-gated (SfcPrecipType snow -> blue ramp; other types -> dBZ key) where RADAR_COVERAGE_*.INV is transparent; IEM N0Q fills ECCC gaps natively (type undifferentiated); "
-                                    "10-px cross-fade on the coverage edge; radar-only composite (no cloud underlay, no model fill); transparent elsewhere; "
+                                    "10-px cross-fade on the coverage edge; OPERA EU + JMA JP radar fill remaining gaps; GFS model estimates "
+                                    "only in verified radar gaps; transparent elsewhere; "
                                     "never zero-filled."))
         vmeta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT)
         vmeta["source_id"] = source_id
@@ -850,7 +896,7 @@ def _build(scan_dt, source_id, bounds, W, H):
             f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
             f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
             f"<b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
-            f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); GFS model estimates "
+            f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA/JMA); GFS model estimates "
             f"(not radar) in verified radar gaps, same colors<br>"
             f"<b>Data time:</b> {data_time}</p>") + coverage_selector_html(mode)
         write_metadata(vdir, vmeta)
@@ -875,8 +921,8 @@ def _build(scan_dt, source_id, bounds, W, H):
         color_min=5.0, color_max=75.0, color_units="dBZ",
         missing_data_treatment=("ECCC wins where RADAR_COVERAGE_*.INV is transparent "
                                 "(verified authoritative coverage); IEM N0Q fills ECCC gaps natively; "
-                                "OPERA EU radar fills remaining non-NA gaps; GFS model estimates "
-                                "only in verified radar gaps; transparent elsewhere; "
+                                "OPERA EU radar fills remaining non-NA gaps; JMA nowcast fills Japan gaps; "
+                                "GFS model estimates only in verified radar gaps; transparent elsewhere; "
                                 "never zero-filled."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = (SCALE_HTML + SNOW_SENT + " GFS model estimates "
@@ -886,6 +932,7 @@ def _build(scan_dt, source_id, bounds, W, H):
     meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
     meta["stats"] = {"iem_pixels": n_iem, "eccc_pixels": n_eccc,
                      "opera_pixels": ginfo.get("n_opera", 0),
+                     "jma_pixels": ginfo.get("n_jma", 0),
                      "gfs_est_rain": ginfo.get("n_rain_est", 0),
                      "gfs_est_snow": ginfo.get("n_snow_est", 0),
                      "transparent_pixels": int(def_w * def_h - n_iem - n_eccc),
@@ -899,7 +946,7 @@ def _build(scan_dt, source_id, bounds, W, H):
                    f"<p><b>Sources:</b> {CONFIG_NA['source_name']}<br>"
                    f"<b>Precedence:</b> {CONFIG_NA['precedence']}<br>"
                    f"<b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
-                   f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA); GFS model estimates "
+                   f"<b>Radar note:</b> radar echoes (IEM/ECCC/OPERA/JMA); GFS model estimates "
                    f"(not radar) in verified radar gaps, same colors<br>"
                    f"<b>Data time:</b> {data_time}</p>")
     meta["folder_html"] = folder_html + coverage_selector_html(default_cover)

@@ -1118,12 +1118,22 @@ around them with a per-run source registry (`metadata.source_registry`).
   (>=5 dBZ) paint only where IEM/ECCC have no coverage; type
   undifferentiated -> N0Q key only, never snow blues. License CC BY 4.0
   (attributed "EUMETNET OPERA" in metadata/prov).
+- **JMA Japan nowcast** (`scripts/precip_jma.py`): anonymous XYZ tile
+  fetch, no credentials, 5-min cadence (analysis at validtime==
+  basetime), z5 tiles (~0.044 deg/px, nearest-sampled). Opaque pixels =
+  analyzed precipitation in JMA published mm/h classes 1/5/10/20/30/50
+  (80+ color unobserved; nearest-match undercalls it, documented);
+  transparent = none. Fixed radar-plausible box lon 122..148, lat 24..46
+  (official domain wider; fringes ceded to GFS). Echoes paint only
+  where IEM/ECCC/OPERA have no coverage; type undifferentiated -> N0Q
+  key via Z-R equivalents only, never snow blues. Attributed "Japan
+  Meteorological Agency" in metadata/prov.
 - **NOAA GFS 0.25° f000 analysis** (`scripts/precip_gfs.py`): NOMADS
   byte-range GRIB fetch (same pattern as RRFS), 6-hourly cycles, cached
   per cycle. PRATE (kg/m²/s -> mm/h) + categorical CSNOW/CRAIN/CFRZR/
   CICEP. Display threshold 0.25 mm/h + organized-systems QC (>=12
   cells). Painted ONLY in verified radar gaps (outside IEM domain,
-  ECCC coverage, OPERA coverage), uniform alpha 160 with radar, snow via
+  ECCC coverage, OPERA coverage, JMA box), uniform alpha 160 with radar, snow via
   CSNOW-gated blues, rain via N0Q — always labeled estimates.
   Public domain. Config `model_fill: false` disables it.
 

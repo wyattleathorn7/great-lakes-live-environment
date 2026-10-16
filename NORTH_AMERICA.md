@@ -86,7 +86,9 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
 - **Precipitation:** IEM N0Q inside lon −130…−65 / lat 22…50 (dry = valid,
   suppresses ECCC) → ECCC RRAI/RSNO outside it where `RADAR_COVERAGE_*.INV`
   is transparent (verified authoritative coverage) → OPERA EU DBZH where
-  neither covers (e.g. Iceland) → GFS estimates
+  neither covers (e.g. Iceland) → JMA nowcast intensity (mm/h classes
+  1–80 via Z-R equivalents, undifferentiated) in the Japan box
+  (lon 122–148, lat 24–46) → GFS estimates
   (CSNOW-gated snow blues / CRAIN key colors, ≥0.25 mm/h,
   organized systems only) in verified radar gaps → transparent.
   The IEM box is intersected with land+~200km offshore (WSR-88D range),
