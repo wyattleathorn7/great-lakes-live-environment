@@ -1,5 +1,6 @@
 {
-  "model_cycle": "2026-10-15 09:24 AM EDT",
-  "source_id": "na-cloud-real-20261015-1324",
-  "processing_time_utc": "2026-10-15 09:24 AM EDT"
+  "model_cycle": "2026-10-16 14:30 UTC",
+  "source_id": "cloudIR-GOES-18@20261016T1430-GOES-19@20261016T1430-HIMAWARI-9@20261016T1400-METEOSAT-FES@20261016T1345-METEOSAT-IODC@20261016T1345-VIIRS@2026-10-16+2026-10-16-v6",
+  "mosaic_version": 6,
+  "processing_time_utc": "2026-10-16 10:50 AM EDT"
 }

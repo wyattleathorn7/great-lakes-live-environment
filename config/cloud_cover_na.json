@@ -1,26 +1,27 @@
 {
-  "coverage": "Worldwide config/global_bounds.json (lon -180..180, lat -90..90, 3600x1800) + NA nest. Full rectangle; missing stays transparent, never 0%.",
+  "coverage": "Three canvases from one scan set: Great Lakes basin (config/great_lakes_bounds.json, lon -93..-73.5, lat 40.5..49.5, 1800x1175), North American continental (config/north_america_bounds.json, lon -180..-15, lat 5..85, 3300x1600), worldwide global (config/global_bounds.json, lon -180..180, lat -90..90, 3600x1800). Full rectangles; valid pixels paint everywhere observed (oceans included); missing stays transparent, never 0%.",
   "coverage_mode": "global",
-  "render_style": "realistic",
-  "display_units": "% cloud cover",
-  "fallback_note": "RRFS TCDC entire-atmosphere analysis (%) where no valid GOES mask exists (NA domain). GDPS TotalCloudCover worldwide on the Global coverage, NA gaps otherwise.",
-  "fallback_rrfs": "NOAA RRFS TCDC entire atmosphere (considered as a single layer), analysis step, %",
-  "fallback_rrfs_url": "https://gsl.noaa.gov/rrfs/",
-  "fallback_url": "https://open.canada.ca/data/en/dataset/c041e79a-914a-5a4e-a485-9cbc506195df",
-  "fallbackgdp_layer": "GDPS_15km_TotalCloudCover",
-  "freshness_label": "LIVE / CURRENT OBSERVATION + MODEL FILL (GOES FD 10-min + RRFS/GDPS fallback)",
-  "precedence": "1) Valid GOES-East/GOES-West full-disk BCM (DQF==0). 2) RRFS TCDC where GOES invalid/missing. 3) GDPS TotalCloudCover only for verified remaining gaps. Missing satellite pixels are NEVER rendered as clear sky.",
+  "render_style": "mosaic-white-ir",
+  "display_units": "IR brightness (white = cold cloud tops; not a percentage)",
+  "fallback_note": "No model fill. VIIRS I5 Day/Night (daily, via NASA GIBS) supplements ONLY pixels with no valid geostationary observation (poles, seams); documented as daily in metadata.",
+  "freshness_label": "LIVE / CURRENT IR OBSERVATION (multi-satellite, honest timestamps)",
+  "mosaic_policy": "Geostationary preferred over VIIRS-daily. Fresher GEO scan wins overlaps; skew within 15 min gets a 12-px cross-fade, larger skews resolve hard to the fresher observation. Coldest-wins never used. Antimeridian blended. Provenance recorded per pixel (see provenance.png).",
+  "precedence": "1) GOES-19 + GOES-18 ABI L2 CMIPF Band-13 direct BT. 2) Himawari-9 Band-13 via GIBS WMTS with documented LUT inversion (+/-0.5C). 3) Meteosat FES (0 deg) + IODC (45.5E) SEVIRI IR10.8 via EUMETView WMS grayscale imagery (imagery-derived transfer). 4) VIIRS I5 daily only where no GEO valid. Missing observations stay transparent.",
   "product": "cloud_cover_na",
   "refresh_interval_seconds": 300,
-  "sat_note": "Full-disk (ABI-L2-ACMF) verified live on both sats; CONUS (ACMC) not assumed to cover Canada. Highest Arctic latitudes: geostationary quality degrades \u2014 documented gap, model fill only.",
+  "sat_note": "GOES FD 10-min; Himawari 10-min; Meteosat 15-min; VIIRS daily. Geostationary limbs degrade toward disk edges (documented limitation); polar regions depend on the daily VIIRS supplement and may show swath-age boundaries.",
   "satellites": {
-    "goes_east": "GOES-19, ABI L2 Clear Sky Mask full-disk (ABI-L2-ACMF), BCM+DQF, ~10-min FD scans, s3://noaa-goes19/",
-    "goes_west": "GOES-18, ABI L2 Clear Sky Mask full-disk (ABI-L2-ACMF), BCM+DQF, ~10-min FD scans, s3://noaa-goes18/"
+    "goes_east": "GOES-19, ABI L2 CMIPF Band-13 10.3um full-disk, DQF==0, 10-min FD scans, s3://noaa-goes19/ABI-L2-CMIPF/",
+    "goes_west": "GOES-18, ABI L2 CMIPF Band-13 10.3um full-disk, DQF==0, 10-min FD scans, s3://noaa-goes18/ABI-L2-CMIPF/",
+    "himawari": "Himawari-9, AHI Band-13 10.3um via NASA GIBS WMTS Himawari_AHI_Band13_Clean_Infrared, 10-min, LUT-inverted to BT",
+    "meteosat_fes": "Meteosat (0 deg), SEVIRI IR10.8 L1.5 via EUMETView WMS msg_fes:ir108, 15-min, grayscale imagery transfer",
+    "meteosat_iodc": "Meteosat-9 (45.5E), SEVIRI IR10.8 L1.5 via EUMETView WMS msg_iodc:ir108, 15-min, grayscale imagery transfer",
+    "viirs_polar": "Suomi NPP VIIRS Band I5 Day/Night via NASA GIBS WMTS, DAILY, LUT-inverted, polar/seam supplement only"
   },
-  "source_name": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
+  "source_name": "GOES-19/18 ABI infrared + Himawari-9 infrared (via NASA GIBS) + Meteosat SEVIRI infrared imagery (via EUMETSAT EUMETView) + VIIRS daily polar supplement (via NASA GIBS)",
   "source_url": "https://www.goes.noaa.gov/",
   "title": "LIVE CLOUD COVER",
   "valid_max": 100.0,
   "valid_min": 0.0,
-  "variable": "BCM binary mask (0=clear_or_probably_clear, 1=cloudy_or_probably_cloudy) gated DQF==0 -> % per canvas neighborhood; model TCDC % in fallback domain"
+  "variable": "Infrared window brightness (GOES/Himawari BT in K, VIIRS BT in K, Meteosat grayscale imagery) -> white-cloud brightness + transparency. Not a cloud-cover percentage."
 }

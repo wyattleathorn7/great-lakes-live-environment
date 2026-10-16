@@ -1,17 +1,17 @@
 {
   "product": "cloud_cover_na_basin",
   "title": "LIVE CLOUD COVER \u2014 Great Lakes Basin Coverage",
-  "freshness": "LIVE / CURRENT OBSERVATION + MODEL FILL (GOES FD 10-min + RRFS/GDPS fallback)",
-  "noaa_source": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
-  "product_name": "NOAA GOES-East (GOES-19) + GOES-West (GOES-18) ABI L2 Clear Sky Mask full-disk observations, RRFS TCDC fallback, GDPS fallback",
-  "variable": "BCM binary mask (0=clear_or_probably_clear, 1=cloudy_or_probably_cloudy) gated DQF==0 -> % per canvas neighborhood; model TCDC % in fallback domain",
+  "freshness": "LIVE / CURRENT IR OBSERVATION (multi-satellite, honest timestamps)",
+  "noaa_source": "GOES-19/18 ABI infrared + Himawari-9 infrared (via NASA GIBS) + Meteosat SEVIRI infrared imagery (via EUMETSAT EUMETView) + VIIRS daily polar supplement (via NASA GIBS)",
+  "product_name": "GOES-19/18 ABI infrared + Himawari-9 infrared (via NASA GIBS) + Meteosat SEVIRI infrared imagery (via EUMETSAT EUMETView) + VIIRS daily polar supplement (via NASA GIBS)",
+  "variable": "Infrared window brightness (GOES/Himawari BT in K, VIIRS BT in K, Meteosat grayscale imagery) -> white-cloud brightness + transparency. Not a cloud-cover percentage.",
   "source_url": "https://www.goes.noaa.gov/",
-  "data_time_utc": "2026-10-15 09:24 AM EDT",
-  "source_last_modified_utc": "ir-cache age=527s",
-  "processing_time_utc": "2026-10-15 09:24 AM EDT",
-  "units": "IR brightness (white=cold cloud tops)",
-  "spatial_resolution_source": "GOES-19/18 Band-13 10.3um full-disk",
-  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
+  "data_time_utc": "2026-10-16 14:30 UTC",
+  "source_last_modified_utc": "GOES-19 2026-10-16 14:30 UTC; GOES-18 2026-10-16 14:30 UTC; HIMAWARI-9 2026-10-16 14:00 UTC; METEOSAT-FES 2026-10-16 13:45 UTC; METEOSAT-IODC 2026-10-16 13:45 UTC; VIIRS 2026-10-16 00:00 UTC",
+  "processing_time_utc": "2026-10-16 10:50 AM EDT",
+  "units": "IR brightness (white=cold cloud tops; not a percentage)",
+  "spatial_resolution_source": "multi-satellite IR: GOES-19/18 10.3um FD, Himawari-9 10.3um, Meteosat SEVIRI 10.8um, VIIRS I5 daily supplement",
+  "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5]",
   "crs": "EPSG:4326",
   "render_bounds": {
     "lon_min": -93.0,
@@ -21,29 +21,88 @@
   },
   "color_scale_min": 0.0,
   "color_scale_max": 100.0,
-  "color_scale_units": "%",
-  "missing_data_treatment": "Realistic IR cloud tops only; no model fill; transparent = clear or no coverage.",
+  "color_scale_units": "display only",
+  "missing_data_treatment": "transparent = clear sky or no valid observation; never stretched, duplicated, or model-filled.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "legend_scale_html": "White = cloud (GOES-19/18 infrared, day + night); transparent = clear sky or no satellite coverage.",
-  "source_id": "na-cloud-real-20261015-1324",
-  "source_version": "na-cloud-real-20261015-1324ir-cache-age-527sir-cache-age-500s",
+  "legend_scale_html": "White = cloud tops (multi-satellite infrared, day + night); transparent = clear sky or no satellite coverage. Infrared brightness, not a cloud-cover percentage.",
+  "source_id": "cloudIR-GOES-18@20261016T1430-GOES-19@20261016T1430-HIMAWARI-9@20261016T1400-METEOSAT-FES@20261016T1345-METEOSAT-IODC@20261016T1345-VIIRS@2026-10-16+2026-10-16-v6",
+  "source_version": "cloudIR-GOES-18-20261016T1430-GOES-19-20261016T1430-HIMAWARI-9-20261016T1400-METEOSAT-FES-20261016T1345-METEOSAT-IODC-20261016T1345-VIIRS-2026-10-16-2026-10-16-v6",
   "na_bounds": {
-    "canvas_height": 1600,
-    "canvas_width": 3300,
     "crs": "EPSG:4326",
-    "lat_max": 85.0,
-    "lat_min": 5.0,
-    "lon_max": -15.0,
-    "lon_min": -180.0,
-    "note": "Authoritative common geography for the four North American live layers (precipitation_na, air_temperature_na, cloud_cover_na, wind_na). Every NA builder bins its own source grid onto this exact canvas, so the four overlays align in Google Earth. Degrees per pixel: 0.05 x 0.05 (square). This boundary is a bounding extent enclosing the buffered landmass; it does not imply valid source data everywhere \u2014 areas without valid source data stay transparent.",
-    "offshore_buffer_m": 160934.4,
-    "offshore_buffer_statute_miles": 100.0,
-    "resolution_deg_per_pixel": 0.05
+    "lon_min": -93.0,
+    "lon_max": -73.5,
+    "lat_min": 40.5,
+    "lat_max": 49.5,
+    "canvas_width": 1800,
+    "canvas_height": 1175,
+    "overlay_alpha": 205,
+    "note": "Authoritative common geography for all three live layers. Every product bins its own source grid onto this exact canvas, so the three overlays align perfectly in Google Earth."
   },
   "coverage_mode": "basin",
-  "stats": {
-    "ir_pixels": 3322392
+  "observation_time_utc": "2026-10-16 14:30 UTC",
+  "image_age_seconds": 1255,
+  "update_status": "current",
+  "source_observations": [
+    {
+      "source": "GOES-19",
+      "kind": "goes-bt",
+      "scan_utc": "2026-10-16 14:30 UTC",
+      "age_min": 20.6,
+      "detail": "OR_ABI-L2-CMIPF-M6C13_G19_s20262891430208_e20262891439528_c20262891440000.nc"
+    },
+    {
+      "source": "GOES-18",
+      "kind": "goes-bt",
+      "scan_utc": "2026-10-16 14:30 UTC",
+      "age_min": 20.6,
+      "detail": "OR_ABI-L2-CMIPF-M6C13_G18_s20262891430211_e20262891439531_c20262891439589.nc"
+    },
+    {
+      "source": "HIMAWARI-9",
+      "kind": "gibs-bt",
+      "scan_utc": "2026-10-16 14:00 UTC",
+      "age_min": 50.6,
+      "detail": "no coverage on this canvas (disk footprint)"
+    },
+    {
+      "source": "METEOSAT-FES",
+      "kind": "eumet-gray",
+      "scan_utc": "2026-10-16 13:45 UTC",
+      "age_min": 65.6,
+      "detail": "EUMETView imagery"
+    },
+    {
+      "source": "METEOSAT-IODC",
+      "kind": "eumet-gray",
+      "scan_utc": "2026-10-16 13:45 UTC",
+      "age_min": 65.6,
+      "detail": "EUMETView imagery"
+    },
+    {
+      "source": "VIIRS",
+      "kind": "gibs-viirs",
+      "scan_utc": "2026-10-16 00:00 UTC",
+      "age_min": 890.6,
+      "detail": "daily supplement"
+    }
+  ],
+  "provenance": {
+    "GOES-19": "2026-10-16 14:30 UTC",
+    "GOES-18": "2026-10-16 14:30 UTC",
+    "HIMAWARI-9": "2026-10-16 14:00 UTC",
+    "METEOSAT-FES": "2026-10-16 13:45 UTC",
+    "METEOSAT-IODC": "2026-10-16 13:45 UTC",
+    "VIIRS": "2026-10-16 00:00 UTC"
   },
-  "folder_html": "<h2>LIVE CLOUD COVER \u2014 Great Lakes Basin Coverage</h2><p><b>Coverage:</b> Great Lakes Basin Coverage<br><b>Provenance:</b> ir-cache age=527s</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25cb Continental Coverage<br>\u25c9 <b>Great Lakes Basin Coverage</b> (shown)<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
+  "legend_size": [
+    640,
+    152
+  ],
+  "stats": {
+    "ir_pixels": 2019404,
+    "max_geo_skew_min": 45.0,
+    "feather_px": 0
+  },
+  "folder_html": "<h2>LIVE CLOUD COVER \u2014 Great Lakes Basin Coverage</h2><p><b>Coverage:</b> Great Lakes Basin Coverage<br><b>Observed:</b> 2026-10-16 14:30 UTC<br><b>Provenance:</b> GOES-19 2026-10-16 14:30 UTC; GOES-18 2026-10-16 14:30 UTC; HIMAWARI-9 2026-10-16 14:00 UTC; METEOSAT-FES 2026-10-16 13:45 UTC; METEOSAT-IODC 2026-10-16 13:45 UTC; VIIRS 2026-10-16 00:00 UTC</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25cb Continental Coverage<br>\u25c9 <b>Great Lakes Basin Coverage</b> (shown)<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
 }

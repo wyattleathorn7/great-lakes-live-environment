@@ -1,16 +1,22 @@
-"""Pipeline C1-NA — LIVE CLOUD COVER, NORTH AMERICA (independent).
+"""Pipeline C1-NA — LIVE CLOUD COVER, MULTI-SATELLITE IR (independent).
 
-Precedence (explicit, never substituted):
-  1) Valid GOES-East (GOES-19) + GOES-West (GOES-18) full-disk ABI L2
-     Clear Sky Mask (ABI-L2-ACMF) BCM gated DQF==0. % = cloudy fraction
-     per NA canvas cell (true area density).
-  2) RRFS TCDC entire-atmosphere analysis (%) where no valid GOES mask.
-  3) ECCC GDPS TotalCloudCover ONLY for verified remaining gaps.
-Missing satellite pixels are NEVER rendered as clear sky. One 0-100%
-scale, identical styling (CLOUD_STOPS shared with the Great Lakes
-layer); metadata distinguishes observed vs model pixels.
+White infrared satellite imagery (day + night) on a transparent globe.
+Mosaic precedence (explicit, never substituted); see scripts/sat_ir.py:
+  1) GOES-19 + GOES-18 ABI L2 CMIPF Band-13 direct BT (Americas/Pacific).
+  2) Himawari-9 Band-13 via GIBS WMTS LUT inversion (Asia-Pacific).
+  3) Meteosat FES (0 deg) + IODC (45.5 E) SEVIRI IR10.8 via EUMETView WMS
+     grayscale imagery (Europe/Africa/Indian Ocean; imagery-derived).
+  4) VIIRS I5 Day/Night via GIBS (daily) ONLY where no GEO valid (poles).
+Missing observations stay transparent -- never clear sky, never stretched,
+never duplicated, never model fill. No percentage scale: brightness
+temperature (or documented imagery) maps to white-cloud brightness/alpha.
 
-Exit codes: 0 updated; 2 source failure (previous kept); 1 error.
+RETIRED: the BCM-% gradient + RRFS/GDPS model-fill path (_build below) is
+kept for reference only and is never selected as the production path.
+Production uses _build_mosaic (white IR). See config/cloud_cover_na.json.
+
+Exit codes: 0 updated (or skipped when scans unchanged); 2 source failure
+(previous kept); 1 error.
 """
 
 import datetime as dt
@@ -133,11 +139,12 @@ def main():
         return 1
 
 
+MOSAIC_VERSION = 6  # bump when sat_ir transfer/merge changes (forces rebuild)
+
+
 def run():
-    bounds = load_na_bounds()
-    W, H = bounds["canvas_width"], bounds["canvas_height"]
     try:
-        return _build(bounds, W, H)
+        return _build_mosaic()
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] FAILED: {type(e).__name__}: {e}. Keeping previous.")
@@ -464,141 +471,317 @@ def _build(bounds, W, H):
     return 0
 
 
-def _build_realistic(bounds, W, H, gbounds, GW, GH, stage, stage_prod):
-    """Realistic-cloud render: GOES-19/18 Band-13 IR texture (the same
-    source as the former precipitation underlay) as white clouds,
-    day+night. No gradient, no model fill; gaps stay transparent.
-    Per-coverage variants + KML contract mirror the gradient path."""
+def _build_mosaic():
+    """Production white-IR mosaic (multi-satellite; see sat_ir.py).
+
+    One scan set is selected first and rendered to all three canvases, so
+    basin/continental/global always show the same observations. Basin uses
+    the true Great Lakes bounds (1800x1175); continental the NA canvas;
+    global the worldwide canvas. Validity-driven transparency (no masks).
+    Timestamps: observation_time_utc comes from the scans; processing and
+    publication times are recorded separately; unchanged scans skip the
+    rebuild without minting a new observation time or version token.
+    """
+    import sat_ir
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
                            COVERAGE_DISPLAY, coverage_selector_html)
-    from build_precipitation_na import _ir_underlay
-    from geospatial_utils import draw_category_legend
+    from geospatial_utils import (draw_category_legend, load_bounds)
+    from na_bounds import load_global_bounds
+
+    bounds_na = load_na_bounds()
+    gbounds = load_global_bounds()
+    bounds_gl = load_bounds()
+    stage = stage_dir(PRODUCT)
+    stage_prod = os.path.join(stage, "site", PRODUCT)
+
+    # 1) Select scans once for every coverage (cheap: listings + caps).
+    scans, sel_diag = sat_ir.select_scans(raw_dir=RAW_DIR)
+    src_id = sat_ir.source_identity(scans) + f"-v{MOSAIC_VERSION}"
+    token = source_token(src_id)
+    prev = read_state(PRODUCT)
+    outputs_exist = all(
+        os.path.exists(os.path.join(SITE_DIR, d, "current.png"))
+        for d in [PRODUCT, f"{PRODUCT}_basin", f"{PRODUCT}_continental",
+                  f"{PRODUCT}_global"]
+    ) and os.path.exists(os.path.join(SITE_DIR, "kml", "live", KML_FILE))
+    if (prev.get("source_id") == src_id and outputs_exist):
+        print(f"[{PRODUCT}] scans unchanged ({src_id}); keeping rasters.")
+        return _refresh_kml_mosaic()
+    if not scans:
+        raise RuntimeError(f"no IR source available ({sel_diag})")
+
+    # 2) Render every canvas from the same scan set.
+    from geospatial_utils import now_det_str as _now
+    proc_time = _now()
+    CANVASES = {
+        # mode -> (bounds, variant dir suffix canvas)
+        "basin": bounds_gl, "landonly": bounds_na, "global": gbounds,
+    }
+    rendered = {}
+    for mode in COVERAGE_DISPLAY:
+        bnds = CANVASES[mode]
+        try:
+            rendered[mode] = sat_ir.render_canvas(bnds, scans, RAW_DIR)
+        except Exception as e:
+            raise RuntimeError(f"canvas {mode} failed: {type(e).__name__}: {e}")
+
+    def _render_white(res):
+        from scipy.ndimage import distance_transform_edt
+        b, a = res["bright"], res["alpha"]
+        rgba = np.zeros((b.shape[0], b.shape[1], 4), dtype=np.uint8)
+        m = np.isfinite(b) & np.isfinite(a) & (a > 0)
+        # Dissolve valid-coverage edges (disks end mid-ocean); never
+        # extends coverage, only fades existing pixels.
+        d = distance_transform_edt(m)
+        fade = np.clip(d / float(sat_ir.DISK_FADE_PX), 0.0, 1.0)
+        rgba[m, 0:3] = np.clip(np.round(b[m]), 0, 255)[:, None].astype(np.uint8)
+        rgba[m, 3] = np.clip(np.round(a[m] * fade[m]), 0, 255).astype(np.uint8)
+        rgba[m & (rgba[:, :, 3] < 3), 3] = 0
+        return rgba, int((rgba[:, :, 3] > 0).sum())
+
+    # Observation time: newest GEO scan (VIIRS-daily excluded); per-source
+    # times are all retained in source_observations (no single-time myth).
+    geo_scans = [s["scan_dt"] for n, s in scans.items()
+                 if n != "VIIRS" and s.get("scan_dt") is not None]
+    obs_dt = max(geo_scans) if geo_scans else None
+    obs_str = (obs_dt.strftime("%Y-%m-%d %H:%M UTC") if obs_dt
+               else "unknown (supplementary only)")
+    oldest = min(geo_scans) if geo_scans else None
+    now_utc = dt.datetime.now(dt.timezone.utc)
+    age_s = int((now_utc - obs_dt).total_seconds()) if obs_dt else None
+
+    def _status(res):
+        # "no coverage on this canvas" is nominal (disk footprint), not a
+        # failure; only genuine FAILED sources degrade the status.
+        bad = [o for o in res["observations"] if "FAILED" in o["detail"]]
+        return "degraded" if bad else "current"
+
+    update_status = _status(rendered["global"])
+    primary_obs = rendered["global"]["observations"]
+    prov_lines = "; ".join(
+        f"{o['source']} {o['scan_utc']}" for o in primary_obs)[:600]
+
+    scale_html = ("White = cloud tops (multi-satellite infrared, day + "
+                  "night); transparent = clear sky or no satellite coverage. "
+                  "Infrared brightness, not a cloud-cover percentage.")
     variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
                     for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
                       for m in COVERAGE_DISPLAY}
-    VARIANT_BOUNDS = {"basin": bounds, "landonly": gbounds, "global": gbounds,
-                      "extended200": gbounds}
-    # Same IR texture on the NA canvas (basin) and worldwide
-    # (continental + global); shared cache with precipitation.
-    try:
-        nb, na, nprov = _ir_underlay(bounds, W, H)
-    except Exception as e:
-        raise RuntimeError(f"no GOES-IR texture for realistic clouds: {e}")
-    try:
-        gb, ga, gprov = _ir_underlay(gbounds, GW, GH)
-    except Exception as e:
-        raise RuntimeError(f"no global GOES-IR texture: {e}")
-    SRC = {"basin": (nb, na, nprov), "landonly": (gb, ga, gprov),
-           "global": (gb, ga, gprov), "extended200": (gb, ga, gprov)}
-    default_cover = CONFIG_NA.get("coverage_mode", "global")
-    if default_cover == "extended200":
-        default_cover = "global"
-    data_time = now_det_str()
-    src_id = f"na-cloud-real-{dt.datetime.now(dt.timezone.utc):%Y%m%d-%H%M}"
-    token = source_token(src_id + nprov + gprov)
+    VARIANT_BOUNDS = {"basin": bounds_gl, "landonly": bounds_na,
+                      "global": gbounds, "extended200": gbounds}
 
-    def _render_ir(b, a):
-        from scipy.ndimage import distance_transform_edt
-        rgba = np.zeros((b.shape[0], b.shape[1], 4), dtype=np.uint8)
-        m = np.isfinite(b) & np.isfinite(a) & (a > 0)
-        # Feather the disk edge so coverage ends dissolve instead of
-        # cutting a hard line (satellite disks end mid-ocean).
-        d = distance_transform_edt(m)
-        fade = np.clip(d / 12.0, 0.0, 1.0)
-        rgba[m, 0:3] = np.round(b[m])[:, None].astype(np.uint8)
-        rgba[m, 3] = np.round(a[m] * fade[m]).astype(np.uint8)
-        rgba[m & (rgba[:, :, 3] < 3), 3] = 0
-        return rgba, int((rgba[:, :, 3] > 0).sum())
+    # Shared white-cloud legend, drawn once and copied to every variant so
+    # no stale percentage legend can survive from a previous rendering.
+    import shutil as _shutil
+    _legend_tmp = os.path.join(stage, "site", PRODUCT, "legend.png")
+    os.makedirs(os.path.dirname(_legend_tmp), exist_ok=True)
+    _lw, _lh = draw_category_legend(
+        _legend_tmp, CONFIG_NA["title"],
+        f"Realistic clouds (multi-satellite IR) | {obs_str}",
+        [("#FFFFFF", "White = cloud tops (IR, day+night)")],
+        f"Source: GOES-19/18 + Himawari-9 + Meteosat + VIIRS supplement  |  "
+        f"Observed {obs_str} | Processed {proc_time}",
+        note="Transparent = clear sky or no satellite coverage.")
 
     for mode in COVERAGE_DISPLAY:
-        b, a, pv = SRC[mode]
-        rgba_m, n_px = _render_ir(b, a)
-        rgba_m = apply_coverage_mask(rgba_m, mode)
+        res = rendered[mode]
+        rgba_m, n_px = _render_white(res)
+        # Validity-driven transparency only: every valid pixel paints
+        # (oceans included); no land/ocean masks on a cloud layer.
         vprod, vtitle = variant_dirs[mode], variant_titles[mode]
         vdir = os.path.join(stage, "site", vprod)
         os.makedirs(vdir, exist_ok=True)
         save_png(rgba_m, os.path.join(vdir, "current.png"))
-        print(f"[{PRODUCT}] realistic variant {mode}: px={n_px}")
+        _shutil.copyfile(_legend_tmp, os.path.join(vdir, "legend.png"))
+        print(f"[{PRODUCT}] mosaic variant {mode}: px={n_px} "
+              f"skew={res['max_geo_skew_min']}min feather={res['feather_px']}")
         vmeta = base_metadata(
             vprod, vtitle, CONFIG_NA["freshness_label"],
             CONFIG_NA["source_name"], CONFIG_NA["source_url"],
             CONFIG_NA["variable"],
-            data_time_utc=data_time,
-            source_last_modified_utc=pv[:300],
-            units="IR brightness (white=cold cloud tops)",
-            source_resolution="GOES-19/18 Band-13 10.3um full-disk",
-            color_min=0.0, color_max=100.0, color_units="%",
-            missing_data_treatment="Realistic IR cloud tops only; no model fill; transparent = clear or no coverage.")
-        vmeta["legend_scale_html"] = ("White = cloud (GOES-19/18 infrared, "
-            "day + night); transparent = clear sky or no satellite coverage.")
+            data_time_utc=obs_str,
+            source_last_modified_utc=prov_lines,
+            units="IR brightness (white=cold cloud tops; not a percentage)",
+            source_resolution=("multi-satellite IR: GOES-19/18 10.3um FD, "
+                               "Himawari-9 10.3um, Meteosat SEVIRI 10.8um, "
+                               "VIIRS I5 daily supplement"),
+            color_min=0.0, color_max=100.0, color_units="display only",
+            missing_data_treatment=("transparent = clear sky or no valid "
+                                    "observation; never stretched, duplicated, "
+                                    "or model-filled."))
+        vmeta["legend_scale_html"] = scale_html
         vmeta["source_id"] = src_id
         vmeta["source_version"] = token
         vmeta["na_bounds"] = VARIANT_BOUNDS[mode]
         vmeta["coverage_mode"] = mode
-        vmeta["stats"] = {"ir_pixels": n_px}
+        vmeta["observation_time_utc"] = obs_str
+        vmeta["image_age_seconds"] = age_s
+        vmeta["update_status"] = _status(res)
+        vmeta["source_observations"] = res["observations"]
+        vmeta["provenance"] = {o["source"]: o["scan_utc"]
+                               for o in res["observations"]}
+        vmeta["legend_size"] = [_lw, _lh]
+        vmeta["stats"] = {"ir_pixels": n_px,
+                           "max_geo_skew_min": res["max_geo_skew_min"],
+                           "feather_px": res["feather_px"]}
         vmeta["folder_html"] = (
             f"<h2>{vtitle}</h2>"
             f"<p><b>Coverage:</b> {COVERAGE_LABELS[mode]}<br>"
-            f"<b>Provenance:</b> {pv}</p>") + coverage_selector_html(mode)
+            f"<b>Observed:</b> {obs_str}<br>"
+            f"<b>Provenance:</b> {prov_lines}</p>") + coverage_selector_html(mode)
+        # Correct the inherited basin render_bounds (base_metadata assumes
+        # the Great Lakes canvas, which is only right for the basin layer).
+        vb = VARIANT_BOUNDS[mode]
+        vmeta["spatial_resolution_rendered"] = (
+            f"{vb['canvas_width']}x{vb['canvas_height']} canvas over "
+            f"lon [{vb['lon_min']},{vb['lon_max']}], "
+            f"lat [{vb['lat_min']},{vb['lat_max']}]")
+        vmeta["render_bounds"] = {"lon_min": vb["lon_min"],
+                                  "lon_max": vb["lon_max"],
+                                  "lat_min": vb["lat_min"],
+                                  "lat_max": vb["lat_max"]}
         write_metadata(vdir, vmeta)
 
-    b, a, pv = SRC[default_cover]
-    rgba, n_px = _render_ir(b, a)
-    rgba = apply_coverage_mask(rgba, default_cover)
+    # Provenance diagnostic (which satellite paints each region).
+    try:
+        _write_provenance_png(stage, rendered["global"]["prov"])
+    except Exception as e:
+        print(f"[{PRODUCT}] WARNING: provenance diagnostic failed: {e}")
+
+    res0 = rendered["global"]
+    rgba, n_px = _render_white(res0)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     lw, lh = draw_category_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"],
-        f"Realistic clouds (GOES IR) | {data_time}",
-        [("#FFFFFF", "White = cloud tops (GOES-19/18 Band-13, day+night)")],
-        f"Source: NOAA GOES-East/GOES-West full-disk infrared  |  "
-        f"Processed {now_det_str()}",
-        note="Transparent = clear sky or no satellite coverage (no model fill).")
+        f"Realistic clouds (multi-satellite IR) | {obs_str}",
+        [("#FFFFFF", "White = cloud tops (IR, day+night)")],
+        f"Source: GOES-19/18 + Himawari-9 + Meteosat + VIIRS supplement  |  "
+        f"Observed {obs_str} | Processed {proc_time}",
+        note="Transparent = clear sky or no satellite coverage.")
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
-        data_time_utc=data_time, source_last_modified_utc=pv[:300],
-        units="IR brightness (white=cold cloud tops)",
-        source_resolution="GOES-19/18 Band-13 10.3um full-disk",
-        color_min=0.0, color_max=100.0, color_units="%",
-        missing_data_treatment="Realistic IR cloud tops only; no model fill; transparent = clear or no coverage.")
+        data_time_utc=obs_str, source_last_modified_utc=prov_lines,
+        units="IR brightness (white=cold cloud tops; not a percentage)",
+        source_resolution=("multi-satellite IR: GOES-19/18 10.3um FD, "
+                           "Himawari-9 10.3um, Meteosat SEVIRI 10.8um, "
+                           "VIIRS I5 daily supplement"),
+        color_min=0.0, color_max=100.0, color_units="display only",
+        missing_data_treatment=("transparent = clear sky or no valid "
+                                "observation; never stretched, duplicated, "
+                                "or model-filled."))
     meta["legend_size"] = [lw, lh]
-    meta["legend_scale_html"] = ("White = cloud (GOES-19/18 infrared, "
-        "day + night); transparent = clear sky or no satellite coverage.")
+    meta["legend_scale_html"] = scale_html
     meta["source_id"] = src_id
     meta["source_version"] = token
-    meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
-    meta["coverage_mode"] = default_cover
-    meta["stats"] = {"ir_pixels": n_px}
+    meta["na_bounds"] = VARIANT_BOUNDS["global"]
+    meta["coverage_mode"] = "global"
+    meta["observation_time_utc"] = obs_str
+    meta["image_age_seconds"] = age_s
+    meta["update_status"] = update_status
+    meta["source_observations"] = primary_obs
+    meta["provenance"] = {o["source"]: o["scan_utc"] for o in primary_obs}
+    meta["stats"] = {"ir_pixels": n_px,
+                     "max_geo_skew_min": res0["max_geo_skew_min"],
+                     "feather_px": res0["feather_px"]}
     meta["folder_html"] = (f"<h2>{CONFIG_NA['title']}</h2>"
-                   f"<p><b>Coverage:</b> {COVERAGE_LABELS[default_cover]}<br>"
-                   f"<b>Provenance:</b> {pv}</p>")
-    meta["folder_html"] = meta["folder_html"] + coverage_selector_html(default_cover)
+                           f"<p><b>Coverage:</b> {COVERAGE_LABELS['global']}<br>"
+                           f"<b>Observed:</b> {obs_str}<br>"
+                           f"<b>Provenance:</b> {prov_lines}</p>")
+    meta["folder_html"] = meta["folder_html"] + coverage_selector_html("global")
+    gb = VARIANT_BOUNDS["global"]
+    meta["spatial_resolution_rendered"] = (
+        f"{gb['canvas_width']}x{gb['canvas_height']} canvas over "
+        f"lon [{gb['lon_min']},{gb['lon_max']}], "
+        f"lat [{gb['lat_min']},{gb['lat_max']}]")
+    meta["render_bounds"] = {"lon_min": gb["lon_min"], "lon_max": gb["lon_max"],
+                             "lat_min": gb["lat_min"], "lat_max": gb["lat_max"]}
     write_metadata(stage_prod, meta)
     outs = live_out_dirs(stage, KML_FILE)
     extras = [(COVERAGE_LABELS[m], f"{variant_dirs[m]}/current.png",
                VARIANT_BOUNDS[m], 11 + i, 0)
               for i, m in enumerate([m for m in COVERAGE_DISPLAY
-                                     if m != default_cover])]
+                                     if m != "global"])]
     kml_text = build_kml(PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
                          f"{PRODUCT}/legend.png",
                          description_html(CONFIG_NA["title"], meta, SKIP_NOTE, "")
-                         + coverage_selector_html(default_cover),
+                         + coverage_selector_html("global"),
                          CONFIG_NA["refresh_interval_seconds"], token,
                          folder=(CONFIG_NA["title"], meta["folder_html"]),
                          out_dirs=outs["live"], meta=meta,
-                         bounds=VARIANT_BOUNDS[default_cover],
+                         bounds=VARIANT_BOUNDS["global"],
                          extra_overlays=extras, folder_radio=True,
-                         primary_name=COVERAGE_LABELS[default_cover])
+                         primary_name=COVERAGE_LABELS["global"])
     assert_no_vector_geometry(kml_text)
     build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
                     entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),
                     CONFIG_NA["refresh_interval_seconds"], out_dirs=outs["entry"])
     promoted = promote_stage(PRODUCT)
-    write_state(PRODUCT, {"model_cycle": data_time, "source_id": src_id,
+    write_state(PRODUCT, {"model_cycle": obs_str, "source_id": src_id,
+                          "mosaic_version": MOSAIC_VERSION,
                           "processing_time_utc": meta["processing_time_utc"]})
-    print(f"[{PRODUCT}] UPDATED OK realistic ({len(promoted)} files).")
+    print(f"[{PRODUCT}] UPDATED OK mosaic ({len(promoted)} files).")
     return 0
+
+
+def _refresh_kml_mosaic():
+    """Skip path: rewrite KMLs from committed metadata without touching
+    observation timestamps or version tokens."""
+    from geospatial_utils import SITE_DIR as _SITE
+    import json as _json
+    with open(os.path.join(_SITE, PRODUCT, "metadata.json")) as f:
+        meta = _json.load(f)
+    from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
+                           COVERAGE_DISPLAY, coverage_selector_html)
+    from na_bounds import load_global_bounds as _glb
+    from geospatial_utils import load_bounds as _bnd
+    gbounds = _glb()
+    VARIANT_BOUNDS = {"basin": _bnd(), "landonly": load_na_bounds(),
+                      "global": gbounds, "extended200": gbounds}
+    variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
+                    for m in COVERAGE_DISPLAY}
+    token = meta.get("source_version") or source_token(
+        meta.get("source_id", ""))
+    outs = live_out_dirs(stage_dir(PRODUCT), KML_FILE)
+    extras = [(COVERAGE_LABELS[m], f"{variant_dirs[m]}/current.png",
+               VARIANT_BOUNDS[m], 11 + i, 0)
+              for i, m in enumerate([m for m in COVERAGE_DISPLAY
+                                     if m != "global"])]
+    kml_text = build_kml(
+        PRODUCT, KML_FILE, OVERLAY_NAME, f"{PRODUCT}/current.png",
+        f"{PRODUCT}/legend.png",
+        description_html(CONFIG_NA["title"], meta, SKIP_NOTE, "")
+        + coverage_selector_html("global"),
+        CONFIG_NA["refresh_interval_seconds"], token,
+        folder=(CONFIG_NA["title"], meta.get("folder_html", "")),
+        out_dirs=outs["live"], meta=meta, bounds=VARIANT_BOUNDS["global"],
+        extra_overlays=extras, folder_radio=True,
+        primary_name=COVERAGE_LABELS["global"])
+    assert_no_vector_geometry(kml_text)
+    build_entry_kml(PRODUCT, KML_FILE, OVERLAY_NAME,
+                    entry_description_html(CONFIG_NA["title"], meta, SKIP_NOTE),
+                    CONFIG_NA["refresh_interval_seconds"],
+                    out_dirs=outs["entry"])
+    promoted = promote_stage(PRODUCT)
+    print(f"[{PRODUCT}] KML refreshed (scans unchanged, "
+          f"{len(promoted)} files).")
+    return 0
+
+
+def _write_provenance_png(stage, prov):
+    """Diagnostic: which satellite paints each global pixel."""
+    from PIL import Image
+    colors = {0: (0, 0, 0, 0), 1: (230, 57, 70, 255), 2: (241, 143, 1, 255),
+              3: (46, 134, 193, 255), 4: (39, 174, 96, 255),
+              5: (155, 89, 182, 255), 6: (149, 165, 166, 255)}
+    h, w = prov.shape
+    rgb = np.zeros((h, w, 4), dtype=np.uint8)
+    for code, col in colors.items():
+        rgb[prov == code] = col
+    out = os.path.join(stage, "site", PRODUCT, "provenance.png")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    Image.fromarray(rgb, mode="RGBA").save(out)
 
 
 if __name__ == "__main__":

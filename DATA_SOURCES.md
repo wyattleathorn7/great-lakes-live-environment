@@ -498,33 +498,81 @@ Per-product independence: a failed download/validation aborts **only that
 product's** update (exit status recorded, previous `site/` assets untouched);
 the other products and the Pages publish proceed normally.
 
-## 14. Cloud cover — GOES-East ABI Clear Sky Mask (live observation)
+## 14. Cloud cover — multi-satellite white infrared imagery (live observation)
 
-- **Product:** NOAA GOES-East (GOES-19) ABI L2 Clear Sky Mask, CONUS
-  2 km, new scan every 5 minutes, public S3
-  (`s3://noaa-goes19/ABI-L2-ACMC/YYYY/DDD/HH/`, anonymous HTTPS, no
-  credentials). Replaced HRRR TCDC in v2: the model's cloud analysis
-  carries rectangular assimilation footprints that read as unphysical
-  blocks — the satellite retrieval has none.
-- **Variables:** `BCM` binary mask (0 = clear_or_probably_clear,
-  1 = cloudy_or_probably_cloudy) gated by `DQF==0` (good quality);
-  `ACM` 4-level mask retained for reference. Fixed-grid → WGS84 via
-  pyproj with the file's own subpoint/height (hand-rolled geostationary
-  math was cross-checked against it and dropped after a 3° latitude
-  error was found in the hand derivation).
-- **Rendering:** % = observed fraction of cloudy 2 km pixels per canvas
-  neighborhood (true area density, no invented precision); oblique view
-  stretches ground spacing, so splat radius 2 closes the diamond gaps.
-  Clear (<1%) and missing stay transparent.
-- **Scale:** FIXED 0–100 % spectrum (same stops as before).
-- **Update:** 5-minute scans; the dedicated fast workflow
-  (`update_fast_live.yml`) polls on its own 5-minute cadence with a lean
-  publish (no commit), so scans ship in minutes.
-  Freshness: **"LIVE / CURRENT OBSERVATION (GOES-East 5-min scans)"**.
-- **Retired (v1):** HRRR `TCDC` entire-atmosphere analysis. It verified
-  against METARs but its analysis increments carry rectangular
-  assimilation footprints (confirmed present in the raw GRIB2), which
-  read as unphysical blocks — replaced by the satellite retrieval.
+- **What it is:** natural-looking white/light-gray cloud systems on a
+  transparent globe, from thermal infrared window channels (day + night).
+  Brightness temperature maps to display brightness + transparency; it is
+  NOT a cloud-cover percentage and no % legend is shipped.
+- **Sources (all verified live 2026-10-16, anonymous HTTPS, no keys):**
+  1. GOES-19 + GOES-18 ABI L2 CMIPF Band-13 (10.3 um) full-disk NetCDF,
+     `s3://noaa-goes19/` + `s3://noaa-goes18/ABI-L2-CMIPF/YYYY/DDD/HH/`,
+     direct BT decode with per-file calibration, `DQF==0` gate, BT
+     150–330 K gate, fixed-grid → WGS84 via pyproj with each file's own
+     subpoint/height. 10-min FD scans. Covers the Americas, Atlantic,
+     E/C Pacific.
+  2. Himawari-9 AHI Band-13 (10.3 um) via NASA GIBS WMTS
+     `Himawari_AHI_Band13_Clean_Infrared` GetMap (10-min). Server-rendered
+     through NASA's documented 1-degC colormap, inverted at runtime
+     (nearest-bin, ±1 C quantization incl. resampling; halo colors far
+     from every bin stay transparent). Direct ISatSS download (88 tiles,
+     ~26 MB/scan for Ch13) was evaluated and rejected for the 5-minute
+     budget. Covers Asia + W/C Pacific.
+  3. Meteosat FES (0° prime) + IODC (Meteosat-9, 45.5° E) SEVIRI IR10.8
+     L1.5 via EUMETSAT EUMETView WMS `msg_fes:ir108` + `msg_iodc:ir108`
+     GetMap (15-min, anonymous). No anonymous WCS offers these layers and
+     the Data Store API needs a key, so the grayscale rendering is used
+     as DOCUMENTED IMAGERY (bright = cold, verified live) through its own
+     transfer — never presented as calibrated BT. Covers Europe, Africa,
+     Indian Ocean.
+  4. Suomi NPP VIIRS Band I5 Day/Night via NASA GIBS WMTS (same
+     LUT-inversion treatment), DAILY cadence, used ONLY where no
+     geostationary source is valid (poles, seams). Documented as a daily
+     supplement, never 5-minute fresh.
+- **Mosaic policy (`scripts/sat_ir.py`):** GEO preferred over VIIRS-daily;
+  fresher GEO scan wins overlaps; skew ≤ 15 min gets a 12-px cross-fade,
+  larger skews resolve hard (never coldest-wins, never blind averaging);
+  antimeridian blended; per-pixel provenance raster (`provenance.png`:
+  red = G19, orange = G18, blue = Himawari, green = FES, purple = IODC,
+  gray = VIIRS, transparent = honestly uncovered).
+- **Rendering:** BT(K) → bright = (288−BT)×4, alpha = (282−BT)×4.5 (cap
+  215, <3 transparent); Meteosat grayscale → bright = gray,
+  alpha = (gray−20)×1.2. Disk edges dissolve over 12 px (never extended).
+  Warm surfaces read as faint veil/transparent; snow/ice vs low cloud
+  cannot be perfectly separated from IR alone (documented limitation);
+  geostationary limbs degrade toward disk edges; poles depend on daily
+  VIIRS and keep honest gaps.
+- **Coverages (one scan set, three canvases, single KML radioFolder):**
+  basin = Great Lakes lon −93…−73.5 / lat 40.5…49.5 (1800×1175);
+  continental = North America lon −180…−15 / lat 5…85 (3300×1600, oceans
+  included); global = worldwide (3600×1800). Every LatLonBox matches its
+  raster; validity alone drives transparency (no land/ocean masks).
+- **Freshness:** `source_id` derives from actual scan times
+  (`cloudIR-<sat>@<scan>…-vN`); `observation_time_utc` = newest GEO scan
+  with per-source times in `source_observations`; processing/publication
+  times separate; `image_age_seconds` + `update_status`
+  (current/degraded/stale-retained) published. Unchanged scans skip the
+  rebuild (no new observation time, stable `?v=`). The 5-minute
+  cron-job.org → `update_fast_live.yml` cadence is a check-for-new-data,
+  not a new-observation guarantee. Failures keep the last valid raster
+  with its original observation time (exit 2, stays green).
+- **Overlap safety:** the workflow carries `concurrency: fast-live-refresh`
+  with `cancel-in-progress: true`, so a trigger arriving mid-build cancels
+  the older run instead of publishing alongside it. A full mosaic rebuild
+  takes several minutes (two ~23 MB GOES downloads + ~15 WMS fetches +
+  three-canvas binning), so back-to-back 5-minute triggers routinely cancel
+  predecessors: expect an effective refresh of roughly every 10–15 minutes,
+  reported honestly via `observation_time_utc`/`image_age_seconds`, never
+  as 5-minute-fresh imagery. Builders stage under `output/stage/` and
+  promote only on full success, and `fast_publish` re-validates the whole
+  site (KML `?v=` must match metadata `source_version`) before deploying,
+  so interrupted or mixed outputs cannot reach Pages.
+- **Retired:** v1 HRRR `TCDC` analysis (rectangular assimilation
+  footprints in raw GRIB2); v2 GOES-East CONUS clear-sky-mask %
+  gradient + RRFS/GDPS model fill (dormant code retained in
+  `build_cloud_cover_na._build`, never selected); v3 GOES-only
+  realistic IR via the precipitation shared helper (Americas-only,
+  mislabeled coverages, wall-clock timestamps).
 
 ## 15. Surface pressure — NOAA/NCEP HRRR MSLMA (hourly analysis)
 
