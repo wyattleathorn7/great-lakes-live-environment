@@ -102,6 +102,42 @@ SFC_TYPE_RGB = [
 SFC_SNOW = (9, 10, 11)
 SFC_TYPE_MAX_DIST = 60.0  # beyond this -> unclassified (background etc.)
 
+_NEARNESS = {}  # (W, H) -> land+offshore bool mask (cached per canvas)
+
+
+def _iem_nearshore_mask(bounds, W, H):
+    """Land + ~200 km offshore on this canvas grid, from the committed
+    worldwide land mask (row 0 = 90N, verified by spot check).
+
+    The IEM effective-domain box claims WSR-88D network coverage, but
+    NEXRAD sees ~200 km offshore at most: the box's open-ocean far
+    field (offshore Pacific/Atlantic/Gulf with no radar) must not
+    suppress GFS estimates there. Demonstrated: 1456 GFS-wet pixels in
+    one scan sat inside the box with no ECCC/OPERA coverage and a fully
+    transparent IEM mosaic, yet rendered transparent — and any system
+    crossing the box edge (e.g. lon -130 offshore California) gets cut
+    dead-straight. Land pixels always pass, so on-land behavior is
+    bit-identical; ECCC/OPERA precedence is untouched."""
+    key = (W, H, bounds["lon_min"], bounds["lon_max"],
+           bounds["lat_min"], bounds["lat_max"])
+    if key not in _NEARNESS:
+        land = np.load(os.path.join(
+            REPO_ROOT, "assets", "global_landonly.npy")) > 0
+        xs = np.clip((((np.arange(W) + 0.5)
+                       * (bounds["lon_max"] - bounds["lon_min"]) / W
+                       + bounds["lon_min"] + 180.0) / 0.1).astype(int),
+                     0, 3599)
+        ys = np.clip(((90.0 - (bounds["lat_max"] - (np.arange(H) + 0.5)
+                               * (bounds["lat_max"] - bounds["lat_min"])
+                               / H)) / 0.1).astype(int), 0, 1799)
+        g = land[np.ix_(ys, xs)]
+        lat_px = (bounds["lat_max"] - bounds["lat_min"]) / H
+        from scipy.ndimage import binary_dilation
+        _NEARNESS[key] = binary_dilation(
+            g, iterations=max(1, int(round(1.8 / lat_px))))
+        # 1.8 deg latitude ~= 200 km WSR-88D offshore range
+    return _NEARNESS[key]
+
 
 def _rate_to_dbz(r_mmh):
     """NWS NEXRAD Z-R equivalence (Z=300R^1.4): the documented bridge that
@@ -541,8 +577,17 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                 return np.roll(_g, 720, axis=1)  # 0..360 -> -180..180
             _lats1d = np.arange(90.0, -90.001, -0.25)
             _lons1d = np.arange(-180.0, 180.0, 0.25)
-            _g_rate = _resamp(_san(_grid2d("prate") * 3600.0, 0.0, 500.0),
-                              _lats1d, _lons1d, bounds)
+            # Periodic wrap: the source grid's last node is 179.75, but
+            # the canvas queries to 179.95 — the shared resampler clips
+            # out-of-source queries to NaN, which killed the last two
+            # canvas columns at the dateline (razor cut, demonstrated:
+            # cols 3598-3599 always zero). GFS is periodic, so append
+            # the -180 column as +180 (exact duplicate, no invention).
+            _g_grid = _grid2d("prate")
+            _g_lons = np.append(_lons1d, 180.0)
+            _g_grid = np.hstack([_g_grid, _g_grid[:, :1]])
+            _g_rate = _resamp(_san(_g_grid * 3600.0, 0.0, 500.0),
+                              _lats1d, _g_lons, bounds)
             _flag = {}
             for _fn in ("csnow", "crain", "cfrzr", "cicep"):
                 _g2 = _grid2d(_fn)
@@ -550,10 +595,12 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                     (90.0 - (bounds["lat_max"] - (np.arange(H) + 0.5)
                              * (bounds["lat_max"] - bounds["lat_min"]) / H))
                     / 0.25), 0, 720).astype(int)
-                _jj = np.clip(np.round(
+                # Periodic column (not clip): lon 179.95 must read grid
+                # col 0 (lon -180 == +180), not the 179.75 cell.
+                _jj = (np.round(
                     ((bounds["lon_min"] + (np.arange(W) + 0.5)
                       * (bounds["lon_max"] - bounds["lon_min"]) / W) + 180.0)
-                    / 0.25), 0, 1439).astype(int)
+                    / 0.25).astype(int) % 1440)
                 _flag[_fn] = np.isfinite(_g2[np.ix_(_ii, _jj)]) & (
                     _g2[np.ix_(_ii, _jj)] >= 0.5)
             _dom = CONFIG_NA.get("iem_effective_domain", {})
@@ -570,6 +617,10 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                 _iem_dom[_r0:_r1, _c0:_c1] = True
             except Exception:
                 pass
+            # The box overclaims open ocean (no NEXRAD there): gate it to
+            # land + ~200 km offshore so far-field ocean never suppresses
+            # GFS. Land behavior is unchanged (land always passes).
+            _iem_dom &= _iem_nearshore_mask(bounds, W, H)
             _radar_cov = _iem_dom | cov | opera_cov
             _wet = (np.isfinite(_g_rate) & (_g_rate >= DISPLAY_WET_MM_H)
                     & ~_radar_cov)

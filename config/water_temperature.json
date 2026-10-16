@@ -14,6 +14,15 @@
     "units": "degF"
   },
   "refresh_interval_seconds": 21600,
+  "coverage_mode": "basin",
+  "ocean_source_name": "NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C)",
+  "ocean_source_url": "https://coastwatch.noaa.gov/erddap/griddap/noaacwBLENDEDsstDLDaily",
+  "ocean_dataset_id": "noaacwBLENDEDsstDLDaily",
+  "ocean_variable": "analysed_sst (degree_C, valid -2..40; _FillValue -327.68) gated by mask water bit (1=water; 0 fill excluded); sea-ice cells retained as valid cold water",
+  "ocean_erddap_stride": 5,
+  "ocean_precedence": "NOAA/GLERL CoastWatch GLSEA wins everywhere valid inside the Great Lakes rectangle (blended-SST cells there excluded from ocean/lake percentile populations to avoid double-counting); blended SST owns all other valid water",
+  "lake_source_note": "Continental Lake Coverage uses the same blended-SST valid-water cells that fall on inland water (global_landonly == 1) plus GLSEA Great Lakes cells. Lakes below the ~5 km analysis resolution are documented gaps, not fabricated. Copernicus CLMS Lake Surface Water Temperature NRT 1 km 10-daily (Sentinel-3 SLSTR, CDSE access) investigated as a future inland-lake source; not integrated (anonymous-CI access path unavailable; 10-day synthesis latency vs daily refresh; lake-inventory verification pending).",
+  "continental_gaps_note": "Sub-resolution small lakes, rivers, and blended-SST land-masked cells render transparent (never interpolated, never zero-filled).",
   "buoys": [
     "45001",
     "45002",

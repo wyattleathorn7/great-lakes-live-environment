@@ -89,6 +89,11 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
   neither covers (e.g. Iceland) → GFS estimates
   (CSNOW-gated snow blues / CRAIN key colors, ≥0.25 mm/h,
   organized systems only) in verified radar gaps → transparent.
+  The IEM box is intersected with land+~200km offshore (WSR-88D range),
+  so open ocean never suppresses model estimates — previously the raw
+  box hid GFS-wet open-ocean pixels and cut systems at lon −130.
+  GFS longitude is periodic: the −180 grid column is duplicated at +180
+  and flag lookup wraps, so no seam at the dateline.
   All echo pixels share one uniform alpha (160/255) and one color
   scale — estimates are disclosed as model output in the metadata
   and registry, not by separate colors.

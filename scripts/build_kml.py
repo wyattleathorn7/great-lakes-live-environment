@@ -132,7 +132,7 @@ def _write(xml, out_dirs):
 def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
               description_html, refresh_interval, cache_token, out_dirs=None,
               folder=None, meta=None, bounds=None, extra_overlays=None,
-              folder_radio=False, primary_name=None):
+              folder_radio=False, primary_name=None, overlay_descriptions=None):
     """Write the LIVE overlay file (one GroundOverlay, versioned PNG href).
 
     ``cache_token`` MUST be the deterministic source version
@@ -147,7 +147,16 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     3-tuples (png_relpath, bounds_dict, draw_order) reuse the base name
     and load visible; 5-tuples (name, png_relpath, bounds_dict,
     draw_order, visible_flag) name each overlay and set its initial
-    visibility (1/0). ``folder_radio`` marks the Folder radioFolder so
+    visibility (1/0); 6-tuples append a per-overlay ``description`` HTML
+    string as the 6th element (self-contained legend per coverage, so
+    switching visibility never shows a stale shared legend); 7-tuples
+    append that overlay's own deterministic version token as the 7th
+    element (its PNG href + legend image carry ``?v=<own token>`` so one
+    coverage updating never invalidates another's cache).
+    ``overlay_descriptions`` (optional) gives the PRIMARY overlay's own
+    description HTML (same self-contained contract); when omitted the
+    primary overlay carries no description, exactly as before.
+    ``folder_radio`` marks the Folder radioFolder so
     Google Earth Pro shows its children exclusively (Web/app shows the
     same children as manual checkboxes).
     """
@@ -166,11 +175,15 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
     desc.text = None
     document.append(desc)
 
-    def _overlay(name, url, b, order, visible=None):
+    def _overlay(name, url, b, order, visible=None, description_html=None):
         ground = _q("GroundOverlay")
         ground.append(_q("name", name))
         if visible is not None:
             ground.append(_q("visibility", str(visible)))
+        if description_html is not None:
+            _odesc = _q("description")
+            _odesc.text = None
+            ground.append(_odesc)
         ground.append(_q("drawOrder", str(order)))
         icon = _q("Icon")
         icon.append(_q("href", url))
@@ -187,13 +200,22 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
 
     def _norm(extra):
         # 3-tuple (legacy): base name, visible. 5-tuple: name + flag.
-        if len(extra) == 5:
+        # 6-tuple: name + flag + per-overlay description HTML.
+        # 7-tuple: + per-overlay version token (own ?v=).
+        if len(extra) == 7:
             return extra
+        if len(extra) == 6:
+            return (extra[0], extra[1], extra[2], extra[3], extra[4],
+                    extra[5], None)
+        if len(extra) == 5:
+            return (extra[0], extra[1], extra[2], extra[3], extra[4], None,
+                    None)
         png_rel, b, order = extra
-        return (overlay_name, png_rel, b, order, 1)
+        return (overlay_name, png_rel, b, order, 1, None, None)
 
+    _extras = [e for e in (_norm(e) for e in (extra_overlays or []))]
     ground = _overlay(primary_name or overlay_name, png_url, bounds, 10,
-                      1 if extra_overlays else None)
+                      1 if extra_overlays else None, overlay_descriptions)
     descriptions = [header + description_html]
     if folder is not None:
         folder_el = _q("Folder")
@@ -208,16 +230,31 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
             style.append(list_style)
             folder_el.append(style)
         folder_el.append(ground)
-        for name, png_rel, b, order, vis in (_norm(e) for e in (extra_overlays or [])):
+        for name, png_rel, b, order, vis, odesc, otok in _extras:
             folder_el.append(_overlay(
-                name, f"{base}/{png_rel}?v={cache_token}", b, order, vis))
+                name, f"{base}/{png_rel}?v={otok or cache_token}", b, order,
+                vis, odesc))
         document.append(folder_el)
         descriptions.append(header + strip_old_stamps(folder[1]))
+        # NB: descriptions[] must stay strictly parallel to the emitted
+        # empty <description/> elements in document order: _serialize()
+        # consumes placeholders positionally, so entries are appended
+        # only for overlays that actually carry a description element.
+        if overlay_descriptions is not None:
+            descriptions.append(header + overlay_descriptions)
+        for _name, _rel, _b, _o, _v, odesc, _tok in _extras:
+            if odesc is not None:
+                descriptions.append(header + odesc)
     else:
         document.append(ground)
-        for name, png_rel, b, order, vis in (_norm(e) for e in (extra_overlays or [])):
+        if overlay_descriptions is not None:
+            descriptions.append(header + overlay_descriptions)
+        for name, png_rel, b, order, vis, odesc, otok in _extras:
             document.append(_overlay(
-                name, f"{base}/{png_rel}?v={cache_token}", b, order, vis))
+                name, f"{base}/{png_rel}?v={otok or cache_token}", b, order,
+                vis, odesc))
+            if odesc is not None:
+                descriptions.append(header + odesc)
 
     xml = _serialize(doc, descriptions)
     if out_dirs is None:
@@ -431,7 +468,12 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
     block = legend_block(f"{product}/legend.png", version,
                          meta.get("legend_scale_html", ""))
     folder = meta.get("folder_html")
-    extras = [ (e["png"], e["bounds"], e.get("draw_order", 20))
+    extras = [ (e["png"], e["bounds"], e.get("draw_order", 20),
+                e.get("visibility", 0), e.get("overlay_description"),
+                e.get("version_token"))
+               if ("overlay_description" in e or "visibility" in e
+                   or "version_token" in e)
+               else (e["png"], e["bounds"], e.get("draw_order", 20))
                for e in (meta.get("extra_overlays") or []) ]
     from geospatial_utils import load_bounds as _glb
     build_kml(product, kml_filename, overlay_name,
@@ -440,7 +482,8 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
               refresh_interval, version,
               folder=(title, folder) if folder else None, meta=meta,
               bounds=meta.get("na_bounds") or _glb(),
-              extra_overlays=extras)
+              extra_overlays=extras,
+              overlay_descriptions=meta.get("overlay_description"))
     build_entry_kml(product, kml_filename, overlay_name,
                     entry_description_html(title, meta, note),
                     refresh_interval)
