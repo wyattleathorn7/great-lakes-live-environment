@@ -110,13 +110,16 @@ def _draw_temp_label(d, x, y, text, font):
 
 
 def paint_temp_labels(rgba, field_f, font_size=7, extra_thresh_f=1.5,
-                      max_labels=180, sparse_water=False):
+                      max_labels=180, sparse_water=False, priority_cap=None):
     """Actual °F values in the wave/wind label style, free placement.
 
     NO fixed grid: data-seeded jittered candidates (positions move with the
     water, never a rigid lattice); thermal-front cells go first, then a
     spaced fill up to quota. Returns (rgba, n_priority, n_fill).
 
+    priority_cap optionally reserves most of the quota for the scattered
+    fill (fronts take at most cap labels), so open water far from any
+    front still gets values instead of clustering only on gradients.
     sparse_water=True adapts the SAME font/size/style/gradient-first
     ordering to small scattered lakes: candidates are drawn from valid
     water cells themselves (a step-32 sweep almost never lands on a
@@ -198,6 +201,8 @@ def paint_temp_labels(rgba, field_f, font_size=7, extra_thresh_f=1.5,
 
     for g, _, r, c in cand:
         if n_priority + n_fill >= max_labels:
+            break
+        if priority_cap is not None and n_priority >= priority_cap:
             break
         if g < extra_thresh_f:
             break
@@ -358,18 +363,24 @@ def _render_world_variant(mode, comp_f, gbounds, stage_prod_dir, token,
                           scale_html, status_label, source_name, source_url,
                           timing_line, title, font_size=7, extra_thresh=1.5,
                           max_labels=600, sparse_water=False,
-                          lo_clamp=32.0, hi_clamp=86.0):
+                          lo_clamp=32.0, hi_clamp=86.0, legend_title=None,
+                          priority_cap=None):
     """Colormap + labels + legend PNG + metadata for one world coverage.
 
     Same TEMP_STOPS LUT and linear (field-vmin)/(vmax-vmin) mapping as
     the basin path (geospatial_utils.apply_colormap); endpoints come
     from _endpoints_f on this coverage's own valid °F population, with
     the caller-supplied clamps (global leaves the low end unclamped).
-    The legend is drawn from the same vmin/vmax that colors the raster.
+    The legend is drawn from the same vmin/vmax that colors the raster,
+    titled for its own coverage (never the basin title elsewhere).
+    Continental gets a hard binary shoreline cut (crisp lake cutouts,
+    no feathered fringe); labels paint after the cut.
     """
-    from geospatial_utils import (TEMP_STOPS, apply_colormap, draw_legend,
+    from geospatial_utils import (TEMP_STOPS, apply_colormap,
+                                  bleed_rgb_into_transparent, draw_legend,
                                   save_png, write_metadata as _wm,
                                   base_metadata as _bm, load_bounds as _lb)
+    from na_common import load_continental
     H, W = comp_f.shape
     ok = np.isfinite(comp_f)
     f_vals = comp_f[ok]
@@ -378,18 +389,28 @@ def _render_world_variant(mode, comp_f, gbounds, stage_prod_dir, token,
           f"F=[{f_vals.min():.2f},{f_vals.max():.2f}] scale=[{vmin},{vmax}]")
     rgba = apply_colormap(comp_f, vmin, vmax, TEMP_STOPS,
                           _lb()["overlay_alpha"], None)
-    rgba = apply_coverage_mask(rgba, "global" if mode == "global"
-                               else "landonly")
+    if mode == "landonly":
+        # Crisp lake cutouts: the continental mask is strictly binary
+        # water/land at canvas resolution, so cut hard (no feathered
+        # fringe) before painting labels.
+        _lakemask = load_continental()
+        rgba[:, :, 3] = np.where(
+            _lakemask >= 0.5, rgba[:, :, 3], 0).astype(np.uint8)
+        rgba = bleed_rgb_into_transparent(rgba.copy())
+    else:
+        rgba = apply_coverage_mask(rgba, "global")
     rgba, n_pri, n_fill = paint_temp_labels(
         rgba, comp_f, font_size=font_size, extra_thresh_f=extra_thresh,
-        max_labels=max_labels, sparse_water=sparse_water)
+        max_labels=max_labels, sparse_water=sparse_water,
+        priority_cap=priority_cap)
     print(f"[{PRODUCT}] variant {WT_LABELS[mode]}: "
           f"temp_labels={n_pri}+{n_fill}")
     os.makedirs(stage_prod_dir, exist_ok=True)
     save_png(rgba, os.path.join(stage_prod_dir, "current.png"))
     subtitle = (f"{timing_line}  |  ends = this coverage's "
                 f"coldest/warmest water")
-    lw, lh = draw_legend(os.path.join(stage_prod_dir, "legend.png"), title,
+    lw, lh = draw_legend(os.path.join(stage_prod_dir, "legend.png"),
+                         legend_title or title,
                          subtitle, "\u00b0F", vmin, vmax, TEMP_STOPS,
                          f"Source: {source_name}  |  "
                          f"Processed {now_det_str()}",
@@ -398,7 +419,7 @@ def _render_world_variant(mode, comp_f, gbounds, stage_prod_dir, token,
                                       (vmax, f"{vmax:g}")],
                          transparent_note=("Transparent where no valid "
                                            "water observation."))
-    meta = _bm(WT_DIRS[mode], f"{title} — {WT_LABELS[mode]}",
+    meta = _bm(WT_DIRS[mode], legend_title or f"{title} — {WT_LABELS[mode]}",
                status_label, source_name, source_url,
                ("analysed/fused lake surface + sea surface water "
                 "temperature (satellite-derived composite/analysis)"),
@@ -835,14 +856,16 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         _con_scale, _wstatus, _wsource, _wurl,
         f"MUR {_mur_det}; blended {_blend_det}", CONFIG["title"],
         font_size=font_size, extra_thresh=extra_thresh, max_labels=300,
-        sparse_water=True)
+        sparse_water=True,
+        legend_title="CONTINENTAL LAKE WATER TEMPERATURE")
     _glo_meta, _glo_vmin, _glo_vmax, _glo_px = _render_world_variant(
         "global", _comp, gbounds,
         os.path.join(stage, "site", WT_DIRS["global"]), _ocean_token,
         _glo_scale, _wstatus, _wsource, _wurl,
         f"MUR {_mur_det}; blended {_blend_det}", CONFIG["title"],
         font_size=font_size, extra_thresh=extra_thresh, max_labels=600,
-        lo_clamp=None, hi_clamp=86.0)
+        lo_clamp=None, hi_clamp=86.0, priority_cap=200,
+        legend_title="EXTENDED OCEAN WATER TEMPERATURE")
     if min(_con_px, _glo_px) < 5_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: world raster has too few "
               f"water pixels (continental={_con_px}, global={_glo_px}).")
@@ -903,7 +926,26 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
     write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text
 
     token = meta["source_version"]
-    block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
+    # Live Document/Folder descriptions carry NO legend images (same
+    # contract as Live Precipitation): the only three legends live in
+    # the three coverage overlay cards. The Document text explains the
+    # foldering, toggling, and where the legends are.
+    doc_explainer = (
+        f"<p><b>This layer holds three coverages in one folder:</b> "
+        f"{WT_LABELS['basin']} (default), {WT_LABELS['landonly']}, "
+        f"{WT_LABELS['global']}. Open the "
+        f"{CONFIG['title']} folder below and check exactly one coverage "
+        f"at a time (Google Earth Pro switches them exclusively; Web/app "
+        f"users check one box manually). Each coverage carries its own "
+        f"legend — click that coverage's row to open its card. There is "
+        f"no shared legend at this level; a legend shown here would belong "
+        f"to only one coverage and mislead about the others.</p>")
+    doc_html = (doc_explainer
+                + description_html(CONFIG["title"], meta,
+                                   "Turn on/off independently of wave and "
+                                   "ice layers.", "")
+                + coverage_selector_html("basin"))
+    meta["live_doc_html"] = doc_html
     # Self-contained per-coverage overlay legends: each GroundOverlay
     # description carries its own versioned legend image + endpoints +
     # source/timing, so visibility toggles can never mix them up.
@@ -933,6 +975,9 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         f"Continental Lakes <b>{_con_vmin:g}–{_con_vmax:g}°F</b>; "
         f"Extended Oceanic <b>{_glo_vmin:g}–{_glo_vmax:g}°F</b>. Each "
         f"coverage's colors and endpoints come from its own water only."
+        f"</p>"
+        f"<p>Legends live only in the three coverage cards below — click "
+        f"a coverage row to read its legend. View one coverage at a time."
         f"</p>") + coverage_selector_html("basin")
     meta["folder_html"] = folder_html
     meta["folder_radio"] = True
@@ -954,9 +999,7 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         PRODUCT, "Great_Lakes_Live_Water_Temperature.kml",
         "\U0001F321\uFE0F LIVE WATER TEMPERATURE",
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
-        description_html(CONFIG["title"], meta,
-                         "Turn on/off independently of wave and ice layers.",
-                         block),
+        doc_html,
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=outs["live"],
         folder=(CONFIG["title"], folder_html), meta=meta,

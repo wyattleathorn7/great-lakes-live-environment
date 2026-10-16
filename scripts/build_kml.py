@@ -467,6 +467,11 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
                            meta.get("processing_time_utc", ""))
     block = legend_block(f"{product}/legend.png", version,
                          meta.get("legend_scale_html", ""))
+    # Products whose live Document carries custom (legend-free) guidance
+    # instead of the legend block store it verbatim; refresh reuses it so
+    # skip-path rewrites stay byte-identical.
+    doc_html = meta.get("live_doc_html") or description_html(
+        title, meta, note, block)
     folder = meta.get("folder_html")
     extras = [ (e.get("name", overlay_name), e["png"], e["bounds"],
                 e.get("draw_order", 20),
@@ -479,7 +484,7 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
     from geospatial_utils import load_bounds as _glb
     build_kml(product, kml_filename, overlay_name,
               f"{product}/current.png", f"{product}/legend.png",
-              description_html(title, meta, note, block),
+              doc_html,
               refresh_interval, version,
               folder=(title, folder) if folder else None, meta=meta,
               bounds=meta.get("na_bounds") or _glb(),

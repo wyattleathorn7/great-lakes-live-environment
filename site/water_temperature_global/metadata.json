@@ -1,6 +1,6 @@
 {
   "product": "water_temperature_global",
-  "title": "GREAT LAKES SURFACE WATER TEMPERATURE \u2014 Extended Oceanic Coverage",
+  "title": "EXTENDED OCEAN WATER TEMPERATURE",
   "freshness": "LATEST AVAILABLE (daily analyses; blended typically ~3-day latency, MUR typically ~2-day latency)",
   "noaa_source": "JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)",
   "product_name": "JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)",
@@ -8,7 +8,7 @@
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41",
   "data_time_utc": "MUR 2026-10-14 05:00 AM EDT; blended 2026-10-13 08:00 AM EDT",
   "source_last_modified_utc": "MUR 2026-10-14 05:00 AM EDT; blended 2026-10-13 08:00 AM EDT",
-  "processing_time_utc": "2026-10-15 09:32 PM EDT",
+  "processing_time_utc": "2026-10-15 10:16 PM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "blended 0.05 deg analysis resampled to 0.10 deg global canvas (+ GLSEA ~1.8 km inside the Great Lakes rectangle)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -44,14 +44,14 @@
     640,
     210
   ],
-  "rendered_nontransparent_pixels": 4203827,
+  "rendered_nontransparent_pixels": 4203731,
   "rendered_canvas_pixels": 6480000,
   "stats": {
     "valid_cells": 4203593,
     "mean_F": 57.82,
     "min_F": 28.4,
     "max_F": 93.76,
-    "temp_labels_priority": 600,
-    "temp_labels_fill": 0
+    "temp_labels_priority": 200,
+    "temp_labels_fill": 400
   }
 }
