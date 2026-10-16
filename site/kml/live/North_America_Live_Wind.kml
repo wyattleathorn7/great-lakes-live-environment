@@ -16,7 +16,7 @@
         <visibility>1</visibility>
         <drawOrder>10</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/wind_na/current.png?v=na-wind-20261016-0204-gdps-GDPS_15km_Wind_10m-n-5273396-g-6479996-glwu-20261016-01-n-13895-g-4061-hrrr-hrrr.20261016-01-n-701862-g-176900-rrfs-na-rrfs.20261016-00-n-2632946-g-1195390</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/wind_na/current.png?v=na-wind-20261016-0231-gdps-GDPS_15km_Wind_10m-n-5273396-g-6479996-glwu-20261016-01-n-13895-g-4061-hrrr-hrrr.20261016-01-n-701862-g-176900-rrfs-na-rrfs.20261016-00-n-2632946-g-1195390</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>900</refreshInterval>
         </Icon>
@@ -32,7 +32,7 @@
         <visibility>0</visibility>
         <drawOrder>11</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/wind_na_continental/current.png?v=na-wind-20261016-0204-gdps-GDPS_15km_Wind_10m-n-5273396-g-6479996-glwu-20261016-01-n-13895-g-4061-hrrr-hrrr.20261016-01-n-701862-g-176900-rrfs-na-rrfs.20261016-00-n-2632946-g-1195390</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/wind_na_continental/current.png?v=na-wind-20261016-0231-gdps-GDPS_15km_Wind_10m-n-5273396-g-6479996-glwu-20261016-01-n-13895-g-4061-hrrr-hrrr.20261016-01-n-701862-g-176900-rrfs-na-rrfs.20261016-00-n-2632946-g-1195390</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>900</refreshInterval>
         </Icon>
@@ -48,7 +48,7 @@
         <visibility>0</visibility>
         <drawOrder>12</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/wind_na_basin/current.png?v=na-wind-20261016-0204-gdps-GDPS_15km_Wind_10m-n-5273396-g-6479996-glwu-20261016-01-n-13895-g-4061-hrrr-hrrr.20261016-01-n-701862-g-176900-rrfs-na-rrfs.20261016-00-n-2632946-g-1195390</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/wind_na_basin/current.png?v=na-wind-20261016-0231-gdps-GDPS_15km_Wind_10m-n-5273396-g-6479996-glwu-20261016-01-n-13895-g-4061-hrrr-hrrr.20261016-01-n-701862-g-176900-rrfs-na-rrfs.20261016-00-n-2632946-g-1195390</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>900</refreshInterval>
         </Icon>
