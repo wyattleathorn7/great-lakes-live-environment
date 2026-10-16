@@ -5,7 +5,7 @@
     <description><![CDATA[<p><b>Status:</b> LIVE / CURRENT MODEL (analysis, HRRR + RRFS-NA, GDPS fallback)</p><p><b>Source:</b> NOAA/NCEP HRRR 3km 2m analysis (CONUS domain) + NOAA RRFS North American output (broad domain) + ECCC GDPS 15km fallback<br/><a href="https://gsl.noaa.gov/rrfs/">https://gsl.noaa.gov/rrfs/</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of all other layers.</p><p><i>Not endorsed by NOAA.</i></p><p><b>Coverage</b> — one at a time, switched right here in this folder:<br>○ Global Coverage<br>◉ <b>Continental Coverage</b> (shown)<br>○ Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>]]></description>
     <Folder>
       <name>LIVE AIR TEMPERATURE</name>
-      <description><![CDATA[<p><b>Coverage:</b> Continental Coverage<br><b>Precedence:</b> HRRR valid > RRFS-NA valid > GDPS valid > transparent. Explicit per-pixel validity masks; never blended, never duplicated.<br><b>Provenance:</b> {'hrrr': 'hrrr hrrr.20261016/05 n=701862/g=176900', 'rrfs_rrfs-na rrfs.20261016/00': 'n=573803/g=636144', 'rrfs_rrfs-conus rrfs.20261016/00': 'n=576889/g=54111', 'rrfs_rrfs-ak rrfs.20261016/00': 'n=678937/g=142730', 'gdps': 'GDPS_15km_AirTemp_2m n=5273396/g=6479996'}</p><p><b>Coverage</b> — one at a time, switched right here in this folder:<br>○ Global Coverage<br>◉ <b>Continental Coverage</b> (shown)<br>○ Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>]]></description>
+      <description><![CDATA[<p><b>Coverage:</b> Continental Coverage<br><b>Precedence:</b> HRRR valid > RRFS-NA valid > GDPS valid > transparent. Explicit per-pixel validity masks; never blended, never duplicated.<br><b>Provenance:</b> {'hrrr': 'hrrr hrrr.20261016/06 n=701862/g=176900', 'rrfs_rrfs-na rrfs.20261016/00': 'n=573803/g=636144', 'rrfs_rrfs-conus rrfs.20261016/00': 'n=576889/g=54111', 'rrfs_rrfs-ak rrfs.20261016/00': 'n=678937/g=142730', 'gdps': 'GDPS_15km_AirTemp_2m n=5273396/g=6479996'}</p><p><b>Coverage</b> — one at a time, switched right here in this folder:<br>○ Global Coverage<br>◉ <b>Continental Coverage</b> (shown)<br>○ Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>]]></description>
       <Style>
         <ListStyle>
           <listItemType>radioFolder</listItemType>
@@ -16,7 +16,7 @@
         <visibility>1</visibility>
         <drawOrder>10</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na/current.png?v=na-tmp-20261016-0630-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261016-05-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261016-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261016-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261016-00-n-573803-g-636144</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na/current.png?v=na-tmp-20261016-0701-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261016-06-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261016-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261016-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261016-00-n-573803-g-636144</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>3600</refreshInterval>
         </Icon>
@@ -32,7 +32,7 @@
         <visibility>0</visibility>
         <drawOrder>11</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na_global/current.png?v=na-tmp-20261016-0630-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261016-05-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261016-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261016-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261016-00-n-573803-g-636144</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na_global/current.png?v=na-tmp-20261016-0701-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261016-06-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261016-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261016-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261016-00-n-573803-g-636144</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>3600</refreshInterval>
         </Icon>
@@ -48,7 +48,7 @@
         <visibility>0</visibility>
         <drawOrder>12</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na_basin/current.png?v=na-tmp-20261016-0630-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261016-05-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261016-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261016-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261016-00-n-573803-g-636144</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/air_temperature_na_basin/current.png?v=na-tmp-20261016-0701-gdps-GDPS_15km_AirTemp_2m-n-5273396-g-6479996-hrrr-hrrr-hrrr.20261016-06-n-701862-g-176900-rrfs_rrfs-ak-rrfs.20261016-00-n-678937-g-142730-rrfs_rrfs-conus-rrfs.20261016-00-n-576889-g-54111-rrfs_rrfs-na-rrfs.20261016-00-n-573803-g-636144</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>3600</refreshInterval>
         </Icon>
