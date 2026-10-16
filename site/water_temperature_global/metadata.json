@@ -8,7 +8,7 @@
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41",
   "data_time_utc": "MUR 2026-10-15 05:00 AM EDT; blended 2026-10-14 08:00 AM EDT",
   "source_last_modified_utc": "MUR 2026-10-15 05:00 AM EDT; blended 2026-10-14 08:00 AM EDT",
-  "processing_time_utc": "2026-10-16 08:41 AM EDT",
+  "processing_time_utc": "2026-10-16 09:42 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "blended 0.05 deg analysis resampled to 0.10 deg global canvas (+ GLSEA ~1.8 km inside the Great Lakes rectangle)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -44,14 +44,14 @@
     640,
     210
   ],
-  "rendered_nontransparent_pixels": 4203670,
+  "rendered_nontransparent_pixels": 4206920,
   "rendered_canvas_pixels": 6480000,
   "stats": {
-    "valid_cells": 4203345,
-    "mean_F": 57.81,
+    "valid_cells": 4206643,
+    "mean_F": 57.82,
     "min_F": 28.4,
     "max_F": 93.03,
     "temp_labels_priority": 300,
-    "temp_labels_fill": 638
+    "temp_labels_fill": 631
   }
 }

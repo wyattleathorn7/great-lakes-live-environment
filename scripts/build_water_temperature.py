@@ -753,14 +753,19 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         return 2
     from geospatial_utils import (bin_to_canvas, canvas_indices,
                                   resample_gridded)
+    from na_common import blend_antimeridian
     gbounds = load_global_bounds()
     GH, GW = gbounds["canvas_height"], gbounds["canvas_width"]
 
     def _to_canvas(la1, lo1, grid):
         _lo2, _la2 = np.meshgrid(np.asarray(lo1, dtype=float),
                                  np.asarray(la1, dtype=float))
-        return resample_gridded(np.asarray(grid, dtype=float),
-                                _la2, _lo2, gbounds, (GH, GW))
+        out = resample_gridded(np.asarray(grid, dtype=float),
+                               _la2, _lo2, gbounds, (GH, GW))
+        # Kill the ±180° canvas-edge discontinuity (non-wrapping
+        # resampling lets the two Pacific edges diverge into a visible
+        # seam line); NaN-aware mirror-average of a 4 px band.
+        return blend_antimeridian(out)
 
     try:
         _bfield = _to_canvas(_bla, _blo, _bsst)
@@ -801,6 +806,10 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
     _n_ocn = int(np.isfinite(_comp).sum())
     _n_lak = int(np.isfinite(_lakeonly).sum())
     print(f"[{PRODUCT}] world populations: ocean={_n_ocn} lakes={_n_lak}")
+    np.savez_compressed(os.path.join(RAW_DIR, "water_temperature_world.npz"),
+                        blended_time=np.array(blended_time),
+                        mur_time=np.array(mur_time),
+                        global_f=_comp, continental_f=_lakeonly)
     if _n_ocn < 50_000 or _n_lak < 500:
         print(f"[{PRODUCT}] VALIDATION FAILED: implausible world coverage "
               f"(ocean={_n_ocn}, lakes={_n_lak}). Keeping previous.")
@@ -989,11 +998,11 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
     meta["extra_overlays"] = [
         {"name": WT_LABELS["landonly"],
          "png": f"{WT_DIRS['landonly']}/current.png",
-         "bounds": dict(gbounds), "draw_order": 11, "visibility": 0,
+         "bounds": dict(gbounds), "draw_order": 9, "visibility": 0,
          "overlay_description": con_odesc, "version_token": _lake_token},
         {"name": WT_LABELS["global"],
          "png": f"{WT_DIRS['global']}/current.png",
-         "bounds": dict(gbounds), "draw_order": 12, "visibility": 0,
+         "bounds": dict(gbounds), "draw_order": 8, "visibility": 0,
          "overlay_description": glo_odesc, "version_token": _ocean_token},
     ]
     write_metadata(stage_prod, meta)  # re-write incl. folder + overlays
@@ -1006,12 +1015,16 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=outs["live"],
         folder=(CONFIG["title"], folder_html), meta=meta,
+        # z-order: Great Lakes (primary, drawOrder 10) paints above
+        # Continental (9) above Oceanic (8), so even a client that shows
+        # every overlay at once reads as Great Lakes-first; the visibility
+        # flags still give single-coverage behavior where honored.
         extra_overlays=[(WT_LABELS["landonly"],
                          f"{WT_DIRS['landonly']}/current.png",
-                         dict(gbounds), 11, 0, con_odesc, _lake_token),
+                         dict(gbounds), 9, 0, con_odesc, _lake_token),
                         (WT_LABELS["global"],
                          f"{WT_DIRS['global']}/current.png",
-                         dict(gbounds), 12, 0, glo_odesc, _ocean_token)],
+                         dict(gbounds), 8, 0, glo_odesc, _ocean_token)],
         folder_radio=True, primary_name=WT_LABELS["basin"],
         overlay_descriptions=basin_odesc)
     assert_no_vector_geometry(kml_text)
