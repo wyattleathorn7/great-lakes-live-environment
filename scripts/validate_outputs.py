@@ -522,26 +522,33 @@ def main():
                 if "/tiles/" in text:
                     failures.append(f"{product}: live KML must not reference tiles")
                 n_overlays = text.count("<GroundOverlay>")
-                # NA gradients carry all three coverages as hideable
-                # overlays in one folder (radioFolder flips exclusively
-                # in Pro; Web users check one box). Everything else stays
-                # single-overlay (GE Web image limit).
+                # NA gradients + water temperature carry all three coverages
+                # as hideable overlays in one folder (radioFolder flips
+                # exclusively in Pro; Web users check one box). Everything
+                # else stays single-overlay (GE Web image limit).
                 allowed = 3 if product in ("wind_na", "precipitation_na",
                                            "cloud_cover_na",
-                                           "air_temperature_na") else 1
+                                           "air_temperature_na",
+                                           "water_temperature") else 1
                 if n_overlays != allowed:
                     failures.append(f"{product}: {n_overlays} overlays (expected exactly {allowed})")
                 if product in ("wind_na", "precipitation_na",
-                               "cloud_cover_na", "air_temperature_na"):
+                               "cloud_cover_na", "air_temperature_na",
+                               "water_temperature"):
                     if "radioFolder" not in text:
                         failures.append(f"{product}: live folder missing radioFolder")
                     if text.count("<visibility>1</visibility>") != 1 \
                             or text.count("<visibility>0</visibility>") != 2:
                         failures.append(f"{product}: want exactly one coverage "
                                         f"switched ON and two OFF in {kp}")
-                    for _cov in ("Global Coverage",
-                                 "Continental Coverage",
-                                 "Great Lakes Basin Coverage"):
+                    _covs = (("Global Coverage",
+                               "Continental Coverage",
+                               "Great Lakes Basin Coverage")
+                             if product != "water_temperature" else
+                             ("Extended Oceanic Coverage",
+                              "Continental Lake Coverage",
+                              "Great Lakes Coverage"))
+                    for _cov in _covs:
                         if _cov not in text:
                             failures.append(f"{product}: live KML missing "
                                             f"coverage '{_cov}'")

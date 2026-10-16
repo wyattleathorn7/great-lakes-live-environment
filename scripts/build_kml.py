@@ -468,11 +468,12 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
     block = legend_block(f"{product}/legend.png", version,
                          meta.get("legend_scale_html", ""))
     folder = meta.get("folder_html")
-    extras = [ (e["png"], e["bounds"], e.get("draw_order", 20),
+    extras = [ (e.get("name", overlay_name), e["png"], e["bounds"],
+                e.get("draw_order", 20),
                 e.get("visibility", 0), e.get("overlay_description"),
                 e.get("version_token"))
                if ("overlay_description" in e or "visibility" in e
-                   or "version_token" in e)
+                   or "version_token" in e or "name" in e)
                else (e["png"], e["bounds"], e.get("draw_order", 20))
                for e in (meta.get("extra_overlays") or []) ]
     from geospatial_utils import load_bounds as _glb
@@ -483,6 +484,8 @@ def refresh_kml_base_url(product, kml_filename, overlay_name, title,
               folder=(title, folder) if folder else None, meta=meta,
               bounds=meta.get("na_bounds") or _glb(),
               extra_overlays=extras,
+              folder_radio=bool(meta.get("folder_radio")),
+              primary_name=meta.get("primary_name"),
               overlay_descriptions=meta.get("overlay_description"))
     build_entry_kml(product, kml_filename, overlay_name,
                     entry_description_html(title, meta, note),

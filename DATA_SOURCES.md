@@ -56,6 +56,55 @@ self-refresh NetworkLink and zero vector geometry.
 - **Restrictions:** none for public download; attribution required
   (no NOAA endorsement claimed).
 
+### 1b. Water temperature world coverages — MUR lakes + blended oceans (same file, three coverages)
+
+- **Continental Lake source (integrated):** JPL GHRSST Level 4 MUR Global
+  Foundation SST Analysis v4.1, `analysed_sst` (°C) + `mask`, 1 km daily,
+  CoastWatch PFEG ERDDAP `jplMURSST41` (griddap CSV, stride 20 =
+  0.2° fetch, bilinear to the 0.10° global canvas). Lake gating:
+  `mask == 5` (open_lake; verified live 2026-10-16: Victoria, Baikal,
+  Tanganyika, Malawi, Great Bear, Great Slave, Ladoga, Caspian and
+  Superior lake cells read 5; seas read 1; shores read 2), admitted
+  −3…40 °C, fill −7.768 excluded. Newest analysis auto-discovered via
+  the ERDDAP time axis (typically ~2-day latency; observed
+  2026-10-14T09:00:00Z on 2026-10-16). Open access, attribution
+  required. Interpolated L4 analysis (documented as analyzed, not
+  direct observation); sub-sampling-scale lakes, frozen lakes outside
+  the open-lake mask state, and rivers stay transparent (never filled).
+- **Extended Oceanic source (integrated):** NOAA CoastWatch Geo-Polar
+  Blended SST Analysis” (Day+Night), GHRSST NRT Global 5 km Daily,
+  `analysed_sst` (°C, admitted −2…40, fill excluded), CoastWatch Central
+  ERDDAP `noaacwBLENDEDsstDLDaily` (stride 5 = 0.25° fetch, bilinear to
+  canvas). Newest analysis auto-discovered (typically ~3-day latency;
+  observed 2026-10-13T12:00:00Z). Land arrives as NaN (verified: only
+  true water carries values). Interpolated analysis, documented as such.
+- **Evaluated and NOT used for lakes:** blended SST alone marks true
+  inland lakes as land at source resolution (verified 0/~1700 valid
+  cells over Victoria, Baikal, Tanganyika, Malawi, Great Bear/Slave,
+  Ladoga; only enclosed seas Caspian/Black/Baltic read water) — it
+  supplies oceans/seas only. NOAA OISST v2.1 (NCEI ERDDAP) probed but
+  rejected for operations: NCEI ERDDAP griddap returned HTTP 400 for
+  all constraint styles on 2026-10-16 and its time axis lagged 17 days
+  (2026-09-29). Copernicus CLMS LSWT NRT 1 km 10-daily investigated
+  (global, Sentinel-3 SLSTR, full/open/free via CDSE) but not
+  integrated: no anonymous-CI CDSE access path, 10-day synthesis
+  latency vs the daily refresh contract, lake inventory unverified —
+  documented upgrade path for sub-sampling-scale lakes.
+- **Precedence (one owner per cell, never double-counted):** GLSEA
+  (Great Lakes rectangle, where valid) > MUR open-lake cells (inland
+  water worldwide) > blended SST (all remaining valid water).
+  Percentile populations: basin = GLSEA Great Lakes cells;
+  continental = MUR lake + GLSEA cells; global = all three combined.
+  Endpoints per coverage use the same rule as the original basin layer
+  (1st/99th percentiles of that coverage's valid °F, floored/ceiled,
+  clamped 32–86 °F, linear mapping between them through the unchanged
+  gradient) with one exception: Extended Oceanic leaves the low end
+  unclamped (floor of p1, observed 28 °F) so valid Arctic/Antarctic water
+  (~28.4 °F, admitted by the −2 °C source filter, confirmed present in
+  live polar fetches) is not hidden below a 32 °F legend floor; its high
+  end keeps the 86 °F clamp (p99 binds by <1 °F). Labels show actual °F. Timestamps differ per source and
+  are stated per coverage in metadata/KML (never claimed synchronous).
+
 ## 2b. Ice thickness & ice type — USNIC NAIS daily SIGRID-3 shapefile
 
 - **Product:** NAIS daily Great Lakes ice analysis, GIS shapefile

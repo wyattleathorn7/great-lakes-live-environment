@@ -10,7 +10,7 @@
   "land_code": 255.0,
   "color_scale": {
     "min": "adaptive floor(p1), clamped >= 32",
-    "max": "adaptive ceil(p99), clamped <= 80",
+    "max": "adaptive ceil(p99), clamped <= 86",
     "units": "degF"
   },
   "refresh_interval_seconds": 21600,
@@ -20,9 +20,14 @@
   "ocean_dataset_id": "noaacwBLENDEDsstDLDaily",
   "ocean_variable": "analysed_sst (degree_C, valid -2..40; _FillValue -327.68) gated by mask water bit (1=water; 0 fill excluded); sea-ice cells retained as valid cold water",
   "ocean_erddap_stride": 5,
-  "ocean_precedence": "NOAA/GLERL CoastWatch GLSEA wins everywhere valid inside the Great Lakes rectangle (blended-SST cells there excluded from ocean/lake percentile populations to avoid double-counting); blended SST owns all other valid water",
-  "lake_source_note": "Continental Lake Coverage uses the same blended-SST valid-water cells that fall on inland water (global_landonly == 1) plus GLSEA Great Lakes cells. Lakes below the ~5 km analysis resolution are documented gaps, not fabricated. Copernicus CLMS Lake Surface Water Temperature NRT 1 km 10-daily (Sentinel-3 SLSTR, CDSE access) investigated as a future inland-lake source; not integrated (anonymous-CI access path unavailable; 10-day synthesis latency vs daily refresh; lake-inventory verification pending).",
-  "continental_gaps_note": "Sub-resolution small lakes, rivers, and blended-SST land-masked cells render transparent (never interpolated, never zero-filled).",
+  "ocean_precedence": "NOAA/GLERL CoastWatch GLSEA wins everywhere valid inside the Great Lakes rectangle (other sources never double-count there); MUR lake-valid cells win outside it on inland water; blended SST owns all remaining valid water",
+  "mur_source_name": "JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily)",
+  "mur_source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41",
+  "mur_dataset_id": "jplMURSST41",
+  "mur_variable": "analysed_sst (degree_C, valid -3..40 admitted; _FillValue -7.768) gated by mask == 5 (open_lake; verified live: Victoria/Baikal/Tanganyika/Superior/Caspian lake cells read 5, seas read 1, shores read 2)",
+  "mur_erddap_stride": 20,
+  "lake_source_note": "Continental Lake Coverage uses JPL MUR open-lake cells (mask == 5) plus GLSEA Great Lakes cells. Verified live at source resolution: Victoria, Baikal, Tanganyika, Malawi, Great Bear, Great Slave, Ladoga, Caspian and Superior all resolve as lake water; blended SST alone covered only enclosed seas (Caspian/Black/Baltic read water, true lakes read land) and is not used for lakes. Lakes below the ~0.2 deg fetch sampling, frozen-over lakes whose mask leaves the open-lake state, and rivers render transparent (never interpolated, never zero-filled). Copernicus CLMS LSWT NRT 1 km 10-daily remains a documented future upgrade for sub-sampling-scale lakes (anonymous-CI CDSE access unavailable; 10-day synthesis latency; inventory unverified).",
+  "continental_gaps_note": "Lakes below the fetch sampling, frozen lakes outside the open-lake mask state, small rivers, and unobserved water render transparent (never interpolated, never zero-filled).",
   "buoys": [
     "45001",
     "45002",

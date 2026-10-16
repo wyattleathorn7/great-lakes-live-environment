@@ -90,6 +90,8 @@ jobs:
           name: site-water_temperature
           path: |
             site/water_temperature
+            site/water_temperature_continental
+            site/water_temperature_global
             output/state/water_temperature.json
             site/kml/Great_Lakes_Live_Water_Temperature.kml
             site/kml/live/Great_Lakes_Live_Water_Temperature.kml

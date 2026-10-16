@@ -121,8 +121,20 @@ def main():
         kf = os.path.join(SITE_DIR, "kml", "live",
                           _kf(p))
         t = open(kf, encoding="utf-8").read()
-        check(f"{p}-single-overlay", t.count("<GroundOverlay>") == 1,
+        # Water temperature carries three coverages (Great Lakes default
+        # ON + Continental Lake + Extended Oceanic OFF) in one radioFolder;
+        # every other basin product stays single-overlay.
+        _want_overlays = 3 if p == "water_temperature" else 1
+        check(f"{p}-single-overlay",
+              t.count("<GroundOverlay>") == _want_overlays,
               t.count("<GroundOverlay>"))
+        if p == "water_temperature":
+            check(f"{p}-radio-folder", "radioFolder" in t)
+            check(f"{p}-one-coverage-on",
+                  t.count("<visibility>1</visibility>") == 1
+                  and t.count("<visibility>0</visibility>") == 2,
+                  (t.count("<visibility>1</visibility>"),
+                   t.count("<visibility>0</visibility>")))
         check(f"{p}-live-no-self-link", "<NetworkLink>" not in t)
         check(f"{p}-no-tiles-refs", "/tiles/" not in t)
         check(f"{p}-live-versioned", "?v=" in t)
