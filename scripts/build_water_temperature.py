@@ -863,8 +863,8 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         os.path.join(stage, "site", WT_DIRS["global"]), _ocean_token,
         _glo_scale, _wstatus, _wsource, _wurl,
         f"MUR {_mur_det}; blended {_blend_det}", CONFIG["title"],
-        font_size=font_size, extra_thresh=extra_thresh, max_labels=600,
-        lo_clamp=None, hi_clamp=86.0, priority_cap=200,
+        font_size=font_size, extra_thresh=extra_thresh, max_labels=1000,
+        lo_clamp=None, hi_clamp=86.0, priority_cap=300,
         legend_title="EXTENDED OCEAN WATER TEMPERATURE")
     if min(_con_px, _glo_px) < 5_000:
         print(f"[{PRODUCT}] VALIDATION FAILED: world raster has too few "
@@ -936,7 +936,10 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         f"{WT_LABELS['global']}. Open the "
         f"{CONFIG['title']} folder below and check exactly one coverage "
         f"at a time (Google Earth Pro switches them exclusively; Web/app "
-        f"users check one box manually). Each coverage carries its own "
+        f"users check one box manually). {WT_LABELS['basin']} is always "
+        f"the default: a fresh load or data refresh restores it (a saved "
+        f"project may keep your own last-used checkboxes until you toggle "
+        f"back). Each coverage carries its own "
         f"legend — click that coverage's row to open its card. There is "
         f"no shared legend at this level; a legend shown here would belong "
         f"to only one coverage and mislead about the others.</p>")
