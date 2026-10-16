@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
   "data_time_utc": "2026-10-15 11:00 PM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-10-16 12:00 AM EDT",
+  "processing_time_utc": "2026-10-16 12:30 AM EDT",
   "units": "mi, statute (display; source m / 1609.344)",
   "spatial_resolution_source": "~3 km HRRR CONUS grid, mean-binned to the common canvas, despike-gated, continuity-filled, NaN-aware display smoothing",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -43,10 +43,10 @@
   },
   "metar_qc": {
     "KORD": {
-      "obs_SM": 6.0,
+      "obs_SM": 10.0,
       "grid_SM": 3.1853558551333845,
-      "absdiff_SM": 2.81,
-      "verdict": "OK"
+      "absdiff_SM": 6.81,
+      "verdict": "CHECK"
     },
     "KDTW": {
       "obs_SM": 4.0,
@@ -55,9 +55,9 @@
       "verdict": "CHECK"
     },
     "KDLH": {
-      "obs_SM": 8.0,
+      "obs_SM": 10.0,
       "grid_SM": 7.580728545296006,
-      "absdiff_SM": 0.42,
+      "absdiff_SM": 2.42,
       "verdict": "OK"
     },
     "KBUF": {
@@ -73,9 +73,9 @@
       "verdict": "OK"
     },
     "KMKE": {
-      "obs_SM": 8.0,
+      "obs_SM": 9.0,
       "grid_SM": 7.615939579531551,
-      "absdiff_SM": 0.38,
+      "absdiff_SM": 1.38,
       "verdict": "OK"
     },
     "KGRB": {
