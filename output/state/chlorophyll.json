@@ -1,25 +1,25 @@
 {
   "data_times": [
+    "2026-10-14T12:00:00Z",
+    "2026-10-13T12:00:00Z",
     "2026-10-12T12:00:00Z",
     "2026-10-11T12:00:00Z",
     "2026-10-10T12:00:00Z",
     "2026-10-09T12:00:00Z",
-    "2026-10-08T12:00:00Z",
-    "2026-10-07T12:00:00Z",
-    "2026-10-06T12:00:00Z"
+    "2026-10-08T12:00:00Z"
   ],
   "hostkey": "central",
   "dataset": "noaacwN20VIIRSchlaDaily",
   "mosaic_sources": {
+    "2026-10-14T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
+    "2026-10-13T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
     "2026-10-12T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
     "2026-10-11T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
     "2026-10-10T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
     "2026-10-09T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
-    "2026-10-08T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
-    "2026-10-07T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
-    "2026-10-06T12:00:00Z": "central:noaacwN20VIIRSchlaDaily"
+    "2026-10-08T12:00:00Z": "central:noaacwN20VIIRSchlaDaily"
   },
-  "source_id": "central-noaacwN20VIIRSchlaDaily-v10-2026-10-12",
-  "render_version": 12,
-  "processing_time_utc": "2026-10-14 03:51 PM EDT"
+  "source_id": "central-noaacwN20VIIRSchlaDaily-v10-2026-10-14",
+  "render_version": 13,
+  "processing_time_utc": "2026-10-17 03:05 AM EDT"
 }

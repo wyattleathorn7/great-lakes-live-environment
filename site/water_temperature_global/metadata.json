@@ -6,9 +6,9 @@
   "product_name": "JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)",
   "variable": "analysed/fused lake surface + sea surface water temperature (satellite-derived composite/analysis)",
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41",
-  "data_time_utc": "MUR 2026-10-15 05:00 AM EDT; blended 2026-10-14 08:00 AM EDT",
-  "source_last_modified_utc": "MUR 2026-10-15 05:00 AM EDT; blended 2026-10-14 08:00 AM EDT",
-  "processing_time_utc": "2026-10-16 10:04 AM EDT",
+  "data_time_utc": "MUR 2026-10-15 05:00 AM EDT; blended 2026-10-15 08:00 AM EDT",
+  "source_last_modified_utc": "MUR 2026-10-15 05:00 AM EDT; blended 2026-10-15 08:00 AM EDT",
+  "processing_time_utc": "2026-10-17 03:01 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "blended 0.05 deg analysis resampled to 0.10 deg global canvas (+ GLSEA ~1.8 km inside the Great Lakes rectangle)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,8 +25,8 @@
   "missing_data_treatment": "non-water mask cells, fill values, out-of-range values and Great Lakes-rectangle blended cells (GLSEA wins there) rendered fully transparent; never interpolated, never zero-filled.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "source_id": "blended-MUR 2026-10-15 05:00 AM EDT; blended 2026-10-14 08:00 AM EDT",
-  "source_version": "blended-2026-10-14T12-00-00Z-mur-2026-10-15T09-00-00Z-r13-tempvals-global-nofloor",
+  "source_id": "blended-MUR 2026-10-15 05:00 AM EDT; blended 2026-10-15 08:00 AM EDT",
+  "source_version": "blended-2026-10-15T12-00-00Z-mur-2026-10-15T09-00-00Z-r13-tempvals-global-nofloor",
   "na_bounds": {
     "canvas_height": 1800,
     "canvas_width": 3600,
@@ -44,14 +44,14 @@
     640,
     210
   ],
-  "rendered_nontransparent_pixels": 4206920,
+  "rendered_nontransparent_pixels": 4207027,
   "rendered_canvas_pixels": 6480000,
   "stats": {
-    "valid_cells": 4206643,
-    "mean_F": 57.82,
+    "valid_cells": 4206739,
+    "mean_F": 57.79,
     "min_F": 28.4,
-    "max_F": 93.03,
+    "max_F": 93.2,
     "temp_labels_priority": 300,
-    "temp_labels_fill": 631
+    "temp_labels_fill": 641
   }
 }
