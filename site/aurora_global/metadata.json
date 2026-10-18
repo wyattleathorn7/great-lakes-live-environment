@@ -6,9 +6,9 @@
   "product_name": "NOAA/SWPC OVATION Prime aurora model (Aurora Viewline product family)",
   "variable": "OVATION Prime auroral intensity, global 1-degree grid, both polar ovals",
   "source_url": "https://www.spaceweather.gov/products/aurora-viewline-tonight-and-tomorrow-night-experimental",
-  "data_time_utc": "obs 2026-10-18 01:48 AM EDT; forecast 2026-10-18 02:44 AM EDT",
+  "data_time_utc": "obs 2026-10-18 03:54 AM EDT; forecast 2026-10-18 04:50 AM EDT",
   "source_last_modified_utc": "n/a (SWPC JSON, polled hourly)",
-  "processing_time_utc": "2026-10-18 02:00 AM EDT",
+  "processing_time_utc": "2026-10-18 04:05 AM EDT",
   "units": "OVATION intensity 0-30+ (display = source)",
   "spatial_resolution_source": "1-degree global OVATION grid, bilinear to 0.1 deg canvas",
   "spatial_resolution_rendered": "3600x1800 world canvas over lon [-180,180], lat [-90,90] (0.1 deg/px bilinear from the 1-degree source grid)",
@@ -30,14 +30,14 @@
     230
   ],
   "legend_scale_html": "Global OVATION auroral intensity, FIXED absolute scale 0&ndash;30+: <b>LOWEST 0</b> (transparent) &rarr; <b>6 bright green</b> (oval overhead) &rarr; <b>14 orange</b> &rarr; <b>23 magenta</b> (severe) &rarr; <b>HIGHEST+ 30+</b> (violet extreme). Same intensity always shows the same color. Isolated faint cells paint only where connected to genuinely active areas, so model background noise never renders as aurora.",
-  "source_id": "ovation-global-2026-10-18T05:48:00Z-fcst-2026-10-18T06:44:00Z",
-  "source_version": "ovation-global-2026-10-18T05-48-00Z-fcst-2026-10-18T06-44-00Z-r13-aurglobal-tx6",
+  "source_id": "ovation-global-2026-10-18T07:54:00Z-fcst-2026-10-18T08:50:00Z",
+  "source_version": "ovation-global-2026-10-18T07-54-00Z-fcst-2026-10-18T08-50-00Z-r13-aurglobal-tx6",
   "viewline_threshold": 5.0,
   "viewline_farthest_lat": null,
   "stats": {
-    "valid_cells": 1534446,
+    "valid_cells": 1326360,
     "aurora_labels": 0,
     "viewline_drawn": false
   },
-  "folder_html": "<p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/aurora_global/legend.png?v=ovation-global-2026-10-18T05-48-00Z-fcst-2026-10-18T06-44-00Z-r13-aurglobal-tx6\" width=\"600\" alt=\"key\"></p><p>Global OVATION auroral intensity, FIXED absolute scale 0&ndash;30+: <b>LOWEST 0</b> (transparent) &rarr; <b>6 bright green</b> (oval overhead) &rarr; <b>14 orange</b> &rarr; <b>23 magenta</b> (severe) &rarr; <b>HIGHEST+ 30+</b> (violet extreme). Same intensity always shows the same color. Isolated faint cells paint only where connected to genuinely active areas, so model background noise never renders as aurora.</p>"
+  "folder_html": "<p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/aurora_global/legend.png?v=ovation-global-2026-10-18T07-54-00Z-fcst-2026-10-18T08-50-00Z-r13-aurglobal-tx6\" width=\"600\" alt=\"key\"></p><p>Global OVATION auroral intensity, FIXED absolute scale 0&ndash;30+: <b>LOWEST 0</b> (transparent) &rarr; <b>6 bright green</b> (oval overhead) &rarr; <b>14 orange</b> &rarr; <b>23 magenta</b> (severe) &rarr; <b>HIGHEST+ 30+</b> (violet extreme). Same intensity always shows the same color. Isolated faint cells paint only where connected to genuinely active areas, so model background noise never renders as aurora.</p>"
 }
