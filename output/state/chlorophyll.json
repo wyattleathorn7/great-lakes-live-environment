@@ -1,25 +1,25 @@
 {
   "data_times": [
+    "2026-10-16T12:00:00Z",
+    "2026-10-15T12:00:00Z",
     "2026-10-14T12:00:00Z",
     "2026-10-13T12:00:00Z",
     "2026-10-12T12:00:00Z",
     "2026-10-11T12:00:00Z",
-    "2026-10-10T12:00:00Z",
-    "2026-10-09T12:00:00Z",
-    "2026-10-08T12:00:00Z"
+    "2026-10-10T12:00:00Z"
   ],
-  "hostkey": "central",
-  "dataset": "noaacwN20VIIRSchlaDaily",
+  "hostkey": "pfeg",
+  "dataset": "nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
   "mosaic_sources": {
-    "2026-10-14T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
-    "2026-10-13T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
-    "2026-10-12T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
-    "2026-10-11T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
-    "2026-10-10T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
-    "2026-10-09T12:00:00Z": "central:noaacwN20VIIRSchlaDaily",
-    "2026-10-08T12:00:00Z": "central:noaacwN20VIIRSchlaDaily"
+    "2026-10-16T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-15T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-14T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-13T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-12T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-11T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily",
+    "2026-10-10T12:00:00Z": "pfeg:nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily"
   },
-  "source_id": "central-noaacwN20VIIRSchlaDaily-v10-2026-10-14",
+  "source_id": "pfeg-nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily-v10-2026-10-16",
   "render_version": 13,
-  "processing_time_utc": "2026-10-17 03:05 AM EDT"
+  "processing_time_utc": "2026-10-18 03:06 AM EDT"
 }

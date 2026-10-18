@@ -6,9 +6,9 @@
   "product_name": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
   "variable": "NDVI trajectory + surface reflectance + NDSI snow + land class -> circular phenology phase 0..1",
   "source_url": "https://planetarycomputer.microsoft.com/",
-  "data_time_utc": "VI composite start 2026-09-06 (+16d window); reflectance 2026-09-14 (+8d); retrieved 2026-10-13 08:52 AM EDT",
-  "source_last_modified_utc": "composite sig e13bcdd6404c",
-  "processing_time_utc": "2026-10-13 08:52 AM EDT",
+  "data_time_utc": "VI composite start 2026-09-22 (+16d window); reflectance 2026-09-30 (+8d); retrieved 2026-10-18 03:06 AM EDT",
+  "source_last_modified_utc": "composite sig d277fb7846ee",
+  "processing_time_utc": "2026-10-18 03:06 AM EDT",
   "units": "phenology phase 0..1 (display color); source NDVI/reflectance",
   "spatial_resolution_source": "500 m MODIS sinusoidal, reprojected to canvas (nearest)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -34,7 +34,7 @@
   "gradient": {
     "interpolation": "OKLab (perceptually uniform)",
     "anchors": 19,
-    "distinct_raster_colors": 170,
+    "distinct_raster_colors": 178,
     "wraparound": "first == last deep blue #123B73"
   },
   "provenance": {
@@ -44,20 +44,20 @@
       "modis-09A1-061"
     ],
     "vi_items": {
-      "h11v04": "MYD13A1.A2026249.h11v04.061.2026266000358",
-      "h12v04": "MYD13A1.A2026249.h12v04.061.2026266000709",
-      "h13v04": "MYD13A1.A2026249.h13v04.061.2026266001533"
+      "h11v04": "MYD13A1.A2026265.h11v04.061.2026286110822",
+      "h12v04": "MYD13A1.A2026265.h12v04.061.2026286110827",
+      "h13v04": "MYD13A1.A2026265.h13v04.061.2026286110816"
     },
     "reflectance_items": {
-      "h11v04": "MYD09A1.A2026257.h11v04.061.2026266040153",
-      "h12v04": "MYD09A1.A2026257.h12v04.061.2026266040403",
-      "h13v04": "MYD09A1.A2026257.h13v04.061.2026266040236"
+      "h11v04": "MYD09A1.A2026273.h11v04.061.2026286144720",
+      "h12v04": "MYD09A1.A2026273.h12v04.061.2026286144900",
+      "h13v04": "MYD09A1.A2026273.h13v04.061.2026286144803"
     },
-    "composite_sig": "e13bcdd6404ca438e0aba0bbfc1f8485952e990e6d5dee32264759dec8fac6dd",
-    "composite_date": "2026-09-06",
-    "source_age_days": 37,
+    "composite_sig": "d277fb7846ee8ff4a38b0f13a7eca8f0ffefe7fbeb5c83257cbaff6c9e6ac055",
+    "composite_date": "2026-09-22",
+    "source_age_days": 26,
     "stale": false,
-    "retrieved": "2026-10-13 08:52 AM EDT",
+    "retrieved": "2026-10-18 03:06 AM EDT",
     "native_resolution_m": 500,
     "native_crs": "MODIS sinusoidal",
     "resampling": "nearest (no invented values)",
@@ -66,11 +66,11 @@
     "water_mask": "assets/great_lakes_watermask.png (shared)",
     "algorithm": "leaf_phenology v8 (trajectory + baseline + class + spectral gating; 19-anchor OKLab circular gradient; observed-only rendering, transparent no-data)"
   },
-  "source_id": "leaf-v8-e13bcdd6404c",
-  "source_version": "leaf-v8-e13bcdd6404c",
+  "source_id": "leaf-v8-d277fb7846ee",
+  "source_version": "leaf-v8-d277fb7846ee",
   "stats": {
-    "good_pixels": 1428860,
-    "opaque_pixels": 1542422,
-    "phase_mean": 0.5759
+    "good_pixels": 1736524,
+    "opaque_pixels": 1542549,
+    "phase_mean": 0.592
   }
 }
