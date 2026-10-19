@@ -64,7 +64,14 @@ UA = {"User-Agent": "great-lakes-live-environment/1.0 (sat-ir)"}
 #   alpha  = clip((ALPHA_HI - bt) * ALPHA_GAIN, 0, ALPHA_MAX)
 #   alpha < ALPHA_FLOOR -> transparent (warm surface / clear).
 BT_HI, BT_GAIN = 288.0, 4.0
-ALPHA_HI, ALPHA_GAIN, ALPHA_MAX, ALPHA_FLOOR = 282.0, 4.5, 215.0, 3.0
+ALPHA_HI, ALPHA_GAIN, ALPHA_MAX, ALPHA_FLOOR = 282.0, 4.5, 215.0, 15.0
+
+# Land-aware cloud detection: over land, the surface can be cold (Antarctica,
+# Greenland, winter continents), so the IR transfer alone cannot distinguish
+# cold cloud tops from cold surface. Over land, require a colder temperature
+# for opacity to separate cloud from surface. Over ocean, the surface is warm
+# and uniform, so the standard threshold works.
+ALPHA_HI_LAND = 240.0
 
 # EUMETView grayscale imagery transfer (imagery-derived, documented as such):
 # verified live 2026-10-16: warm Sahara ~= 24 (dark), cloud p95 ~= 213.
@@ -117,14 +124,24 @@ def _parse_iso(s):
     return dt.datetime.fromisoformat(s)
 
 
-def bt_to_white(bt):
-    """BT(K) grid -> (bright 0..255, alpha 0..215) white-cloud rendering."""
+def bt_to_white(bt, land_mask=None):
+    """BT(K) grid -> (bright 0..255, alpha 0..215) white-cloud rendering.
+
+    When land_mask is provided (1.0 = land, 0.0 = ocean), land pixels use
+    ALPHA_HI_LAND for the alpha transfer so cold surfaces (Antarctica,
+    Greenland) are not rendered as opaque cloud. Ocean pixels use ALPHA_HI.
+    """
     bt = np.asarray(bt, dtype=float)
     m = np.isfinite(bt)
     bright = np.full(bt.shape, np.nan)
     alpha = np.full(bt.shape, np.nan)
     bright[m] = np.clip((BT_HI - bt[m]) * BT_GAIN, 0.0, 255.0)
-    alpha[m] = np.clip((ALPHA_HI - bt[m]) * ALPHA_GAIN, 0.0, ALPHA_MAX)
+    alpha_hi = np.full(bt.shape, ALPHA_HI)
+    if land_mask is not None:
+        lm = np.asarray(land_mask)
+        if lm.shape == bt.shape:
+            alpha_hi = np.where(lm >= 0.5, ALPHA_HI_LAND, ALPHA_HI)
+    alpha[m] = np.clip((alpha_hi[m] - bt[m]) * ALPHA_GAIN, 0.0, ALPHA_MAX)
     alpha[m & (alpha < ALPHA_FLOOR)] = np.nan
     bright[~np.isfinite(alpha)] = np.nan
     return bright, alpha
@@ -149,6 +166,46 @@ def gray_to_white(gray, valid):
     alpha[v & (alpha < ALPHA_FLOOR)] = np.nan
     bright[~np.isfinite(alpha)] = np.nan
     return bright, alpha
+
+
+def load_land_mask(shape):
+    """Load the global land mask (assets/global_landonly.npy) and resample
+    to the target shape. Returns None if the asset is missing."""
+    try:
+        from na_common import load_continental
+        mask = load_continental()
+        if mask.shape == tuple(shape):
+            return mask.astype(np.float32)
+        from PIL import Image
+        im = Image.fromarray((mask * 255).astype(np.uint8))
+        im = im.resize((shape[1], shape[0]), Image.NEAREST)
+        return (np.array(im) >= 128).astype(np.float32)
+    except Exception:
+        return None
+
+
+def normalize_sources(layers):
+    """Radiometric normalization: adjust each source's BT values so that
+    the mean in the overlap region with the previous source matches. This
+    accounts for different transfer functions (GOES true BT, Himawari
+    LUT-inverted, Meteosat grayscale) before blending.
+
+    Returns a new list of (grid, valid) with adjusted grids.
+    """
+    if len(layers) < 2:
+        return layers
+    out = [layers[0]]
+    for i in range(1, len(layers)):
+        prev_grid, prev_valid = out[-1]
+        curr_grid, curr_valid = layers[i]
+        both_valid = prev_valid & curr_valid & np.isfinite(prev_grid) & np.isfinite(curr_grid)
+        if both_valid.sum() < 100:
+            out.append(layers[i])
+            continue
+        bias = np.nanmean(prev_grid[both_valid]) - np.nanmean(curr_grid[both_valid])
+        adjusted = curr_grid.astype(float) + bias
+        out.append((adjusted, curr_valid))
+    return out
 
 
 # ------------------------------------------------------- GIBS LUT inversion
@@ -233,7 +290,7 @@ def invert_gibs_png(path, cmap_url):
     # halo colors far from any documented bin. Those pixels stay invalid
     # (transparent) instead of inventing BT; a render dominated by them is
     # rejected by the caller via the finite-fraction check.
-    MAX_DIST = 25.0
+    MAX_DIST = 50.0
     vals = np.full(len(uniq), np.nan)
     near = dist <= MAX_DIST
     vals[near] = np.array(
@@ -616,12 +673,19 @@ def render_canvas(bounds, scans, raw_dir):
                 if len(grids) == 1:
                     g = grids[0]
                 else:
+                    # Complementary combination: retain valid pixels from
+                    # either Day or Night layer. Only average where both are
+                    # valid; otherwise use whichever has data.
                     import warnings
                     stack = np.stack(grids)
                     with np.errstate(invalid="ignore"), \
                             warnings.catch_warnings():
                         warnings.simplefilter("ignore", RuntimeWarning)
-                        g = np.nanmean(stack, axis=0)
+                        both_valid = np.isfinite(stack).all(axis=0)
+                        g = np.where(both_valid,
+                                     np.nanmean(stack, axis=0),
+                                     np.nanmax(np.where(np.isfinite(stack), stack, np.nan), axis=0))
+                        g = np.where(np.isfinite(g), g, np.nan)
                 valid = np.isfinite(g)
                 layers.append((g, valid))
                 prov_layers.append(PROV["VIIRS"])
@@ -636,19 +700,19 @@ def render_canvas(bounds, scans, raw_dir):
     max_skew = 0.0
     if len(geo_ages) >= 2:
         max_skew = max(geo_ages) - min(geo_ages)
-    feather = FEATHER_PX if max_skew <= MAX_SKEW_MIN else 0
 
-    if feather > 0:
-        merged, _valid = feather_merge(layers, feather_px=feather)
+    # Radiometric normalization: adjust each source to match the previous
+    # source in the overlap region, accounting for different transfer functions.
+    layers = normalize_sources(layers)
+
+    # Gradual feather: reduce width as time skew increases, but never
+    # eliminate blending entirely (unless skew is extreme).
+    if max_skew <= MAX_SKEW_MIN:
+        feather = FEATHER_PX
     else:
-        # Hard precedence (large time skew): fresher valid observation wins
-        # outright -- no averaging across incompatible times.
-        merged = layers[0][0].astype(float).copy()
-        filled = np.asarray(layers[0][1], dtype=bool).copy()
-        for grid, ok in layers[1:]:
-            new = np.asarray(ok, dtype=bool) & ~filled
-            merged[new] = np.asarray(grid, dtype=float)[new]
-            filled = filled | np.asarray(ok, dtype=bool)
+        feather = max(1, FEATHER_PX - int((max_skew - MAX_SKEW_MIN) // 5))
+
+    merged, _valid = feather_merge(layers, feather_px=feather)
     merged = blend_antimeridian(merged)
 
     # Provenance: winner-takes-all in precedence order (pre-feather).
@@ -657,7 +721,10 @@ def render_canvas(bounds, scans, raw_dir):
         take = np.asarray(v, dtype=bool) & (prov == 0) & np.isfinite(g)
         prov[take] = code
 
-    bright_full, alpha_full = bt_to_white(merged)
+    # Load land mask for cloud-vs-surface discrimination.
+    land_mask = load_land_mask(merged.shape)
+
+    bright_full, alpha_full = bt_to_white(merged, land_mask=land_mask)
     return {"bright": bright_full, "alpha": alpha_full, "prov": prov,
             "observations": observations, "max_geo_skew_min": round(max_skew, 1),
             "feather_px": feather,

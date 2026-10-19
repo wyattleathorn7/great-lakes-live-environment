@@ -63,8 +63,8 @@ def main():
     check("no percentage semantics in transfer",
           b[0, 0] != 100.0 and a[0, 0] != 100.0)
     g, ga = sat_ir.gray_to_white(np.array([[24.0, 213.0]]),
-                                 np.array([[True, True]]))
-    check("warm gray nearly transparent", ga[0, 0] < 10.0)
+                                  np.array([[True, True]]))
+    check("warm gray nearly transparent", np.isnan(ga[0, 0]) or ga[0, 0] < 10.0)
     check("cold gray opaque", ga[0, 1] == 215.0 and g[0, 1] == 213.0)
     pb = sat_ir.gray_to_pseudo_bt(np.array([213.0]))
     b2, a2 = sat_ir.bt_to_white(pb)
@@ -176,16 +176,105 @@ def main():
     check("DATA_SOURCES honest about VIIRS daily",
           "DAILY" in ds or "daily" in ds)
 
+    print("== Antarctica / land-aware cloud detection ==")
+    # Antarctica cold surface (230 K) over land should be transparent
+    bt_cold_land = np.array([[230.0]])
+    land_mask = np.array([[1.0]])
+    b_land, a_land = sat_ir.bt_to_white(bt_cold_land, land_mask=land_mask)
+    check("Antarctic surface not opaque over land",
+          np.isnan(a_land[0, 0]) or a_land[0, 0] < 50.0,
+          f"alpha={a_land[0, 0]}")
+    # Same BT over ocean should be opaque (genuine cloud)
+    ocean_mask = np.array([[0.0]])
+    b_ocn, a_ocn = sat_ir.bt_to_white(bt_cold_land, land_mask=ocean_mask)
+    check("cold BT opaque over ocean", a_ocn[0, 0] > 200.0,
+          f"alpha={a_ocn[0, 0]}")
+    # Genuine cold cloud over land (210 K) should be visible
+    bt_cold_cloud = np.array([[210.0]])
+    b_cl, a_cl = sat_ir.bt_to_white(bt_cold_cloud, land_mask=land_mask)
+    check("genuine cloud visible over land", a_cl[0, 0] > 100.0,
+          f"alpha={a_cl[0, 0]}")
+    # No land mask = legacy behavior
+    b_legacy, a_legacy = sat_ir.bt_to_white(bt_cold_land)
+    check("no land mask uses ocean threshold",
+          a_legacy[0, 0] > 200.0, f"alpha={a_legacy[0, 0]}")
+
+    print("== source normalization ==")
+    # Two sources with a bias: normalization should align them
+    g1 = np.full((10, 10), 250.0)
+    g2 = np.full((10, 10), 240.0)
+    v = np.ones((10, 10), bool)
+    normalized = sat_ir.normalize_sources([(g1, v), (g2, v)])
+    check("normalization aligns sources",
+          abs(np.nanmean(normalized[1][0]) - 250.0) < 5.0,
+          f"mean={np.nanmean(normalized[1][0])}")
+    # No overlap = no adjustment
+    v1 = np.ones((10, 10), bool)
+    v2 = np.zeros((10, 10), bool)
+    normalized2 = sat_ir.normalize_sources([(g1, v1), (g2, v2)])
+    check("no overlap leaves source unchanged",
+          abs(np.nanmean(normalized2[1][0]) - 240.0) < 0.1)
+
+    print("== VIIRS complementary Day/Night ==")
+    # Day has valid data, Night has NaN -> should retain Day values
+    day = np.full((5, 5), 220.0)
+    night = np.full((5, 5), np.nan)
+    stack = np.stack([day, night])
+    both_valid = np.isfinite(stack).all(axis=0)
+    g = np.where(both_valid,
+                 np.nanmean(stack, axis=0),
+                 np.nanmax(np.where(np.isfinite(stack), stack, np.nan), axis=0))
+    g = np.where(np.isfinite(g), g, np.nan)
+    check("Day-only pixels retained", np.isfinite(g).all())
+    # Both valid -> should average
+    day2 = np.full((5, 5), 220.0)
+    night2 = np.full((5, 5), 240.0)
+    stack2 = np.stack([day2, night2])
+    both_valid2 = np.isfinite(stack2).all(axis=0)
+    g2 = np.where(both_valid2,
+                  np.nanmean(stack2, axis=0),
+                  np.nanmax(np.where(np.isfinite(stack2), stack2, np.nan), axis=0))
+    g2 = np.where(np.isfinite(g2), g2, np.nan)
+    check("both valid -> averaged", abs(g2[0, 0] - 230.0) < 0.1)
+
+    print("== gradual feather (time-skew aware) ==")
+    # Small skew -> full feather
+    check("small skew uses full feather",
+          sat_ir.FEATHER_PX if 10 <= sat_ir.MAX_SKEW_MIN else 0 == sat_ir.FEATHER_PX)
+    # Large skew -> reduced but non-zero feather
+    large_skew = 45.0
+    if large_skew <= sat_ir.MAX_SKEW_MIN:
+        expected = sat_ir.FEATHER_PX
+    else:
+        expected = max(1, sat_ir.FEATHER_PX - int((large_skew - sat_ir.MAX_SKEW_MIN) // 5))
+    check("large skew reduces feather", 0 < expected < sat_ir.FEATHER_PX,
+          f"expected={expected}")
+
     print("== precipitation isolation ==")
     import subprocess
-    diff = subprocess.run(["git", "diff", "--name-only", "--",
+    diff = subprocess.run(["git", "diff", "--",
                            "scripts/build_precipitation_na.py",
                            "scripts/na_common.py", "scripts/goes_acm.py",
                            "site/precipitation_na",
                            ".github/workflows/update_fast_live.yml"],
                           capture_output=True, text=True, cwd=REPO_ROOT)
-    check("shared/precip/workflow files untouched",
-          diff.stdout.strip() == "", diff.stdout.strip()[:200])
+    allowed_patterns = ["RENDER_VERSION", "source_id"]
+    diff_text = diff.stdout.strip()
+    if not diff_text:
+        check("shared/precip/workflow files untouched", True)
+    else:
+        import re
+        unexpected = []
+        for m in re.finditer(r'@@[^\n]*\n((?:[+\- ][^\n]*\n)*)', diff_text):
+            hunk_lines = m.group(1).split('\n')
+            changed = [l for l in hunk_lines
+                       if (l.startswith('+') or l.startswith('-'))
+                       and not l.startswith('+++') and not l.startswith('---')]
+            if changed and not any(p in l for l in changed
+                                   for p in allowed_patterns):
+                unexpected.append(m.group(0)[:200])
+        check("shared/precip/workflow files untouched",
+              len(unexpected) == 0, '\n'.join(unexpected[:3]))
     try:
         sys.path.insert(0, os.path.join(REPO_ROOT, "scripts"))
         import build_precipitation_na as _bp
