@@ -6,9 +6,9 @@
   "product_name": "NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)",
   "variable": "lake surface water temperature (satellite-derived AVHRR/VIIRS composite)",
   "source_url": "https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc",
-  "data_time_utc": "2026-10-17 02:50 AM EDT",
-  "source_last_modified_utc": "2026-10-17 02:50 AM EDT",
-  "processing_time_utc": "2026-10-17 03:00 AM EDT",
+  "data_time_utc": "2026-10-19 02:51 AM EDT",
+  "source_last_modified_utc": "2026-10-19 02:51 AM EDT",
+  "processing_time_utc": "2026-10-19 03:04 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "~1.8 km GLSEA grid (1024x1024)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -19,22 +19,22 @@
     "lat_min": 40.5,
     "lat_max": 49.5
   },
-  "color_scale_min": 48,
-  "color_scale_max": 67,
+  "color_scale_min": 47,
+  "color_scale_max": 65,
   "color_scale_units": "\u00b0F",
   "missing_data_treatment": "land code 255.0 and -9999/no-data rendered fully transparent; never interpolated.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "source_id": "glsea-Sat, 17 Oct 2026 06:50:35 GMT",
-  "source_version": "glsea-Sat-17-Oct-2026-06-50-35-GMT-r13-tempvals-tx2",
+  "source_id": "glsea-Mon, 19 Oct 2026 06:51:04 GMT",
+  "source_version": "glsea-Mon-19-Oct-2026-06-51-04-GMT-r13-tempvals-tx2",
   "label_method": "Actual \u00b0F values (e.g. 45\u00b0F) in white mono with a dark outline, free placement: data-seeded jittered candidates (positions move with the water, never a fixed grid), thermal-front cells first, spaced fill up to quota.",
   "stats": {
     "valid_cells": 148682,
-    "lakewide_mean_F": 58.26,
-    "min_F": 47.3,
-    "max_F": 67.5,
-    "temp_labels_priority": 39,
-    "temp_labels_fill": 38
+    "lakewide_mean_F": 56.25,
+    "min_F": 46.22,
+    "max_F": 66.45,
+    "temp_labels_priority": 41,
+    "temp_labels_fill": 45
   },
   "legend_size": [
     640,
@@ -44,53 +44,53 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_F": 47.66,
-      "grid_F": 50.297000000000004,
-      "absdiff_F": 2.64,
+      "obs_F": 44.96,
+      "grid_F": 47.457499999999996,
+      "absdiff_F": 2.5,
       "verdict": "OK",
-      "obs_time": "2026-10-17 06:30 UTC"
+      "obs_time": "2026-10-19 06:40 UTC"
     },
     "45002": {
-      "obs_F": 59.18,
-      "grid_F": 60.566,
-      "absdiff_F": 1.39,
-      "verdict": "OK",
-      "obs_time": "2026-10-17 06:30 UTC"
+      "obs_F": 52.7,
+      "grid_F": 57.866,
+      "absdiff_F": 5.17,
+      "verdict": "CHECK",
+      "obs_time": "2026-10-19 06:40 UTC"
     },
     "45132": {
-      "obs_F": 62.24,
-      "grid_F": 65.3945,
-      "absdiff_F": 3.15,
+      "obs_F": 62.42,
+      "grid_F": 64.175,
+      "absdiff_F": 1.75,
       "verdict": "OK",
-      "obs_time": "2026-10-17 06:00 UTC"
+      "obs_time": "2026-10-19 06:00 UTC"
     },
     "45012": {
-      "obs_F": 55.58,
-      "grid_F": 59.6885,
-      "absdiff_F": 4.11,
-      "verdict": "CHECK",
-      "obs_time": "2026-10-17 06:30 UTC"
+      "obs_F": 54.68,
+      "grid_F": 56.201,
+      "absdiff_F": 1.52,
+      "verdict": "OK",
+      "obs_time": "2026-10-19 06:40 UTC"
     },
     "45005": {
-      "time_utc": "2026-10-17 06:30 UTC",
-      "WDIR_deg": 360.0,
-      "WSPD_ms": 12.0,
+      "time_utc": "2026-10-19 06:30 UTC",
+      "WDIR_deg": 210.0,
+      "WSPD_ms": 6.0,
       "WVHT_m": null,
       "DPD_s": null,
       "APD_s": null,
       "WTMP_C": null,
-      "ATMP_C": 13.3,
+      "ATMP_C": 18.6,
       "note": "no WTMP obs"
     }
   },
-  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>48\u00b0F</b> (deep blue) \u2192 <b>57.5\u00b0F</b> \u2192 warm <b>67\u00b0F</b> (red). Lakewide mean this run: <b>58.3\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. The bar ends are recomputed every run from that day's water (1st/99th percentiles, clamped 32\u201386\u00b0F): blue always means the coldest water present and red the warmest, but the same color can stand for a different \u00b0F on different days \u2014 only the printed numbers are absolute.",
+  "legend_scale_html": "Surface water temperature (\u00b0F): cold <b>47\u00b0F</b> (deep blue) \u2192 <b>56\u00b0F</b> \u2192 warm <b>65\u00b0F</b> (red). Lakewide mean this run: <b>56.3\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. The bar ends are recomputed every run from that day's water (1st/99th percentiles, clamped 32\u201386\u00b0F): blue always means the coldest water present and red the warmest, but the same color can stand for a different \u00b0F on different days \u2014 only the printed numbers are absolute.",
   "coverage_mode": "basin",
   "blended_time_utc": "2026-10-15T12:00:00Z",
   "blended_source_id": "blended-2026-10-15T12:00:00Z",
-  "mur_time_utc": "2026-10-15T09:00:00Z",
-  "mur_source_id": "mur-2026-10-15T09:00:00Z",
+  "mur_time_utc": "2026-10-17T09:00:00Z",
+  "mur_source_id": "mur-2026-10-17T09:00:00Z",
   "live_doc_html": "<p><b>This layer holds three coverages in one folder:</b> Great Lakes Coverage (default), Continental Lake Coverage, Extended Oceanic Coverage. Open the GREAT LAKES SURFACE WATER TEMPERATURE folder below and check exactly one coverage at a time (Google Earth Pro switches them exclusively; Web/app users check one box manually). Great Lakes Coverage is always the default: a fresh load or data refresh restores it (a saved project may keep your own last-used checkboxes until you toggle back). Each coverage carries its own legend \u2014 click that coverage's row to open its card. There is no shared legend at this level; a legend shown here would belong to only one coverage and mislead about the others.</p><p><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href=\"https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc\">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a></p><p>Transparent outside valid water data so existing project layers (shipwrecks, lighthouses, harbors, parks) stay visible. Turn on/off independently of wave and ice layers.</p><p><i>Not endorsed by NOAA.</i></p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25cb Continental Coverage<br>\u25c9 <b>Great Lakes Basin Coverage</b> (shown)<br>Pro switches exclusively. Web/app: check exactly one box.</p>",
-  "folder_html": "<p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes) + JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas)<br><b>Precedence:</b> NOAA/GLERL CoastWatch GLSEA wins everywhere valid inside the Great Lakes rectangle (other sources never double-count there); MUR lake-valid cells win outside it on inland water; blended SST owns all remaining valid water<br><b>Coverage:</b> Great Lakes Coverage (default shown)<br><b>Data time:</b> GLSEA 2026-10-17 02:50 AM EDT; MUR 2026-10-15 05:00 AM EDT; blended 2026-10-15 08:00 AM EDT</p><p>Endpoints: Great Lakes <b>48\u201367\u00b0F</b>; Continental Lakes <b>32\u201382\u00b0F</b>; Extended Oceanic <b>28\u201386\u00b0F</b>. Each coverage's colors and endpoints come from its own water only.</p><p>Legends live only in the three coverage cards below \u2014 click a coverage row to read its legend. View one coverage at a time.</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25cb Continental Coverage<br>\u25c9 <b>Great Lakes Basin Coverage</b> (shown)<br>Pro switches exclusively. Web/app: check exactly one box.</p>",
+  "folder_html": "<p><b>Sources:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes) + JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas)<br><b>Precedence:</b> NOAA/GLERL CoastWatch GLSEA wins everywhere valid inside the Great Lakes rectangle (other sources never double-count there); MUR lake-valid cells win outside it on inland water; blended SST owns all remaining valid water<br><b>Coverage:</b> Great Lakes Coverage (default shown)<br><b>Data time:</b> GLSEA 2026-10-19 02:51 AM EDT; MUR 2026-10-17 05:00 AM EDT; blended 2026-10-15 08:00 AM EDT</p><p>Endpoints: Great Lakes <b>47\u201365\u00b0F</b>; Continental Lakes <b>32\u201382\u00b0F</b>; Extended Oceanic <b>28\u201386\u00b0F</b>. Each coverage's colors and endpoints come from its own water only.</p><p>Legends live only in the three coverage cards below \u2014 click a coverage row to read its legend. View one coverage at a time.</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25cb Continental Coverage<br>\u25c9 <b>Great Lakes Basin Coverage</b> (shown)<br>Pro switches exclusively. Web/app: check exactly one box.</p>",
   "folder_radio": true,
   "na_bounds": {
     "canvas_height": 1800,
@@ -105,10 +105,10 @@
   },
   "primary_name": "Extended Oceanic Coverage",
   "primary_visibility": 0,
-  "primary_version_token": "blended-2026-10-15T12-00-00Z-mur-2026-10-15T09-00-00Z-r13-tempvals-global-nofloor",
+  "primary_version_token": "blended-2026-10-15T12-00-00Z-mur-2026-10-17T09-00-00Z-r13-tempvals-global-nofloor",
   "primary_png": "water_temperature_global/current.png",
   "primary_legend": "water_temperature_global/legend.png",
-  "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_global/legend.png?v=blended-2026-10-15T12-00-00Z-mur-2026-10-15T09-00-00Z-r13-tempvals-global-nofloor\" width=\"600\" alt=\"legend\"><br>Surface water temperature (\u00b0F) \u2014 Extended Oceanic Coverage: cold <b>28\u00b0F</b> (deep blue) \u2192 <b>57\u00b0F</b> \u2192 warm <b>86\u00b0F</b> (red). Mean this run: <b>57.8\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. Endpoints are recomputed every run from all valid water across this coverage's supported global dataset (oceans and seas from blended SST, inland lakes from MUR, Great Lakes from GLSEA; each observation counted once; 1st/99th percentiles with floor/ceil rounding; low end unclamped so polar water (~28\u00b0F) reads correctly, high end clamped 86\u00b0F; linear mapping between them). The same color stands for a different \u00b0F than in the other coverages \u2014 only the printed numbers are absolute. Unsupported or unobserved water stays transparent and is never fabricated.</p><p><b>Coverage:</b> Extended Oceanic Coverage</p><p><b>Status:</b> LATEST AVAILABLE (daily analyses; blended typically ~3-day latency, MUR typically ~2-day latency)</p><p><b>Source:</b> JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)<br/><a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41\">https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41</a><br/>MUR 2026-10-15 05:00 AM EDT (lakes) + blended 2026-10-15 08:00 AM EDT (oceans/seas); Great Lakes GLSEA 2026-10-17 02:50 AM EDT</p><p>Colors run cold (deep blue) \u2192 warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in \u00b0F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>",
+  "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_global/legend.png?v=blended-2026-10-15T12-00-00Z-mur-2026-10-17T09-00-00Z-r13-tempvals-global-nofloor\" width=\"600\" alt=\"legend\"><br>Surface water temperature (\u00b0F) \u2014 Extended Oceanic Coverage: cold <b>28\u00b0F</b> (deep blue) \u2192 <b>57\u00b0F</b> \u2192 warm <b>86\u00b0F</b> (red). Mean this run: <b>57.8\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. Endpoints are recomputed every run from all valid water across this coverage's supported global dataset (oceans and seas from blended SST, inland lakes from MUR, Great Lakes from GLSEA; each observation counted once; 1st/99th percentiles with floor/ceil rounding; low end unclamped so polar water (~28\u00b0F) reads correctly, high end clamped 86\u00b0F; linear mapping between them). The same color stands for a different \u00b0F than in the other coverages \u2014 only the printed numbers are absolute. Unsupported or unobserved water stays transparent and is never fabricated.</p><p><b>Coverage:</b> Extended Oceanic Coverage</p><p><b>Status:</b> LATEST AVAILABLE (daily analyses; blended typically ~3-day latency, MUR typically ~2-day latency)</p><p><b>Source:</b> JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)<br/><a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41\">https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41</a><br/>MUR 2026-10-17 05:00 AM EDT (lakes) + blended 2026-10-15 08:00 AM EDT (oceans/seas); Great Lakes GLSEA 2026-10-19 02:51 AM EDT</p><p>Colors run cold (deep blue) \u2192 warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in \u00b0F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>",
   "extra_overlays": [
     {
       "name": "Continental Lake Coverage",
@@ -126,8 +126,8 @@
       },
       "draw_order": 11,
       "visibility": 0,
-      "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_continental/legend.png?v=mur-2026-10-15T09-00-00Z-r13-tempvals-continental\" width=\"600\" alt=\"legend\"><br>Surface water temperature (\u00b0F) \u2014 Continental Lake Coverage: cold <b>32\u00b0F</b> (deep blue) \u2192 <b>57\u00b0F</b> \u2192 warm <b>82\u00b0F</b> (red). Mean this run: <b>55.3\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. Endpoints are recomputed every run from this coverage's own tracked inland-lake water only (MUR open-lake cells plus Great Lakes GLSEA cells; 1st/99th percentiles, clamped 32\u201386\u00b0F, linear mapping between them). Ocean water is excluded from this distribution, so the same color stands for a different \u00b0F than in the other coverages \u2014 only the printed numbers are absolute. Lakes below the fetch sampling, frozen lakes outside the open-lake mask state, and rivers stay transparent and are never fabricated.</p><p><b>Coverage:</b> Continental Lake Coverage</p><p><b>Status:</b> LATEST AVAILABLE (daily analyses; blended typically ~3-day latency, MUR typically ~2-day latency)</p><p><b>Source:</b> JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)<br/><a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41\">https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41</a><br/>MUR 2026-10-15 05:00 AM EDT; Great Lakes GLSEA 2026-10-17 02:50 AM EDT</p><p>Colors run cold (deep blue) \u2192 warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in \u00b0F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>",
-      "version_token": "mur-2026-10-15T09-00-00Z-r13-tempvals-continental"
+      "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature_continental/legend.png?v=mur-2026-10-17T09-00-00Z-r13-tempvals-continental\" width=\"600\" alt=\"legend\"><br>Surface water temperature (\u00b0F) \u2014 Continental Lake Coverage: cold <b>32\u00b0F</b> (deep blue) \u2192 <b>57\u00b0F</b> \u2192 warm <b>82\u00b0F</b> (red). Mean this run: <b>54.7\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. Endpoints are recomputed every run from this coverage's own tracked inland-lake water only (MUR open-lake cells plus Great Lakes GLSEA cells; 1st/99th percentiles, clamped 32\u201386\u00b0F, linear mapping between them). Ocean water is excluded from this distribution, so the same color stands for a different \u00b0F than in the other coverages \u2014 only the printed numbers are absolute. Lakes below the fetch sampling, frozen lakes outside the open-lake mask state, and rivers stay transparent and are never fabricated.</p><p><b>Coverage:</b> Continental Lake Coverage</p><p><b>Status:</b> LATEST AVAILABLE (daily analyses; blended typically ~3-day latency, MUR typically ~2-day latency)</p><p><b>Source:</b> JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)<br/><a href=\"https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41\">https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41</a><br/>MUR 2026-10-17 05:00 AM EDT; Great Lakes GLSEA 2026-10-19 02:51 AM EDT</p><p>Colors run cold (deep blue) \u2192 warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in \u00b0F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>",
+      "version_token": "mur-2026-10-17T09-00-00Z-r13-tempvals-continental"
     },
     {
       "name": "Great Lakes Coverage",
@@ -145,8 +145,8 @@
       },
       "draw_order": 12,
       "visibility": 1,
-      "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=glsea-Sat-17-Oct-2026-06-50-35-GMT-r13-tempvals-tx2\" width=\"600\" alt=\"legend\"><br>Surface water temperature (\u00b0F): cold <b>48\u00b0F</b> (deep blue) \u2192 <b>57.5\u00b0F</b> \u2192 warm <b>67\u00b0F</b> (red). Lakewide mean this run: <b>58.3\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. The bar ends are recomputed every run from that day's water (1st/99th percentiles, clamped 32\u201386\u00b0F): blue always means the coldest water present and red the warmest, but the same color can stand for a different \u00b0F on different days \u2014 only the printed numbers are absolute.</p><p><b>Coverage:</b> Great Lakes Coverage</p><p><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href=\"https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc\">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a><br/>GLSEA 2026-10-17 02:50 AM EDT</p><p>Colors run cold (deep blue) \u2192 warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in \u00b0F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>",
-      "version_token": "glsea-Sat-17-Oct-2026-06-50-35-GMT-r13-tempvals-tx2"
+      "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/water_temperature/legend.png?v=glsea-Mon-19-Oct-2026-06-51-04-GMT-r13-tempvals-tx2\" width=\"600\" alt=\"legend\"><br>Surface water temperature (\u00b0F): cold <b>47\u00b0F</b> (deep blue) \u2192 <b>56\u00b0F</b> \u2192 warm <b>65\u00b0F</b> (red). Lakewide mean this run: <b>56.3\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. The bar ends are recomputed every run from that day's water (1st/99th percentiles, clamped 32\u201386\u00b0F): blue always means the coldest water present and red the warmest, but the same color can stand for a different \u00b0F on different days \u2014 only the printed numbers are absolute.</p><p><b>Coverage:</b> Great Lakes Coverage</p><p><b>Status:</b> CURRENT DAILY (satellite composite)</p><p><b>Source:</b> NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis)<br/><a href=\"https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc\">https://apps.glerl.noaa.gov/coastwatch/webdata/glsea/cur/glsea_cur.asc</a><br/>GLSEA 2026-10-19 02:51 AM EDT</p><p>Colors run cold (deep blue) \u2192 warm (red) across this coverage's current water-temperature distribution; white halo numbers are actual water temperatures in \u00b0F at those spots. Missing or unavailable observations stay transparent and are never fabricated.</p>",
+      "version_token": "glsea-Mon-19-Oct-2026-06-51-04-GMT-r13-tempvals-tx2"
     }
   ]
 }
