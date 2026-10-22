@@ -38,7 +38,7 @@ PRODUCT = "surface_pressure"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 KML_FILE = "Great_Lakes_Live_Surface_Pressure.kml"
-OVERLAY_NAME = "🧭 LIVE SURFACE PRESSURE"
+OVERLAY_NAME = "🌦️ LIVE SURFACE PRESSURE"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 
 AVG_HPA = 1013.25
