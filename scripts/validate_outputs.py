@@ -28,6 +28,18 @@ from geospatial_utils import REPO_ROOT, SITE_DIR, load_bounds
 
 from PIL import Image
 
+KML_NS = "{http://www.opengis.net/kml/2.2}"
+
+# Layers whose restored folder descriptions and legend placement must be
+# present in both the entry (top folder) and live (child/dropdown) KMLs.
+DESCRIPTION_PRODUCTS = {
+    "visibility", "fog", "air_quality", "light_pollution",
+    "surface_pressure", "dew_point", "humidity", "solar_radiation",
+    "uv_index", "leaf_color", "surface_currents", "snow_coverage",
+    "ice_coverage", "ice_thickness", "ice_type", "water_clarity",
+    "bacteria",
+}
+
 PRODUCTS = {
     "wave_height": {"kml": "Great_Lakes_Live_Wave_Height.kml",
                     "max_opaque_min": 10_000},
@@ -459,7 +471,17 @@ def main():
                 continue
             try:
                 text = open(kp, encoding="utf-8").read()
-                ET.fromstring(text)  # must parse
+                root = ET.fromstring(text)  # must parse
+                if product in DESCRIPTION_PRODUCTS:
+                    doc = root.find(KML_NS + "Document")
+                    d = doc.find(KML_NS + "description") if doc is not None else None
+                    body = (d.text or "") if d is not None else ""
+                    if not body.strip():
+                        failures.append(f"{product}: entry folder description "
+                                        f"missing in {kp}")
+                    elif "legend.png" not in body:
+                        failures.append(f"{product}: entry folder description "
+                                        f"missing legend in {kp}")
                 for bad in ("<LineString", "<Polygon", "<Placemark", "<Point",
                             "<ScreenOverlay", "<GroundOverlay"):
                     if bad in text:
@@ -494,7 +516,26 @@ def main():
         else:
             try:
                 text = open(kp, encoding="utf-8").read()
-                ET.fromstring(text)  # must parse
+                root = ET.fromstring(text)  # must parse
+                if product in DESCRIPTION_PRODUCTS:
+                    doc = root.find(KML_NS + "Document")
+                    child = None
+                    folder = doc.find(KML_NS + "Folder") if doc is not None else None
+                    if folder is not None:
+                        d = folder.find(KML_NS + "description")
+                        child = (d.text or "") if d is not None else None
+                    if not child and doc is not None:
+                        for g in doc.findall(KML_NS + "GroundOverlay"):
+                            d = g.find(KML_NS + "description")
+                            child = (d.text or "") if d is not None else None
+                            if child:
+                                break
+                    if not child:
+                        failures.append(f"{product}: live child/dropdown "
+                                        f"description missing in {kp}")
+                    elif "legend.png?v=" not in child:
+                        failures.append(f"{product}: live child/dropdown "
+                                        f"description missing legend in {kp}")
                 for bad in ("<LineString", "<Polygon", "<Placemark", "<Point",
                             "<ScreenOverlay", "<NetworkLink"):
                     if bad in text:

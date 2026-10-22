@@ -20,7 +20,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
-                       description_html, entry_description_html, legend_block,
+                       child_description_html, description_html,
+                       entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR,
                               apply_shoreline_mask,
@@ -199,16 +200,22 @@ def _build(info, zip_path, digest):
         "observed_codes": seen,
         "unknown_pixels": n_unknown,
     }
-    write_metadata(stage_prod, meta)
-
     token = meta["source_version"]
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
+    child_html = child_description_html(
+        block, meta["data_nature"], CONFIG.get("display_units", ""),
+        CONFIG["source_name"], CONFIG["source_url"],
+        CONFIG["freshness_label"])
+    meta["overlay_description"] = child_html
+    write_metadata(stage_prod, meta)
+
     kml_text = build_kml(
         PRODUCT, KML_FILE, OVERLAY_NAME,
         f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png",
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=live_out_dirs(stage, KML_FILE)["live"],
+        overlay_descriptions=child_html,
         meta=meta)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(

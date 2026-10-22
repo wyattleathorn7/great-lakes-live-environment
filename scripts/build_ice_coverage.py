@@ -21,7 +21,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
-                       description_html, entry_description_html, legend_block,
+                       child_description_html, description_html,
+                       entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, base_metadata,
                               download, ensure_coords, http_date_to_det,
@@ -199,10 +200,15 @@ def _build(info, raw_path, digest, source_id=None):
                   f"total cover (near-white). Maximum this run: "
                   f"<b>{maxc}%</b>. Ice-free water in summer is normal.")
     meta["legend_scale_html"] = scale_html
-    write_metadata(stage_prod, meta)
-
     token = meta["source_version"]
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
+    child_html = child_description_html(
+        block, CONFIG.get("note", ""), CONFIG.get("display_units", ""),
+        CONFIG["source_name"], CONFIG["source_url"],
+        CONFIG["freshness_label"])
+    meta["overlay_description"] = child_html
+    write_metadata(stage_prod, meta)
+
     outs = live_out_dirs(stage, "Great_Lakes_Live_Ice_Coverage.kml")
     kml_text = build_kml(
         PRODUCT, "Great_Lakes_Live_Ice_Coverage.kml",
@@ -213,6 +219,7 @@ def _build(info, raw_path, digest, source_id=None):
                          block),
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=outs["live"],
+        overlay_descriptions=child_html,
         meta=meta)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(

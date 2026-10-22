@@ -35,7 +35,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
-                       description_html, entry_description_html, legend_block,
+                       child_description_html, description_html,
+                       entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, base_metadata,
                               download, load_bounds, now_det_str,
@@ -517,8 +518,6 @@ def _build(bounds, W, H, vi, rf, sig):
         "good_pixels": n_good, "opaque_pixels": n_opaque,
         "phase_mean": round(float(np.nanmean(phase)), 4),
     }
-    write_metadata(stage_prod, meta)
-
     # v8 = large legible key image + observed-only rendering (transparent no-data) + overlap-band
     # seam blend + observation-only history + full-coverage mosaic rule
     # (all 3 tiles required) + NaN-aware history means.
@@ -527,6 +526,13 @@ def _build(bounds, W, H, vi, rf, sig):
     token = meta["source_version"]
     scale_html = meta["legend_scale_html"]
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
+    child_html = child_description_html(
+        block, CONFIG.get("data_nature", ""), CONFIG.get("display_units", ""),
+        CONFIG["source_name"], CONFIG["source_url"],
+        CONFIG["freshness_label"])
+    meta["overlay_description"] = child_html
+    write_metadata(stage_prod, meta)
+
     outs = live_out_dirs(stage, KML_FILE)
     kml_text = build_kml(
         PRODUCT, KML_FILE, OVERLAY_NAME,
@@ -534,6 +540,7 @@ def _build(bounds, W, H, vi, rf, sig):
         description_html(CONFIG["title"], meta, SKIP_NOTE, block),
         CONFIG["refresh_interval_seconds"], token,
         out_dirs=outs["live"],
+        overlay_descriptions=child_html,
         meta=meta)
     assert_no_vector_geometry(kml_text)
     build_entry_kml(

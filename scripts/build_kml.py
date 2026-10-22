@@ -317,6 +317,23 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
     return xml
 
 
+def child_description_html(legend_html, narrative, units_line, source_name,
+                           source_url, update_line):
+    """Description for a live child/overlay that has no nested Folder.
+
+    Keeps the legend placement identical to Folder-level descriptions so
+    the dropdown/overlay row carries the same key and provenance.
+    """
+    return (
+        f"{legend_html}"
+        f"<p>{narrative}</p>"
+        f"<p><b>Units:</b> {units_line}<br/>"
+        f"<b>Source:</b> {source_name}<br/>"
+        f"<b>Update:</b> {update_line}<br/>"
+        f"<b>Provenance:</b> <a href=\"{source_url}\">{source_url}</a></p>"
+    )
+
+
 def entry_description_html(title, meta, note):
     # Entry files are what users add first, so they carry the legend
     # image too (unversioned legend URL: entries must stay byte-stable and
