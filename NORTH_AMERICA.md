@@ -83,12 +83,16 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
 
 ## Source precedence (no overlaps, no blending)
 
-- **Precipitation:** IEM N0Q inside lon −130…−65 / lat 22…50 (dry = valid,
-  suppresses ECCC) → ECCC RRAI/RSNO outside it where `RADAR_COVERAGE_*.INV`
-  is transparent (verified authoritative coverage) → OPERA EU DBZH where
-  neither covers (e.g. Iceland) → JMA nowcast intensity (mm/h classes
-  1–80 via Z-R equivalents, undifferentiated) in the Japan box
-  (lon 122–148, lat 24–46) → GFS estimates
+- **Precipitation:** MRMS SeamlessHSR inside lon −130…−65 / lat 22…50
+  (dry = valid, suppresses ECCC; replaced the old IEM N0Q WMS source
+  within the same footprint) → ECCC RRAI/RSNO outside it where
+  `RADAR_COVERAGE_*.INV` is transparent (verified authoritative coverage)
+  → regional MRMS SeamlessHSR (ALASKA / HAWAII / CARIB domains) in the
+  remaining gaps — this restores the old IEM regional footprint that the
+  ECCC INV layer reads as falsely "covered" → OPERA EU DBZH where neither
+  covers (e.g. Iceland) → JMA nowcast
+  intensity (mm/h classes 1–80 via Z-R equivalents, undifferentiated) in
+  the Japan box (lon 122–148, lat 24–46) → GFS estimates
   (CSNOW-gated snow blues / CRAIN key colors, ≥0.25 mm/h,
   organized systems only) in verified radar gaps → transparent.
   The IEM box is intersected with land+~200km offshore (WSR-88D range),
@@ -105,6 +109,11 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
   for rain (saturate ~57 dBZ), not measured dBZ; snow rows are ECCC
   snow-rate classes in cm/h; GFS snow ranks water-equivalent rate at
   10:1 SLR on the same bands (model output, same colors).
+  MRMS snow (CONUS + regional) is classified by `PrecipFlag` (flag 3) and
+  ranked by `PrecipRate` mm/h at 10:1 SLR onto the same cm/h bands, so
+  snow is distinguished from rain everywhere in the US, including
+  Alaska. Fine ~1 km MRMS is max-composited onto the canvas cell, so no
+  echo is dropped and the −99 no-echo sentinel cannot paint a halo.
 - **Air temperature:** HRRR → RRFS-NA (para feed until prod HTTPS opens) →
   GDPS WCS worldwide → transparent. Same 5°F bands.
 - **Cloud cover:** GOES-19 + GOES-18 full-disk BCM/DQF → RRFS TCDC →
@@ -115,7 +124,7 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
 
 ## Observations vs model data
 
-- Observed: IEM/ECCC radar, GOES cloud masks. Model: HRRR, RRFS, GDPS,
+- Observed: MRMS/ECCC radar, GOES cloud masks. Model: HRRR, RRFS, GDPS,
   GLWU. Every NA KML description + `metadata.json` records per-source
   provenance, timestamps, and which pixels are model fill. Stale products
   are never presented as current (exit 2 keeps the previous raster).

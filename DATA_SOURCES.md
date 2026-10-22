@@ -612,6 +612,12 @@ the other products and the Pages publish proceed normally.
 
 ## 17. Precipitation — IEM NEXRAD N0Q base reflectivity (live radar, 5-minute mosaic)
 
+> **Superseded 2026-10-20:** the live precipitation product (all three
+> coverage modes) now uses NOAA/NSSL MRMS SeamlessHSR — see §23. This
+> section remains as the record of the legacy basin builder
+> (`scripts/build_precipitation.py`, still IEM-WMS-based, no longer the
+> published pipeline).
+
 - **Product (verified live 2026-09-27):** Iowa Environmental Mesonet
   (Iowa State University) CONUS NEXRAD N0Q Base Reflectivity mosaic,
   built from the NOAA NWS WSR-88D Level-III network and rebuilt every
@@ -962,13 +968,49 @@ the other products and the Pages publish proceed normally.
   Original `DATA_SOURCES.md` §§ 4/8/14/17 and all original outputs/KMLs
   (bounds −93…−73.5 / 40.5…49.5) retained untouched.
 
-## 23. NA precipitation — IEM (CONUS) + ECCC NA composite (verified live 2026-10-11)
+## 23. NA precipitation — MRMS SeamlessHSR (CONUS + AK/HI/CARIB) + ECCC NA composite (verified live 2026-10-20)
 
-- **IEM:** same WMS/layer as §17 (`nexrad-n0q-900913`), GetMap over the NA
-  canvas (CONUS echoes land inside its domain). Advertised footprint from
-  live GetCapabilities (`LatLonBoundingBox -171…170 / 5…70`); effective
+- **MRMS:** NOAA/NSSL SeamlessHSR hybrid-scan reflectivity composite from
+  the official NCEP operational feed
+  `https://mrms.ncep.noaa.gov/data/2D/SeamlessHSR/` (GRIB2
+  `MRMS_SeamlessHSR_00.00_YYYYMMDD-HHMM00.grib2.gz`, 2-min cadence,
+  verified live 2026-10-20; centre 161 = NOAA OAR, CONUS 7000×3500 0.01°
+  grid, values in dBZ with −999 missing / −99 valid no-echo). Replaces the
+  old IEM N0Q WMS source (`nexrad-n0q-900913`, §17) within the same
+  footprint — no more site-centered circular range-ring artifacts, and
+  day/night rendering is identical (pure radar composite, no visible
+  satellite dependency). Measured dBZ → original N0Q key bins at the
+  ingestion boundary (same normalization as the OPERA dBZ path); no
+  source-RGB color lookup. Any fetch/decode/validation failure keeps the
+  source transparent (ECCC/OPERA/GFS fallbacks paint as before). Effective
   network domain used for precedence: lon −130…−65, lat 22…50
   (documented in `config/precipitation_na.json`, NOT the border).
+- **Snow (all US coverage):** `PrecipFlag` (`https://mrms.ncep.noaa.gov/data/2D/PrecipFlag/`)
+  classifies each echo; flag 3 = snow, 1/6/7/10/91/96 = rain/hail/tropical
+  mixtures. Snow is painted on the blue snow ramp, ranked by `PrecipRate`
+  (`/data/2D/PrecipRate/`, mm/h water-equivalent) at 10:1 SLR onto the
+  same cm/h classes the ECCC/GFS snow estimates use (dBZ-rank fallback
+  when the rate is unavailable). Flag 0 echoes are sub-5 dBZ noise and stay
+  on the rain key; flag −3 (no flag coverage) echoes keep the rain key so
+  the CONUS appearance is unchanged. Official flag table:
+  `NOAA-National-Severe-Storms-Laboratory/mrms-support`
+  `GRIB2_TABLES/UserTable_MRMS_PrecipFlags.csv`.
+- **Regional domains (fill the old IEM gaps):** the same SeamlessHSR +
+  PrecipFlag + PrecipRate family is read from the `ALASKA/`, `HAWAII/` and
+  `CARIB/` subdirectories (ALASKA 2200×5000, HAWAII 2200×2600, CARIB
+  1500×3000). Echoes paint only where no higher-priority echo (MRMS CONUS /
+  ECCC / OPERA / JMA) is already present — the ECCC
+  `RADAR_COVERAGE_*.INV` layer is transparent OUTSIDE its own extent, so
+  its cov mask must NOT gate the regional fill (it would read as
+  "covered" over Alaska/Hawaii/Caribbean). Regional valid coverage also
+  suppresses GFS model fill below.
+- **Downsampling:** ~1 km MRMS is max-composited onto the ~0.1° canvas
+  cell (any source echo in the cell paints; value = echo-weighted mean
+  dBZ). Plain point sampling of the fine grid both dropped ~60% of real
+  echo and let the −99 no-echo sentinel bleed through the bilinear
+  resampler as a low-dBZ halo — the fix removes the horizontal stripe
+  artifacts while keeping every 1 km echo.
+
 - **ECCC:** NA Radar Composite 1 km
   (`https://open.canada.ca/data/en/dataset/37aecae5-7783-4274-b595-df02aa003ac3`,
   GeoMet `https://geo.weather.gc.ca/geomet`): `RADAR_1KM_RRAI` rain (mm/h)
@@ -981,17 +1023,21 @@ the other products and the Pages publish proceed normally.
   INV-transparent pixels. The default coverage style paints outlines only
   and is never used as a mask. Alpha-zero echoes are observations (dry),
   never coverage proof.
-- **Precedence:** IEM everywhere inside its effective domain (dry = valid,
-  suppresses ECCC underneath — no duplicates) > ECCC rain/snow (max echo)
-  outside it where covered > transparent. ECCC rates rank-mapped to the
-  11-step N0Q key QUALITATIVELY (documented in legend/metadata; equal
-  colors ≠ identical dBZ). Snow blues render ONLY where ECCC
-  `Radar_1km_SfcPrecipType` (6-min, `SfcPrecipType_Dis` style) classifies
-  snow; mixed/freezing rain render on the dBZ key at matched severity.
-  Radar-only composite: no cloud underlay, no model fill (GDPS fill
-  disabled; restorable in `_gdps_precip_fill`).
-- **Refresh:** 300 s (IEM 5-min, ECCC 6-min). Live build 2026-10-11:
-  IEM 62,234 px + ECCC 17,572 px, Canadian echoes verified.
+- **Precedence:** MRMS SeamlessHSR everywhere inside its effective domain
+  (dry = valid, suppresses ECCC underneath — no duplicates) > ECCC
+  rain/snow (max echo) outside it where covered > regional MRMS
+  AK/HI/CARIB in the remaining gaps > OPERA/JMA > GFS model estimates >
+  transparent. ECCC
+  rates rank-mapped to the 11-step N0Q key QUALITATIVELY (documented in
+  legend/metadata; equal colors ≠ identical dBZ). Snow blues render ONLY
+  where ECCC `Radar_1km_SfcPrecipType` (6-min, `SfcPrecipType_Dis` style)
+  classifies snow; mixed/freezing rain render on the dBZ key at matched
+  severity. Radar-only composite: no cloud underlay, no model fill (GDPS
+  fill disabled; restorable in `_gdps_precip_fill`).
+- **Refresh:** 300 s (MRMS 2-min, ECCC 6-min). Live build 2026-10-22
+  (14:46Z, global canvas): MRMS CONUS 3 943 px (snow 477) + regional
+  AK/HI/CARIB 1 542 px + ECCC 7 793 px; NA canvas MRMS 9 683 px (snow
+  2 009) + regional 3 619 px + ECCC 30 465 px.
 
 ## 24. NA air temperature — HRRR + RRFS-NA + GDPS (verified live 2026-10-11)
 
@@ -1127,14 +1173,9 @@ the other products and the Pages publish proceed normally.
   where SfcPrecipType classifies snow (legend order verified) or the
   snow product alone echoes — unknown type stays on the key.
   then into the original 5-75 dBZ key bins. Precedence follows verified
-  ECCC dynamic coverage (75% of CONUS included) with IEM N0Q native
-  rendering filling ECCC gaps; IEM gap pixels repaint into key rows
-  (vivid cores by chromaticity with absolute-distance tie-break,
-  near-white opaque pixels kept at the Extreme row since white has no
-  chroma; washed pixels clamped to rows 0..3, so washed overview pixels
-  can never paint as severe). 10-px cross-fade rides the coverage edge. IEM overview-scale muting is inherent to the
-  source's continental rendering (verified identical across the dynamic
-  `nexrad-n0q-conus` layer and 20-degree tiles); no values are invented.
+  ECCC dynamic coverage (75% of CONUS included) with MRMS SeamlessHSR
+  (measured dBZ -> the same key bins) filling ECCC gaps. 10-px
+  cross-fade rides the coverage edge.
 - **Wind, original rules:** seed_step 20, ds 3.0, max 40 steps, font 7,
   label_every 2, extra_step 64 (verbatim `build_wind` parameters),
   max_labels scaled 260 -> 1200 for the larger land area; 16 NA city
@@ -1152,9 +1193,10 @@ the other products and the Pages publish proceed normally.
 
 ## 30. Worldwide precipitation expansion — source inventory (verified live 2026-10-15)
 
-North American sources (§17, §23: IEM N0Q + ECCC RRAI/RSNO/SfcPrecipType)
-are unchanged and keep top precedence. New worldwide layers integrate
-around them with a per-run source registry (`metadata.source_registry`).
+North American sources (§23: MRMS SeamlessHSR + ECCC
+RRAI/RSNO/SfcPrecipType) are unchanged and keep top precedence. New
+worldwide layers integrate around them with a per-run source registry
+(`metadata.source_registry`).
 
 ### Integrated (tested end-to-end, in the live pipeline)
 - **EUMETNET OPERA EU DBZH composite** (`scripts/precip_opera.py`):
@@ -1163,7 +1205,7 @@ around them with a per-run source registry (`metadata.source_registry`).
   5-min cadence, ~3.5 MB/file, 1 km LAEA (55N/10E), band 1 = dBZ
   (-9999000 = dry/undetect = valid, NaN = outside coverage), nearest-
   neighbour reproject to canvas (no invented intermediates). Echoes
-  (>=5 dBZ) paint only where IEM/ECCC have no coverage; type
+  (>=5 dBZ) paint only where MRMS/ECCC have no coverage; type
   undifferentiated -> N0Q key only, never snow blues. License CC BY 4.0
   (attributed "EUMETNET OPERA" in metadata/prov).
 - **JMA Japan nowcast** (`scripts/precip_jma.py`): anonymous XYZ tile
@@ -1172,16 +1214,16 @@ around them with a per-run source registry (`metadata.source_registry`).
   analyzed precipitation in JMA published mm/h classes 1/5/10/20/30/50
   (80+ color unobserved; nearest-match undercalls it, documented);
   transparent = none. Fixed radar-plausible box lon 122..148, lat 24..46
-  (official domain wider; fringes ceded to GFS). Echoes paint only
-  where IEM/ECCC/OPERA have no coverage; type undifferentiated -> N0Q
+   (official domain wider; fringes ceded to GFS). Echoes paint only
+   where MRMS/ECCC/OPERA have no coverage; type undifferentiated -> N0Q
   key via Z-R equivalents only, never snow blues. Attributed "Japan
   Meteorological Agency" in metadata/prov.
 - **NOAA GFS 0.25° f000 analysis** (`scripts/precip_gfs.py`): NOMADS
   byte-range GRIB fetch (same pattern as RRFS), 6-hourly cycles, cached
   per cycle. PRATE (kg/m²/s -> mm/h) + categorical CSNOW/CRAIN/CFRZR/
   CICEP. Display threshold 0.25 mm/h + organized-systems QC (>=12
-  cells). Painted ONLY in verified radar gaps (outside IEM domain,
-  ECCC coverage, OPERA coverage, JMA box), uniform alpha 160 with radar, snow via
+   cells). Painted ONLY in verified radar gaps (outside MRMS domain,
+   ECCC coverage, OPERA coverage, JMA box), uniform alpha 160 with radar, snow via
   CSNOW-gated blues, rain via N0Q — always labeled estimates.
   Public domain. Config `model_fill: false` disables it.
 
