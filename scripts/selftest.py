@@ -806,6 +806,37 @@ def main():
          (100.0, "100", "extreme")], "src")
     check("two-row-key-size", (_tw, _th) == (640, 252), (_tw, _th))
 
+    # ---- MRMS calibration onto the LIVE precipitation gradient ----
+    # The replacement source is measured dBZ (SeamlessHSR): it must land in
+    # exactly the same N0Q key bins the live legend paints, with no offset.
+    import numpy as np
+    from build_precipitation import KEY_ROWS as _KEY_ROWS
+    from build_precipitation_na import (KEY_BINS as _KEY_BINS,
+                                        SNOW_PAL as _SNOW_PAL,
+                                        _bin_for_dbz, _bins_for_dbz,
+                                        _snow_class_for_rate_cm,
+                                        _snow_row_for_class)
+    check("precip-key-11-rows", len(_KEY_ROWS) == 11 and len(_KEY_BINS) == 11,
+          (len(_KEY_ROWS), len(_KEY_BINS)))
+    check("precip-key-bins-ascending",
+          all(b < a for b, a in zip(_KEY_BINS, _KEY_BINS[1:])))
+    _zs = np.arange(-100.0, 100.0001, 0.05)
+    check("precip-mrms-bins-match-live-key",
+          bool((_bins_for_dbz(_zs) == np.array([_bin_for_dbz(float(z)) for z in _zs])).all()))
+    _bnd = [(-100.0, 0), (14.99, 0), (15.0, 1), (19.99, 1), (20.0, 2),
+            (39.99, 3), (40.0, 4), (49.99, 5), (50.0, 6), (54.99, 6),
+            (55.0, 7), (59.99, 7), (60.0, 8), (64.99, 8), (65.0, 9),
+            (69.99, 9), (70.0, 10), (200.0, 10)]
+    check("precip-bin-boundaries",
+          all(int(_bins_for_dbz(np.array([z]))[0]) == r for z, r in _bnd))
+    _cm = [0.05, 0.1, 0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0,
+           7.5, 10.0, 20.0, 99.0]
+    _srows = [_snow_row_for_class(_snow_class_for_rate_cm(float(r))) for r in _cm]
+    check("precip-snow-8-row-ramp", len(_SNOW_PAL) == 8)
+    check("precip-snow-monotonic", _srows == sorted(_srows), _srows)
+    check("precip-snow-ramp-bounds",
+          _srows[0] == 0 and _srows[-1] == len(_SNOW_PAL) - 1, _srows)
+
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     return 1 if FAIL else 0
 

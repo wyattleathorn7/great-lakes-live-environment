@@ -1010,6 +1010,17 @@ the other products and the Pages publish proceed normally.
   echo and let the −99 no-echo sentinel bleed through the bilinear
   resampler as a low-dBZ halo — the fix removes the horizontal stripe
   artifacts while keeping every 1 km echo.
+- **Calibration to the live gradient:** SeamlessHSR is measured dBZ, so
+  it maps **1:1** onto the same N0Q key bins the live legend paints
+  (`KEY_BINS = [5, 15, 20, 30, 40, 45, 50, 55, 60, 65, 70]` → the 11
+  `KEY_ROWS` colors), with no offset and no source-RGB lookup:
+  `_bins_for_dbz` is verified identical to `_bin_for_dbz` across
+  −100…100 dBZ. A live CONUS scan spans −19…66 dBZ with rows 0–9
+  populated (no clipping). MRMS snow converts water-equivalent
+  `PrecipRate` (mm/h) at 10:1 SLR to cm/h and maps onto the same 8-row
+  snow ramp as ECCC/GFS (`_snow_row_for_class` → `SNOW_PAL`). The
+  `precip-*` self-tests lock both mappings so a future key edit cannot
+  silently shift the colors.
 
 - **ECCC:** NA Radar Composite 1 km
   (`https://open.canada.ca/data/en/dataset/37aecae5-7783-4274-b595-df02aa003ac3`,

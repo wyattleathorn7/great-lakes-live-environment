@@ -82,7 +82,7 @@ KEY_ROWS = [
 ]
 
 SCALE_HTML = (
-    "Precipitation intensity (NEXRAD N0Q base reflectivity, dBZ, OBSERVED radar echo): "
+    "Precipitation intensity (measured radar reflectivity, dBZ, OBSERVED radar echo): "
     "<b>LOWEST 5 Very Light</b> cyan/blue (drizzle, mist) &rarr; "
     "<b>Light</b> greens (~20-30: light rain/snow) &rarr; "
     "<b>Moderate</b> dark green (~30-40: steady rain/snow) &rarr; "
@@ -93,7 +93,8 @@ SCALE_HTML = (
     "Same dBZ always shows the same color in every season — rain, snow, "
     "lake-effect snow, thunderstorms. No echo (no precipitation) stays "
     "see-through so the map underneath shows. "
-    "Measurement types differ by source: IEM N0Q and OPERA are MEASURED "
+    "Measurement types differ by source: MRMS SeamlessHSR (CONUS + regional "
+    "AK/HI/CARIB) and OPERA are MEASURED "
     "reflectivity (dBZ); ECCC rain colors are ESTIMATED dBZ equivalents "
     "converted from rain rates via Z=300R^1.4 (ECCC publishes mm/h, not "
     "dBZ — high-rate classes saturate near ~57 dBZ, so ECCC never paints "

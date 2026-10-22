@@ -643,8 +643,10 @@ KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
 # Shared snow sentence for legend HTML (variant + primary metadata).
 SNOW_SENT = (" ECCC snow echoes render blue ONLY where SfcPrecipType classifies snow "
     "(or the snow product alone echoes; mixed/freezing rain render on the dBZ key). "
-    "Snow rows are ECCC snow-rate classes in cm/h (official 14-class scale); "
-    "GFS snow ranks water-equivalent rate at 10:1 SLR on the same bands.")
+    "MRMS SeamlessHSR snow is classified by PrecipFlag (flag 3) and ranked from "
+    "PrecipRate at 10:1 SLR. Snow rows are ECCC snow-rate classes in cm/h "
+    "(official 14-class scale); GFS snow ranks water-equivalent rate at 10:1 SLR "
+    "on the same bands.")
 
 
 def _hex_to_rgb(h):
