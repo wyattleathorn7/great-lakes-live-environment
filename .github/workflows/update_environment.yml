@@ -14,7 +14,7 @@ on:
         type: choice
         options: ["all", "environmental", "halfhourly", "hourly", "daily", "weekly", "yearly", "wave_height", "water_temperature", "ice_coverage",
                     "ice_thickness", "ice_type", "leaf_color",
-                    "chlorophyll", "water_clarity", "solar_radiation",
+                    "water_clarity", "solar_radiation",
                     "snow_coverage", "uv_index",
                     "surface_pressure", "wave_direction", "wave_combined", "surface_currents", "aurora_global", "bacteria", "visibility", "humidity", "light_pollution", "air_quality", "condensation", "fog", "dew_point", "gamefish",
                     "wind_na", "air_temperature_na", "cloud_cover_na", "precipitation_na"]
@@ -225,39 +225,6 @@ jobs:
             kml/Great_Lakes_Live_Leaf_Color.kml
             output/state/leaf_color.json
             output/state/leaf_color
-          if-no-files-found: warn
-
-  chlorophyll:
-    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'weekly' || inputs.product == 'chlorophyll' }}
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Update chlorophyll
-        env:
-          PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
-        run: |
-          rc=0; python scripts/build_chlorophyll.py || rc=$?
-          if [ $rc -eq 2 ]; then echo "Chlorophyll source unavailable; previous raster kept."; exit 0; fi
-          exit $rc
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: site-chlorophyll
-          path: |
-            site/chlorophyll
-            site/kml/Great_Lakes_Live_Chlorophyll.kml
-            site/kml/live/Great_Lakes_Live_Chlorophyll.kml
-            kml/Great_Lakes_Live_Chlorophyll.kml
-            output/state/chlorophyll.json
-            output/state/chlorophyll
           if-no-files-found: warn
 
   water_clarity:
@@ -1019,7 +986,7 @@ jobs:
           [ "$code" = "204" ] || echo "::warning::NOAA chain dispatch returned $code (expected 204)"
 
   publish:
-    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, leaf_color, chlorophyll, water_clarity, solar_radiation, snow_coverage, uv_index, surface_pressure, wave_direction, wave_combined, surface_currents, aurora_global, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, wind_na, air_temperature_na, cloud_cover_na, precipitation_na, gamefish]
+    needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, leaf_color, water_clarity, solar_radiation, snow_coverage, uv_index, surface_pressure, wave_direction, wave_combined, surface_currents, aurora_global, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, wind_na, air_temperature_na, cloud_cover_na, precipitation_na, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
     if: always()

@@ -80,7 +80,7 @@ def run():
     except Exception as e:
         print(f"[{PRODUCT}] NO CYCLE AVAILABLE (keeping previous): {e}")
         return 2
-    source_id = f"hrrr-{dd}-t{cc}z-mslma-anl"
+    source_id = f"hrrr-{dd}-t{cc}z-mslma-anl-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if (prev.get("source_id") == source_id
             and prev.get("render_version") == RENDER_VERSION

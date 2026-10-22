@@ -91,7 +91,7 @@ def _build(info, zip_path, digest):
     if not polys:
         print(f"[{PRODUCT}] VALIDATION FAILED: no polygons parsed.")
         return 2
-    source_id = f"nic-{analysis_date}-{digest[:12]}"
+    source_id = f"nic-{analysis_date}-{digest[:12]}-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \

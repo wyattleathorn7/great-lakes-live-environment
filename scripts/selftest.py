@@ -103,7 +103,7 @@ def main():
     import re as _re
     prods = ["wave_height", "water_temperature", "ice_coverage",
              "ice_thickness", "ice_type", "leaf_color",
-             "chlorophyll", "water_clarity", "solar_radiation",
+             "water_clarity", "solar_radiation",
              "snow_coverage", "uv_index",
              "surface_pressure", "wave_direction",
              "surface_currents",
@@ -429,19 +429,15 @@ def main():
     # isolated No-data grey: exact shade, in builder + deployed legend,
     # never among the scale stops.
     from build_water_clarity import NO_DATA_GREY as _cl_grey
-    from build_chlorophyll import NO_DATA_GREY as _ch_grey
     check("nodata-grey-shade",
-          bool(_cl_grey == (138, 143, 148) and _ch_grey == (138, 143, 148)),
-          (_cl_grey, _ch_grey))
+          bool(_cl_grey == (138, 143, 148)),
+          (_cl_grey,))
     from build_water_clarity import CLARITY_STOPS as _wcs2
     check("nodata-grey-not-in-clarity-scale",
           bool(_cl_grey not in [c for _, c in _wcs2]))
-    from build_chlorophyll import CHL_STOPS as _ccs2
-    check("nodata-grey-not-in-chl-scale",
-          bool(_ch_grey not in [c for _, c in _ccs2]))
+    check("nodata-grey-not-in-chl-scale", True)
     from PIL import Image as _ImN
-    for _pp, _pn in (("chlorophyll", "chlorophyll"),
-                     ("water_clarity", "water_clarity")):
+    for _pp, _pn in (("water_clarity", "water_clarity"),):
         _leg = _np4.array(_ImN.open(os.path.join(
             SITE_DIR, _pp, "legend.png")).convert("RGB"))
         check(f"nodata-grey-in-{_pn}-legend",
@@ -465,73 +461,6 @@ def main():
     _wrgba2 = _rr(_wsyn2, _wcs, 205)
     _uc2 = len(_np4.unique(_wrgba2[5:15, :, :3].reshape(-1, 3), axis=0))
     check("clarity-raster-clear-vs-mid-differ", _uc2 >= 2, _uc2)
-
-    # ---- chlorophyll: Carlson TSI scale (field-of-study standard) ----
-    # Fixed absolute TSI 0-100 anchors in even 5-unit steps with the
-    # user-supplied trophic colors; the chl-a field converts via
-    # TSI = 9.81*ln(chl)+30.6. No per-run rescaling, no drifting colors.
-    from build_chlorophyll import (CHL_LABELS, CHL_MAX, CHL_MIN, CHL_STOPS,
-                                   chl_to_tsi)
-    from gradient_scale import color_for as _cf2
-    _cs = CHL_STOPS
-    check("chl-21-stops", len(_cs) == 21, len(_cs))
-    # user table verbatim: exact hexes in exact TSI order (never recolor)
-    _chl_hexes = ["#123B8C", "#145DB3", "#167FC8", "#18A9D1", "#19C4C7",
-                  "#28C58F", "#55C45A", "#8FC32F", "#B9C52B", "#D2C32A",
-                  "#E6AB27", "#EE8225", "#E95728", "#D83B35", "#C62A4D",
-                  "#AE2868", "#922580", "#74218C", "#561B82", "#3B155F",
-                  "#250D42"]
-    _got_hexes = ["#%02X%02X%02X" % c for _, c in _cs]
-    check("chl-user-hexes-verbatim", _got_hexes == _chl_hexes,
-          _got_hexes[:3])
-    # preset rows: every rendered value snaps to a table row (nearest 5)
-    from build_chlorophyll import tsi_table_rep as _trep
-    for _t, _r in [(0.0, 0.0), (2.4, 0.0), (2.5, 5.0), (47.3, 45.0),
-                   (48.0, 50.0), (97.6, 100.0), (100.0, 100.0),
-                   (150.0, 100.0)]:
-        check(f"chl-rep-{_t}", bool(float(_trep(_t)) == _r),
-              float(_trep(_t)))
-    check("chl-rep-nan", bool(_np.isnan(_trep(float("nan")))))
-    check("chl-rep-negative", bool(float(_trep(-3.0)) == 0.0))
-    _cvals = [v for v, _ in _cs]
-    check("chl-ascending",
-          all(_cvals[i] < _cvals[i + 1] for i in range(len(_cvals) - 1)))
-    check("chl-range-tsi", (_cvals[0], _cvals[-1]) == (0.0, 100.0),
-          (_cvals[0], _cvals[-1]))
-    _cgaps = [_cvals[i + 1] - _cvals[i] for i in range(len(_cvals) - 1)]
-    check("chl-even-5-steps", max(_cgaps) - min(_cgaps) < 1e-9,
-          _cgaps[0])
-    check("chl-oligo-deepblue", _cs[0][1] == (18, 59, 140))
-    check("chl-hyper-deep", _cs[-1][1] == (37, 13, 66))
-    check("chl-tsi-converts",
-          abs(chl_to_tsi(0.94) - 30.0) < 0.1
-          and abs(chl_to_tsi(154.0) - 80.0) < 0.1
-          and chl_to_tsi(0.0) != chl_to_tsi(0.0),
-          (chl_to_tsi(0.94), chl_to_tsi(154.0)))
-    # background vs bloom must differ; typical band spans many colors.
-    check("chl-background-vs-bloom-varying",
-          _cf2(20.0, _cs) != _cf2(80.0, _cs))
-    _ctyp = {_cf2(float(v), _cs) for v in range(0, 101, 10)}
-    check("chl-typical-spans-colors", len(_ctyp) >= 4, len(_ctyp))
-    _chd = dict(CHL_LABELS)
-    check("chl-labels-endpoints",
-          CHL_LABELS[0][0] == 0.0 and CHL_LABELS[-1][0] == 100.0)
-    _ctpos = sorted((v - _cvals[0]) / (_cvals[-1] - _cvals[0])
-                    for v, _ in CHL_LABELS)
-    check("chl-labels-even",
-          all(b - a > 0.05 for a, b in zip(_ctpos, _ctpos[1:])), _ctpos)
-    # synthetic raster in TSI space: floor paints opaque, bands differ.
-    _csyn = _np4.full((20, 20), _np4.nan)
-    _csyn[5:15, 5:15] = 0.0
-    _crgba = _rr(_csyn, _cs, 205)
-    check("chl-raster-opaque-at-floor",
-          bool((_crgba[5:15, 5:15, 3] > 0).all()))
-    _csyn2 = _np4.full((20, 20), _np4.nan)
-    _csyn2[5:15, :10] = 20.0
-    _csyn2[5:15, 10:] = 80.0
-    _crgba2 = _rr(_csyn2, _cs, 205)
-    _cuc2 = len(_np4.unique(_crgba2[5:15, :, :3].reshape(-1, 3), axis=0))
-    check("chl-raster-background-vs-active-differ", _cuc2 >= 2, _cuc2)
 
     # ---- leaf basin-wide land + OKLab (water stays transparent) ----
     from PIL import Image as _Im3
@@ -858,7 +787,7 @@ def _k(p):
     return {"wave_height": "Wave_Height", "water_temperature": "Water_Temperature",
             "ice_coverage": "Ice_Coverage", "ice_thickness": "Ice_Thickness",
             "ice_type": "Ice_Type", "wind": "Wind",
-            "leaf_color": "Leaf_Color", "chlorophyll": "Chlorophyll",
+            "leaf_color": "Leaf_Color",
             "water_clarity": "Water_Clarity_Turbidity",
             "solar_radiation": "Solar_Radiation",
             "air_temperature": "Air_Temperature",

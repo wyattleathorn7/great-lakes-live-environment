@@ -613,7 +613,7 @@ def run():
     for lake_dir, _r, _b in FVCOM_FILL:
         pk = fvcom_pick[lake_dir]
         parts.append(f"{lake_dir}-{pk[1]}" if pk else f"{lake_dir}-unavailable")
-    source_id = "+".join(parts)
+    source_id = "+".join(parts) + f"-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if (prev.get("source_id") == source_id
             and prev.get("render_version") == RENDER_VERSION

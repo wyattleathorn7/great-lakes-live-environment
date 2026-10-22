@@ -251,7 +251,7 @@ def run():
         return 2
     # Source-aware gate: RAP cycle + lead (not the run time) controls
     # rebuilds. A new hourly cycle valid for the new hour always rebuilds.
-    source_id = f"rap-{datestr}-t{cycle}z-f{lead:02d}"
+    source_id = f"rap-{datestr}-t{cycle}z-f{lead:02d}-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \

@@ -1,4 +1,4 @@
-"""NOAA CoastWatch ERDDAP griddap CSV reader (shared by chlorophyll/clarity).
+"""NOAA CoastWatch ERDDAP griddap CSV reader (used by water clarity).
 
 Uses urllib (stdlib) with retries; no netCDF dependency. Parses the
 (time,altitude,latitude,longitude,value) CSV into 2D lat/lon grids.
@@ -15,7 +15,7 @@ import urllib.request
 BASE = "https://coastwatch.pfeg.noaa.gov/erddap/griddap"
 # CoastWatch Central hub fallback (verified 2026-10-07: PFEG West Coast
 # node unreachable — DNS resolves, TCP 443 times out — while Central
-# answers normally and carries equivalent VIIRS chlorophyll datasets).
+# answers normally and carries equivalent VIIRS datasets).
 BASE_CENTRAL = "https://coastwatch.noaa.gov/erddap/griddap"
 # Browser-like UA: the front end 403s unknown bot UAs from datacenter IPs
 # (GitHub Actions runners); a real browser string passes the heuristic.

@@ -116,15 +116,6 @@ gradients; recoverable in archive/great_lakes_original/).</p>
 <a href="ice_type/metadata.json">metadata.json</a></p>
 </div>
 
-<div class="card" id="chlorophyll">
-<h2>🦠 Live Chlorophyll / Algal Activity</h2>
-<p><small id="chlorophyll-meta">loading…</small></p>
-<img class="legend" src="chlorophyll/legend.png" alt="chlorophyll legend">
-<p><a href="kml/Great_Lakes_Live_Chlorophyll.kml">Open in Google Earth (KML)</a> ·
-<a href="chlorophyll/current.png">current.png</a> ·
-<a href="chlorophyll/metadata.json">metadata.json</a></p>
-</div>
-
 <div class="card" id="water_clarity">
 <h2>🌫️ Live Water Clarity / Turbidity</h2>
 <p><small id="water_clarity-meta">loading…</small></p>
@@ -401,7 +392,7 @@ This project is not endorsed by NOAA. Stable URLs — Google Earth layers never
 need re-pointing; images carry version query strings so updates appear on refresh.</small></p>
 
 <script>
-["precipitation_na","air_temperature_na","cloud_cover_na","wind_na","wave_height","wave_combined","water_temperature","ice_coverage","ice_thickness","ice_type","leaf_color","chlorophyll","water_clarity","solar_radiation","snow_coverage","uv_index","surface_pressure","wave_direction","surface_currents","aurora_global","bacteria","visibility","humidity","light_pollution","air_quality","condensation","fog","dew_point","gamefish_walleye","gamefish_yellow_perch","gamefish_lake_trout","gamefish_steelhead","gamefish_brown_trout","gamefish_smallmouth_bass","gamefish_northern_pike","gamefish_muskellunge","gamefish_lake_sturgeon","gamefish_lake_whitefish","gamefish_chinook_salmon","gamefish_coho_salmon","gamefish_largemouth_bass","gamefish_burbot","gamefish_cisco","gamefish_sauger"].forEach(p=>{
+["precipitation_na","air_temperature_na","cloud_cover_na","wind_na","wave_height","wave_combined","water_temperature","ice_coverage","ice_thickness","ice_type","leaf_color","water_clarity","solar_radiation","snow_coverage","uv_index","surface_pressure","wave_direction","surface_currents","aurora_global","bacteria","visibility","humidity","light_pollution","air_quality","condensation","fog","dew_point","gamefish_walleye","gamefish_yellow_perch","gamefish_lake_trout","gamefish_steelhead","gamefish_brown_trout","gamefish_smallmouth_bass","gamefish_northern_pike","gamefish_muskellunge","gamefish_lake_sturgeon","gamefish_lake_whitefish","gamefish_chinook_salmon","gamefish_coho_salmon","gamefish_largemouth_bass","gamefish_burbot","gamefish_cisco","gamefish_sauger"].forEach(p=>{
   fetch(p+"/metadata.json").then(r=>r.json()).then(m=>{
     document.getElementById(p+"-meta").textContent =
       m.freshness+" | Data time: "+m.data_time_utc+" | Processed: "+m.processing_time_utc;

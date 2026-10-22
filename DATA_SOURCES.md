@@ -294,37 +294,7 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   renders.
 - Freshness wording: **"LATEST AVAILABLE COMPOSITE"** (+ age, + STALE flag).
 
-## 6. Chlorophyll — NOAA CoastWatch S-NPP+NOAA-20 VIIRS (NRT gapfilled, daily)
-
-- **Product (verified live 2026-09-23):**
-  `nesdisVHNnoaaSNPPnoaa20NRTchlaGapfilledDaily` on CoastWatch ERDDAP
-  (newest 2026-09-20): Chlorophyll-a, S-NPP + NOAA-20 VIIRS, Near
-  Real-Time, gapfilled, Daily. Variable `chlor_a` (OC3), mg m⁻³, valid
-  0.001–1000. Fallback: `nesdisVHNSQchlaDaily` (Science Quality, newest
-  2026-09-13, ~10 d production latency). Dead ends confirmed live:
-  `erdVHNchla1day` (stale at 2026-06-14), `nesdisVHNchlaDaily` (stale at
-  2026-08-25), `nesdisVHNnoaa20chlaDaily` (stale at 2026-09-02). NOAA-21
-  is not yet in CoastWatch ERDDAP, so no NOAA-21 chlorophyll is
-  fabricated; the S-NPP+NOAA-20 NRT stream is the operational coverage.
-  2026-10-07 host fallback: the PFEG West Coast ERDDAP node went
-  unreachable (DNS resolves, TCP 443 times out — server-side outage,
-  not a seasonal data gap), so `noaacwN20VIIRSchlaDaily` (NOAA-20 VIIRS
-  chlorophyll Daily) on the CoastWatch Central hub joins the rotation
-  (verified same `chlor_a` OC3 variable, mg m⁻³, valid 0.001–1000,
-  data current). Newest-wins across hosts; per-day fallback fills gaps.
-  Rendered as a newest-valid mosaic of the latest 7 dailies (daily ocean
-   color is cloud-sparse; ERDDAP stride-2 fetch, canvas upscales).
-   Balanced LINEAR color scale. The gapfilled NRT stream also removes the
-   scan-line gaps of the old SQ-only mosaic.
-- **Display scale (v6):** Carlson Trophic State Index 0–100
-  (TSI = 9.81·ln(chl-a)+30.6, clamped 0–100) as 21 fixed preset table
-  colors (nearest 5 TSI units; verbatim user hexes, never blended).
-  The legend is the table itself: Carlson TSI | Chlorophyll-a (ug/L) |
-  Trophic State Classification | actual Color swatch. Same row always
-  shows the same color; high TSI marks biomass/activity, never toxins.
-- Freshness wording: **"LATEST AVAILABLE (daily composite)"**.
-
-## 7. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (SQ, daily)
+## 6. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (SQ, daily)
 
 - **Product (verified live 2026-09-28):** KdPAR, S-NPP VIIRS, Global 4 km,
   Daily, newest-wins across `nesdisVHNkdparDaily` (NRT, newest 2026-09-21)

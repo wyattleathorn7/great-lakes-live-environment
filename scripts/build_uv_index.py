@@ -210,7 +210,7 @@ def _build(got, raw_path, now):
     # Source-aware gate: (run, forecast hour) is the observation id. The
     # selected hour advances ~hourly as time passes, so this product
     # legitimately rebuilds up to 24x/day; identical ids never rebuild.
-    source_id = f"uvi-{datestr}-t12z-f{fh:02d}"
+    source_id = f"uvi-{datestr}-t12z-f{fh:02d}-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \

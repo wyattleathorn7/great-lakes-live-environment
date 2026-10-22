@@ -206,7 +206,7 @@ def _finish(stage, stage_prod, bounds, W, H, rec, res, stops, legend_wh,
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = scale_html
     meta["model_cycle"] = f"{datestr} t{cycle}z"
-    source_id = f"hrrr-{datestr}-t{cycle}z"
+    source_id = f"hrrr-{datestr}-t{cycle}z-r{RENDER_VERSION}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["historical"] = {"low": rec["hist_min"], "high": vmax,

@@ -29,8 +29,9 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from live_field import (SKIP_NOTE, finish, refresh_kml, should_skip)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, USER_AGENT, bin_to_canvas,
-                              canvas_indices, load_bounds, now_det_str)
+from geospatial_utils import (REPO_ROOT, RENDER_VERSION, SITE_DIR, USER_AGENT,
+                              bin_to_canvas, canvas_indices, load_bounds,
+                              now_det_str)
 
 PRODUCT = "light_pollution"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -254,7 +255,7 @@ def run():
     except Exception as e:
         print(f"[{PRODUCT}] PROBE FAILED (keeping previous): {e}")
         return 2
-    source_id = f"gibs-black-marble-2016-{phash}"
+    source_id = f"gibs-black-marble-2016-{phash}-r{RENDER_VERSION}"
     if should_skip(PRODUCT, source_id):
         print(f"[{PRODUCT}] composite unchanged ({phash}); keeping raster.")
         return refresh_kml(PRODUCT, KML_FILE, OVERLAY_NAME,

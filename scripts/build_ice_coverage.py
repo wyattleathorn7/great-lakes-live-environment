@@ -69,7 +69,7 @@ def run():
     # Source-aware gate: NIC sends no Last-Modified, so the content
     # hash is the observation id (off-season grids repeat identically for
     # weeks). Same hash -> keep the published raster, refresh KMLs only.
-    source_id = f"nic1800-{digest[:16]}"
+    source_id = f"nic1800-{digest[:16]}-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id \
             and prev.get("render_version") == RENDER_VERSION \
@@ -171,7 +171,7 @@ def _build(info, raw_path, digest, source_id=None):
                                 "0% ice; 0% open water is also transparent by "
                                 "design so base layers stay visible."))
     if source_id is None:
-        source_id = f"nic1800-{digest[:16]}"
+        source_id = f"nic1800-{digest[:16]}-r{RENDER_VERSION}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {

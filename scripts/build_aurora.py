@@ -365,7 +365,7 @@ def run(preview_dir=None, font_size=7):
     if not obs or not fcst:
         print(f"[{PRODUCT}] VALIDATION FAILED: missing timestamps. Keeping previous.")
         return 2
-    source_id = f"ovation-{obs}-fcst-{fcst}"
+    source_id = f"ovation-{obs}-fcst-{fcst}-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if (prev.get("source_id") == source_id
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png"))

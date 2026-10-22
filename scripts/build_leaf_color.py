@@ -510,7 +510,7 @@ def _build(bounds, W, H, vi, rf, sig):
     # (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.
-    source_id = f"leaf-v8-{sig[:12]}"
+    source_id = f"leaf-v8-{sig[:12]}-r{RENDER_VERSION}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {

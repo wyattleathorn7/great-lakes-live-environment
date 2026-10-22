@@ -13,7 +13,6 @@ sources, plus **sixteen live game-fish distribution gradients** (see below).
 | 🧊 Live Ice Type | USNIC NAIS daily SIGRID-3 shapefile → predominant WMO stage (**analyzed**, 17 categories + unknown) | LATEST AVAILABLE (seasonal) |
 | 💨 Live Wind | NCEP GLWU `UGRD/VGRD` surface analysis → knots → **Beaufort Force 0–12** + direction arrows | LIVE / CURRENT MODEL (analysis), 6-hourly cycles |
 | 🍂 Live Leaf Color | NASA MODIS Aqua MYD13A1/MYD09A1 global 500 m via Planetary Computer (NDVI trajectory + reflectance + NDSI snow) → circular phenology phase, basin-wide land (open water transparent) | LATEST AVAILABLE COMPOSITE |
-| 🦠 Live Chlorophyll | NOAA CoastWatch S-NPP VIIRS chlorophyll-a, Science Quality, Global 4 km, Daily (ERDDAP); newest-valid 7-day mosaic; Carlson TSI 0–100 trophic scale, water-only | LATEST AVAILABLE (daily composite) |
 | 🌫️ Live Water Clarity | NOAA CoastWatch S-NPP VIIRS Kd(PAR) diffuse attenuation, NRT, Global 4 km, Daily (ERDDAP); newest-valid 7-day mosaic; balanced linear scale, water-only | LATEST AVAILABLE (daily composite) |
 | ☀️ Live Solar Radiation | NOAA/NCEP RAP hourly DSWRF surface flux (incoming sunlight W/m²; not a UV Index), value valid for the current hour; fixed sequential scale, full basin rectangle | LIVE / CURRENT MODEL (hourly RAP cycle) |
 | 🌡️ Live Air Temperature | NOAA/NCEP HRRR 3 km 2 m temperature analysis, hourly cycles; FIXED brightened banded 5°F key (-60..150 °F, blue-white → royal freeze wall → yellows → scorching pink/reds), full basin rectangle | LIVE / CURRENT MODEL (analysis), hourly cycles |
@@ -155,7 +154,6 @@ Local test: `pip install -r requirements.txt`, then
 `python scripts/build_wave_height.py`,
 `python scripts/build_wind.py`,
 `python scripts/build_leaf_color.py`,
-`python scripts/build_chlorophyll.py`,
 `python scripts/build_water_clarity.py`,
 `python scripts/build_solar_radiation.py`,
 `python scripts/build_air_temperature.py`,

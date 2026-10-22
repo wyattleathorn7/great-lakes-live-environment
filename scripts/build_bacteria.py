@@ -65,7 +65,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, base_metadata,
+from geospatial_utils import (REPO_ROOT, RENDER_VERSION, SITE_DIR, base_metadata,
                               bleed_rgb_into_transparent, load_bounds,
                               load_watermask, now_det_str, promote_stage,
                               read_state, save_png, source_token, stage_dir,
@@ -494,7 +494,7 @@ def run():
         key = f"{o['station']}|{o['date']}|{o['value']}"
         if key > newest:
             newest = key
-    source_id = f"wqp-{dt.date.today().isoformat()}-n{len(obs_rows)}-{abs(hash(newest)) % 10_000_000:07d}"
+    source_id = f"wqp-{dt.date.today().isoformat()}-n{len(obs_rows)}-{abs(hash(newest)) % 10_000_000:07d}-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if (prev.get("source_id") == source_id
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png"))

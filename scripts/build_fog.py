@@ -23,8 +23,9 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from derived_moisture import fog_risk_index
 from live_field import (SKIP_NOTE, finish, refresh_kml, should_skip)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, bin_to_canvas,
-                              canvas_indices, load_bounds, now_det_str)
+from geospatial_utils import (REPO_ROOT, RENDER_VERSION, SITE_DIR,
+                              bin_to_canvas, canvas_indices, load_bounds,
+                              now_det_str)
 
 PRODUCT = "fog"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -94,7 +95,7 @@ def run():
     except Exception as e:
         print(f"[{PRODUCT}] NO CYCLE AVAILABLE (keeping previous): {e}")
         return 2
-    source_id = f"hrrr-{dd}-t{cc}z-fog-anl"
+    source_id = f"hrrr-{dd}-t{cc}z-fog-anl-r{RENDER_VERSION}"
     if should_skip(PRODUCT, source_id):
         print(f"[{PRODUCT}] source unchanged ({source_id}); keeping raster.")
         return refresh_kml(PRODUCT, KML_FILE, OVERLAY_NAME,

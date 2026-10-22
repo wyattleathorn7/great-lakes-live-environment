@@ -99,7 +99,7 @@ def run():
     except Exception as e:
         print(f"[{PRODUCT}] NO FILE AVAILABLE (keeping previous): {e}")
         return 2
-    source_id = f"goes19-acmc-{scan_dt.strftime('%Y%m%d-%H%M')}"
+    source_id = f"goes19-acmc-{scan_dt.strftime('%Y%m%d-%H%M')}-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if (prev.get("source_id") == source_id
             and prev.get("render_version") == RENDER_VERSION

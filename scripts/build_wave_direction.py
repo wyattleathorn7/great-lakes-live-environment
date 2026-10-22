@@ -231,7 +231,7 @@ def run():
         print(f"[{PRODUCT}] NO CYCLE AVAILABLE (keeping previous).")
         return 2
     url, datestr, cycle, stamp = pick
-    source_id = f"glwu-{stamp[:8]}-{stamp[8:]}00Z-wvperiod"
+    source_id = f"glwu-{stamp[:8]}-{stamp[8:]}00Z-wvperiod-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if (prev.get("source_id") == source_id
             and prev.get("render_version") == RENDER_VERSION

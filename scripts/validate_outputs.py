@@ -41,8 +41,7 @@ PRODUCTS = {
                  "max_opaque_min": 0},  # off-season => transparent OK
     "leaf_color": {"kml": "Great_Lakes_Live_Leaf_Color.kml",
                    "max_opaque_min": 10_000},
-    "chlorophyll": {"kml": "Great_Lakes_Live_Chlorophyll.kml",
-                    "max_opaque_min": 100},
+
     "water_clarity": {"kml": "Great_Lakes_Live_Water_Clarity_Turbidity.kml",
                       "max_opaque_min": 100},
     "solar_radiation": {"kml": "Great_Lakes_Live_Solar_Radiation.kml",
@@ -358,7 +357,7 @@ def main():
                 for _k in ("low", "high", "percentiles"):
                     if _k not in _h:
                         failures.append(f"{product}: historical missing '{_k}'")
-            if product in ("chlorophyll", "water_clarity", "solar_radiation"):
+            if product in ("water_clarity", "solar_radiation"):
                 _h = meta.get("historical", {})
                 for _k in ("low", "high", "percentiles"):
                     if _k not in _h:
@@ -439,8 +438,7 @@ def main():
                 failures.append(f"{product}: metadata contains placeholder URL")
             if product == "water_clarity" and (lo, hi) != (0.016, 2.0):
                 failures.append(f"{product}: clarity scale must be fixed 0.016-2.0, got {lo}-{hi}")
-            if product == "chlorophyll" and (lo, hi) != (0.0, 100.0):
-                failures.append(f"{product}: chlorophyll scale must be fixed Carlson TSI 0-100, got {lo}-{hi}")
+
             if product == "ice_type":
                 cats = meta.get("ice_type_categories", [])
                 codes = {c.get("code") for c in cats}
@@ -559,12 +557,12 @@ def main():
                 # NOTE: NA gradients keep their legends in the entry
                 # (top-folder) files only; live views carry the Coverage
                 # Selector instead, so they are exempt here.
-                if product in ("chlorophyll", "water_clarity",
+                if product in ("water_clarity",
                                "solar_radiation", "air_temperature",
                                "uv_index", "cloud_cover",
                                "surface_pressure", "wave_direction",
                                "surface_currents",
-                                "precipitation", "aurora_global", "bacteria",
+                               "precipitation", "aurora_global", "bacteria",
                                "visibility", "humidity",
                                "light_pollution",
                                "air_quality", "condensation", "fog",
@@ -572,22 +570,20 @@ def main():
                     if "<Folder>" not in text:
                         failures.append(f"{product}: no product Folder in live KML")
                     for _need in (("LOWEST", "HIGHEST+", "legend.png?v=")
-                                  if product not in (
-                                      "air_quality", "chlorophyll",
-                                      "visibility", "fog", "condensation")
-                                  else {
-                                      "air_quality": (
-                                          "US EPA Air Quality Index",
-                                          "legend.png?v="),
-                                      "chlorophyll": (
-                                          "Carlson", "legend.png?v="),
-                                      "visibility": (
-                                          "LIFR", "legend.png?v="),
-                                      "fog": (
-                                          "Active fog", "legend.png?v="),
-                                      "condensation": (
-                                          "Saturation", "legend.png?v="),
-                                  }[product]):
+                                   if product not in (
+                                       "air_quality",
+                                       "visibility", "fog", "condensation")
+                                   else {
+                                       "air_quality": (
+                                           "US EPA Air Quality Index",
+                                           "legend.png?v="),
+                                       "visibility": (
+                                           "LIFR", "legend.png?v="),
+                                       "fog": (
+                                           "Active fog", "legend.png?v="),
+                                       "condensation": (
+                                           "Saturation", "legend.png?v="),
+                                   }[product]):
                         if _need not in text:
                             failures.append(f"{product}: live folder description "
                                             f"missing '{_need}'")

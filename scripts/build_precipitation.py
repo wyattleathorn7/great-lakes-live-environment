@@ -46,7 +46,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from geospatial_utils import (REPO_ROOT, SITE_DIR, USER_AGENT, base_metadata,
+from geospatial_utils import (REPO_ROOT, RENDER_VERSION, SITE_DIR, USER_AGENT,
+                              base_metadata,
                               load_bounds, now_det_str, promote_stage,
                               read_state, save_png, source_token, stage_dir,
                               write_metadata, write_state)
@@ -133,7 +134,7 @@ def run():
     now = dt.datetime.now(dt.timezone.utc)
     minute_bin = (now.minute // 5) * 5
     scan_dt = now.replace(minute=minute_bin, second=0, microsecond=0)
-    source_id = f"iem-n0q-{scan_dt.strftime('%Y%m%d-%H%M')}"
+    source_id = f"iem-n0q-{scan_dt.strftime('%Y%m%d-%H%M')}-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     # NOTE: no byte-stability skip here beyond the same-bin fast path:
     # precipitation moves fast, and the fast-live workflow runs on the

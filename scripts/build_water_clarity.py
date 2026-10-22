@@ -42,7 +42,7 @@ from gradient_scale import (draw_scale_legend, load_record, render_rgba,
 PRODUCT = "water_clarity"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
 # Isolated No-data grey (standalone swatch + missing-water paint; NEVER
-# a scale stop). Only chlorophyll + water clarity carry it.
+# a scale stop). Only water clarity carries it.
 NO_DATA_GREY = (138, 143, 148)  # #8A8F94
 # Live source candidates (verified 2026-09-28): the legacy NRT id is back
 # online (newest 2026-09-21) and currently FRESHER than the Science Quality
@@ -217,8 +217,19 @@ def _refresh_kml():
     return 0
 
 
+def _bin_grid(lats1d, lons1d, grid, bounds, W, H):
+    from geospatial_utils import resample_gridded
+    la = np.asarray(lats1d, dtype=float)
+    lo = np.asarray(lons1d, dtype=float)
+    g = np.asarray(grid, dtype=float)
+    if g.shape != (la.size, lo.size):
+        raise ValueError(f"ERDDAP grid shape {g.shape} != "
+                         f"(lats {la.size}, lons {lo.size})")
+    LO, LA = np.meshgrid(lo, la)
+    return resample_gridded(g, LA, LO, bounds, (H, W))
+
+
 def _build(bounds, times, dataset):
-    from build_chlorophyll import _bin_grid
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
     W, H = bounds["canvas_width"], bounds["canvas_height"]
@@ -361,7 +372,7 @@ def _build(bounds, times, dataset):
     # day and its owner only.
     # The id tracks the newest day ACTUALLY present and its owner, so it
     # advances exactly when real data does (never on empty anchor days).
-    source_id = f"{eff_owner}-v7-{eff_newest[:10]}"
+    source_id = f"{eff_owner}-v7-{eff_newest[:10]}-r{RENDER_VERSION}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     token = meta["source_version"]
