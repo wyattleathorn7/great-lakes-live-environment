@@ -955,25 +955,17 @@ the other products and the Pages publish proceed normally.
   source transparent (ECCC/OPERA/GFS fallbacks paint as before). Effective
   network domain used for precedence: lon −130…−65, lat 22…50
   (documented in `config/precipitation_na.json`, NOT the border).
-- **Snow (all US coverage):** `PrecipFlag` (`https://mrms.ncep.noaa.gov/data/2D/PrecipFlag/`)
-  classifies each echo; flag 3 = snow, 1/6/7/10/91/96 = rain/hail/tropical
-  mixtures. Snow is painted on the blue snow ramp, ranked by `PrecipRate`
-  (`/data/2D/PrecipRate/`, mm/h water-equivalent) at 10:1 SLR onto the
-  same cm/h classes the ECCC/GFS snow estimates use (dBZ-rank fallback
-  when the rate is unavailable). Flag 0 echoes are sub-5 dBZ noise and stay
-  on the rain key; flag −3 (no flag coverage) echoes keep the rain key so
-  the CONUS appearance is unchanged. Official flag table:
-  `NOAA-National-Severe-Storms-Laboratory/mrms-support`
-  `GRIB2_TABLES/UserTable_MRMS_PrecipFlags.csv`.
-- **Regional domains (fill the old IEM gaps):** the same SeamlessHSR +
-  PrecipFlag + PrecipRate family is read from the `ALASKA/`, `HAWAII/` and
-  `CARIB/` subdirectories (ALASKA 2200×5000, HAWAII 2200×2600, CARIB
-  1500×3000). Echoes paint only where no higher-priority echo (MRMS CONUS /
-  ECCC / OPERA / JMA) is already present — the ECCC
-  `RADAR_COVERAGE_*.INV` layer is transparent OUTSIDE its own extent, so
-  its cov mask must NOT gate the regional fill (it would read as
-  "covered" over Alaska/Hawaii/Caribbean). Regional valid coverage also
-  suppresses GFS model fill below.
+- **Snow:** by product decision there is no separate snow scale, snow
+  ramp or snow legend row. Rain and snow share the same N0Q dBZ key, so
+  the same reflectivity always shows the same color in every season.
+- **Regional domains (fill the old IEM gaps):** SeamlessHSR is read from
+  the `ALASKA/`, `HAWAII/` and `CARIB/` subdirectories (ALASKA 2200×5000,
+  HAWAII 2200×2600, CARIB 1500×3000). Echoes paint only where no
+  higher-priority echo (MRMS CONUS / ECCC / OPERA / JMA) is already
+  present — the ECCC `RADAR_COVERAGE_*.INV` layer is transparent OUTSIDE
+  its own extent, so its cov mask must NOT gate the regional fill (it
+  would read as "covered" over Alaska/Hawaii/Caribbean). Regional valid
+  coverage also suppresses GFS model fill below.
 - **Downsampling:** ~1 km MRMS is max-composited onto the ~0.1° canvas
   cell (any source echo in the cell paints; value = echo-weighted mean
   dBZ). Plain point sampling of the fine grid both dropped ~60% of real
@@ -986,10 +978,8 @@ the other products and the Pages publish proceed normally.
   `KEY_ROWS` colors), with no offset and no source-RGB lookup:
   `_bins_for_dbz` is verified identical to `_bin_for_dbz` across
   −100…100 dBZ. A live CONUS scan spans −19…66 dBZ with rows 0–9
-  populated (no clipping). MRMS snow converts water-equivalent
-  `PrecipRate` (mm/h) at 10:1 SLR to cm/h and maps onto the same 8-row
-  snow ramp as ECCC/GFS (`_snow_row_for_class` → `SNOW_PAL`). The
-  `precip-*` self-tests lock both mappings so a future key edit cannot
+  populated (no clipping). Rain and snow share this single scale.
+  The `precip-*` self-tests lock the mapping so a future key edit cannot
   silently shift the colors.
 
 - **ECCC:** NA Radar Composite 1 km
@@ -1010,15 +1000,14 @@ the other products and the Pages publish proceed normally.
   AK/HI/CARIB in the remaining gaps > OPERA/JMA > GFS model estimates >
   transparent. ECCC
   rates rank-mapped to the 11-step N0Q key QUALITATIVELY (documented in
-  legend/metadata; equal colors ≠ identical dBZ). Snow blues render ONLY
-  where ECCC `Radar_1km_SfcPrecipType` (6-min, `SfcPrecipType_Dis` style)
-  classifies snow; mixed/freezing rain render on the dBZ key at matched
-  severity. Radar-only composite: no cloud underlay, no model fill (GDPS
+  legend/metadata; equal colors ≠ identical dBZ). Rain and snow share
+  the same N0Q key — there is no separate snow ramp or snow legend.
+  Radar-only composite: no cloud underlay, no model fill (GDPS
   fill disabled; restorable in `_gdps_precip_fill`).
 - **Refresh:** 300 s (MRMS 2-min, ECCC 6-min). Live build 2026-10-22
-  (14:46Z, global canvas): MRMS CONUS 3 943 px (snow 477) + regional
-  AK/HI/CARIB 1 542 px + ECCC 7 793 px; NA canvas MRMS 9 683 px (snow
-  2 009) + regional 3 619 px + ECCC 30 465 px.
+  (16:10Z, global canvas): MRMS CONUS 3 912 px + regional
+  AK/HI/CARIB 1 997 px + ECCC 8 263 px; NA canvas MRMS 9 539 px
+  + regional 5 199 px + ECCC 32 097 px.
 
 ## 24. NA air temperature — HRRR + RRFS-NA + GDPS (verified live 2026-10-11)
 
@@ -1147,12 +1136,9 @@ the other products and the Pages publish proceed normally.
   rate class, then to ESTIMATED dBZ equivalents via the NWS NEXRAD Z-R
   bridge (Z=300R^1.4; ECCC publishes rates, not reflectivity — its 14
   rain classes map to bins 0..7 and saturate near ~57 dBZ, so ECCC
-  colors must never be read as measured dBZ). Snow is separate: RSNO
-  classes (cm/h, official 14-class scale verified from the
-  Radar-Snow_14colors legend) map directly to the 8 snow rows by class
-  order (0.1–0.3 … 20+ cm/h), never through rain thresholds; blue only
-  where SfcPrecipType classifies snow (legend order verified) or the
-  snow product alone echoes — unknown type stays on the key.
+  colors must never be read as measured dBZ). Snow echoes (RSNO) are
+  detected for provenance only and render on the same 11-step N0Q key
+  at matched class severity — no separate snow ramp or snow legend.
   then into the original 5-75 dBZ key bins. Precedence follows verified
   ECCC dynamic coverage (75% of CONUS included) with MRMS SeamlessHSR
   (measured dBZ -> the same key bins) filling ECCC gaps. 10-px
@@ -1187,7 +1173,7 @@ worldwide layers integrate around them with a per-run source registry
   (-9999000 = dry/undetect = valid, NaN = outside coverage), nearest-
   neighbour reproject to canvas (no invented intermediates). Echoes
   (>=5 dBZ) paint only where MRMS/ECCC have no coverage; type
-  undifferentiated -> N0Q key only, never snow blues. License CC BY 4.0
+  undifferentiated -> N0Q key. License CC BY 4.0
   (attributed "EUMETNET OPERA" in metadata/prov).
 - **JMA Japan nowcast** (`scripts/precip_jma.py`): anonymous XYZ tile
   fetch, no credentials, 5-min cadence (analysis at validtime==
@@ -1197,24 +1183,24 @@ worldwide layers integrate around them with a per-run source registry
   transparent = none. Fixed radar-plausible box lon 122..148, lat 24..46
    (official domain wider; fringes ceded to GFS). Echoes paint only
    where MRMS/ECCC/OPERA have no coverage; type undifferentiated -> N0Q
-  key via Z-R equivalents only, never snow blues. Attributed "Japan
+  key via Z-R equivalents only. Attributed "Japan
   Meteorological Agency" in metadata/prov.
 - **NOAA GFS 0.25° f000 analysis** (`scripts/precip_gfs.py`): NOMADS
   byte-range GRIB fetch (same pattern as RRFS), 6-hourly cycles, cached
   per cycle. PRATE (kg/m²/s -> mm/h) + categorical CSNOW/CRAIN/CFRZR/
   CICEP. Display threshold 0.25 mm/h + organized-systems QC (>=12
    cells). Painted ONLY in verified radar gaps (outside MRMS domain,
-   ECCC coverage, OPERA coverage, JMA box), uniform alpha 160 with radar, snow via
-  CSNOW-gated blues, rain via N0Q — always labeled estimates.
+   ECCC coverage, OPERA coverage, JMA box), uniform alpha 160 with radar,
+  one N0Q key for rain and snow — always labeled estimates.
   Public domain. Config `model_fill: false` disables it.
 
 ### Snowfall finding
 No single genuine global snowfall *radar* product was verified to
-exist. Best feasible multi-source architecture (implemented):
-ECCC SfcPrecipType-classified snow (observed, vivid blues) >
-GFS CSNOW-estimated snow (same blues, radar gaps only) >
-transparent. RainViewer snow is a color scheme, not a data field;
-SFR needs PDA access; OPERA exposes no type product here.
+exist. By product decision snow is not color-coded separately: every
+echo (rain or snow) renders on the shared N0Q dBZ key, so the same
+reflectivity always shows the same color. RainViewer snow is a color
+scheme, not a data field; SFR needs PDA access; OPERA exposes no type
+product here.
 
 ### Investigated but NOT integrated (with reason)
 - **RainViewer**: API live and tested, but free terms cover personal/

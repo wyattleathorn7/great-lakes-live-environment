@@ -741,10 +741,7 @@ def main():
     import numpy as np
     from build_precipitation import KEY_ROWS as _KEY_ROWS
     from build_precipitation_na import (KEY_BINS as _KEY_BINS,
-                                        SNOW_PAL as _SNOW_PAL,
-                                        _bin_for_dbz, _bins_for_dbz,
-                                        _snow_class_for_rate_cm,
-                                        _snow_row_for_class)
+                                        _bin_for_dbz, _bins_for_dbz)
     check("precip-key-11-rows", len(_KEY_ROWS) == 11 and len(_KEY_BINS) == 11,
           (len(_KEY_ROWS), len(_KEY_BINS)))
     check("precip-key-bins-ascending",
@@ -758,13 +755,6 @@ def main():
             (69.99, 9), (70.0, 10), (200.0, 10)]
     check("precip-bin-boundaries",
           all(int(_bins_for_dbz(np.array([z]))[0]) == r for z, r in _bnd))
-    _cm = [0.05, 0.1, 0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0,
-           7.5, 10.0, 20.0, 99.0]
-    _srows = [_snow_row_for_class(_snow_class_for_rate_cm(float(r))) for r in _cm]
-    check("precip-snow-8-row-ramp", len(_SNOW_PAL) == 8)
-    check("precip-snow-monotonic", _srows == sorted(_srows), _srows)
-    check("precip-snow-ramp-bounds",
-          _srows[0] == 0 and _srows[-1] == len(_SNOW_PAL) - 1, _srows)
 
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     return 1 if FAIL else 0

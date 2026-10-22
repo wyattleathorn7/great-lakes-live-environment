@@ -93,7 +93,7 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
   covers (e.g. Iceland) → JMA nowcast
   intensity (mm/h classes 1–80 via Z-R equivalents, undifferentiated) in
   the Japan box (lon 122–148, lat 24–46) → GFS estimates
-  (CSNOW-gated snow blues / CRAIN key colors, ≥0.25 mm/h,
+  (CSNOW/CRAIN, same colors as radar, ≥0.25 mm/h,
   organized systems only) in verified radar gaps → transparent.
   The IEM box is intersected with land+~200km offshore (WSR-88D range),
   so open ocean never suppresses model estimates — previously the raw
@@ -103,16 +103,11 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
   All echo pixels share one uniform alpha (160/255) and one color
   scale — estimates are disclosed as model output in the metadata
   and registry, not by separate colors.
-  Rain renders on the original N0Q key; snow renders in the blue snow
-  ramp only where `Radar_1km_SfcPrecipType` classifies snow (or the snow
-  product alone echoes). ECCC colors are Z-R estimated dBZ equivalents
-  for rain (saturate ~57 dBZ), not measured dBZ; snow rows are ECCC
-  snow-rate classes in cm/h; GFS snow ranks water-equivalent rate at
-  10:1 SLR on the same bands (model output, same colors).
-  MRMS snow (CONUS + regional) is classified by `PrecipFlag` (flag 3) and
-  ranked by `PrecipRate` mm/h at 10:1 SLR onto the same cm/h bands, so
-  snow is distinguished from rain everywhere in the US, including
-  Alaska. Fine ~1 km MRMS is max-composited onto the canvas cell, so no
+  Rain and snow both render on the original N0Q key: there is no
+  separate snow ramp or snow legend. ECCC colors are Z-R estimated dBZ
+  equivalents (saturate ~57 dBZ), not measured dBZ; GFS estimates use
+  the same colors (model output).
+  Fine ~1 km MRMS is max-composited onto the canvas cell, so no
   echo is dropped and the −99 no-echo sentinel cannot paint a halo.
 - **Air temperature:** HRRR → RRFS-NA (para feed until prod HTTPS opens) →
   GDPS WCS worldwide → transparent. Same 5°F bands.
