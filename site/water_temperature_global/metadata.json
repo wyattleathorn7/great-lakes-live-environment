@@ -6,9 +6,9 @@
   "product_name": "JPL GHRSST Level 4 MUR Global Foundation SST Analysis v4.1 (analysed_sst, degree_C; 1 km daily) (lakes) + NOAA CoastWatch Geo-Polar Blended SST Analysis, Diurnal Correction (Day+Night), GHRSST NRT Global 5 km Daily (analysed_sst, degree_C) (oceans/seas) + NOAA/GLERL CoastWatch GLSEA (Great Lakes Surface Environmental Analysis) (Great Lakes)",
   "variable": "analysed/fused lake surface + sea surface water temperature (satellite-derived composite/analysis)",
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplMURSST41",
-  "data_time_utc": "MUR 2026-10-17 05:00 AM EDT; blended 2026-10-15 08:00 AM EDT",
-  "source_last_modified_utc": "MUR 2026-10-17 05:00 AM EDT; blended 2026-10-15 08:00 AM EDT",
-  "processing_time_utc": "2026-10-19 03:05 AM EDT",
+  "data_time_utc": "MUR 2026-10-25 05:00 AM EDT; blended 2026-10-25 08:00 AM EDT",
+  "source_last_modified_utc": "MUR 2026-10-25 05:00 AM EDT; blended 2026-10-25 08:00 AM EDT",
+  "processing_time_utc": "2026-10-27 03:03 AM EDT",
   "units": "degF (display); source degC",
   "spatial_resolution_source": "blended 0.05 deg analysis resampled to 0.10 deg global canvas (+ GLSEA ~1.8 km inside the Great Lakes rectangle)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,8 +25,8 @@
   "missing_data_treatment": "non-water mask cells, fill values, out-of-range values and Great Lakes-rectangle blended cells (GLSEA wins there) rendered fully transparent; never interpolated, never zero-filled.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "source_id": "blended-MUR 2026-10-17 05:00 AM EDT; blended 2026-10-15 08:00 AM EDT",
-  "source_version": "blended-2026-10-15T12-00-00Z-mur-2026-10-17T09-00-00Z-r13-tempvals-global-nofloor",
+  "source_id": "blended-MUR 2026-10-25 05:00 AM EDT; blended 2026-10-25 08:00 AM EDT",
+  "source_version": "blended-2026-10-25T12-00-00Z-mur-2026-10-25T09-00-00Z-r13-tempvals-global-nofloor",
   "na_bounds": {
     "canvas_height": 1800,
     "canvas_width": 3600,
@@ -39,19 +39,19 @@
     "resolution_deg_per_pixel": 0.1
   },
   "coverage_mode": "global",
-  "legend_scale_html": "Surface water temperature (\u00b0F) \u2014 Extended Oceanic Coverage: cold <b>28\u00b0F</b> (deep blue) \u2192 <b>57\u00b0F</b> \u2192 warm <b>86\u00b0F</b> (red). Mean this run: <b>57.8\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. Endpoints are recomputed every run from all valid water across this coverage's supported global dataset (oceans and seas from blended SST, inland lakes from MUR, Great Lakes from GLSEA; each observation counted once; 1st/99th percentiles with floor/ceil rounding; low end unclamped so polar water (~28\u00b0F) reads correctly, high end clamped 86\u00b0F; linear mapping between them). The same color stands for a different \u00b0F than in the other coverages \u2014 only the printed numbers are absolute. Unsupported or unobserved water stays transparent and is never fabricated.",
+  "legend_scale_html": "Surface water temperature (\u00b0F) \u2014 Extended Oceanic Coverage: cold <b>28\u00b0F</b> (deep blue) \u2192 <b>57\u00b0F</b> \u2192 warm <b>86\u00b0F</b> (red). Mean this run: <b>57.6\u00b0F</b>. White halo numbers are actual \u00b0F at that spot. Endpoints are recomputed every run from all valid water across this coverage's supported global dataset (oceans and seas from blended SST, inland lakes from MUR, Great Lakes from GLSEA; each observation counted once; 1st/99th percentiles with floor/ceil rounding; low end unclamped so polar water (~28\u00b0F) reads correctly, high end clamped 86\u00b0F; linear mapping between them). The same color stands for a different \u00b0F than in the other coverages \u2014 only the printed numbers are absolute. Unsupported or unobserved water stays transparent and is never fabricated.",
   "legend_size": [
     640,
     210
   ],
-  "rendered_nontransparent_pixels": 4207048,
+  "rendered_nontransparent_pixels": 4207110,
   "rendered_canvas_pixels": 6480000,
   "stats": {
-    "valid_cells": 4206735,
-    "mean_F": 57.79,
+    "valid_cells": 4206812,
+    "mean_F": 57.61,
     "min_F": 28.4,
-    "max_F": 93.2,
+    "max_F": 91.88,
     "temp_labels_priority": 300,
-    "temp_labels_fill": 638
+    "temp_labels_fill": 642
   }
 }
