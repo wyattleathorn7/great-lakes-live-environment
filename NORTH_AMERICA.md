@@ -91,22 +91,26 @@ scale contracts, 3 hideable overlays + radioFolder + 1-ON/2-OFF.
   remaining gaps — this restores the old IEM regional footprint that the
   ECCC INV layer reads as falsely "covered" → OPERA EU DBZH where neither
   covers (e.g. Iceland) → JMA nowcast
-  intensity (mm/h classes 1–80 via Z-R equivalents, undifferentiated) in
-  the Japan box (lon 122–148, lat 24–46) → GFS estimates
-  (CSNOW/CRAIN, same colors as radar, ≥0.25 mm/h,
+  intensity (mm/h classes 1–80 via Z-R equivalents, no type product, Rain
+  ramp) in the Japan box (lon 122–148, lat 24–46) → GFS estimates
+  (CSNOW/CICEP → Snow/Sleet ramp, CRAIN/CFRZR → Rain ramp, ≥0.25 mm/h,
   organized systems only) in verified radar gaps → transparent.
   The IEM box is intersected with land+~200km offshore (WSR-88D range),
   so open ocean never suppresses model estimates — previously the raw
   box hid GFS-wet open-ocean pixels and cut systems at lon −130.
   GFS longitude is periodic: the −180 grid column is duplicated at +180
   and flag lookup wraps, so no seam at the dateline.
-  All echo pixels share one uniform alpha (160/255) and one color
-  scale — estimates are disclosed as model output in the metadata
-  and registry, not by separate colors.
-  Rain and snow both render on the original N0Q key: there is no
-  separate snow ramp or snow legend. ECCC colors are Z-R estimated dBZ
-  equivalents (saturate ~57 dBZ), not measured dBZ; GFS estimates use
-  the same colors (model output).
+  All echo pixels share one uniform alpha (160/255) and one 5–75 dBZ
+  severity scale — estimates are disclosed as model output in the
+  metadata and registry, not by separate colors.
+  That scale is drawn on two ramps matching the NOAA/CSU MRMS
+  precipitation-type event loop: **Rain** (dark green → green → yellow →
+  orange → red → magenta → purple) and **Snow/Sleet** (pale blue → blue →
+  purple). Type is observed/analysed, never guessed from color: MRMS
+  PrecipFlag snow (class 3, CONUS + regional domains), ECCC SfcPrecipType
+  snow classes, and GFS CSNOW/CICEP (model fill). OPERA/JMA have no type
+  product here, so they stay on the Rain ramp. ECCC colors are Z-R
+  estimated dBZ equivalents (saturate ~57 dBZ), not measured dBZ.
   Fine ~1 km MRMS is max-composited onto the canvas cell, so no
   echo is dropped and the −99 no-echo sentinel cannot paint a halo.
 - **Air temperature:** HRRR → RRFS-NA (para feed until prod HTTPS opens) →

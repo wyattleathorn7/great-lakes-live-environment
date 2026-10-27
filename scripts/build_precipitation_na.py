@@ -2,8 +2,8 @@
 
 Precedence (explicit, documented):
   1) NOAA/NSSL MRMS SeamlessHSR (official NCEP MRMS GRIB2 feed, measured
-     dBZ onto the original N0Q key — rain and snow share one scale)
-     INSIDE the IEM effective domain
+     dBZ -> the shared 5-75 dBZ severity scale; PrecipFlag type selects
+     the Rain or Snow/Sleet ramp) INSIDE the IEM effective domain
      (lon -130..-65, lat 22..50): MRMS pixels win. Replaces the old IEM
      N0Q WMS source within the same footprint (the WSR-88D network
      domain); day and night identical (pure radar, no visible-satellite
@@ -26,9 +26,13 @@ Precedence (explicit, documented):
 ECCC RAIN rates (mm/h) map to ESTIMATED dBZ equivalents via the NWS
 NEXRAD Z-R bridge (Z=300R^1.4) — ECCC publishes rates, not
 reflectivity, so these colors must never be read as measured dBZ
-(ECCC rain classes saturate near ~57 dBZ). ECCC SNOW echoes use the
-snow product for echo detection only and render on the same dBZ key:
-there is no separate snow ramp, snow legend or snow-only coloring.
+(ECCC rain classes saturate near ~57 dBZ).  All sources share one
+5-75 dBZ severity scale rendered on TWO ramps that match the NOAA/CSU
+MRMS precipitation-type legend: Rain (dark green -> purple) and
+Snow/Sleet (pale blue -> purple).  Type is observed/analysed, never
+invented: MRMS PrecipFlag snow (class 3), ECCC SfcPrecipType snow
+classes, and GFS CSNOW/CICEP for model snow/ice.  Echoes without a
+published type (OPERA, JMA) stay on the Rain ramp.
 
 Exit codes: 0 updated; 2 source/validation failure (previous kept);
 1 unexpected error.
@@ -54,7 +58,8 @@ from na_common import load_rgba, wms_getmap
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs)
-from build_precipitation import KEY_ROWS, SCALE_HTML
+from build_precipitation import (RAIN_COLORS, SCALE_HTML_NA, SNOW_COLORS,
+                                 SNOW_WIDTHS)
 from geospatial_utils import (REPO_ROOT, RENDER_VERSION, SITE_DIR,
                               base_metadata, now_det_str,
                               promote_stage, read_state, save_png,
@@ -62,8 +67,9 @@ from geospatial_utils import (REPO_ROOT, RENDER_VERSION, SITE_DIR,
                               write_state)
 
 PRODUCT = "precipitation_na"
-# Basin config deleted 2026-10-14; only CONFIG_NA is used (KEY_ROWS/SCALE_HTML
-# come from build_precipitation shared library).
+# Basin config deleted 2026-10-14; only CONFIG_NA is used (the Rain /
+# Snow-Sleet ramps and SCALE_HTML_NA come from the build_precipitation
+# shared library).
 CONFIG = {}
 CONFIG_NA = json.load(open(os.path.join(REPO_ROOT, "config", "precipitation_na.json")))
 RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
@@ -89,6 +95,54 @@ MRMS_DOMAINS = {
     "hawaii": {"dir": "HAWAII", "lat": (15.0, 26.0), "lon": (-164.0, -151.0)},
     "carib": {"dir": "CARIB", "lat": (10.0, 25.0), "lon": (-90.0, -60.0)},
 }
+
+# One 5-75 dBZ severity scale, two ramps (exact NOAA/CSU event-loop colors).
+RAIN_PAL = np.array(RAIN_COLORS, dtype=np.uint8)
+SNOW_PAL = np.array(SNOW_COLORS, dtype=np.uint8)
+RAIN_BINS = np.linspace(5.0, 75.0, len(RAIN_COLORS) + 1)
+_snow_cum = np.concatenate([[0.0], np.cumsum(SNOW_WIDTHS, dtype=float)])
+SNOW_BINS = 5.0 + 70.0 * _snow_cum / _snow_cum[-1]
+SFC_SNOW = (9, 10, 11)  # ECCC SfcPrecipType: heavy / moderate / light snow
+
+
+def _ramp_idx(z, bins):
+    """Ramp index for dBZ severity ``z`` (ascending ``bins`` edges)."""
+    return np.clip(np.searchsorted(bins, z, side="right") - 1,
+                   0, len(bins) - 2)
+
+
+def _paint_dbz(z, snow):
+    """RGB for dBZ severity ``z`` on the Rain or Snow/Sleet ramp. ``snow`` is
+    a boolean array (or scalar); both ramps place equal severity at the same
+    relative position. Never invents a color where there is no echo."""
+    z = np.asarray(z, dtype=float)
+    s = np.asarray(snow, dtype=bool)
+    if s.ndim == 0:
+        s = np.full(z.shape, bool(s))
+    out = np.empty((z.size, 3), dtype=np.uint8)
+    if (~s).any():
+        out[~s] = RAIN_PAL[_ramp_idx(z[~s], RAIN_BINS)]
+    if s.any():
+        out[s] = SNOW_PAL[_ramp_idx(z[s], SNOW_BINS)]
+    return out
+
+
+_SNOW_PACKED = np.array([(r << 16) | (g << 8) | b for r, g, b in SNOW_COLORS],
+                        dtype=np.uint32)
+
+
+def _type_pixel_counts(rgba):
+    """(rain, snow_sleet) opaque-pixel counts for a rendered frame, decided by
+    the exact encoded ramp colors.  Both palettes are disjoint, so this is an
+    audit of what was actually painted rather than a re-inference of type."""
+    arr = np.asarray(rgba)
+    opaque = arr[:, :, 3] > 0
+    packed = ((arr[:, :, 0].astype(np.uint32) << 16)
+              | (arr[:, :, 1].astype(np.uint32) << 8)
+              | arr[:, :, 2].astype(np.uint32))
+    snow = int((np.isin(packed, _SNOW_PACKED) & opaque).sum())
+    rain = int(opaque.sum()) - snow
+    return rain, snow
 
 
 def na_wms_111(base, layers, bounds, w, h, extra="", style=""):
@@ -285,18 +339,19 @@ def _mrms_aggregate(vals2d, valid2d, lats1d, lons1d, bounds):
     return np.where(any_echo, mean, np.nan)
 
 
-def _mrms_paint(dbz_c, mask):
-    """Paint resampled MRMS reflectivity onto a canvas RGBA on the
-    original N0Q key bins from measured dBZ. Rain and snow share this one
-    scale (no snow-only coloring). Returns (rgba, n_echo)."""
+def _mrms_paint(dbz_c, mask, snow_c=None):
+    """Paint resampled MRMS reflectivity onto a canvas RGBA using the Rain
+    or Snow/Sleet ramp. ``snow_c`` is the MRMS PrecipFlag snow mask (None
+    when the type product is unavailable, so echoes stay on the Rain ramp).
+    Returns (rgba, n_echo, n_snow)."""
     rgba = np.zeros((*dbz_c.shape, 4), dtype=np.uint8)
     echo = np.isfinite(dbz_c) & mask
+    snow = echo & (snow_c if snow_c is not None else False)
     n_echo = int(echo.sum())
     if n_echo:
-        keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
-        rgba[echo, :3] = keypal[_bins_for_dbz(dbz_c[echo])]
+        rgba[echo, :3] = _paint_dbz(dbz_c[echo], snow[echo])
         rgba[echo, 3] = 255
-    return rgba, n_echo
+    return rgba, n_echo, int(snow.sum())
 
 
 def _mrms_domain_mask(bounds, W, H):
@@ -320,11 +375,27 @@ def _mrms_domain_mask(bounds, W, H):
     return m
 
 
-def _bins_for_dbz(z):
-    """Vectorized twin of _bin_for_dbz (identical bins) for measured-dBZ
-    arrays — the same normalization the OPERA dBZ path uses."""
-    return np.clip(np.searchsorted(KEY_BINS, z, side="right") - 1,
-                   0, len(KEY_ROWS) - 1)
+def _mrms_snow_mask(base, scan_ts, dest, geom, bounds, timeout=180):
+    """MRMS PrecipFlag (surface precipitation type) -> boolean snow mask on
+    the canvas, aligned to the SeamlessHSR scan.  Flag 3 = snow; every other
+    class (-3 no coverage, 0 no precip, rain, hail hatching, tropical mixes)
+    is not snow.  Any failure returns None: echoes stay on the Rain ramp —
+    type is never guessed."""
+    try:
+        ts, _url = mrms_get_scan(base, "PrecipFlag", dest, timeout=timeout,
+                                 start_ts=scan_ts)
+        vals, _valid, ts, fgeom = mrms_decode(
+            dest, ts, missing=-999.0, vmin=-10.0, vmax=100.0)
+        if not np.allclose(fgeom, geom, atol=1e-6):
+            raise ValueError(f"PrecipFlag grid {fgeom[0]}x{fgeom[1]} != HSR")
+        _mrms_age_check(ts)
+        lats1d, lons1d = _mrms_axes(geom)
+        flag_c = _mrms_nn(vals, lats1d, lons1d, bounds)
+        return np.rint(flag_c) == 3
+    except Exception as e:
+        print(f"[{PRODUCT}] MRMS PrecipFlag unavailable: "
+              f"{type(e).__name__}: {e}")
+        return None
 
 
 def mrms_grib2_url(ts, product="SeamlessHSR"):
@@ -349,11 +420,12 @@ def fetch_mrms_seamless_hsr(scan_dt, dest, bounds, W, H, timeout=180):
     footprint).
 
     Newest scan from the directory listing (2-min cadence), fully
-    validated, resampled onto the canvas. Measured dBZ -> the ORIGINAL N0Q
-    key bins (rain and snow share the scale). -99 = valid no-echo and
-    -999 = missing stay transparent (fallback sources fill as before).
-    Day and night identical: pure radar composite, no visible-satellite
-    dependency.
+    validated, resampled onto the canvas. Measured dBZ -> the 5-75 dBZ
+    severity ramps; MRMS PrecipFlag (same scan time) selects the
+    Snow/Sleet ramp where the surface type is snow. -99 = valid no-echo
+    and -999 = missing stay transparent (fallback sources fill as
+    before). Day and night identical: pure radar composite, no
+    visible-satellite dependency.
 
     Returns (rgba_canvas, scan_ts, prov). Raises on any failure — the
     caller then keeps the old behavior (transparent; ECCC/OPERA/GFS
@@ -369,18 +441,21 @@ def fetch_mrms_seamless_hsr(scan_dt, dest, bounds, W, H, timeout=180):
     # sampling, and -99 no-echo never becomes a low-dBZ halo.
     dbz_c = _mrms_nn(_mrms_aggregate(dbz2d, valid2d, lats1d, lons1d, bounds),
                      lats1d, lons1d, bounds)
-    rgba, n_echo = _mrms_paint(dbz_c, _mrms_domain_mask(bounds, W, H))
+    snow_c = _mrms_snow_mask(MRMS, ts, dest.replace(".grib2", "_flag.grib2"),
+                             geom, bounds)
+    rgba, n_echo, n_snow = _mrms_paint(
+        dbz_c, _mrms_domain_mask(bounds, W, H), snow_c)
     prov = (f"MRMS SeamlessHSR {ts:%Y-%m-%d %H:%M} UTC echo "
-            f"px={n_echo} valid px={int(valid2d.sum())} "
+            f"px={n_echo} snow px={n_snow} valid px={int(valid2d.sum())} "
             f"({url})")
     return rgba, ts, prov
 
 
 def fetch_mrms_region(domain, scan_dt, dest_dir, bounds, W, H, timeout=180):
     """Regional MRMS (Alaska / Hawaii / Caribbean): official NOAA/NSSL
-    SeamlessHSR measured dBZ on the same N0Q key as CONUS, painted only
-    inside the domain's own valid coverage, restoring the old IEM
-    regional footprint.
+    SeamlessHSR measured dBZ on the same severity ramps as CONUS (with the
+    domain's own PrecipFlag for snow), painted only inside the domain's own
+    valid coverage, restoring the old IEM regional footprint.
 
     Returns (rgba_canvas, cov_mask, scan_ts, prov). Raises on any failure
     — the caller then keeps the old behavior (transparent; ECCC/OPERA/JMA/
@@ -404,9 +479,12 @@ def fetch_mrms_region(domain, scan_dt, dest_dir, bounds, W, H, timeout=180):
     cov = _mrms_nn(hsr_valid.astype(float), lats1d, lons1d, bounds) > 0.5
     dbz_c = _mrms_nn(_mrms_aggregate(hsr, hsr_valid, lats1d, lons1d, bounds),
                      lats1d, lons1d, bounds)
-    rgba, n_echo = _mrms_paint(dbz_c, cov)
+    snow_c = _mrms_snow_mask(base, hsr_ts,
+                             hsr_dest.replace(".grib2", "_flag.grib2"),
+                             geom, bounds)
+    rgba, n_echo, n_snow = _mrms_paint(dbz_c, cov, snow_c)
     prov = (f"MRMS {domain} SeamlessHSR {hsr_ts:%Y-%m-%d %H:%M} UTC echo "
-            f"px={n_echo} valid px={int(hsr_valid.sum())} "
+            f"px={n_echo} snow px={n_snow} valid px={int(hsr_valid.sum())} "
             f"({hsr_url})")
     return rgba, cov, hsr_ts, prov
 
@@ -441,7 +519,6 @@ SFC_TYPE_RGB = [
     (71, 164, 240),   # 10 Moderate Snow
     (127, 223, 235),  # 11 Light Snow
 ]
-SFC_SNOW = (9, 10, 11)
 SFC_TYPE_MAX_DIST = 60.0  # beyond this -> unclassified (background etc.)
 
 _NEARNESS = {}  # (W, H) -> land+offshore bool mask (cached per canvas)
@@ -494,29 +571,17 @@ def _rate_to_dbz(r_mmh):
 # both rain and snow echoes on the N0Q key by class severity.
 ECCC_CLASS_DBZ = [_rate_to_dbz(r) for r in ECCC_RAIN_RATES]
 
-# GDPS model fill renders translucent so model guidance never reads as
-# observed radar (vivid = radar echo, pale = model fill where blind).
+# LEGACY, unused: the GDPS WCS fill was replaced by the GFS PRATE fill above
+# (which paints at MODEL_ALPHA like radar, per the single-scale direction).
+# Kept only so old logs/diffs remain readable; nothing calls this value or
+# _gdps_precip_fill().
 GDPS_FILL_ALPHA = 120
 
-# Original N0Q key bins (must match KEY_ROWS ranges in order).
-KEY_BINS = [5.0, 15.0, 20.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0]
-
-
-# GFS model estimates render in the SAME key colors as radar
-# (per user direction): no muted/pale estimate swatches, no separate
-# estimate rows — one visual scale everywhere. Estimates keep the same
-# severity mapping and are disclosed as model output in the subtitle,
-# folder text, metadata source registry, and docs (never radar).
-
-
-def _bin_for_dbz(z):
-    b = 0
-    for lo in KEY_BINS[1:]:
-        if z >= lo:
-            b += 1
-        else:
-            break
-    return min(b, len(KEY_ROWS) - 1)
+# GFS model estimates use the SAME two ramps as radar (per user
+# direction): no muted/pale estimate swatches, no separate estimate rows —
+# one visual scale everywhere. Snow/ice use the Snow/Sleet ramp gated on
+# GFS CSNOW/CICEP; estimates are disclosed as model output in the
+# subtitle, folder text, metadata source registry, and docs (never radar).
 
 
 def eccc_time_default(layer, timeout=30):
@@ -711,10 +776,10 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
         spx = paths["snow"][eccc_avail].astype(float)[:, :3]
         cls_r = ((rpx[:, None, :] - pal[None, :, :]) ** 2).sum(axis=2).argmin(axis=1)
         cls_s = ((spx[:, None, :] - pal[None, :, :]) ** 2).sum(axis=2).argmin(axis=1)
-        # SfcPrecipType identifies snow echoes for provenance only. All
-        # echoes — rain and snow alike — render on the N0Q dBZ key: there
-        # is no snow-only coloring. Mixed/freezing rain/hail take their
-        # severity from whichever product shows an echo.
+        # SfcPrecipType selects the Snow/Sleet ramp for the pure snow
+        # classes (heavy/moderate/light snow). Mixed rain/snow, freezing
+        # rain and hail stay on the Rain ramp: the type product never
+        # overstates a frozen phase.
         tpal = np.array(SFC_TYPE_RGB, dtype=float)
         tpx = paths["ptype"][eccc_avail].astype(float)[:, :3]
         topq = paths["ptype"][eccc_avail, 3] > 0
@@ -727,8 +792,6 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
         # as snow here. Unknown type never defaults to snow.
         snow_win = snow_win | ((tcls < 0) & (paths["snow"][eccc_avail, 3] > 0)
                                & ~(paths["rain"][eccc_avail, 3] > 0))
-        keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
-        cols = np.zeros((rpx.shape[0], 3), dtype=np.uint8)
         # Echo-grounded severity: a product showing no echo here must not
         # contribute its (meaningless) background color to the rank.
         has_r = paths["rain"][eccc_avail, 3] > 0
@@ -737,18 +800,16 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                          np.where(has_s, cls_s, -1))
         sev = np.clip(sev, 0, len(ECCC_CLASS_DBZ) - 1)
         dbz = np.array(ECCC_CLASS_DBZ)[sev]
-        for i, z in enumerate(dbz):
-            cols[i] = keypal[_bin_for_dbz(z)]
-        ecol[eccc_avail] = cols
+        ecol[eccc_avail] = _paint_dbz(dbz, snow_win)
         ealp[eccc_avail] = np.maximum(paths["rain"][eccc_avail, 3],
                                       paths["snow"][eccc_avail, 3])
         n_snow = int(snow_win.sum())
     if eccc_echo.any():
         out[eccc_echo, :3] = ecol[eccc_echo]
         out[eccc_echo, 3] = ealp[eccc_echo]
-    # MRMS gap fill: already decoded to the original N0Q key rows from
-    # measured dBZ at the ingestion boundary (identical normalization to
-    # the OPERA dBZ path) — no source-RGB repaint.
+    # MRMS gap fill: already painted on the severity ramps (with its own
+    # PrecipFlag snow mask) at the ingestion boundary — no source-RGB
+    # repaint.
     iem_fill = iem_echo & ~eccc_echo
     out[iem_fill] = iem[iem_fill]
     d_edge = distance_transform_edt(~cov)
@@ -761,7 +822,8 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
                                 + (1.0 - w[:, 0]) * iem[band, 3].astype(float)).astype(np.uint8)
     # ---- OPERA European radar composite (EUMETNET, CC BY 4.0): genuine
     # dBZ echoes fill only verified non-NA-radar gaps (e.g. Iceland,
-    # N. Atlantic fringe). Undifferentiated type -> N0Q key. Dry OPERA
+    # N. Atlantic fringe). OPERA publishes no surface type here, so
+    # echoes stay on the Rain ramp (type is never guessed). Dry OPERA
     # cells suppress model fill below.
     opera_prov = "OPERA unavailable"
     opera_cov = np.zeros((H, W), dtype=bool)
@@ -776,11 +838,7 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
         allowed = ~cov & (out[:, :, 3] == 0)
         paint = _oecho & allowed
         if paint.any():
-            _keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
-            _cols = np.zeros((int(paint.sum()), 3), dtype=np.uint8)
-            for _i, _z in enumerate(_odbz[paint]):
-                _cols[_i] = _keypal[_bin_for_dbz(float(_z))]
-            out[paint, :3] = _cols
+            out[paint, :3] = _paint_dbz(_odbz[paint].astype(float), False)
             out[paint, 3] = 255
         opera_cov = _ocov
         n_opera = int(paint.sum())
@@ -791,8 +849,8 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
     # ---- JMA Japan nowcast (JMA, attribution required): radar-analysis
     # echoes fill only verified non-NA/EU-radar gaps (Japan + vicinity).
     # Intensity classes (mm/h) -> Z-R estimated dBZ, same bridge as ECCC
-    # rain; undifferentiated type -> N0Q key. Dry
-    # JMA cells suppress model fill below.
+    # rain; JMA publishes no surface type, so echoes stay on the Rain
+    # ramp. Dry JMA cells suppress model fill below.
     jma_prov = "JMA unavailable"
     jma_cov = np.zeros((H, W), dtype=bool)
     n_jma = 0
@@ -808,12 +866,9 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
         allowed = ~cov & (out[:, :, 3] == 0)
         paint = _jecho & allowed
         if paint.any():
-            _keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
-            _cols = np.zeros((int(paint.sum()), 3), dtype=np.uint8)
-            for _i, _c in enumerate(_jcls[paint]):
-                _dbz = _rate_to_dbz(float(_j_rates[int(_c)]))
-                _cols[_i] = _keypal[_bin_for_dbz(_dbz)]
-            out[paint, :3] = _cols
+            _dbz = np.array([_rate_to_dbz(float(_j_rates[int(_c)]))
+                             for _c in _jcls[paint]])
+            out[paint, :3] = _paint_dbz(_dbz, False)
             out[paint, 3] = 255
         jma_cov = _jcov
         n_jma = int(paint.sum())
@@ -931,9 +986,11 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
             _radar_cov = _iem_dom | cov | opera_cov | jma_cov | region_cov
             _wet = (np.isfinite(_g_rate) & (_g_rate >= DISPLAY_WET_MM_H)
                     & ~_radar_cov)
-            _snow_est = _wet & _flag["csnow"]
-            _rain_est = _wet & ~_snow_est & (_flag["crain"] | _flag["cfrzr"]
-                                            | _flag["cicep"])
+            # Frozen model precipitation: snow (CSNOW) and ice pellets
+            # (CICEP) use the Snow/Sleet ramp. Freezing rain (CFRZR) is
+            # liquid and stays on the Rain ramp.
+            _snow_est = _wet & (_flag["csnow"] | _flag["cicep"])
+            _rain_est = _wet & ~_snow_est & (_flag["crain"] | _flag["cfrzr"])
             # QC on continuous model fields only: keep organized systems
             # (>=12 cells, ~1.2 deg across), drop drizzle speckles. Radar
             # echoes are never despeckled.
@@ -941,15 +998,14 @@ def _compose_radar(scan_dt, bounds, W, H, tag):
             _keep = _desp(_snow_est | _rain_est, min_size=12)
             _snow_est = _snow_est & _keep
             _rain_est = _rain_est & _keep
-            _keypal = np.array([c for c, _ in KEY_ROWS], dtype=np.uint8)
             _paint_est = _rain_est | _snow_est
             if _paint_est.any():
-                # GFS estimates (rain and snow alike) render on the N0Q key
-                # from PRATE — one scale, no snow-only coloring.
+                # GFS estimates from PRATE -> dBZ severity on the same two
+                # ramps as radar; snow/ice pixels take the Snow/Sleet ramp.
                 _dbz = np.array([_rate_to_dbz(float(x))
                                  for x in _g_rate[_paint_est]])
-                _idx = np.array([_bin_for_dbz(z) for z in _dbz])
-                out[_paint_est, :3] = _keypal[_idx]
+                out[_paint_est, :3] = _paint_dbz(
+                    _dbz, _snow_est[_paint_est])
                 out[_paint_est, 3] = MODEL_ALPHA
                 n_rain_est = int(_rain_est.sum())
                 n_snow_est = int(_snow_est.sum())
@@ -1022,17 +1078,7 @@ def _gdps_precip_fill(base, bounds, W, H):
         n = int(blind.sum())
         if n:
             dbz = _np.array([_rate_to_dbz(float(x)) for x in g[blind]])
-            keypal = _np.array([c for c, _ in KEY_ROWS], dtype=_np.uint8)
-            idx = _np.zeros(dbz.shape, dtype=int)
-            for i, z in enumerate(dbz):
-                b = 0
-                for lo in KEY_BINS[1:]:
-                    if z >= lo:
-                        b += 1
-                    else:
-                        break
-                idx[i] = min(b, len(keypal) - 1)
-            base[blind, :3] = keypal[idx]
+            base[blind, :3] = _paint_dbz(dbz, False)
             base[blind, 3] = GDPS_FILL_ALPHA
         return base, f"GDPS_15km_PrecipRate ({unit}) fill px={n}"
     except Exception as e:
@@ -1040,7 +1086,7 @@ def _gdps_precip_fill(base, bounds, W, H):
 
 
 def _build(scan_dt, source_id, bounds, W, H):
-    from geospatial_utils import _legend_font, draw_category_legend
+    from geospatial_utils import _legend_font, draw_type_ramp_legend
     from na_bounds import load_global_bounds
     gbounds = load_global_bounds()
     GW, GH = gbounds["canvas_width"], gbounds["canvas_height"]
@@ -1080,49 +1126,49 @@ def _build(scan_dt, source_id, bounds, W, H):
     VARIANT_PROV = {"basin": cloud_prov, "landonly": gcloud_prov,
                     "global": gcloud_prov, "extended200": gcloud_prov}
     data_time = scan_dt.strftime("%Y-%m-%d %H:%M UTC")
-    subtitle = (f"Radar mosaic (MRMS CONUS + regional AK/HI/CARIB SeamlessHSR "
-                f"+ ECCC RRAI/RSNO/type + OPERA EU + JMA JP) + GFS estimates | {data_time}")
+    subtitle = (f"Radar mosaic + GFS estimates | rain / snow-sleet type | "
+                f"{data_time}")
     token = source_token(source_id)
     # Global source registry (per-run health + provenance for the map).
     now_utc = dt.datetime.now(dt.timezone.utc)
     registry = [
         {"id": "mrms_hsr", "footprint": "CONUS (lon -130..-65, lat 22..50)",
-         "product_type": "radar reflectivity (dBZ), MRMS SeamlessHSR",
+         "product_type": "radar reflectivity (dBZ) + surface precip type, MRMS SeamlessHSR/PrecipFlag",
          "data_time": (ginfo["mrms_ts"].strftime("%Y-%m-%d %H:%M UTC")
                        if ginfo["mrms_ts"] else data_time),
          "license": "Public domain (NOAA/NSSL MRMS)",
-         "snow_capability": "none (reflectivity only; rain and snow share the dBZ key)",
+         "snow_capability": "snow (PrecipFlag class 3) on the Snow/Sleet ramp",
          "status": "ok" if info["n_iem"] or ginfo["n_iem"] else "no-echo"},
         {"id": "mrms_regional",
          "footprint": "Alaska + Hawaii + Caribbean (MRMS regional domains)",
-         "product_type": "radar reflectivity (dBZ), MRMS SeamlessHSR",
+         "product_type": "radar reflectivity (dBZ) + surface precip type, MRMS SeamlessHSR/PrecipFlag",
          "data_time": ginfo.get("region_prov", "unavailable"),
          "license": "Public domain (NOAA/NSSL MRMS)",
-         "snow_capability": "none (reflectivity only; rain and snow share the dBZ key)",
+         "snow_capability": "snow (PrecipFlag class 3) on the Snow/Sleet ramp",
          "status": ("ok" if ginfo.get("n_region", 0) or info.get("n_region", 0)
                     else "no-echo/unavailable")},
         {"id": "eccc_radar", "footprint": "North America (dynamic INV mask)",
          "product_type": "radar rain/snow rate + precipitation type",
          "data_time": f"rain {t_rain}; snow {t_snow}; type {t_type}",
          "license": "ECCC GeoMet (open data)",
-         "snow_capability": "detected (SfcPrecipType) but rendered on the dBZ key",
+         "snow_capability": "snow classes (SfcPrecipType) on the Snow/Sleet ramp",
          "status": "ok" if info["n_eccc"] or ginfo["n_eccc"] else "no-echo"},
         {"id": "opera_eu", "footprint": "Europe + N. Atlantic (LAEA 1km)",
          "product_type": "radar reflectivity (dBZ)",
          "data_time": ginfo["opera_prov"], "license": "CC BY 4.0 (EUMETNET OPERA)",
-         "snow_capability": "none (reflectivity only)",
+         "snow_capability": "none (no type product; Rain ramp)",
           "status": ("ok" if ginfo.get("n_opera", 0) or info.get("n_opera", 0)
                      else "no-echo/unavailable")},
         {"id": "jma_jp", "footprint": "Japan + vicinity (lon 122..148, lat 24..46)",
          "product_type": "radar-analysis intensity (mm/h classes)",
          "data_time": ginfo["jma_prov"], "license": "JMA (attribution required)",
-         "snow_capability": "none (intensity only)",
+         "snow_capability": "none (no type product; Rain ramp)",
          "status": ("ok" if ginfo.get("n_jma", 0) or info.get("n_jma", 0)
                     else "no-echo/unavailable")},
         {"id": "gfs_model", "footprint": "worldwide 0.25deg (radar gaps only)",
-         "product_type": "model estimate (PRATE + CSNOW/CRAIN flags)",
+         "product_type": "model estimate (PRATE + CSNOW/CRAIN/CICEP flags)",
          "data_time": ginfo["gfs_prov"], "license": "Public domain (NOAA GFS)",
-         "snow_capability": "estimated (CSNOW) but rendered on the dBZ key",
+         "snow_capability": "estimated snow/ice (CSNOW/CICEP) on the Snow/Sleet ramp",
          "status": ("ok" if ginfo.get("n_rain_est", 0) or ginfo.get("n_snow_est", 0)
                     else "no-estimates/unavailable")},
     ]
@@ -1139,26 +1185,32 @@ def _build(scan_dt, source_id, bounds, W, H):
         os.makedirs(vdir, exist_ok=True)
         save_png(out_m, os.path.join(vdir, "current.png"))
         n_opaque = int((out_m[:, :, 3] > 0).sum())
-        print(f"[{PRODUCT}] variant {mode}: opaque={n_opaque}")
+        v_rain, v_snow = _type_pixel_counts(out_m)
+        print(f"[{PRODUCT}] variant {mode}: opaque={n_opaque} "
+              f"rain={v_rain} snow_sleet={v_snow}")
         vmeta = base_metadata(
             vprod, vtitle, CONFIG_NA["freshness_label"],
             CONFIG_NA["source_name"], CONFIG_NA["source_url"],
             CONFIG_NA["variable"],
             data_time_utc=data_time,
             source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}; type {t_type}",
-            units="dBZ key: MRMS/OPERA measured; ECCC Z-R estimated equivalents; rain and snow share one scale (no snow-only coloring)",
-            source_resolution="MRMS SeamlessHSR ~1km CONUS + regional AK/HI/CARIB composite 2-min (measured dBZ -> N0Q key); ECCC 1km rain/snow/type 6-min (class severity -> estimated dBZ via NWS Z=300R^1.4; snow echoes rendered on the same key)",
+            units="5-75 dBZ severity on two ramps: Rain (green->purple) and Snow/Sleet (pale blue->purple)",
+            source_resolution="MRMS SeamlessHSR ~1km CONUS + regional AK/HI/CARIB composite 2-min (measured dBZ -> severity ramps; PrecipFlag selects snow); ECCC 1km rain/snow/type 6-min (class severity -> estimated dBZ via NWS Z=300R^1.4; snow classes use the Snow/Sleet ramp)",
             color_min=5.0, color_max=75.0, color_units="dBZ",
-            missing_data_treatment=("ECCC where RADAR_COVERAGE_*.INV is transparent (all precipitation types -> dBZ key); MRMS SeamlessHSR (CONUS + regional AK/HI/CARIB) fills ECCC gaps (measured dBZ -> N0Q key bins); "
+            missing_data_treatment=("ECCC where RADAR_COVERAGE_*.INV is transparent (all precipitation types -> severity ramps); MRMS SeamlessHSR (CONUS + regional AK/HI/CARIB) fills ECCC gaps (measured dBZ -> severity ramps; PrecipFlag snow); "
                                      "10-px cross-fade on the coverage edge; OPERA EU + JMA JP radar fill remaining gaps; GFS model estimates "
                                      "only in verified radar gaps; transparent elsewhere; "
                                      "never zero-filled."))
-        vmeta["legend_scale_html"] = SCALE_HTML
+        vmeta["legend_scale_html"] = SCALE_HTML_NA
         vmeta["source_id"] = source_id
         vmeta["source_version"] = token
         vmeta["na_bounds"] = VARIANT_BOUNDS[mode]
         vmeta["coverage_mode"] = mode
         vmeta["stats"] = {"opaque_pixels": n_opaque,
+                          "rain_pixels": v_rain,
+                          "snow_sleet_pixels": v_snow,
+                          "snow_sleet_fraction": round(
+                              v_snow / n_opaque, 4) if n_opaque else 0.0,
                           "transparent_pixels": int(vw * vh - n_opaque),
                           "underlay": vprov}
         vmeta["provenance"] = {"mrms_grib2": mrms_grib2_url(ginfo["mrms_ts"]),
@@ -1182,27 +1234,31 @@ def _build(scan_dt, source_id, bounds, W, H):
     def_w, def_h = VARIANT_DIMS[default_cover]
     out = apply_coverage_mask(def_base, default_cover)
     save_png(out, os.path.join(stage_prod, "current.png"))
-    lw, lh = draw_category_legend(
+    p_opaque = int((out[:, :, 3] > 0).sum())
+    p_rain, p_snow = _type_pixel_counts(out)
+    lw, lh = draw_type_ramp_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG_NA["title"], subtitle,
-        KEY_ROWS,
+        RAIN_COLORS, SNOW_COLORS,
         f"MRMS {scan_dt:%H:%MZ} + ECCC rain {t_rain} / snow {t_snow} / type {t_type} | {now_det_str()}",
-        note="No echo = transparent. ECCC rain = est. dBZ; snow shares the key.")
+        note=["Radar echoes where available; GFS model estimates fill verified radar gaps (same colors).",
+              "No echo = transparent. Type: MRMS PrecipFlag / ECCC SfcPrecipType / GFS CSNOW-CICEP."],
+        snow_widths=SNOW_WIDTHS)
     meta = base_metadata(
         PRODUCT, CONFIG_NA["title"], CONFIG_NA["freshness_label"],
         CONFIG_NA["source_name"], CONFIG_NA["source_url"], CONFIG_NA["variable"],
         data_time_utc=data_time, source_last_modified_utc=f"ECCC rain {t_rain}; snow {t_snow}; type {t_type}",
-        units="dBZ key: MRMS/OPERA measured; ECCC Z-R estimated equivalents; rain and snow share one scale (no snow-only coloring)",
-        source_resolution="MRMS SeamlessHSR ~1km CONUS + regional AK/HI/CARIB composite 2-min (measured dBZ -> N0Q key); ECCC 1km NA composite 6-min (class severity -> estimated dBZ via NWS Z=300R^1.4; snow echoes rendered on the same key); canvas 3300x1600 (0.05 deg/px)",
+        units="5-75 dBZ severity on two ramps: Rain (green->purple) and Snow/Sleet (pale blue->purple)",
+        source_resolution="MRMS SeamlessHSR ~1km CONUS + regional AK/HI/CARIB composite 2-min (measured dBZ -> severity ramps; PrecipFlag snow); ECCC 1km NA composite 6-min (class severity -> estimated dBZ via NWS Z=300R^1.4; snow classes use the Snow/Sleet ramp); canvas 3300x1600 (0.05 deg/px)",
         color_min=5.0, color_max=75.0, color_units="dBZ",
         missing_data_treatment=("ECCC wins where RADAR_COVERAGE_*.INV is transparent "
                                 "(verified authoritative coverage); MRMS SeamlessHSR (CONUS + regional AK/HI/CARIB) fills ECCC gaps "
-                                "(measured dBZ -> N0Q key bins); "
-                                "OPERA EU radar fills remaining non-NA gaps; JMA nowcast fills Japan gaps; "
-                                "GFS model estimates only in verified radar gaps; transparent elsewhere; "
+                                "(measured dBZ -> severity ramps; PrecipFlag snow); "
+                                "OPERA EU radar fills remaining non-NA gaps (Rain ramp); JMA nowcast fills Japan gaps (Rain ramp); "
+                                "GFS model estimates only in verified radar gaps (CSNOW/CICEP snow on the Snow/Sleet ramp); transparent elsewhere; "
                                 "never zero-filled."))
     meta["legend_size"] = [lw, lh]
-    meta["legend_scale_html"] = (SCALE_HTML + " GFS model estimates "
-        "(not radar) render in the same colors where no radar covers.")
+    meta["legend_scale_html"] = (SCALE_HTML_NA + " GFS model estimates "
+        "(not radar) use the same two ramps where no radar covers.")
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["na_bounds"] = VARIANT_BOUNDS[default_cover]
@@ -1212,7 +1268,12 @@ def _build(scan_dt, source_id, bounds, W, H):
                      "mrms_regional_pixels": ginfo.get("n_region", 0),
                      "gfs_est_rain": ginfo.get("n_rain_est", 0),
                      "gfs_est_snow": ginfo.get("n_snow_est", 0),
-                     "transparent_pixels": int(def_w * def_h - n_iem - n_eccc),
+                     "opaque_pixels": p_opaque,
+                     "rain_pixels": p_rain,
+                     "snow_sleet_pixels": p_snow,
+                     "snow_sleet_fraction": round(
+                         p_snow / p_opaque, 4) if p_opaque else 0.0,
+                     "transparent_pixels": int(def_w * def_h - p_opaque),
                      "underlay": def_prov}
     meta["provenance"] = {"mrms_grib2": mrms_grib2_url(ginfo["mrms_ts"]),
                           "mrms_regional": ginfo.get("region_prov", "unavailable"),

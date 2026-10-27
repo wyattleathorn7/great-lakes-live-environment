@@ -735,26 +735,38 @@ def main():
          (100.0, "100", "extreme")], "src")
     check("two-row-key-size", (_tw, _th) == (640, 252), (_tw, _th))
 
-    # ---- MRMS calibration onto the LIVE precipitation gradient ----
-    # The replacement source is measured dBZ (SeamlessHSR): it must land in
-    # exactly the same N0Q key bins the live legend paints, with no offset.
+    # ---- Rain / Snow-Sleet two-ramp calibration (NOAA/CSU event loop) ----
+    # One 5-75 dBZ severity scale, two exact-color ramps. Type selects the
+    # ramp; a pixel without a snow signature must never take a snow color.
     import numpy as np
-    from build_precipitation import KEY_ROWS as _KEY_ROWS
-    from build_precipitation_na import (KEY_BINS as _KEY_BINS,
-                                        _bin_for_dbz, _bins_for_dbz)
-    check("precip-key-11-rows", len(_KEY_ROWS) == 11 and len(_KEY_BINS) == 11,
-          (len(_KEY_ROWS), len(_KEY_BINS)))
-    check("precip-key-bins-ascending",
-          all(b < a for b, a in zip(_KEY_BINS, _KEY_BINS[1:])))
-    _zs = np.arange(-100.0, 100.0001, 0.05)
-    check("precip-mrms-bins-match-live-key",
-          bool((_bins_for_dbz(_zs) == np.array([_bin_for_dbz(float(z)) for z in _zs])).all()))
-    _bnd = [(-100.0, 0), (14.99, 0), (15.0, 1), (19.99, 1), (20.0, 2),
-            (39.99, 3), (40.0, 4), (49.99, 5), (50.0, 6), (54.99, 6),
-            (55.0, 7), (59.99, 7), (60.0, 8), (64.99, 8), (65.0, 9),
-            (69.99, 9), (70.0, 10), (200.0, 10)]
-    check("precip-bin-boundaries",
-          all(int(_bins_for_dbz(np.array([z]))[0]) == r for z, r in _bnd))
+    from build_precipitation import (RAIN_COLORS as _RC, SNOW_COLORS as _SC,
+                                     SNOW_WIDTHS as _SW)
+    from build_precipitation_na import (RAIN_BINS as _RB, SNOW_BINS as _SB,
+                                        _paint_dbz, _ramp_idx)
+    check("precip-rain-ramp-21", len(_RC) == 21, len(_RC))
+    check("precip-snow-ramp-17", len(_SC) == 17 and len(_SW) == 17,
+          (len(_SC), len(_SW)))
+    check("precip-ramp-bins-ascending",
+          bool(np.all(np.diff(_RB) > 0) and np.all(np.diff(_SB) > 0)))
+    _zs = np.array([-100.0, 5.0, 15.0, 25.0, 35.0, 45.0, 55.0, 65.0, 75.0, 200.0])
+    _r = _paint_dbz(_zs, False)
+    _s = _paint_dbz(_zs, True)
+    check("precip-ramp-exact-colors",
+          bool(np.array_equal(_r[0], _RC[0]) and np.array_equal(_r[-1], _RC[-1])
+               and np.array_equal(_s[0], _SC[0]) and np.array_equal(_s[-1], _SC[-1])))
+    check("precip-ramp-typed",
+          bool(all(tuple(c) in _RC for c in _r)
+               and all(tuple(c) in _SC for c in _s)
+               and not any(tuple(c) in _SC for c in _r)))
+    check("precip-ramp-snow-gated",
+          bool(np.array_equal(_paint_dbz(np.array([30.0]), False),
+                              _paint_dbz(np.array([30.0]), np.array([False])))
+               and np.array_equal(_paint_dbz(np.array([30.0]), True),
+                                  _paint_dbz(np.array([30.0]),
+                                             np.array([True])))))
+    check("precip-ramp-monotone-index",
+          bool(np.all(np.diff(_ramp_idx(np.array(_RB), _RB)) >= 0)
+               and np.all(np.diff(_ramp_idx(np.array(_SB), _SB)) >= 0)))
 
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     return 1 if FAIL else 0

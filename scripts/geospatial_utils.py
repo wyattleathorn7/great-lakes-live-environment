@@ -605,6 +605,74 @@ def draw_category_legend(path, title, subtitle, rows, source_line, note=None):
     return W, H
 
 
+def draw_type_ramp_legend(path, title, subtitle, rain_colors, snow_colors,
+                          source_line, note=None, snow_widths=None):
+    """Two-ramp precipitation-type key: a Rain bar and a Snow/Sleet bar on a
+    black band, matching the NOAA/CSU MRMS event-loop legend, plus a
+    quantitative 5-75 dBZ tick scale on the linear Rain bar and source/type
+    notes.  Every block is the exact raster color; ``snow_widths``
+    reproduces the reference legend's wide open-ended heavy snow block, so
+    the snow bar is labelled rather than ticked.  Returns (W, H)."""
+    pad = 16
+    W, H = 960, 272
+    img = Image.new("RGBA", (W, H), (255, 255, 255, 240))
+    d = ImageDraw.Draw(img)
+    f_title, f_body = _legend_font(22), _legend_font(15)
+    f_small, f_tick = _legend_font(13), _legend_font(11)
+    d.rectangle([0, 0, W - 1, H - 1], outline=(60, 60, 60), width=2)
+    d.text((pad, 8), title, font=f_title, fill=(10, 10, 10))
+    d.text((pad, 36), subtitle, font=f_body, fill=(40, 40, 40))
+    band = [pad, 60, W - pad, 196]
+    d.rectangle(band, fill=(1, 1, 1))
+    gap = 56
+    bar_w = (band[2] - band[0] - gap) // 2 - 16
+    r0 = band[0] + 12
+    r1 = r0 + bar_w
+    s0 = r1 + gap
+    s1 = s0 + bar_w
+    by0, by1 = 84, 148
+
+    def _bar(x0, x1, colors, widths):
+        widths = widths or [1] * len(colors)
+        total = float(sum(widths))
+        x = float(x0)
+        for color, weight in zip(colors, widths):
+            wpx = (x1 - x0) * weight / total
+            d.rectangle([x, by0, x + wpx - 1, by1], fill=tuple(color) + (255,))
+            x += wpx
+
+    _bar(r0, r1, rain_colors, None)
+    _bar(s0, s1, snow_colors, snow_widths)
+
+    def _center(cx, y, text, fill, font=f_body):
+        tw = d.textlength(text, font=font)
+        d.text((cx - tw / 2.0, y), text, font=font, fill=fill)
+
+    # Quantitative axis: the Rain bar is linear in dBZ, so it carries the
+    # ticks.  The Snow/Sleet bar uses the same colors/dBZ meaning but draws
+    # its open-ended heavy block wide, so it is labelled rather than scaled.
+    for value in (5, 15, 25, 35, 45, 55, 65, 75):
+        x = r0 + (value - 5.0) / 70.0 * (r1 - r0)
+        d.line([x, by0 - 5, x, by0 - 1], fill=(235, 235, 235, 255), width=1)
+        label = str(value)
+        tw = d.textlength(label, font=f_tick)
+        tx = min(max(x - tw / 2.0, r0), r1 - tw)
+        d.text((tx, 64), label, font=f_tick, fill=(235, 235, 235, 255))
+    d.text((r1 + 10, 64), "dBZ", font=f_tick, fill=(235, 235, 235, 255))
+
+    _center((r0 + r1) // 2, 154, "Rain", (0, 200, 0))
+    _center((s0 + s1) // 2, 154, "Snow/Sleet", (0, 149, 246))
+    _center((s0 + s1) // 2, 174, "same dBZ colors / wide block = 70+",
+            (150, 150, 150), f_tick)
+    d.text((pad, 206), source_line, font=f_small, fill=(60, 60, 60))
+    notes = [note] if isinstance(note, str) else list(note or [])
+    for i, line in enumerate(notes[:2]):
+        d.text((pad, 226 + 20 * i), line, font=f_small, fill=(60, 60, 60))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    img.save(path)
+    return W, H
+
+
 def rasterize_polygons(polys, bounds, value_fn):
     """Burn SIGRID-style polygons onto the common canvas.
 

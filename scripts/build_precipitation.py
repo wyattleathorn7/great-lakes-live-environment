@@ -82,6 +82,42 @@ KEY_ROWS = [
     ((255, 255, 255), "Extreme 70+ dBZ — destructive hail / tornadic debris"),
 ]
 
+# Exact Rain / Snow-Sleet ramp stops sampled from the NOAA/NWS March 04-05,
+# 2025 CSU-MRMS precipitation-type loop legend (MPX event page).  The
+# reference legend is unlabelled: both ramps share one 5-75 dBZ severity
+# scale, the Rain ramp starts at the light/drizzle end (dark green) and the
+# Snow/Sleet ramp at the light end (pale blue).  The final snow block is the
+# wide open-ended heavy end (relative width 6 vs 1 for every other block).
+RAIN_COLORS = [
+    (41, 58, 41), (115, 185, 115), (106, 186, 106), (98, 188, 91),
+    (107, 232, 79), (60, 222, 41), (0, 188, 0), (0, 137, 0), (93, 166, 0),
+    (254, 254, 0), (255, 207, 31), (254, 165, 35), (250, 130, 4),
+    (239, 81, 0), (220, 37, 0), (185, 8, 0), (143, 0, 0), (118, 0, 18),
+    (210, 0, 145), (215, 0, 218), (155, 0, 250),
+]
+SNOW_COLORS = [
+    (161, 204, 255), (142, 187, 255), (123, 171, 255), (104, 155, 255),
+    (85, 138, 255), (69, 123, 255), (57, 108, 255), (45, 94, 255),
+    (34, 79, 255), (22, 65, 255), (10, 50, 255), (41, 59, 255),
+    (72, 68, 255), (103, 77, 255), (134, 86, 255), (165, 95, 255),
+    (180, 100, 255),
+]
+SNOW_WIDTHS = [1] * 16 + [6]
+
+SCALE_HTML_NA = (
+    "Precipitation type + intensity (OBSERVED radar echo; 5-75 dBZ severity). "
+    "<b>Rain</b> ramp: dark green (light) &rarr; green &rarr; yellow &rarr; "
+    "orange &rarr; red &rarr; magenta &rarr; purple (extreme). "
+    "<b>Snow/Sleet</b> ramp: pale blue (light) &rarr; blue &rarr; purple "
+    "(heavy). Same intensity sits at the same position on both ramps. "
+    "Type is observed/analysed, never inferred from color: MRMS PrecipFlag "
+    "(snow class 3) inside CONUS and the regional AK/HI/CARIB domains, ECCC "
+    "SfcPrecipType (snow classes) in Canada, and GFS CSNOW/CICEP for model "
+    "snow/ice in verified radar gaps only. Echoes from sources that publish "
+    "no type (OPERA EU, JMA) stay on the Rain ramp. No echo = transparent; "
+    "GFS pixels are model estimates, never radar.")
+
+
 SCALE_HTML = (
     "Precipitation intensity (measured radar reflectivity, dBZ, OBSERVED radar echo): "
     "<b>LOWEST 5 Very Light</b> cyan/blue (drizzle, mist) &rarr; "
@@ -100,7 +136,7 @@ SCALE_HTML = (
     "converted from rain rates via Z=300R^1.4 (ECCC publishes mm/h, not "
     "dBZ — high-rate classes saturate near ~57 dBZ, so ECCC never paints "
     "the white extreme row); ECCC snow echoes render on the same dBZ key "
-    "(no separate snow scale); JMA nowcast colors are Z-R "
+    "(legacy product: no separate snow scale); JMA nowcast colors are Z-R "
     "estimated dBZ equivalents (mm/h classes 1-80; 80+ class unverified); "
     "GFS MODEL estimates (6-h mean rates) render in the same colors "
     "where no radar covers — model output, never radar.")
