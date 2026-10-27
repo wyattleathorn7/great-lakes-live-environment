@@ -100,8 +100,12 @@ MRMS_DOMAINS = {
 RAIN_PAL = np.array(RAIN_COLORS, dtype=np.uint8)
 SNOW_PAL = np.array(SNOW_COLORS, dtype=np.uint8)
 RAIN_BINS = np.linspace(5.0, 75.0, len(RAIN_COLORS) + 1)
-_snow_cum = np.concatenate([[0.0], np.cumsum(SNOW_WIDTHS, dtype=float)])
-SNOW_BINS = 5.0 + 70.0 * _snow_cum / _snow_cum[-1]
+# Snow/Sleet ramp: 16 equal dBZ bins over 5-70, then ONE open-ended 70+
+# heavy bin that the legend draws six times wider (the reference loop's
+# emphasis).  Only the bar geometry is wide; the dBZ meaning is the same
+# as the Rain ramp, so a labelled wide block is a truthful reading.
+SNOW_BINS = np.concatenate([np.linspace(5.0, 70.0, len(SNOW_COLORS)),
+                            [75.0]])
 SFC_SNOW = (9, 10, 11)  # ECCC SfcPrecipType: heavy / moderate / light snow
 
 

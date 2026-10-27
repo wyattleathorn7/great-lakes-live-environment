@@ -767,6 +767,12 @@ def main():
     check("precip-ramp-monotone-index",
           bool(np.all(np.diff(_ramp_idx(np.array(_RB), _RB)) >= 0)
                and np.all(np.diff(_ramp_idx(np.array(_SB), _SB)) >= 0)))
+    # The legend draws the last snow block 6x wide and labels it "70+", so
+    # that block must really be the open-ended 70-75 dBZ bin.
+    check("precip-snow-heavy-block-70plus",
+          bool(abs(_SB[-2] - 70.0) < 1e-9 and abs(_SB[-1] - 75.0) < 1e-9
+               and _SW[-1] == 6 and _SW[:-1] == [1] * 16),
+          (float(_SB[-2]), float(_SB[-1]), _SW[-1]))
 
     print(f"\n{len(PASS)} passed, {len(FAIL)} failed")
     return 1 if FAIL else 0

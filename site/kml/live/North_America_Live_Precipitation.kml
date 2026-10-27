@@ -16,7 +16,7 @@
         <visibility>1</visibility>
         <drawOrder>10</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/precipitation_na/current.png?v=na-precip-20261027-0105-r13</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/precipitation_na/current.png?v=na-precip-20261027-0115-r13</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>300</refreshInterval>
         </Icon>
@@ -32,7 +32,7 @@
         <visibility>0</visibility>
         <drawOrder>11</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/precipitation_na_continental/current.png?v=na-precip-20261027-0105-r13</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/precipitation_na_continental/current.png?v=na-precip-20261027-0115-r13</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>300</refreshInterval>
         </Icon>
@@ -48,7 +48,7 @@
         <visibility>0</visibility>
         <drawOrder>12</drawOrder>
         <Icon>
-          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/precipitation_na_basin/current.png?v=na-precip-20261027-0105-r13</href>
+          <href>https://wyattleathorn7.github.io/great-lakes-live-environment/precipitation_na_basin/current.png?v=na-precip-20261027-0115-r13</href>
           <refreshMode>onInterval</refreshMode>
           <refreshInterval>300</refreshInterval>
         </Icon>

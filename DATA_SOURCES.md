@@ -986,14 +986,20 @@ the other products and the Pages publish proceed normally.
   resampler as a low-dBZ halo — the fix removes the horizontal stripe
   artifacts while keeping every 1 km echo.
 - **Calibration to the live gradient:** one 5-75 dBZ severity scale is
-  rendered on the two exact-color ramps (`RAIN_BINS` = 21 equal blocks;
-  `SNOW_BINS` = 16 equal blocks + the wide heavy block). A dBZ value
-  lands at the same relative position on either ramp; the ramp is chosen
-  by observed type, never by the color. The `precip-*` self-tests lock
-  the exact colors, the 21/17 block counts, ascending bins, monotone
-  indices, and the rain/snow gating so a future edit cannot silently
-  shift or mix the ramps. A live CONUS scan spans −19…66 dBZ with no
-  clipping.
+  rendered on the two exact-color ramps (`RAIN_BINS` = 21 equal 5-75 dBZ
+  blocks; `SNOW_BINS` = 16 equal 5-70 dBZ blocks + the wide open-ended
+  70+ heavy block, which is why the snow bar carries a "70+" label and
+  the numeric dBZ ticks are drawn on the linear Rain bar). A dBZ value
+  lands at the same relative position (and the same severity meaning) on
+  either ramp; the ramp is chosen by observed type, never by the color.
+  The `precip-*` self-tests lock the exact colors, the 21/17 block counts,
+  ascending bins, monotone indices, the 70+ heavy block, and the
+  rain/snow gating so a future edit cannot silently shift or mix the
+  ramps. Each run also audits what it painted: `stats.rain_pixels`,
+  `stats.snow_sleet_pixels` and `stats.snow_sleet_fraction` are counted
+  from the exact encoded ramp RGB per coverage variant, so type coverage
+  is verifiable without re-deriving it. A live CONUS scan spans −19…66
+  dBZ with no clipping.
 
 - **ECCC:** NA Radar Composite 1 km
   (`https://open.canada.ca/data/en/dataset/37aecae5-7783-4274-b595-df02aa003ac3`,
