@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP HRRR 3 km surface visibility analysis, hourly cycles",
   "variable": "VIS surface analysis (meteorological visibility, not astronomical seeing)",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-10-27 07:00 PM EDT",
+  "data_time_utc": "2026-10-27 08:00 PM EDT",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-10-27 08:30 PM EDT",
+  "processing_time_utc": "2026-10-27 09:02 PM EDT",
   "units": "mi, statute (display; source m / 1609.344)",
   "spatial_resolution_source": "~3 km HRRR CONUS grid, mean-binned to the common canvas, despike-gated, continuity-filled, NaN-aware display smoothing",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,66 +30,66 @@
     282
   ],
   "legend_scale_html": "Meteorological visibility in statute miles (HRRR surface analysis, FAA flight-category scale): <b>0-0.25 Dense fog</b> maroon (NWS Dense Fog Advisory, 1/4 mi or less) &rarr; <b>0.25-1 LIFR</b> red &rarr; <b>1-3 IFR</b> orange &rarr; <b>3-5 MVFR</b> gold &rarr; <b>5-30 VFR</b> green to deep blue (10SM is the METAR reporting cap; the model resolves past it). Same visibility always shows the same color; above 30 mi clamps into deep blue. Human-observer/mariner/pilot visibility through haze, mist, precipitation, and smoke \u2014 not astronomical seeing.",
-  "model_cycle": "hrrr.20261027 t23z",
-  "source_id": "hrrr-hrrr.20261027-t23z-vis-anl-r13-g8",
-  "source_version": "hrrr-hrrr.20261027-t23z-vis-anl-r13-g8",
+  "model_cycle": "hrrr.20261028 t00z",
+  "source_id": "hrrr-hrrr.20261028-t00z-vis-anl-r13-g8",
+  "source_version": "hrrr-hrrr.20261028-t00z-vis-anl-r13-g8",
   "stats": {
     "valid_cells": 2115000,
     "current_min": 0.0,
-    "current_max": 41.321184283782706,
-    "n_gated_cells": 14,
-    "n_continuity_filled": 628,
+    "current_max": 36.8473116996739,
+    "n_gated_cells": 131,
+    "n_continuity_filled": 745,
     "display_smoothing": "NaN-aware 1-pass blur; stats on raw"
   },
   "metar_qc": {
     "KORD": {
       "obs_SM": 10.0,
-      "grid_SM": 22.019116691872476,
-      "absdiff_SM": 12.02,
+      "grid_SM": 21.407480314970016,
+      "absdiff_SM": 11.41,
       "verdict": "OK"
     },
     "KDTW": {
       "obs_SM": 10.0,
-      "grid_SM": 14.612786327823997,
-      "absdiff_SM": 4.61,
+      "grid_SM": 13.450407950952648,
+      "absdiff_SM": 3.45,
       "verdict": "OK"
     },
     "KDLH": {
-      "obs_SM": 1.5,
-      "grid_SM": 0.0770500278356485,
-      "absdiff_SM": 1.42,
+      "obs_SM": 0.5,
+      "grid_SM": 0.06213711922289804,
+      "absdiff_SM": 0.44,
       "verdict": "OK"
     },
     "KBUF": {
       "obs_SM": 10.0,
-      "grid_SM": 13.898209456801414,
-      "absdiff_SM": 3.9,
+      "grid_SM": 12.785747898891568,
+      "absdiff_SM": 2.79,
       "verdict": "OK"
     },
     "KCLE": {
       "obs_SM": 10.0,
-      "grid_SM": 12.861762308180332,
-      "absdiff_SM": 2.86,
+      "grid_SM": 13.456414539068938,
+      "absdiff_SM": 3.46,
       "verdict": "OK"
     },
     "KMKE": {
-      "obs_SM": 9.0,
-      "grid_SM": 9.425372491329908,
-      "absdiff_SM": 0.43,
+      "obs_SM": 8.0,
+      "grid_SM": 8.753048861324787,
+      "absdiff_SM": 0.75,
       "verdict": "OK"
     },
     "KGRB": {
       "obs_SM": 10.0,
-      "grid_SM": 8.565601884992793,
-      "absdiff_SM": 1.43,
+      "grid_SM": 8.851432633427903,
+      "absdiff_SM": 1.15,
       "verdict": "OK"
     },
     "KERI": {
       "obs_SM": 10.0,
-      "grid_SM": 18.98475403651595,
+      "grid_SM": 18.979575943127273,
       "absdiff_SM": 8.98,
       "verdict": "OK"
     }
   },
-  "folder_html": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/visibility/legend.png?v=hrrr-hrrr.20261027-t23z-vis-anl-r13-g8\" width=\"600\" alt=\"legend\"><br>Meteorological visibility in statute miles (HRRR surface analysis, FAA flight-category scale): <b>0-0.25 Dense fog</b> maroon (NWS Dense Fog Advisory, 1/4 mi or less) &rarr; <b>0.25-1 LIFR</b> red &rarr; <b>1-3 IFR</b> orange &rarr; <b>3-5 MVFR</b> gold &rarr; <b>5-30 VFR</b> green to deep blue (10SM is the METAR reporting cap; the model resolves past it). Same visibility always shows the same color; above 30 mi clamps into deep blue. Human-observer/mariner/pilot visibility through haze, mist, precipitation, and smoke \u2014 not astronomical seeing.</p><p>Near-surface meteorological visibility from the operational HRRR analysis: how far a human observer, mariner, or pilot can distinguish surroundings through haze, mist, precipitation, and smoke. Low values flag navigation and shoreline hazards; high values mark crystal-clear Great Lakes air.</p><p>Visibility science (atmospheric optics and observing practice) quantifies horizontal contrast loss from scattering and absorption by hydrometeors and aerosols. It underpins aviation flight rules, marine navigation advisories, and air-quality perception, and is reported operationally in statute miles across the United States.</p><p><b>Units:</b> mi, statute (display; source m / 1609.344)<br><b>Source:</b> NOAA/NCEP HRRR 3 km surface visibility analysis, hourly cycles<br><b>Update:</b> Checked hourly; republishes only on a newer HRRR cycle.<br><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl</a></p>"
+  "folder_html": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/visibility/legend.png?v=hrrr-hrrr.20261028-t00z-vis-anl-r13-g8\" width=\"600\" alt=\"legend\"><br>Meteorological visibility in statute miles (HRRR surface analysis, FAA flight-category scale): <b>0-0.25 Dense fog</b> maroon (NWS Dense Fog Advisory, 1/4 mi or less) &rarr; <b>0.25-1 LIFR</b> red &rarr; <b>1-3 IFR</b> orange &rarr; <b>3-5 MVFR</b> gold &rarr; <b>5-30 VFR</b> green to deep blue (10SM is the METAR reporting cap; the model resolves past it). Same visibility always shows the same color; above 30 mi clamps into deep blue. Human-observer/mariner/pilot visibility through haze, mist, precipitation, and smoke \u2014 not astronomical seeing.</p><p>Near-surface meteorological visibility from the operational HRRR analysis: how far a human observer, mariner, or pilot can distinguish surroundings through haze, mist, precipitation, and smoke. Low values flag navigation and shoreline hazards; high values mark crystal-clear Great Lakes air.</p><p>Visibility science (atmospheric optics and observing practice) quantifies horizontal contrast loss from scattering and absorption by hydrometeors and aerosols. It underpins aviation flight rules, marine navigation advisories, and air-quality perception, and is reported operationally in statute miles across the United States.</p><p><b>Units:</b> mi, statute (display; source m / 1609.344)<br><b>Source:</b> NOAA/NCEP HRRR 3 km surface visibility analysis, hourly cycles<br><b>Update:</b> Checked hourly; republishes only on a newer HRRR cycle.<br><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl</a></p>"
 }
