@@ -6,9 +6,9 @@
   "product_name": "NOAA/NCEP GLWU v2.1 surface U/V (Great Lakes water) + HRRR 3km 10m U/V + RRFS North American 10m U/V + ECCC GDPS fallback",
   "variable": "UGRD/VGRD 10m/surface, m/s -> kt x1.94384 -> WMO Beaufort 0-12",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_glwu.pl",
-  "data_time_utc": "2026-10-30 06:31 PM EDT",
-  "source_last_modified_utc": "{\"glwu 20261030/19\": \"n=13895/g=4061\", \"hrrr hrrr.20261030/21\": \"n=701862/g=176900\", \"rrfs-na rrfs.20261030/00\": \"n=2632946/g=1195390\", \"gdps\": \"GDPS_15km_Wind_10m n=5273396/g=6479996\"}",
-  "processing_time_utc": "2026-10-30 06:33 PM EDT",
+  "data_time_utc": "2026-10-30 07:02 PM EDT",
+  "source_last_modified_utc": "{\"glwu 20261030/19\": \"n=13895/g=4061\", \"hrrr hrrr.20261030/22\": \"n=701862/g=176900\", \"rrfs-na rrfs.20261030/00\": \"n=2632946/g=1195390\", \"gdps\": \"GDPS_15km_Wind_10m n=5273396/g=6479996\"}",
+  "processing_time_utc": "2026-10-30 07:05 PM EDT",
   "units": "kt (Beaufort 0-12)",
   "spatial_resolution_source": "GLWU ~2.5km; HRRR 3km; RRFS 13km NA",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -106,8 +106,8 @@
       "color": "#3B0A54"
     }
   ],
-  "source_id": "na-wind-20261030-2231",
-  "source_version": "na-wind-20261030-2231-gdps-GDPS_15km_Wind_10m-n-5273396-g-6479996-glwu-20261030-19-n-13895-g-4061-hrrr-hrrr.20261030-21-n-701862-g-176900-rrfs-na-rrfs.20261030-00-n-2632946-g-1195390",
+  "source_id": "na-wind-20261030-2302",
+  "source_version": "na-wind-20261030-2302-gdps-GDPS_15km_Wind_10m-n-5273396-g-6479996-glwu-20261030-19-n-13895-g-4061-hrrr-hrrr.20261030-22-n-701862-g-176900-rrfs-na-rrfs.20261030-00-n-2632946-g-1195390",
   "na_bounds": {
     "canvas_height": 1600,
     "canvas_width": 3300,
@@ -124,10 +124,10 @@
   "coverage_mode": "basin",
   "stats": {
     "valid_pixels": 70380,
-    "streamlets": 214,
-    "heads": 63,
-    "labels": 28,
-    "extra_labels": 5
+    "streamlets": 190,
+    "heads": 58,
+    "labels": 29,
+    "extra_labels": 3
   },
-  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE \u2014 Great Lakes Basin Coverage</h2><p><b>Coverage:</b> Great Lakes Basin Coverage<br><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu 20261030/19': 'n=13895/g=4061', 'hrrr hrrr.20261030/21': 'n=701862/g=176900', 'rrfs-na rrfs.20261030/00': 'n=2632946/g=1195390', 'gdps': 'GDPS_15km_Wind_10m n=5273396/g=6479996'}</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25cb Continental Coverage<br>\u25c9 <b>Great Lakes Basin Coverage</b> (shown)<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
+  "folder_html": "<h2>LIVE WIND \u2014 BEAUFORT SCALE \u2014 Great Lakes Basin Coverage</h2><p><b>Coverage:</b> Great Lakes Basin Coverage<br><b>Precedence:</b> GLWU valid (Great Lakes water) > HRRR valid (its domain, GLWU not applicable) > RRFS-NA valid (elsewhere) > GDPS (verified gaps only) > transparent.<br><b>Provenance:</b> {'glwu 20261030/19': 'n=13895/g=4061', 'hrrr hrrr.20261030/22': 'n=701862/g=176900', 'rrfs-na rrfs.20261030/00': 'n=2632946/g=1195390', 'gdps': 'GDPS_15km_Wind_10m n=5273396/g=6479996'}</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25cb Continental Coverage<br>\u25c9 <b>Great Lakes Basin Coverage</b> (shown)<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
 }
