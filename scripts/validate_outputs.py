@@ -512,9 +512,14 @@ def main():
                         or "<refreshInterval>" not in text:
                     failures.append(f"{product}: entry NetworkLink must refresh "
                                     f"onInterval in {kp}")
-                if "?v=" in text:
-                    failures.append(f"{product}: entry must be version-free "
-                                    f"(stable) in {kp}")
+                # Entries stay byte-stable: the live href must never carry
+                # a version. The legend image may carry the constant
+                # renderer tag (?v=rNN) so clients that cached an old
+                # legend.png under the bare URL fetch the current one.
+                if f"kml/live/{spec['kml']}?v=" in text \
+                        or "current.png?v=" in text:
+                    failures.append(f"{product}: entry live href must be "
+                                    f"version-free (stable) in {kp}")
                 if os.environ.get("CI") == "true" and "REPLACE-" in text:
                     failures.append(f"{product}: entry still has placeholder "
                                     f"PAGES_BASE_URL (CI must set it)")

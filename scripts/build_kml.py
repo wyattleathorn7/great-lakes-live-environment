@@ -36,8 +36,8 @@ import os
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 
-from geospatial_utils import (KML_DIR, PROD_BASE_URL, SITE_DIR, load_bounds,
-                              source_token)
+from geospatial_utils import (KML_DIR, PROD_BASE_URL, RENDER_VERSION, SITE_DIR,
+                              load_bounds, source_token)
 
 KML_NS = "http://www.opengis.net/kml/2.2"
 ET.register_namespace("", KML_NS)
@@ -359,10 +359,12 @@ def child_description_html(legend_html, narrative, units_line, source_name,
 
 def entry_description_html(title, meta, note):
     # Entry files are what users add first, so they carry the legend
-    # image too (unversioned legend URL: entries must stay byte-stable and
-    # version-free, and legends are fixed-scale so they rarely change).
-    # No title repeat (the Document/NetworkLink names already title the
-    # layer), no timestamps: Legend first, image directly underneath.
+    # image too. The image URL is pinned to the renderer version: a
+    # constant (so the entry stays byte-stable across runs) that still
+    # busts any legend.png copy a client cached before this revision --
+    # Google Earth otherwise keeps showing a months-old legend image
+    # next to live imagery. No title repeat (the Document/NetworkLink
+    # names already title the layer), no timestamps.
     legend_html = ""
     try:
         product = meta.get("product")
@@ -371,8 +373,8 @@ def entry_description_html(title, meta, note):
             base = pages_base()
             legend_html = (
                 f"<p><b>Legend</b><br>"
-                f"<img src=\"{base}/{product}/legend.png\" width=\"600\" "
-                f"alt=\"legend\"><br>{scale_html}</p>"
+                f"<img src=\"{base}/{product}/legend.png?v=r{RENDER_VERSION}\" "
+                f"width=\"600\" alt=\"legend\"><br>{scale_html}</p>"
             )
     except Exception:
         legend_html = ""

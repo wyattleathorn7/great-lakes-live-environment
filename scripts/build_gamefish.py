@@ -370,11 +370,13 @@ def entry_description_html_static(cfg, meta=None, product=None):
     method; carries no version tokens. The legend image is unversioned on
     purpose so entries stay byte-stable."""
     from build_kml import fetch_header_html, pages_base
+    from geospatial_utils import RENDER_VERSION
     legend_html = ""
     if product and meta and meta.get("legend_scale_html"):
         legend_html = (
             f"<p><b>Legend</b><br>"
-            f"<img src=\"{pages_base()}/{product}/legend.png\" width=\"600\" "
+            f"<img src=\"{pages_base()}/{product}/legend.png"
+            f"?v=r{RENDER_VERSION}\" width=\"600\" "
             f"alt=\"legend\"><br>{meta['legend_scale_html']}</p>")
     fetched = fetch_header_html(meta or {}, 0, include_next=False)
     return (
