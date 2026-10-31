@@ -365,13 +365,20 @@ def live_description_html(cfg, meta, token, legend_img_html):
     )
 
 
-def entry_description_html_static(cfg, meta=None):
-    """Static entry description: explains the product and the auto-refresh;
-    carries no version tokens. Leads with the fetch fact (historical, always
-    true) so times show on the first item clicked."""
-    from build_kml import fetch_header_html
+def entry_description_html_static(cfg, meta=None, product=None):
+    """Static entry description: legend first, then the fetch fact and the
+    method; carries no version tokens. The legend image is unversioned on
+    purpose so entries stay byte-stable."""
+    from build_kml import fetch_header_html, pages_base
+    legend_html = ""
+    if product and meta and meta.get("legend_scale_html"):
+        legend_html = (
+            f"<p><b>Legend</b><br>"
+            f"<img src=\"{pages_base()}/{product}/legend.png\" width=\"600\" "
+            f"alt=\"legend\"><br>{meta['legend_scale_html']}</p>")
     fetched = fetch_header_html(meta or {}, 0, include_next=False)
     return (
+        f"{legend_html}"
         f"{fetched}"
         f"<h2>{cfg['title']}</h2>"
         f"<p>{G.DISCLAIMER}</p>"
@@ -394,7 +401,7 @@ def write_kmls(cfg, PRODUCT, meta, token, stage=None):
                   f"{PRODUCT}/current.png", f"{PRODUCT}/legend.png", desc,
                   cfg["refresh_interval_seconds"], token, meta=meta)
         build_entry_kml(PRODUCT, live_name, cfg["overlay_name"],
-                        entry_description_html_static(cfg, meta),
+                        entry_description_html_static(cfg, meta, PRODUCT),
                         cfg["refresh_interval_seconds"])
     else:
         outs = live_out_dirs(stage, live_name)
@@ -404,7 +411,7 @@ def write_kmls(cfg, PRODUCT, meta, token, stage=None):
                              out_dirs=outs["live"], meta=meta)
         assert_no_vector_geometry(kml_text)
         build_entry_kml(PRODUCT, live_name, cfg["overlay_name"],
-                        entry_description_html_static(cfg, meta),
+                        entry_description_html_static(cfg, meta, PRODUCT),
                         cfg["refresh_interval_seconds"], out_dirs=outs["entry"])
 
 

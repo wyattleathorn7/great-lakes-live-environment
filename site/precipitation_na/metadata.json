@@ -6,9 +6,9 @@
   "product_name": "NOAA/NSSL MRMS SeamlessHSR hybrid-scan reflectivity composite (CONUS, Alaska, Hawaii, Caribbean; dBZ, public domain) + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) / precipitation type (Radar_1km_SfcPrecipType) + EUMETNET OPERA EU DBZH composite (CC BY 4.0) in remaining radar gaps + JMA Japan nowcast (attribution) in Japan gaps + NOAA GFS model estimates, same colors (public domain) in verified radar gaps only",
   "variable": "MRMS SeamlessHSR base reflectivity dBZ (CONUS + regional AK/HI/CARIB) + MRMS PrecipFlag surface type; ECCC precipitation-rate rain (mm/h)/snow (cm/h) mapped to dBZ through the ECCC 14-color class rates with the NWS Z=300R^1.4 equivalence (equal ECCC colors = equal severity = equal dBZ). One 5-75 dBZ severity scale rendered on two ramps that match the NOAA/CSU MRMS event-loop legend: Rain (green->purple) and Snow/Sleet (pale blue->purple).",
   "source_url": "https://mrms.ncep.noaa.gov/data/",
-  "data_time_utc": "2026-10-27 01:15 UTC",
-  "source_last_modified_utc": "ECCC rain 2026-10-27T01:12:00Z; snow 2026-10-27T01:12:00Z; type 2026-10-27T01:06:00Z",
-  "processing_time_utc": "2026-10-26 09:20 PM EDT",
+  "data_time_utc": "2026-10-29 02:45 UTC",
+  "source_last_modified_utc": "ECCC rain 2026-10-29T02:42:00Z; snow 2026-10-29T02:42:00Z; type 2026-10-29T02:36:00Z",
+  "processing_time_utc": "2026-10-28 10:49 PM EDT",
   "units": "5-75 dBZ severity on two ramps: Rain (green->purple) and Snow/Sleet (pale blue->purple)",
   "spatial_resolution_source": "MRMS SeamlessHSR ~1km CONUS + regional AK/HI/CARIB composite 2-min (measured dBZ -> severity ramps; PrecipFlag snow); ECCC 1km NA composite 6-min (class severity -> estimated dBZ via NWS Z=300R^1.4; snow classes use the Snow/Sleet ramp); canvas 3300x1600 (0.05 deg/px)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,8 +30,8 @@
     272
   ],
   "legend_scale_html": "Precipitation type + intensity (OBSERVED radar echo; 5-75 dBZ severity). <b>Rain</b> ramp: dark green (light) &rarr; green &rarr; yellow &rarr; orange &rarr; red &rarr; magenta &rarr; purple (extreme). <b>Snow/Sleet</b> ramp: pale blue (light) &rarr; blue &rarr; purple (heavy). Same intensity sits at the same position on both ramps. Type is observed/analysed, never inferred from color: MRMS PrecipFlag (snow class 3) inside CONUS and the regional AK/HI/CARIB domains, ECCC SfcPrecipType (snow classes) in Canada, and GFS CSNOW/CICEP for model snow/ice in verified radar gaps only. Echoes from sources that publish no type (OPERA EU, JMA) stay on the Rain ramp. No echo = transparent; GFS pixels are model estimates, never radar. GFS model estimates (not radar) use the same two ramps where no radar covers.",
-  "source_id": "na-precip-20261027-0115-r13",
-  "source_version": "na-precip-20261027-0115-r13",
+  "source_id": "na-precip-20261029-0245-r13",
+  "source_version": "na-precip-20261029-0245-r13",
   "na_bounds": {
     "canvas_height": 1800,
     "canvas_width": 3600,
@@ -44,27 +44,27 @@
     "resolution_deg_per_pixel": 0.1
   },
   "stats": {
-    "mrms_pixels": 10370,
-    "eccc_pixels": 40129,
-    "opera_pixels": 19497,
+    "mrms_pixels": 6887,
+    "eccc_pixels": 39589,
+    "opera_pixels": 12293,
     "jma_pixels": 0,
-    "mrms_regional_pixels": 1167,
-    "gfs_est_rain": 243045,
-    "gfs_est_snow": 89879,
-    "opaque_pixels": 368090,
-    "rain_pixels": 277710,
-    "snow_sleet_pixels": 90380,
-    "snow_sleet_fraction": 0.2455,
-    "transparent_pixels": 6111910,
+    "mrms_regional_pixels": 1699,
+    "gfs_est_rain": 236271,
+    "gfs_est_snow": 116760,
+    "opaque_pixels": 380002,
+    "rain_pixels": 260201,
+    "snow_sleet_pixels": 119801,
+    "snow_sleet_fraction": 0.3153,
+    "transparent_pixels": 6099998,
     "underlay": "none (radar-only composite)"
   },
   "provenance": {
-    "mrms_grib2": "https://mrms.ncep.noaa.gov/data/2D/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261027-011800.grib2.gz",
-    "mrms_regional": "MRMS alaska SeamlessHSR 2026-10-27 01:18 UTC echo px=1481 snow px=441 valid px=4753505 (https://mrms.ncep.noaa.gov/data/2D/ALASKA/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261027-011800.grib2.gz); MRMS hawaii SeamlessHSR 2026-10-27 01:18 UTC echo px=104 snow px=0 valid px=3717429 (https://mrms.ncep.noaa.gov/data/2D/HAWAII/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261027-011800.grib2.gz); MRMS carib SeamlessHSR 2026-10-27 01:18 UTC echo px=833 snow px=0 valid px=918016 (https://mrms.ncep.noaa.gov/data/2D/CARIB/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261027-011800.grib2.gz)",
+    "mrms_grib2": "https://mrms.ncep.noaa.gov/data/2D/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261029-024600.grib2.gz",
+    "mrms_regional": "MRMS alaska SeamlessHSR 2026-10-29 02:48 UTC echo px=2605 snow px=379 valid px=4753505 (https://mrms.ncep.noaa.gov/data/2D/ALASKA/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261029-024800.grib2.gz); MRMS hawaii SeamlessHSR 2026-10-29 02:48 UTC echo px=1568 snow px=0 valid px=3717429 (https://mrms.ncep.noaa.gov/data/2D/HAWAII/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261029-024800.grib2.gz); MRMS carib SeamlessHSR 2026-10-29 02:48 UTC echo px=75 snow px=0 valid px=918016 (https://mrms.ncep.noaa.gov/data/2D/CARIB/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261029-024800.grib2.gz)",
     "eccc_wms": "https://geo.weather.gc.ca/geomet",
-    "eccc_time_rain": "2026-10-27T01:12:00Z",
-    "eccc_time_snow": "2026-10-27T01:12:00Z",
-    "eccc_time_type": "2026-10-27T01:06:00Z",
+    "eccc_time_rain": "2026-10-29T02:42:00Z",
+    "eccc_time_snow": "2026-10-29T02:42:00Z",
+    "eccc_time_type": "2026-10-29T02:36:00Z",
     "underlay": "none (radar-only composite)"
   },
   "source_registry": [
@@ -72,7 +72,7 @@
       "id": "mrms_hsr",
       "footprint": "CONUS (lon -130..-65, lat 22..50)",
       "product_type": "radar reflectivity (dBZ) + surface precip type, MRMS SeamlessHSR/PrecipFlag",
-      "data_time": "2026-10-27 01:18 UTC",
+      "data_time": "2026-10-29 02:46 UTC",
       "license": "Public domain (NOAA/NSSL MRMS)",
       "snow_capability": "snow (PrecipFlag class 3) on the Snow/Sleet ramp",
       "status": "ok"
@@ -81,7 +81,7 @@
       "id": "mrms_regional",
       "footprint": "Alaska + Hawaii + Caribbean (MRMS regional domains)",
       "product_type": "radar reflectivity (dBZ) + surface precip type, MRMS SeamlessHSR/PrecipFlag",
-      "data_time": "MRMS alaska SeamlessHSR 2026-10-27 01:18 UTC echo px=1481 snow px=441 valid px=4753505 (https://mrms.ncep.noaa.gov/data/2D/ALASKA/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261027-011800.grib2.gz); MRMS hawaii SeamlessHSR 2026-10-27 01:18 UTC echo px=104 snow px=0 valid px=3717429 (https://mrms.ncep.noaa.gov/data/2D/HAWAII/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261027-011800.grib2.gz); MRMS carib SeamlessHSR 2026-10-27 01:18 UTC echo px=833 snow px=0 valid px=918016 (https://mrms.ncep.noaa.gov/data/2D/CARIB/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261027-011800.grib2.gz)",
+      "data_time": "MRMS alaska SeamlessHSR 2026-10-29 02:48 UTC echo px=2605 snow px=379 valid px=4753505 (https://mrms.ncep.noaa.gov/data/2D/ALASKA/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261029-024800.grib2.gz); MRMS hawaii SeamlessHSR 2026-10-29 02:48 UTC echo px=1568 snow px=0 valid px=3717429 (https://mrms.ncep.noaa.gov/data/2D/HAWAII/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261029-024800.grib2.gz); MRMS carib SeamlessHSR 2026-10-29 02:48 UTC echo px=75 snow px=0 valid px=918016 (https://mrms.ncep.noaa.gov/data/2D/CARIB/SeamlessHSR/MRMS_SeamlessHSR_00.00_20261029-024800.grib2.gz)",
       "license": "Public domain (NOAA/NSSL MRMS)",
       "snow_capability": "snow (PrecipFlag class 3) on the Snow/Sleet ramp",
       "status": "ok"
@@ -90,7 +90,7 @@
       "id": "eccc_radar",
       "footprint": "North America (dynamic INV mask)",
       "product_type": "radar rain/snow rate + precipitation type",
-      "data_time": "rain 2026-10-27T01:12:00Z; snow 2026-10-27T01:12:00Z; type 2026-10-27T01:06:00Z",
+      "data_time": "rain 2026-10-29T02:42:00Z; snow 2026-10-29T02:42:00Z; type 2026-10-29T02:36:00Z",
       "license": "ECCC GeoMet (open data)",
       "snow_capability": "snow classes (SfcPrecipType) on the Snow/Sleet ramp",
       "status": "ok"
@@ -99,7 +99,7 @@
       "id": "opera_eu",
       "footprint": "Europe + N. Atlantic (LAEA 1km)",
       "product_type": "radar reflectivity (dBZ)",
-      "data_time": "OPERA DBZH 01:15Z px=19497 (CC BY 4.0 EUMETNET)",
+      "data_time": "OPERA DBZH 02:40Z px=12293 (CC BY 4.0 EUMETNET)",
       "license": "CC BY 4.0 (EUMETNET OPERA)",
       "snow_capability": "none (no type product; Rain ramp)",
       "status": "ok"
@@ -108,7 +108,7 @@
       "id": "jma_jp",
       "footprint": "Japan + vicinity (lon 122..148, lat 24..46)",
       "product_type": "radar-analysis intensity (mm/h classes)",
-      "data_time": "JMA nowcast 20261027011500 px=0 (JMA)",
+      "data_time": "JMA nowcast 20261029024500 px=0 (JMA)",
       "license": "JMA (attribution required)",
       "snow_capability": "none (no type product; Rain ramp)",
       "status": "no-echo/unavailable"
@@ -117,12 +117,12 @@
       "id": "gfs_model",
       "footprint": "worldwide 0.25deg (radar gaps only)",
       "product_type": "model estimate (PRATE + CSNOW/CRAIN/CICEP flags)",
-      "data_time": "GFS 20261026 18z est rain px=243045 snow px=89879 (public domain)",
+      "data_time": "GFS 20261028 18z est rain px=236271 snow px=116760 (public domain)",
       "license": "Public domain (NOAA GFS)",
       "snow_capability": "estimated snow/ice (CSNOW/CICEP) on the Snow/Sleet ramp",
       "status": "ok"
     }
   ],
-  "folder_html": "<h2>LIVE PRECIPITATION</h2><p><b>Sources:</b> NOAA/NSSL MRMS SeamlessHSR hybrid-scan reflectivity composite (CONUS, Alaska, Hawaii, Caribbean; dBZ, public domain) + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) / precipitation type (Radar_1km_SfcPrecipType) + EUMETNET OPERA EU DBZH composite (CC BY 4.0) in remaining radar gaps + JMA Japan nowcast (attribution) in Japan gaps + NOAA GFS model estimates, same colors (public domain) in verified radar gaps only<br><b>Precedence:</b> ECCC rain (rates -> dBZ via NWS Z=300R^1.4 onto the shared severity scale) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; ECCC snow classes (SfcPrecipType) render on the Snow/Sleet ramp; NOAA/NSSL MRMS SeamlessHSR (CONUS + regional AK/HI/CARIB: measured dBZ -> severity ramps, PrecipFlag class 3 -> Snow/Sleet ramp) fills ECCC gaps; OPERA EU DBZH fills remaining non-NA radar gaps on the Rain ramp (no type product); JMA nowcast intensity (mm/h classes) fills Japan gaps via Z-R equivalents on the Rain ramp (no type product); GFS model estimates (CSNOW/CICEP -> Snow/Sleet ramp, CRAIN/CFRZR -> Rain ramp) only in verified radar gaps; transparent elsewhere.<br><b>Coverage:</b> Global Coverage<br><b>Radar note:</b> radar echoes (MRMS CONUS + regional AK/HI/CARIB/ECCC/OPERA/JMA); GFS model estimates (not radar) in verified radar gaps, same colors<br><b>Data time:</b> 2026-10-27 01:15 UTC</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25c9 <b>Global Coverage</b> (shown)<br>\u25cb Continental Coverage<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>",
+  "folder_html": "<h2>LIVE PRECIPITATION</h2><p><b>Sources:</b> NOAA/NSSL MRMS SeamlessHSR hybrid-scan reflectivity composite (CONUS, Alaska, Hawaii, Caribbean; dBZ, public domain) + ECCC North American Radar Composite 1km rain (RADAR_1KM_RRAI, mm/h) / snow (RADAR_1KM_RSNO, cm/h) / precipitation type (Radar_1km_SfcPrecipType) + EUMETNET OPERA EU DBZH composite (CC BY 4.0) in remaining radar gaps + JMA Japan nowcast (attribution) in Japan gaps + NOAA GFS model estimates, same colors (public domain) in verified radar gaps only<br><b>Precedence:</b> ECCC rain (rates -> dBZ via NWS Z=300R^1.4 onto the shared severity scale) wins everywhere its RADAR_COVERAGE_*.INV dynamic coverage is valid, including most of CONUS; ECCC snow classes (SfcPrecipType) render on the Snow/Sleet ramp; NOAA/NSSL MRMS SeamlessHSR (CONUS + regional AK/HI/CARIB: measured dBZ -> severity ramps, PrecipFlag class 3 -> Snow/Sleet ramp) fills ECCC gaps; OPERA EU DBZH fills remaining non-NA radar gaps on the Rain ramp (no type product); JMA nowcast intensity (mm/h classes) fills Japan gaps via Z-R equivalents on the Rain ramp (no type product); GFS model estimates (CSNOW/CICEP -> Snow/Sleet ramp, CRAIN/CFRZR -> Rain ramp) only in verified radar gaps; transparent elsewhere.<br><b>Coverage:</b> Global Coverage<br><b>Radar note:</b> radar echoes (MRMS CONUS + regional AK/HI/CARIB/ECCC/OPERA/JMA); GFS model estimates (not radar) in verified radar gaps, same colors<br><b>Data time:</b> 2026-10-29 02:45 UTC</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25c9 <b>Global Coverage</b> (shown)<br>\u25cb Continental Coverage<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>",
   "coverage_mode": "global"
 }

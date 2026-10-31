@@ -25,8 +25,10 @@ Update chain::
     the new live KML -> Google Earth requests the new versioned PNG.
 
 RASTER ONLY in both files: zero LineString / Polygon / Placemark /
-Point / ScreenOverlay elements (asserted). Legends travel inside the
-live Document description as HTML (legend PNG <img> + scale text).
+Point / ScreenOverlay elements (asserted). Every clickable level carries
+the legend as HTML (legend PNG <img> + scale text): the entry Document,
+the entry NetworkLink (the layer item), the live Document and the live
+Folder. No description ever hides the key behind a submenu.
 """
 
 import json
@@ -60,6 +62,24 @@ def legend_block(legend_path, cache_token, scale_html):
         f"<img src=\"{base}/{legend_path}?v={cache_token}\" width=\"600\" "
         f"alt=\"legend\"><br>{scale_html}</p>"
     )
+
+
+def ensure_legend(html, legend_path, cache_token, meta):
+    """Guarantee the shared legend block leads a description.
+
+    Every clickable level of a layer (entry Document, entry NetworkLink,
+    live Document, live Folder) must show the legend without opening a
+    submenu, so any description that does not already embed a
+    ``legend.png`` image gets the standard versioned block prepended.
+    Idempotent: a description that already carries a legend -- including
+    a product's own multi-scale block -- is returned untouched.
+    """
+    if not html or "legend.png" in html:
+        return html
+    if not legend_path or not cache_token:
+        return html
+    return legend_block(legend_path, cache_token,
+                        (meta or {}).get("legend_scale_html", "")) + html
 
 
 def fetch_header_html(meta, refresh_interval, include_next=True):
@@ -219,7 +239,8 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
         primary_visibility = 1 if extra_overlays else None
     ground = _overlay(primary_name or overlay_name, png_url, bounds, 10,
                       primary_visibility, overlay_descriptions)
-    descriptions = [header + description_html]
+    descriptions = [header + ensure_legend(description_html, legend_path,
+                                           cache_token, meta)]
     if folder is not None:
         folder_el = _q("Folder")
         folder_el.append(_q("name", folder[0]))
@@ -238,7 +259,8 @@ def build_kml(product, kml_filename, overlay_name, png_path, legend_path,
                 name, f"{base}/{png_rel}?v={otok or cache_token}", b, order,
                 vis, odesc))
         document.append(folder_el)
-        descriptions.append(header + strip_old_stamps(folder[1]))
+        descriptions.append(header + ensure_legend(
+            strip_old_stamps(folder[1]), legend_path, cache_token, meta))
         # NB: descriptions[] must stay strictly parallel to the emitted
         # empty <description/> elements in document order: _serialize()
         # consumes placeholders positionally, so entries are appended
@@ -276,9 +298,13 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
     token, so it stays byte-stable across rebuilds (no commit churn) while
     its NetworkLink poll discovers each newly published live file.
     Descriptions carry no timestamps and never repeat the layer title.
-    """
-    link_header = ""
 
+    BOTH the Document and the NetworkLink carry the full description
+    (legend first): in Google Earth the clickable layer row is the
+    NetworkLink itself, so the key must travel with that row too -- one
+    click anywhere on this entry shows legend + description, with no
+    submenu to open.
+    """
     base = pages_base()
     live_url = f"{base}/kml/live/{kml_filename}"
 
@@ -292,10 +318,9 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
 
     link = _q("NetworkLink")
     link.append(_q("name", overlay_name + " — auto-refresh"))
-    if link_header:
-        _ldesc = _q("description")
-        _ldesc.text = None
-        link.append(_ldesc)
+    _ldesc = _q("description")
+    _ldesc.text = None
+    link.append(_ldesc)
     url = _q("Link")
     url.append(_q("href", live_url))
     url.append(_q("refreshMode", "onInterval"))
@@ -303,10 +328,8 @@ def build_entry_kml(product, kml_filename, overlay_name, entry_description_html,
     link.append(url)
     document.append(link)
 
-    descriptions = [entry_description_html]
-    if link_header:
-        # Document order: Document description, then the link's.
-        descriptions.append(link_header)
+    # Document order: Document description, then the NetworkLink's.
+    descriptions = [entry_description_html, entry_description_html]
     xml = _serialize(doc, descriptions)
     if out_dirs is None:
         out_dirs = [os.path.join(KML_DIR, kml_filename),

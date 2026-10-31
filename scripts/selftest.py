@@ -8,6 +8,8 @@ import math
 import os
 import sys
 
+import glob
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 PASS = []
@@ -221,6 +223,42 @@ def main():
         a = np.array(Image.open(png).convert("RGBA"))
         check(f"{p}-opaque-subset-of-mask",
               bool(((a[:, :, 3] > 0) & (mask <= 0)).sum() == 0))
+
+    # ---- legend + description on EVERY clickable level ----
+    # Google Earth shows a place's description when its row is clicked. The
+    # entry Document (first clickable folder), the entry NetworkLink (the
+    # layer item in several clients), the live Document and every live
+    # coverage Folder must all carry the legend image -- never a submenu.
+    import xml.etree.ElementTree as _ET
+    _KNS = {"k": "http://www.opengis.net/kml/2.2"}
+    for _entry in sorted(glob.glob(os.path.join(SITE_DIR, "kml", "*.kml"))):
+        _base = os.path.basename(_entry)
+        _root = _ET.parse(_entry).getroot()
+        _doc = _root.find("k:Document", _KNS)
+        _ddesc = (_doc.findtext("k:description", default="", namespaces=_KNS)
+                  if _doc is not None else "")
+        check(f"entry-legend-document-{_base}",
+              "legend.png" in _ddesc)
+        _link = _root.find(".//k:NetworkLink", _KNS)
+        _ldesc = (_link.findtext("k:description", default="", namespaces=_KNS)
+                  if _link is not None else "")
+        check(f"entry-legend-networklink-{_base}",
+              "legend.png" in _ldesc)
+        _live = os.path.join(SITE_DIR, "kml", "live", _base)
+        if not os.path.exists(_live):
+            continue
+        _lroot = _ET.parse(_live).getroot()
+        _ldoc = _lroot.find("k:Document", _KNS)
+        _lbdesc = (_ldoc.findtext("k:description", default="", namespaces=_KNS)
+                   if _ldoc is not None else "")
+        check(f"live-legend-document-{_base}",
+              "legend.png?v=" in _lbdesc)
+        if _ldoc is not None:
+            for _i, _f in enumerate(_ldoc.findall("k:Folder", _KNS)):
+                _fb = _f.findtext("k:description", default="",
+                                  namespaces=_KNS)
+                check(f"live-legend-folder-{_i}-{_base}",
+                      "legend.png?v=" in _fb)
 
     # ---- leaf phenology engine (synthetic trajectory §43) ----
     from leaf_phenology import (build_leaf_lut, phenology_phase,

@@ -320,6 +320,18 @@ def _overlay_legend_html(prod_dir_name, token, scale_html, status_label,
     )
 
 
+def _coverage_legend_html(coverage_label, prod_dir_name, token, scale_html):
+    """One labelled legend block for Document/Folder-level descriptions.
+
+    Water temperature's three coverages use three different scales, so the
+    top-level panels show all three keys labelled by coverage: nothing is
+    hidden behind a coverage card.
+    """
+    from build_kml import legend_block
+    return (f"<p><b>{coverage_label} legend</b></p>"
+            + legend_block(f"{prod_dir_name}/legend.png", token, scale_html))
+
+
 def _discover_blended_time():
     """Newest available blended-SST analysis time (ERDDAP time axis).
 
@@ -935,24 +947,28 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
     write_metadata(stage_prod, meta)  # re-write incl. buoy QC + legend text
 
     token = meta["source_version"]
-    # Live Document/Folder descriptions carry NO legend images (same
-    # contract as Live Precipitation): the only three legends live in
-    # the three coverage overlay cards. The Document text explains the
-    # foldering, toggling, and where the legends are.
+    # Every clickable level (Document, Folder, each coverage card) carries
+    # the legends: the three coverages use three different scales, so all
+    # three keys are shown together at the top. Opening a coverage card is
+    # optional, never required, to read a scale.
+    coverage_legends = (
+        _coverage_legend_html(WT_LABELS["basin"], PRODUCT, token, scale_html)
+        + _coverage_legend_html(WT_LABELS["landonly"],
+                                WT_DIRS["landonly"], _lake_token, _con_scale)
+        + _coverage_legend_html(WT_LABELS["global"],
+                                WT_DIRS["global"], _ocean_token, _glo_scale))
     doc_explainer = (
         f"<p><b>This layer holds three coverages in one folder:</b> "
         f"{WT_LABELS['basin']} (default), {WT_LABELS['landonly']}, "
-        f"{WT_LABELS['global']}. Open the "
-        f"{CONFIG['title']} folder below and check exactly one coverage "
-        f"at a time (Google Earth Pro switches them exclusively; Web/app "
-        f"users check one box manually). {WT_LABELS['basin']} is always "
-        f"the default: a fresh load or data refresh restores it (a saved "
-        f"project may keep your own last-used checkboxes until you toggle "
-        f"back). Each coverage carries its own "
-        f"legend — click that coverage's row to open its card. There is "
-        f"no shared legend at this level; a legend shown here would belong "
-        f"to only one coverage and mislead about the others.</p>")
-    doc_html = (doc_explainer
+        f"{WT_LABELS['global']}. Check exactly one at a time (Google Earth "
+        f"Pro switches them exclusively; Web/app users check one box "
+        f"manually). {WT_LABELS['basin']} is always the default: a fresh "
+        f"load or data refresh restores it (a saved project may keep your "
+        f"own last-used checkboxes until you toggle back). Each coverage "
+        f"has its own scale because its colors come from its own water — "
+        f"all three legends are right here, so no submenu is needed.</p>")
+    doc_html = (coverage_legends
+                + doc_explainer
                 + description_html(CONFIG["title"], meta,
                                    "Turn on/off independently of wave and "
                                    "ice layers.", "")
@@ -976,7 +992,8 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         f"MUR {_mur_det} (lakes) + blended {_blend_det} (oceans/seas); "
         f"Great Lakes GLSEA {data_time_iso or 'see metadata'}")
     folder_html = (
-        f"<p><b>Sources:</b> {CONFIG['source_name']} (Great Lakes) + "
+        coverage_legends
+        + f"<p><b>Sources:</b> {CONFIG['source_name']} (Great Lakes) + "
         f"{CONFIG.get('mur_source_name', 'MUR')} (lakes) + "
         f"{CONFIG.get('ocean_source_name', 'blended SST')} (oceans/seas)<br>"
         f"<b>Precedence:</b> {CONFIG.get('ocean_precedence', '')}<br>"
@@ -988,9 +1005,8 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
         f"Extended Oceanic <b>{_glo_vmin:g}–{_glo_vmax:g}°F</b>. Each "
         f"coverage's colors and endpoints come from its own water only."
         f"</p>"
-        f"<p>Legends live only in the three coverage cards below — click "
-        f"a coverage row to read its legend. View one coverage at a time."
-        f"</p>") + coverage_selector_html("basin")
+        f"<p>All three legends are above; view one coverage at a time.</p>"
+        ) + coverage_selector_html("basin")
     from geospatial_utils import load_bounds as _glb
     _basin_bounds = _glb()
     meta["folder_html"] = folder_html

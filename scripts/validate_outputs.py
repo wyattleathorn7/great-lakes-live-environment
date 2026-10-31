@@ -472,16 +472,30 @@ def main():
             try:
                 text = open(kp, encoding="utf-8").read()
                 root = ET.fromstring(text)  # must parse
-                if product in DESCRIPTION_PRODUCTS:
-                    doc = root.find(KML_NS + "Document")
-                    d = doc.find(KML_NS + "description") if doc is not None else None
-                    body = (d.text or "") if d is not None else ""
-                    if not body.strip():
-                        failures.append(f"{product}: entry folder description "
-                                        f"missing in {kp}")
-                    elif "legend.png" not in body:
-                        failures.append(f"{product}: entry folder description "
-                                        f"missing legend in {kp}")
+                # Every clickable level of the entry (Document row AND the
+                # NetworkLink row that Google Earth shows as the layer
+                # item) must carry legend + description: one click shows
+                # the key, never a submenu.
+                doc = root.find(KML_NS + "Document")
+                d = doc.find(KML_NS + "description") if doc is not None else None
+                body = (d.text or "") if d is not None else ""
+                if not body.strip():
+                    failures.append(f"{product}: entry folder description "
+                                    f"missing in {kp}")
+                elif "legend.png" not in body:
+                    failures.append(f"{product}: entry folder description "
+                                    f"missing legend in {kp}")
+                link_el = root.find(".//" + KML_NS + "NetworkLink")
+                ldesc = (link_el.find(KML_NS + "description")
+                         if link_el is not None else None)
+                lbody = (ldesc.text or "") if ldesc is not None else ""
+                if not lbody.strip():
+                    failures.append(f"{product}: entry NetworkLink (the "
+                                    f"clickable layer item) description "
+                                    f"missing in {kp}")
+                elif "legend.png" not in lbody:
+                    failures.append(f"{product}: entry NetworkLink "
+                                    f"description missing legend in {kp}")
                 for bad in ("<LineString", "<Polygon", "<Placemark", "<Point",
                             "<ScreenOverlay", "<GroundOverlay"):
                     if bad in text:
@@ -517,8 +531,26 @@ def main():
             try:
                 text = open(kp, encoding="utf-8").read()
                 root = ET.fromstring(text)  # must parse
+                # Top-level legend contract: the Document row (first
+                # clickable folder) and, when present, the coverage Folder
+                # both lead with the versioned legend, so no submenu is
+                # needed to find the key.
+                doc = root.find(KML_NS + "Document")
+                ddesc = (doc.find(KML_NS + "description")
+                         if doc is not None else None)
+                dbody = (ddesc.text or "") if ddesc is not None else ""
+                if "legend.png?v=" not in dbody:
+                    failures.append(f"{product}: live Document (first "
+                                    f"clickable folder) missing legend in {kp}")
+                if doc is not None:
+                    for _f in doc.findall(KML_NS + "Folder"):
+                        _fdesc = _f.find(KML_NS + "description")
+                        _fbody = (_fdesc.text or "") if _fdesc is not None else ""
+                        if "legend.png?v=" not in _fbody:
+                            failures.append(
+                                f"{product}: live Folder description missing "
+                                f"legend in {kp}")
                 if product in DESCRIPTION_PRODUCTS:
-                    doc = root.find(KML_NS + "Document")
                     child = None
                     folder = doc.find(KML_NS + "Folder") if doc is not None else None
                     if folder is not None:
@@ -595,9 +627,8 @@ def main():
                         or "<refreshInterval>" not in text:
                     failures.append(f"{product}: live Icon must refresh "
                                     f"onInterval in {kp}")
-                # NOTE: NA gradients keep their legends in the entry
-                # (top-folder) files only; live views carry the Coverage
-                # Selector instead, so they are exempt here.
+                # Legacy single-folder products: their live Folder keeps
+                # the scale wording and the versioned legend image.
                 if product in ("water_clarity",
                                "solar_radiation", "air_temperature",
                                "uv_index", "cloud_cover",

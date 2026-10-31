@@ -450,6 +450,15 @@ re-fetches the live KML on schedule and the new `?v=` forces the new
 PNG past CDN and client caches. The live file holds exactly one
 `GroundOverlay` (Icon `onInterval`), zero `NetworkLink`s (no
 self-reference loops), zero vector geometry, zero `ScreenOverlay`.
+Every clickable level carries legend + description, so the key is never
+buried in a submenu: the entry `Document` (the first clickable folder),
+the entry `NetworkLink` (the row Google Earth treats as the layer item),
+the live `Document` and the live coverage `Folder` each lead with the
+legend image (versioned in the live file, unversioned in the entry so
+that file stays byte-stable) followed by the scale text. `build_kml()`
+enforces this with `ensure_legend()`, which prepends the standard block
+to any description that lacks one — multi-scale products such as water
+temperature supply their own labelled block covering all three scales.
 Every builder detects its newest available source id first and skips
 the rebuild (exit 0, deterministic KML rewrite) when the source is
 unchanged — including cheap pre-checks (GLWU `.idx` stamp probes,
