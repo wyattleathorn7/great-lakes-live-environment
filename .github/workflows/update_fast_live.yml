@@ -12,8 +12,14 @@ name: Fast live refresh (NA precipitation + NA cloud cover)
 #   but never commits back to main: it deploys the merged site directly.
 #   No commit => no push races, no history spam from 5-minute cycles.
 #   The hourly main workflow remains the committing path of record.
-# - cancel-in-progress: a newer cycle replaces a stale queued one, so a
-#   backlog can never serve old data as "fresh".
+# - cancel-in-progress was removed on 2026-11-01: with the pinger firing
+#   every 5 minutes, any cycle that overran ~5 minutes was killed by the
+#   NEXT dispatch before fast_publish could ship it, and its `if: always()`
+#   artifacts then published the stale committed copies instead — the live
+#   cloud layer froze at the last committed observation while runs (and
+#   the cron) stayed green and active. Queued cycles now run to
+#   completion serially; each re-checks out main and rebuilds from fresh
+#   sources, so a backlog delays but never falsifies.
 # - The loud artifact merge (fail rather than deploy stale) is duplicated
 #   here: a quiet stale deploy is worse than a red job.
 #
@@ -33,7 +39,10 @@ permissions:
 
 concurrency:
   group: fast-live-refresh
-  cancel-in-progress: true
+  # Serial execution (no cancels): a 5-minute pinger + cancel-in-progress
+  # starved this pipeline whenever a cycle overran the window, and
+  # cancelled cycles republished the stale committed copies (see header).
+  cancel-in-progress: false
 
 jobs:
   precipitation_na:

@@ -49,6 +49,7 @@ import datetime as dt
 import os
 import re
 import sys
+import time
 import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -301,6 +302,34 @@ def invert_gibs_png(path, cmap_url):
 
 # ---------------------------------------------------------------- WMS fetch
 
+# Probe memo: resolving the newest renderable GIBS granule (the walk of
+# small probe renders behind gibs_newest_valid_time) is IDENTICAL for
+# every canvas — data availability does not depend on the canvas. Both
+# render passes share one result per (layer, requested TIME), which
+# removes ~2/3 of probe traffic per layer; a NEGATIVE outcome ("no valid
+# render", e.g. a canvas outside a disk footprint) is memoized too so the
+# regional canvases never repeat the full 19-step walk. TTL bounds a
+# memo's lifetime to half an hour.
+_PROBE_MEMO_TTL_S = 1800.0
+_PROBE_MEMO: dict = {}
+
+
+def _probe_memo_get(layer, primary_iso):
+    """Memoized probe outcome: iso string, False (no valid render), or None
+    (no memo / expired)."""
+    item = _PROBE_MEMO.get((layer, primary_iso))
+    if item is None:
+        return None
+    value, at = item
+    if (time.monotonic() - at) > _PROBE_MEMO_TTL_S:
+        _PROBE_MEMO.pop((layer, primary_iso), None)
+        return None
+    return value
+
+
+def _probe_memo_put(layer, primary_iso, value):
+    _PROBE_MEMO[(layer, primary_iso)] = (value, time.monotonic())
+
 def wms_getmap_png(base, layer, bounds, W, H, time_iso, dest, version="1.1.1"):
     """WMS GetMap -> dest PNG (atomic). Server georeferences to our canvas
     BBOX, so no client-side projection math is needed for WMS sources."""
@@ -486,6 +515,13 @@ def gibs_newest_valid_time(layer, bounds, primary_iso, cmap, raw_dir, tag,
     chosen TIME becomes the honest scan time for provenance.
     """
     from PIL import Image
+    memo = _probe_memo_get(layer, primary_iso)
+    if memo is not None:
+        if memo is False:
+            raise RuntimeError(
+                f"no valid GIBS render for {layer} "
+                "(memo: no renderable data for this TIME)")
+        return memo, _parse_iso(memo)
     W, H = bounds["canvas_width"], bounds["canvas_height"]
     pw, ph = max(180, W // 10), max(90, H // 10)
     base = _parse_iso(primary_iso)
@@ -502,6 +538,7 @@ def gibs_newest_valid_time(layer, bounds, primary_iso, cmap, raw_dir, tag,
             if (a[:, :, 3] > 0).mean() >= min_frac:
                 bt = invert_gibs_png(dest, cmap)
                 if np.isfinite(bt).mean() >= min_frac:
+                    _probe_memo_put(layer, primary_iso, iso)
                     return iso, _parse_iso(iso)
                 tried.append(f"{iso}(unmapped-colors)")
             else:
@@ -509,6 +546,8 @@ def gibs_newest_valid_time(layer, bounds, primary_iso, cmap, raw_dir, tag,
         except Exception as e:
             tried.append(f"{iso}({type(e).__name__})")
         t -= dt.timedelta(minutes=step_min)
+    # Negative memo: every canvas reproduces this walk otherwise.
+    _probe_memo_put(layer, primary_iso, False)
     raise RuntimeError(f"no valid GIBS render for {layer} "
                        f"(tried: {'; '.join(tried[:6])})")
 
@@ -529,8 +568,13 @@ def _gibs_bt_grid(sel_or_layer, bounds, raw_dir, time_iso, cmap, tag):
         prev = open(sidecar).read().strip()
     except OSError:
         prev = ""
-    if os.path.exists(dest) and prev:
-        # Validate the cached render still inverts to real content.
+    if os.path.exists(dest) and prev == time_iso:
+        # A cached render is ONLY reusable when its sidecar granule is the
+        # granule still current for this request. The old check ("cached
+        # file still inverts to real content") accepted ANY previous
+        # granule, so long-lived processes served the first-fetched scan
+        # forever: GIBS Times advance every 10 min but the file never
+        # re-fetched (reproduced locally 2026-10-16..11-01; fixed there).
         try:
             bt = invert_gibs_png(dest, cmap)
             if np.isfinite(bt).mean() >= 0.002:
@@ -539,6 +583,15 @@ def _gibs_bt_grid(sel_or_layer, bounds, raw_dir, time_iso, cmap, tag):
             pass
     used_iso, _used_dt = gibs_newest_valid_time(layer, bounds, time_iso,
                                                 cmap, raw_dir, tag)
+    if os.path.exists(dest) and prev == used_iso:
+        # The probe can re-resolve the same older granule it picked before;
+        # a cache stamped with that exact Granule is still current.
+        try:
+            bt = invert_gibs_png(dest, cmap)
+            if np.isfinite(bt).mean() >= 0.002:
+                return bt, prev
+        except Exception:
+            pass
     wms_getmap_png(GIBS_WMS, layer, bounds, W, H, used_iso, dest)
     with open(sidecar, "w") as f:
         f.write(used_iso)
