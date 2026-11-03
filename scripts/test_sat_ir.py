@@ -199,6 +199,48 @@ def main():
     check("no land mask uses ocean threshold",
           a_legacy[0, 0] > 200.0, f"alpha={a_legacy[0, 0]}")
 
+    print("== land mask geographic alignment ==")
+    # Regional canvases must SAMPLE the world land mask over their own
+    # bounds -- resizing the whole world map to the canvas shape smears
+    # unrelated geography onto regional canvases (observed 2026-11-01: the
+    # squeezed mask put equatorial-Africa land over the Great Lakes on the
+    # continental + basin canvases and suppressed real cloud there).
+    import na_common
+    _orig_lc = na_common.load_continental
+    try:
+        # Synthetic world grid (3600x1800 @ 0.1 deg): land block at
+        # lon -90..-80 (cols 900..1000), lat 40..50 (rows 400..500).
+        world = np.zeros((1800, 3600), dtype=np.float32)
+        world[400:500, 900:1000] = 1.0
+        na_common.load_continental = lambda: world
+        b = dict(canvas_width=100, canvas_height=50, lon_min=-100.0,
+                 lon_max=-60.0, lat_min=30.0, lat_max=60.0)
+        m = sat_ir.load_land_mask((50, 100), b)
+        check("land mask loads with real asset shape",
+              m is not None and m.shape == (50, 100))
+        if m is not None:
+            def _px(lon, lat):
+                x = int((lon - b["lon_min"]) / (b["lon_max"] - b["lon_min"])
+                        * b["canvas_width"])
+                y = int((b["lat_max"] - lat) / (b["lat_max"] - b["lat_min"])
+                        * b["canvas_height"])
+                x = min(max(x, 0), b["canvas_width"] - 1)
+                y = min(max(y, 0), b["canvas_height"] - 1)
+                return m[y, x]
+            check("bounds-sampled: land where land (-85,45)",
+                  _px(-85.0, 45.0) >= 1.0, f"m={_px(-85.0, 45.0)}")
+            check("bounds-sampled: ocean where ocean (-70,35)",
+                  _px(-70.0, 35.0) < 0.5, f"m={_px(-70.0, 35.0)}")
+            check("bounds-sampled: ocean where ocean (-95,32)",
+                  _px(-95.0, 32.0) < 0.5, f"m={_px(-95.0, 32.0)}")
+        # Legacy no-bounds path still works (whole-map resize).
+        m_legacy = sat_ir.load_land_mask((50, 100))
+        check("no-bounds path still returns a mask",
+              m_legacy is None or m_legacy.shape == (50, 100))
+    finally:
+        na_common.load_continental = _orig_lc
+
+
     print("== source normalization ==")
     # Two sources with a bias: normalization should align them
     g1 = np.full((10, 10), 250.0)

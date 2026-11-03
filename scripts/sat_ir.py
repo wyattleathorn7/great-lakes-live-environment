@@ -169,18 +169,46 @@ def gray_to_white(gray, valid):
     return bright, alpha
 
 
-def load_land_mask(shape):
-    """Load the global land mask (assets/global_landonly.npy) and resample
-    to the target shape. Returns None if the asset is missing."""
+def load_land_mask(shape, bounds=None):
+    """Load the global land mask (assets/global_landonly.npy) sampled over
+    `bounds` at the target resolution. Returns None if the asset is missing.
+
+    The asset is the worldwide grid (3600x1800 @ 0.10 deg, -180..180 /
+    -90..90, row 0 = 90N). Sampling each canvas pixel's lon/lat center into
+    the world grid keeps land geographically aligned on every canvas.
+    Resizing the whole world map to the canvas shape instead (the previous
+    behavior when the shape differs) smears unrelated geography onto
+    regional canvases: on the continental canvas the Great Lakes sampled
+    equatorial Africa (78% misclassified as land), and on the basin canvas
+    the entire world was squeezed into the 19.5x9 deg box -- suppressing
+    real cloud wherever the shuffled mask claimed land (bt_to_white drops
+    BT >= 240 K on land cells). Observed live 2026-11-01/02.
+    """
     try:
         from na_common import load_continental
         mask = load_continental()
-        if mask.shape == tuple(shape):
+        h, w = int(shape[0]), int(shape[1])
+        if (h, w) == mask.shape:
             return mask.astype(np.float32)
-        from PIL import Image
-        im = Image.fromarray((mask * 255).astype(np.uint8))
-        im = im.resize((shape[1], shape[0]), Image.NEAREST)
-        return (np.array(im) >= 128).astype(np.float32)
+        if bounds is None:
+            # No bounds available: legacy whole-map resize (kept only so the
+            # function still works for callers that cannot supply bounds).
+            from PIL import Image
+            im = Image.fromarray((mask * 255).astype(np.uint8))
+            im = im.resize((w, h), Image.NEAREST)
+            return (np.array(im) >= 128).astype(np.float32)
+        # Geographic sampling: canvas cell centers -> world grid indices.
+        # Same scheme as the near-land dilation mask in build_precipitation_na.
+        STEP_LON, STEP_LAT = 0.1, 0.1
+        x = np.clip((((np.arange(w) + 0.5)
+                      * (bounds["lon_max"] - bounds["lon_min"]) / w
+                      + bounds["lon_min"] + 180.0) / STEP_LON).astype(int),
+                    0, mask.shape[1] - 1)
+        y = np.clip(((90.0 - (bounds["lat_max"] - (np.arange(h) + 0.5)
+                               * (bounds["lat_max"] - bounds["lat_min"])
+                               / h)) / STEP_LAT).astype(int),
+                    0, mask.shape[0] - 1)
+        return mask[np.ix_(y, x)].astype(np.float32)
     except Exception:
         return None
 
@@ -774,8 +802,9 @@ def render_canvas(bounds, scans, raw_dir):
         take = np.asarray(v, dtype=bool) & (prov == 0) & np.isfinite(g)
         prov[take] = code
 
-    # Load land mask for cloud-vs-surface discrimination.
-    land_mask = load_land_mask(merged.shape)
+    # Load land mask for cloud-vs-surface discrimination (world grid
+    # sampled over this canvas's own geographic bounds).
+    land_mask = load_land_mask(merged.shape, bounds)
 
     bright_full, alpha_full = bt_to_white(merged, land_mask=land_mask)
     return {"bright": bright_full, "alpha": alpha_full, "prov": prov,
