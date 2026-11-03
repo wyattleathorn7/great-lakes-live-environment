@@ -543,9 +543,25 @@ def _goes_bt_grid(sel, bounds, raw_dir):
     tag = sel["scan_dt"].strftime("%Y%m%d-%H%M")
     dest = os.path.join(raw_dir, f"mosaic_{sel['bucket'].split('//')[1].split('.')[0]}"
                                  f"_{tag}.nc")
-    if not (os.path.exists(dest) and os.path.getsize(dest) > 100_000):
+    # Cache bad-file quarantine: any cached file that fails to parse is
+    # removed and re-fetched once, so a truncated download can never
+    # poison layers cycle after cycle (observed: >100 KB partial S3
+    # bodies were accepted by the old size-only check for weeks).
+    if os.path.exists(dest) and os.path.getsize(dest) > 100_000:
+        try:
+            got = goes_acm.read_cmi_bt(dest)
+        except Exception as e:
+            print(f"[cloud] WARN: cache {dest} unreadable "
+                  f"({type(e).__name__}: {e}); re-fetching")
+            try:
+                os.remove(dest)
+            except OSError:
+                pass
+            goes_acm.download(sel["url"], dest)
+            got = goes_acm.read_cmi_bt(dest)
+    else:
         goes_acm.download(sel["url"], dest)
-    got = goes_acm.read_cmi_bt(dest)
+        got = goes_acm.read_cmi_bt(dest)
     bt = np.asarray(got["bt"], dtype=float).ravel()
     lats = np.asarray(got["lats"], dtype=float).ravel()
     lons = np.asarray(got["lons"], dtype=float).ravel()

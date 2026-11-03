@@ -1057,6 +1057,13 @@ jobs:
           # outgrows the pipe buffer — must not fail the publish job.
           ls -R site | head -30 || true
         shell: bash
+      # Same regression guard as the fast lane: never publish stale
+      # merge-lane copies of the 5-minute layers over fresher live ones.
+      - name: Guard against stale publish
+        run: |
+          python scripts/publish_guard.py \
+            --base "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}" \
+            --site site
       - name: Validate outputs
         run: python scripts/validate_outputs.py
       - name: Offline self-tests

@@ -172,12 +172,23 @@ def newest_file(max_back_hours=8, now=None):
 
 
 def download(url, dest, timeout=300):
-    """Download url -> dest (atomic). Returns size in bytes."""
+    """Download url -> dest (atomic). Returns size in bytes.
+
+    Verifies the body against the server's Content-Length when present:
+    a truncated transfer (S3 mid-stream resets happen) raises instead of
+    leaving a partial file -- short-but-plausible netCDF bodies used to
+    poison the scan cache for weeks (see _goes_bt_grid)."""
     os.makedirs(os.path.dirname(os.path.abspath(dest)), exist_ok=True)
     tmp = dest + ".part"
     req = urllib.request.Request(url, headers=UA)
     total = 0
+    clen = None
     with urllib.request.urlopen(req, timeout=timeout) as r:
+        try:
+            clen = r.headers.get("Content-Length")
+            clen = int(clen) if clen else None
+        except ValueError:
+            clen = None
         with open(tmp, "wb") as f:
             while True:
                 chunk = r.read(1024 * 256)
@@ -185,6 +196,13 @@ def download(url, dest, timeout=300):
                     break
                 f.write(chunk)
                 total += len(chunk)
+    if clen is not None and total != clen:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise ValueError(
+            f"truncated download: {total} of {clen} bytes ({url})")
     os.replace(tmp, dest)
     return total
 
