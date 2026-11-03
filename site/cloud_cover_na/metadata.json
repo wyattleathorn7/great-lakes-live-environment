@@ -6,9 +6,9 @@
   "product_name": "GOES-19/18 ABI infrared + Himawari-9 infrared (via NASA GIBS) + Meteosat SEVIRI infrared imagery (via EUMETSAT EUMETView) + VIIRS daily polar supplement (via NASA GIBS)",
   "variable": "Infrared window brightness (GOES/Himawari BT in K, VIIRS BT in K, Meteosat grayscale imagery) -> white-cloud brightness + transparency. Not a cloud-cover percentage.",
   "source_url": "https://www.goes.noaa.gov/",
-  "data_time_utc": "2026-11-03 11:50 UTC",
-  "source_last_modified_utc": "GOES-19 2026-11-03 11:50 UTC; GOES-18 2026-11-03 11:50 UTC; HIMAWARI-9 2026-11-03 11:00 UTC; METEOSAT-FES 2026-11-03 11:30 UTC; METEOSAT-IODC 2026-11-03 11:30 UTC; VIIRS 2026-11-02 00:00 UTC",
-  "processing_time_utc": "2026-11-03 07:12 AM EST",
+  "data_time_utc": "2026-11-03 12:10 UTC",
+  "source_last_modified_utc": "GOES-19 2026-11-03 12:10 UTC; GOES-18 2026-11-03 12:10 UTC; HIMAWARI-9 2026-11-03 11:30 UTC; METEOSAT-FES 2026-11-03 11:45 UTC; METEOSAT-IODC 2026-11-03 12:00 UTC; VIIRS 2026-11-02 00:00 UTC",
+  "processing_time_utc": "2026-11-03 07:41 AM EST",
   "units": "IR brightness (white=cold cloud tops; not a percentage)",
   "spatial_resolution_source": "multi-satellite IR: GOES-19/18 10.3um FD, Himawari-9 10.3um, Meteosat SEVIRI 10.8um, VIIRS I5 daily supplement",
   "spatial_resolution_rendered": "7200x3600 canvas over lon [-180.0,180.0], lat [-90.0,90.0]",
@@ -30,8 +30,8 @@
     152
   ],
   "legend_scale_html": "White = cloud tops (multi-satellite infrared, day + night); transparent = clear sky or no satellite coverage. Infrared brightness, not a cloud-cover percentage.",
-  "source_id": "cloudIR-GOES-18@20261103T1150-GOES-19@20261103T1150-HIMAWARI-9@20261103T1110-METEOSAT-FES@20261103T1130-METEOSAT-IODC@20261103T1130-VIIRS@2026-11-02+2026-11-02-v7",
-  "source_version": "cloudIR-GOES-18-20261103T1150-GOES-19-20261103T1150-HIMAWARI-9-20261103T1110-METEOSAT-FES-20261103T1130-METEOSAT-IODC-20261103T1130-VIIRS-2026-11-02-2026-11-02-v7",
+  "source_id": "cloudIR-GOES-18@20261103T1210-GOES-19@20261103T1210-HIMAWARI-9@20261103T1130-METEOSAT-FES@20261103T1145-METEOSAT-IODC@20261103T1200-VIIRS@2026-11-02+2026-11-02-v7",
+  "source_version": "cloudIR-GOES-18-20261103T1210-GOES-19-20261103T1210-HIMAWARI-9-20261103T1130-METEOSAT-FES-20261103T1145-METEOSAT-IODC-20261103T1200-VIIRS-2026-11-02-2026-11-02-v7",
   "na_bounds": {
     "canvas_height": 3600,
     "canvas_width": 7200,
@@ -44,65 +44,65 @@
     "resolution_deg_per_pixel": 0.1
   },
   "coverage_mode": "global",
-  "observation_time_utc": "2026-11-03 11:50 UTC",
-  "image_age_seconds": 1341,
-  "update_status": "current",
+  "observation_time_utc": "2026-11-03 12:10 UTC",
+  "image_age_seconds": 1843,
+  "update_status": "degraded",
   "source_observations": [
     {
       "source": "GOES-19",
       "kind": "goes-bt",
-      "scan_utc": "2026-11-03 11:50 UTC",
-      "age_min": 12.4,
-      "detail": "OR_ABI-L2-CMIPF-M6C13_G19_s20263071150212_e20263071159531_c20263071159580.nc"
+      "scan_utc": "2026-11-03 12:10 UTC",
+      "age_min": 20.9,
+      "detail": "OR_ABI-L2-CMIPF-M6C13_G19_s20263071210212_e20263071219532_c20263071219593.nc"
     },
     {
       "source": "GOES-18",
       "kind": "goes-bt",
-      "scan_utc": "2026-11-03 11:50 UTC",
-      "age_min": 12.4,
-      "detail": "OR_ABI-L2-CMIPF-M6C13_G18_s20263071150217_e20263071159537_c20263071159589.nc"
+      "scan_utc": "2026-11-03 12:10 UTC",
+      "age_min": 20.9,
+      "detail": "OR_ABI-L2-CMIPF-M6C13_G18_s20263071210217_e20263071219537_c20263071220011.nc"
     },
     {
       "source": "HIMAWARI-9",
       "kind": "gibs-bt",
-      "scan_utc": "2026-11-03 11:00 UTC",
-      "age_min": 62.4,
+      "scan_utc": "2026-11-03 11:30 UTC",
+      "age_min": 60.9,
       "detail": "GIBS Himawari_AHI_Band13_Clean_Infrared LUT +/-1C"
     },
     {
       "source": "METEOSAT-FES",
       "kind": "eumet-gray",
-      "scan_utc": "2026-11-03 11:30 UTC",
-      "age_min": 32.4,
-      "detail": "EUMETView imagery"
+      "scan_utc": "2026-11-03 11:45 UTC",
+      "age_min": 45.9,
+      "detail": "FAILED: HTTPError: HTTP Error 500: Internal Server Error"
     },
     {
       "source": "METEOSAT-IODC",
       "kind": "eumet-gray",
-      "scan_utc": "2026-11-03 11:30 UTC",
-      "age_min": 32.4,
+      "scan_utc": "2026-11-03 12:00 UTC",
+      "age_min": 30.9,
       "detail": "EUMETView imagery"
     },
     {
       "source": "VIIRS",
       "kind": "gibs-viirs",
       "scan_utc": "2026-11-02 00:00 UTC",
-      "age_min": 2162.4,
+      "age_min": 2190.9,
       "detail": "daily supplement"
     }
   ],
   "provenance": {
-    "GOES-19": "2026-11-03 11:50 UTC",
-    "GOES-18": "2026-11-03 11:50 UTC",
-    "HIMAWARI-9": "2026-11-03 11:00 UTC",
-    "METEOSAT-FES": "2026-11-03 11:30 UTC",
-    "METEOSAT-IODC": "2026-11-03 11:30 UTC",
+    "GOES-19": "2026-11-03 12:10 UTC",
+    "GOES-18": "2026-11-03 12:10 UTC",
+    "HIMAWARI-9": "2026-11-03 11:30 UTC",
+    "METEOSAT-FES": "2026-11-03 11:45 UTC",
+    "METEOSAT-IODC": "2026-11-03 12:00 UTC",
     "VIIRS": "2026-11-02 00:00 UTC"
   },
   "stats": {
-    "ir_pixels": 14933772,
-    "max_geo_skew_min": 50.0,
-    "feather_px": 5
+    "ir_pixels": 15278865,
+    "max_geo_skew_min": 40.0,
+    "feather_px": 7
   },
-  "folder_html": "<h2>LIVE CLOUD COVER</h2><p><b>Coverage:</b> Global Coverage<br><b>Observed:</b> 2026-11-03 11:50 UTC<br><b>Provenance:</b> GOES-19 2026-11-03 11:50 UTC; GOES-18 2026-11-03 11:50 UTC; HIMAWARI-9 2026-11-03 11:00 UTC; METEOSAT-FES 2026-11-03 11:30 UTC; METEOSAT-IODC 2026-11-03 11:30 UTC; VIIRS 2026-11-02 00:00 UTC</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25c9 <b>Global Coverage</b> (shown)<br>\u25cb Continental Coverage<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
+  "folder_html": "<h2>LIVE CLOUD COVER</h2><p><b>Coverage:</b> Global Coverage<br><b>Observed:</b> 2026-11-03 12:10 UTC<br><b>Provenance:</b> GOES-19 2026-11-03 12:10 UTC; GOES-18 2026-11-03 12:10 UTC; HIMAWARI-9 2026-11-03 11:30 UTC; METEOSAT-FES 2026-11-03 11:45 UTC; METEOSAT-IODC 2026-11-03 12:00 UTC; VIIRS 2026-11-02 00:00 UTC</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25c9 <b>Global Coverage</b> (shown)<br>\u25cb Continental Coverage<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
 }
