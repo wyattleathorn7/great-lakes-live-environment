@@ -1,6 +1,6 @@
 {
-  "model_cycle": "hrrr.20261103 t10z",
-  "source_id": "hrrr-hrrr.20261103-t10z-rh-anl-r13-g2",
+  "model_cycle": "hrrr.20261103 t11z",
+  "source_id": "hrrr-hrrr.20261103-t11z-rh-anl-r13-g2",
   "render_version": 13,
-  "processing_time_utc": "2026-11-03 06:30 AM EST"
+  "processing_time_utc": "2026-11-03 07:02 AM EST"
 }
