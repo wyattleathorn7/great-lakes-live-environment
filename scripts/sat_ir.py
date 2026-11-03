@@ -73,6 +73,12 @@ ALPHA_HI, ALPHA_GAIN, ALPHA_MAX, ALPHA_FLOOR = 282.0, 4.5, 215.0, 15.0
 # for opacity to separate cloud from surface. Over ocean, the surface is warm
 # and uniform, so the standard threshold works.
 ALPHA_HI_LAND = 240.0
+# Latitude band where ALPHA_HI_LAND applies. The land gate exists solely
+# so polar ice-sheet surfaces (Antarctica, Greenland interior) do not
+# render as phantom cloud. Mid-latitude land (all of the Great Lakes and
+# the continental US) stays OUTSIDE this band and uses the full ocean
+# threshold, so every cloud type is visible from the ground view.
+COLD_PLATEAU_LAT = 60.0
 
 # EUMETView grayscale imagery transfer (imagery-derived, documented as such):
 # verified live 2026-10-16: warm Sahara ~= 24 (dark), cloud p95 ~= 213.
@@ -211,6 +217,22 @@ def load_land_mask(shape, bounds=None):
         return mask[np.ix_(y, x)].astype(np.float32)
     except Exception:
         return None
+
+
+def cold_plateau_land_mask(land_mask, bounds):
+    """Restrict the land mask to the cold-surface plateaus (see
+    COLD_PLATEAU_LAT): mid-latitude land rows become 0 (ocean-like
+    threshold in bt_to_white), so cloud detection is the same over land
+    and water from the ground view. None/missing input passes through.
+    """
+    if land_mask is None:
+        return None
+    land_mask = np.asarray(land_mask, dtype=np.float32)
+    h = land_mask.shape[0]
+    lats = (bounds["lat_max"] - (np.arange(h) + 0.5)
+            * (bounds["lat_max"] - bounds["lat_min"]) / h)
+    midlat = (lats < COLD_PLATEAU_LAT) & (lats > -COLD_PLATEAU_LAT)
+    return np.where(midlat[:, None], 0.0, land_mask)
 
 
 def normalize_sources(layers):
@@ -626,11 +648,50 @@ def _gibs_bt_grid(sel_or_layer, bounds, raw_dir, time_iso, cmap, tag):
     return invert_gibs_png(dest, cmap), used_iso
 
 
+def _fetch_dims(W, H, max_px):
+    """Aspect-preserving WMS request size capped at `max_px` per side."""
+    if max(W, H) <= max_px:
+        return W, H
+    s = float(max_px) / max(W, H)
+    return (max(2, (int(W * s) // 2) * 2),
+            max(2, (int(H * s) // 2) * 2))
+
+
+def _upsample_to_canvas(grid, valid, shape):
+    """Bilinear-resample a (small) fetched grid to the full canvas shape.
+
+    WMS servers rasterize at fixed native scale: requesting a giant
+    canvas mostly buys server-side upsampling (and risks HTTP failures
+    past documented image-size caps, e.g. EUMETView). Fetch capped, then
+    upscale the float field here (BILINEAR; mask NEAREST so validity
+    edges stay crisp). Returns (grid, valid) at canvas resolution exactly"""
+    from PIL import Image
+    H, W = tuple(shape)
+    gh, gw = grid.shape
+    if (gh, gw) == (H, W):
+        return grid, valid
+    gi = Image.fromarray(grid.astype(np.float32), mode="F")
+    gi = gi.resize((W, H), Image.BILINEAR)
+    vi = Image.fromarray(valid.astype(np.uint8))
+    vi = vi.resize((W, H), Image.NEAREST)
+    out_g = np.asarray(gi, dtype=float)
+    out_v = np.asarray(vi) > 0
+    out_g[~out_v] = np.nan
+    return out_g, out_v
+
+
+# EUMETView (OWS) rejects or degrades very large GetMap requests; keep a
+# margin under the ~4k server limit and upscale client-side instead.
+EUMET_FETCH_MAX = 4096
+
+
 def _eumet_gray_grid(sel, bounds, raw_dir):
     """WMS GetMap (time-cached) -> (grayscale 0..255, valid mask)."""
     from PIL import Image
     W, H = bounds["canvas_width"], bounds["canvas_height"]
-    safe = re.sub(r"[^A-Za-z0-9]+", "_", f"{sel['layer']}_{W}x{H}")[:120]
+    rw, rh = _fetch_dims(W, H, EUMET_FETCH_MAX)
+    safe = re.sub(r"[^A-Za-z0-9]+", "_",
+                  f"{sel['layer']}_{rw}x{rh}")[:120]
     dest = os.path.join(raw_dir, f"mosaic_{safe}.png")
     prev = ""
     try:
@@ -638,7 +699,7 @@ def _eumet_gray_grid(sel, bounds, raw_dir):
     except OSError:
         prev = ""
     if (not os.path.exists(dest)) or prev != sel["time"]:
-        wms_getmap_png(EUMET_WMS, sel["layer"], bounds, W, H, sel["time"],
+        wms_getmap_png(EUMET_WMS, sel["layer"], bounds, rw, rh, sel["time"],
                        dest)
         with open(dest + ".time", "w") as f:
             f.write(sel["time"])
@@ -648,7 +709,7 @@ def _eumet_gray_grid(sel, bounds, raw_dir):
     gray = (a[:, :, 0].astype(float) + a[:, :, 1].astype(float)
             + a[:, :, 2].astype(float)) / 3.0
     gray[~opaque] = np.nan
-    return gray, opaque
+    return _upsample_to_canvas(gray, opaque, (H, W))
 
 
 def render_canvas(bounds, scans, raw_dir):
@@ -802,9 +863,16 @@ def render_canvas(bounds, scans, raw_dir):
         take = np.asarray(v, dtype=bool) & (prov == 0) & np.isfinite(g)
         prov[take] = code
 
-    # Load land mask for cloud-vs-surface discrimination (world grid
-    # sampled over this canvas's own geographic bounds).
+    # Land mask for cloud-vs-surface discrimination (world grid sampled
+    # over this canvas's own geographic bounds), restricted to the
+    # cold-surface plateaus it exists for (Antarctica, high-latitude ice
+    # sheets). Mid-latitude land uses the same threshold as water so ALL
+    # cloud renders over land too: the transfer is "whatever is overhead
+    # from the ground" -- low stratus at 240-282 K is real cloud and must
+    # not be erased (observed 2026-11-01: the full-land gate blanked
+    # genuine cloud over the Great Lakes basin on land-classified cells).
     land_mask = load_land_mask(merged.shape, bounds)
+    land_mask = cold_plateau_land_mask(land_mask, bounds)
 
     bright_full, alpha_full = bt_to_white(merged, land_mask=land_mask)
     return {"bright": bright_full, "alpha": alpha_full, "prov": prov,

@@ -240,6 +240,41 @@ def main():
     finally:
         na_common.load_continental = _orig_lc
 
+    print("== cold-plateau land gate (ground-view cloud over land) ==")
+    # Mid-latitude land must NOT gate alpha to 240 K -- only polar
+    # plateaus keep the suppression. Covers the Great Lakes canvases
+    # (lat 40..50) and equatorial land.
+    m = sat_ir.cold_plateau_land_mask(
+        np.ones((100, 10), dtype=np.float32),
+        dict(lat_min=-90.0, lat_max=90.0))
+    check("midlat land rows become ocean-like",
+          float(m[20, :].max()) == 0.0 and float(m[45, :].max()) == 0.0)
+    check("polar rows keep the land gate",
+          float(m[2, :].min()) >= 0.5 and float(m[95, :].min()) >= 0.5)
+    m_basin = sat_ir.cold_plateau_land_mask(
+        np.ones((10, 10), dtype=np.float32),
+        dict(lat_min=40.5, lat_max=49.5))
+    check("basin canvas has no gated land at all",
+          float(m_basin.max()) == 0.0)
+    check("None passthrough", sat_ir.cold_plateau_land_mask(
+        None, dict(lat_min=-90.0, lat_max=90.0)) is None)
+
+    print("== WMS fetch cap + upsample ==")
+    check("fetch dims unlimited under cap",
+          sat_ir._fetch_dims(3600, 1800, 4096) == (3600, 1800))
+    check("fetch dims aspect-preserved at cap",
+          sat_ir._fetch_dims(6600, 3200, 4096) == (4096, 1984),
+          str(sat_ir._fetch_dims(6600, 3200, 4096)))
+    g = np.arange(40.0, dtype=float).reshape(5, 8)
+    v = np.ones((5, 8), dtype=bool)
+    g2, v2 = sat_ir._upsample_to_canvas(g, v, (10, 16))
+    check("upsample to bigger canvas", g2.shape == (10, 16)
+          and v2.shape == (10, 16) and bool(v2.all()),
+          str(g2.shape))
+    g3, v3 = sat_ir._upsample_to_canvas(g, v, (5, 8))
+    check("upsample no-op on same shape",
+          g3.shape == (5, 8) and np.allclose(g3, g))
+
 
     print("== source normalization ==")
     # Two sources with a bias: normalization should align them

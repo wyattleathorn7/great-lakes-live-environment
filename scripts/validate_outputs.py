@@ -145,6 +145,10 @@ _NA_EDGES = {"<north>": 85.0, "<south>": 5.0,
 _GLOBAL_SIZE = (3600, 1800)
 _GLOBAL_EDGES = {"<north>": 90.0, "<south>": -90.0,
                  "<east>": 180.0, "<west>": -180.0}
+# Cloud renders 2x the shared global canvas per axis (CLOUD_DETAIL_SCALE
+# in build_cloud_cover_na._build_mosaic): same extents, finer pixel pitch,
+# so the extended coverages keep the satellite's ~2 km IR detail.
+_CLOUD_GLOBAL_SIZE = (7200, 3600)
 GLOBAL_GEOMETRY = {
     "aurora_global": {
         "size": (3600, 1800),
@@ -154,7 +158,7 @@ GLOBAL_GEOMETRY = {
     # Global + Continental are worldwide primaries. Air temperature
     # defaults to Continental Coverage (worldwide land primary).
     "precipitation_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
-    "cloud_cover_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
+    "cloud_cover_na": {"size": _CLOUD_GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
     "air_temperature_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
     "wind_na": {"size": _GLOBAL_SIZE, "edges": _GLOBAL_EDGES},
 }

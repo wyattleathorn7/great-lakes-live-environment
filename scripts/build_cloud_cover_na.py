@@ -139,7 +139,7 @@ def main():
         return 1
 
 
-MOSAIC_VERSION = 6  # bump when sat_ir transfer/merge changes (forces rebuild)
+MOSAIC_VERSION = 7  # bump when sat_ir transfer/merge changes (forces rebuild)
 
 
 def run():
@@ -481,6 +481,15 @@ def _build_mosaic():
     Timestamps: observation_time_utc comes from the scans; processing and
     publication times are recorded separately; unchanged scans skip the
     rebuild without minting a new observation time or version token.
+
+    Detail scale: the continental + global canvases render at
+    CLOUD_DETAIL_SCALE x the shared NA/global JSON canvases per axis
+    (extents unchanged). KML GroundOverlays are pinned by LatLonBox, so
+    pixel pitch does not affect geographic placement or alignment with
+    the sibling wind/precip/air-temp/aurora products -- the cloud layers
+    simply keep every ~2 km IR pixel of the source scans while the shared
+    canvases (0.05/0.10 deg per pixel) were visibly softer. Land masks
+    sample the world grid over bounds, so they stay aligned at any size.
     """
     import sat_ir
     from build_kml import (COVERAGE_DIR_SUFFIX, COVERAGE_LABELS,
@@ -491,6 +500,20 @@ def _build_mosaic():
     bounds_na = load_na_bounds()
     gbounds = load_global_bounds()
     bounds_gl = load_bounds()
+    # Extra pixel detail for the extended coverages (basin already bins
+    # near GOES full-disk native and stays as configured). Same extents,
+    # finer pixel pitch -- see _build_mosaic docstring.
+    CLOUD_DETAIL_SCALE = 2
+    bounds_na = {**bounds_na,
+                 "canvas_width": int(bounds_na["canvas_width"]
+                                     * CLOUD_DETAIL_SCALE),
+                 "canvas_height": int(bounds_na["canvas_height"]
+                                      * CLOUD_DETAIL_SCALE)}
+    gbounds = {**gbounds,
+               "canvas_width": int(gbounds["canvas_width"]
+                                   * CLOUD_DETAIL_SCALE),
+               "canvas_height": int(gbounds["canvas_height"]
+                                    * CLOUD_DETAIL_SCALE)}
     stage = stage_dir(PRODUCT)
     stage_prod = os.path.join(stage, "site", PRODUCT)
 
