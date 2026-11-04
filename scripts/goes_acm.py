@@ -241,6 +241,54 @@ def read_mask(path):
             "subpoint_lon": lon0, "grid_shape": (ny, nx)}
 
 
+def read_cmi_2d(path):
+    """Return dict with the NATIVE 2-D arrays for inverse resampling:
+    bt2d (K, NaN where DQF-flagged/unusable), dqf2d, x/y fixed-grid
+    axes in RADIANS (1-D, file grid order), subpoint lon0 and
+    perspective height h. Companion of read_cmi_bt: the inverse-
+    georeference sampler (sat_ir._goes_sample_grid) maps canvas pixel
+    centers back into this grid instead of splatting scatter points
+    onto the canvas, which beats against the canvas lattice.
+    """
+    import h5netcdf
+    f = h5netcdf.File(path, "r")
+    try:
+        xa, ya = f["x"].attrs, f["y"].attrs
+        xs = float(xa["scale_factor"]) if "scale_factor" in xa else X_SCALE
+        xo = float(xa["add_offset"]) if "add_offset" in xa else X_OFFSET
+        ys = float(ya["scale_factor"]) if "scale_factor" in ya else Y_SCALE
+        yo = float(ya["add_offset"]) if "add_offset" in ya else Y_OFFSET
+        x = f["x"][:].astype(float) * xs + xo
+        y = f["y"][:].astype(float) * ys + yo
+        var = f["CMI"]
+        va = var.attrs
+        cmi = np.asarray(var[:]).astype(float)
+        if "scale_factor" in va:
+            cmi = cmi * float(va["scale_factor"])
+        if "add_offset" in va:
+            cmi = cmi + float(va["add_offset"])
+        dqf = np.asarray(f["DQF"][:]).astype(float) if "DQF" in f \
+            else np.zeros_like(cmi)
+        proj = f["goes_imager_projection"].attrs
+        lon0 = float(proj["longitude_of_projection_origin"])
+        h = float(proj["perspective_point_height"])
+    finally:
+        f.close()
+    good = np.isfinite(cmi) & (cmi > 150.0) & (cmi < 330.0) & (dqf == 0)
+    bt = np.where(good, cmi, np.nan)
+    m = re.search(r"_s(\d{4})(\d{3})(\d{2})(\d{2})\d{3}_",
+                  os.path.basename(path))
+    scan = None
+    if m:
+        scan = dt.datetime(int(m.group(1)), 1, 1,
+                           tzinfo=dt.timezone.utc) \
+            + dt.timedelta(days=int(m.group(2)) - 1,
+                           hours=int(m.group(3)), minutes=int(m.group(4)))
+    return {"bt2d": bt, "dqf2d": dqf, "x": np.asarray(x, dtype=float),
+            "y": np.asarray(y, dtype=float), "lon0": lon0, "h": h,
+            "scan_dt": scan}
+
+
 def fixed_grid_to_latlon(x, y, lon0_deg, h):
     """Fixed-grid scan angles (radians) -> WGS84 lat/lon via pyproj.
 

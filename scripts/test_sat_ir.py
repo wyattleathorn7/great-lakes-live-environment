@@ -115,10 +115,10 @@ def main():
     check("basin canvas 1800x1175",
           (gl["canvas_width"], gl["canvas_height"]) == (1800, 1175))
     from PIL import Image as _I
-    for d, size in (("cloud_cover_na", (3600, 1800)),
+    for d, size in (("cloud_cover_na", (7200, 3600)),
                     ("cloud_cover_na_basin", (1800, 1175)),
-                    ("cloud_cover_na_continental", (3300, 1600)),
-                    ("cloud_cover_na_global", (3600, 1800))):
+                    ("cloud_cover_na_continental", (6600, 3200)),
+                    ("cloud_cover_na_global", (7200, 3600))):
         p = os.path.join(REPO_ROOT, "site", d, "current.png")
         if os.path.exists(p):
             im = _I.open(p)
@@ -275,6 +275,75 @@ def main():
     check("upsample no-op on same shape",
           g3.shape == (5, 8) and np.allclose(g3, g))
 
+    print("== GOES inverse georeferencing roundtrip ==")
+    # The inverse sampler must map canvas pixels back to the exact
+    # fixed-grid coordinates whose forward projection reproduces the
+    # same lat/lon -- otherwise canvases render shifted clouds.
+    import goes_acm as _ga
+    h27 = 35786023.0
+    t_inv = sat_ir._goes_inverse_transformer(-75.0, h27)
+    want_x = np.array([0.0, 0.02, -0.03])
+    want_y = np.array([0.0, -0.01, 0.05])
+    la3, lo3 = _ga.fixed_grid_to_latlon(want_x, want_y, -75.0, h27)
+    Xm, Ym = t_inv.transform(np.asarray(lo3).ravel(),
+                             np.asarray(la3).ravel())
+    check("inverse transform hits fixed-grid positions (per row=y)",
+          np.allclose(np.asarray(Xm).reshape(3, 3) / h27,
+                      np.tile(want_x[None, :], (3, 1)), atol=1e-4)
+          and np.allclose(np.asarray(Ym).reshape(3, 3) / h27,
+                          np.tile(want_y[:, None], (1, 3)), atol=1e-4))
+
+    print("== polar GDPS blend ==")
+    wg = sat_ir.polar_weights((100, 40), dict(lat_min=-90.0, lat_max=90.0))
+    check("mid-latitude rows carry no model weight",
+          float(wg[20:80].max()) == 0.0, str(wg[20:80].max()))
+    check("polar rows fully owned by the model", wg[0] == 1.0 and wg[92] == 1.0)
+    ramp = wg[17:20]          # |lat| 57.6 -> 55.8, weight falls to 0
+    check("blend ramp is smooth and monotone",
+          ramp[0] > ramp[1] > ramp[2] >= 0.0 and 0.0 < ramp[0] < 1.0,
+          str(ramp))
+    wg_basin = sat_ir.polar_weights((10, 10), dict(lat_min=40.5, lat_max=49.5))
+    check("basin canvas has zero polar weight", float(wg_basin.max()) == 0.0)
+
+    print("== land-clip mask (Continental = land only, coasts smooth) ==")
+    # The world mask counts the Great Lakes as land (basin cloud stays);
+    # clipping is exercised on the NB / Gulf of St Lawrence window.
+    lm = sat_ir.land_clip_mask((60, 80), dict(lon_min=-67.0, lon_max=-60.0,
+                                              lat_min=45.0, lat_max=48.0))
+    # row/col derived from the geographic targets, not magic offsets.
+    rlat = lambda lat: int((48.0 - lat) / 0.05)
+    clon = lambda lon: int((lon + 67.0) / 0.05)
+    check("interior land stays alpha 1.0 (New Brunswick)",
+          float(lm[rlat(46.4):rlat(45.8), clon(-66.8):clon(-66.35)].min())
+          >= 0.95,
+          str(float(lm[rlat(46.4):rlat(45.8), clon(-66.8):clon(-66.35)].min())))
+    check("offshore waters stay clipped (Gulf of St Lawrence)",
+          float(lm[rlat(47.7):rlat(47.4), clon(-63.5):clon(-63.1)].max())
+          < 0.05,
+          str(float(lm[rlat(47.7):rlat(47.4), clon(-63.5):clon(-63.1)].max())))
+    coast = lm[rlat(47.7):rlat(47.4), clon(-64.1):clon(-63.6)]
+    fade_frac = float(((coast > 0.05) & (coast < 0.95)).mean())
+    check("coast crossfade exists (no hard nearest-neighbor cut)",
+          fade_frac > 0.5, str(fade_frac))
+
+
+    print("== gdps tcc pipeline (mocked fetch) ==")
+    import na_common as _nc
+    _orig_gw = _nc.gdps_wcs_grid
+    _vals = np.full((240, 120), 80.0, np.float32)   # 80% cloud everywhere
+    _lats1 = np.linspace(90.0, -90.0, _vals.shape[0])
+    _lons1 = np.linspace(-180.0, 180.0, _vals.shape[1])
+    _nc.gdps_wcs_grid = (lambda *a, **k: (_vals.copy(), None, None,
+                                          _lats1, _lons1))
+    try:
+        ab, ob = sat_ir._gdps_tcc_alpha(
+            dict(canvas_width=200, canvas_height=100, lon_min=-180.,
+                 lon_max=180., lat_min=-90., lat_max=90.), "/tmp")
+        check("mocked gdps alpha converts % -> alpha scale",
+              float(np.nanmean(np.asarray(ab))) / 215.0 > 0.7
+              and bool(np.asarray(ob).all()))
+    finally:
+        _nc.gdps_wcs_grid = _orig_gw
 
     print("== source normalization ==")
     # Two sources with a bias: normalization should align them

@@ -66,6 +66,19 @@ UA = {"User-Agent": "great-lakes-live-environment/1.0 (sat-ir)"}
 #   alpha < ALPHA_FLOOR -> transparent (warm surface / clear).
 BT_HI, BT_GAIN = 288.0, 4.0
 ALPHA_HI, ALPHA_GAIN, ALPHA_MAX, ALPHA_FLOOR = 282.0, 4.5, 215.0, 15.0
+# Polar-surface ambiguity mitigation. Single-channel IR cannot separate a
+# winter land/ice surface from cloud (a clear -30C ground reads every bit
+# as warm as a cloud deck under the 282 K water transfer, and the old
+# hard suppression (ALPHA_HI_LAND >= |lat| 60N) printed razor-sharp lines
+# and blocky coast silhouettes exactly at the threshold boundary — ob-
+# served live 2026-11-02 and reported by the user). From
+# POLAR_BLEND_MIN_LAT the IR-derived alpha is blended into the GDPS
+# model TotalCloudCover; past POLAR_BLEND_FULL_LAT the model owns the
+# transfer, so the poles show a coherent line-free cloud picture.
+POLAR_BLEND_MIN_LAT = 55.0
+POLAR_BLEND_FULL_LAT = 65.0
+# GDPS WCS cache ages: GDPS_15km layers refresh on the hourly runs.
+GDPS_TCC_CACHE_MIN = 45
 
 # Land-aware cloud detection: over land, the surface can be cold (Antarctica,
 # Greenland, winter continents), so the IR transfer alone cannot distinguish
@@ -90,7 +103,7 @@ DISK_FADE_PX = 12          # dissolve valid-coverage edges (no hard cut lines)
 
 # Provenance codes for the diagnostic raster.
 PROV = {"missing": 0, "GOES-19": 1, "GOES-18": 2, "HIMAWARI-9": 3,
-        "METEOSAT-FES": 4, "METEOSAT-IODC": 5, "VIIRS": 6}
+        "METEOSAT-FES": 4, "METEOSAT-IODC": 5, "VIIRS": 6, "GDPS-TCC": 7}
 
 GIBS_WMS = "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi"
 GIBS_WMTS_CAPS = ("https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/"
@@ -224,6 +237,9 @@ def cold_plateau_land_mask(land_mask, bounds):
     COLD_PLATEAU_LAT): mid-latitude land rows become 0 (ocean-like
     threshold in bt_to_white), so cloud detection is the same over land
     and water from the ground view. None/missing input passes through.
+    NOTE: the mosaic render path no longer uses this gate -- the polar
+    zone is handled by the GDPS model blend (polar_weights); the helper
+    stays for legacy experiment callers and tests.
     """
     if land_mask is None:
         return None
@@ -233,6 +249,58 @@ def cold_plateau_land_mask(land_mask, bounds):
             * (bounds["lat_max"] - bounds["lat_min"]) / h)
     midlat = (lats < COLD_PLATEAU_LAT) & (lats > -COLD_PLATEAU_LAT)
     return np.where(midlat[:, None], 0.0, land_mask)
+
+
+def _smoothstep(t):
+    t = np.clip(np.asarray(t, dtype=float), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+
+
+def polar_weights(shape, bounds):
+    """Per-ROW weight 0..1 for the polar GDPS blend: 0 through the
+    mid-latitudes, smoothstep 0->1 across POLAR_BLEND_MIN_LAT..FULL_LAT
+    of |lat| (North AND South). Returns (rows,) float."""
+    h = int(shape[0])
+    lats = (bounds["lat_max"] - (np.arange(h) + 0.5)
+            * (bounds["lat_max"] - bounds["lat_min"]) / h)
+    ramp = (POLAR_BLEND_FULL_LAT - POLAR_BLEND_MIN_LAT)
+    up = _smoothstep((np.abs(lats) - POLAR_BLEND_MIN_LAT) / ramp)
+    return up
+
+
+def _gdps_tcc_alpha(bounds, raw_dir):
+    """GDPS 15km TotalCloudCover -> (alpha 0..ALPHA_MAX, valid) at the
+    canvas resolution. Worldwide fetch (cached ~GDPS run cadence), then
+    bilinear-resampled to this canvas via the shared WCS resampler.
+    Returns (alpha, valid): thin cover <1% maps to alpha 0 (honest
+    'clear' from the model, NOT missing); missing model cells stay
+    invalid so the IR value underneath survives."""
+    import na_common as _nc
+    from scipy.ndimage import gaussian_filter
+    world = {"lon_min": -180.0, "lon_max": 180.0,
+             "lat_min": -90.0, "lat_max": 90.0}
+    vals, _la2, _lo2, lats1d, lons1d = _nc.gdps_wcs_grid(
+        "GDPS_15km_TotalCloudCover", world, raw_dir,
+        cache_min=GDPS_TCC_CACHE_MIN)
+    v = np.asarray(vals, dtype=float)
+    if v.ndim == 3:      # (bands, h, w) raster
+        v = v[0]
+    g = _nc.resample_wcs_to_canvas(v, lats1d, lons1d, bounds)
+    # Model cells print through at fine canvases; soften by ~0.3 deg at
+    # this canvas' pitch so the blend looks like weather, not lattice.
+    res = (float(bounds["lon_max"]) - float(bounds["lon_min"])) / \
+        float(bounds["canvas_width"])
+    sigma_px = max(1.0, 0.3 / res)
+    if np.isfinite(g).any():
+        fill = float(np.nanmean(g))
+        gs = gaussian_filter(np.where(np.isfinite(g), g, fill),
+                             sigma_px, truncate=2.5)
+        g = np.where(np.isfinite(g), gs, g)
+    alpha = np.clip((np.nan_to_num(g, nan=0.0) / 100.0)
+                    * ALPHA_MAX, 0.0, ALPHA_MAX)
+    valid = np.isfinite(g)
+    alpha[~valid] = np.nan
+    return alpha, valid
 
 
 def normalize_sources(layers):
@@ -535,10 +603,66 @@ def source_identity(scans):
 
 # ---------------------------------------------------------- per-canvas build
 
-def _goes_bt_grid(sel, bounds, raw_dir):
-    """Download (scan-cached) + bin one GOES source to a BT grid."""
+def land_clip_mask(shape, bounds):
+    """Bilinearly interpolated worldwide land mask (na_common world
+    grid) at an arbitrary canvas size/bounds.
+
+    Used by the Continental Coverage variant to clip cloud alpha to
+    land exactly per the family contract. Sampled INTERPOLATED (not
+    nearest): nearest resize prints 0.1-degree coast blocks at the
+    fine canvases, then reads as jagged 'odd lines' in Google Earth.
+    Pixel centers map bijectively onto the 0.1-degree world cell
+    centers; a scale-aware Gaussian (about 0.15 deg) removes the
+    residual source-grid print-through so coast stays a smooth fade at
+    any resolution. Raises if the asset is missing.
+    """
+    from na_common import load_continental
+    from scipy.ndimage import map_coordinates, gaussian_filter
+    mask = np.asarray(load_continental(), dtype=float)
+    h, w = int(shape[0]), int(shape[1])
+    lon_l, lon_r = bounds["lon_min"], bounds["lon_max"]
+    lat_t, lat_b = bounds["lat_max"], bounds["lat_min"]
+    lons = (lon_l + (np.arange(w) + 0.5) * (lon_r - lon_l) / w)
+    lats = (lat_t - (np.arange(h) + 0.5) * (lat_t - lat_b) / h)
+    # cell-center convention: world cell k center at -180 + (k+0.5)*0.1
+    fy = ((90.0 - lats) / 0.1 - 0.5)[:, None] * np.ones((1, w))
+    fx = ((lons + 180.0) / 0.1 - 0.5)[None, :] * np.ones((h, 1))
+    smooth = map_coordinates(mask, [fy.ravel(), fx.ravel()], order=1,
+                             mode="constant", cval=0.0,
+                             prefilter=False).reshape(h, w)
+    # ~0.15 deg of coast feather at this canvas' pixel pitch (>=1 px).
+    res = max(abs(lon_r - lon_l) / w, abs(lat_t - lat_b) / h)
+    sigma = max(1.0, 0.15 / res)
+    if sigma > 1.05:
+        smooth = gaussian_filter(smooth, sigma)
+    return np.clip(smooth, 0.0, 1.0).astype(np.float32)
+
+
+def _goes_inverse_transformer(lon0, sat_h):
+    """pyproj lat/lon -> GOES fixed grid (radians), keyed to the file's
+    own subpoint/height (same CRS as goes_acm.fixed_grid_to_latlon,
+    inverted)."""
+    from pyproj import CRS, Transformer
+    geos = CRS(f"+proj=geos +h={float(sat_h)} +lon_0={float(lon0)} "
+               f"+sweep=x +ellps=GRS80 +units=m +no_defs")
+    return Transformer.from_crs("OGC:CRS84", geos, always_xy=True)
+
+
+def _goes_sample_grid(sel, bounds, raw_dir):
+    """Download (scan-cached) + inverse-georeference one GOES source to
+    the full-resolution BT canvas grid.
+
+    The previous path splatted the satellite's fixed-grid POINTS onto
+    the canvas (nearest + pinhole fill). Wherever the fixed grid is
+    coarser than the canvas pitch that sliced displaced fingerprints of
+    concentric arc moire onto the extended coverages, and the unfillable
+    high-latitude gaps printed as dotted rows (user report 2026-11-02).
+    Resampling here goes the other way: every canvas pixel center is
+    reprojected into the file's own fixed grid and the native CMI field
+    is bilinearly sampled there with native DQF validity -- a continuous
+    field with no lattice, so no moire, no speckle rows, no fill gaps.
+    """
     import goes_acm
-    from na_common import bin_points_to_canvas, fill_pinholes
     W, H = bounds["canvas_width"], bounds["canvas_height"]
     tag = sel["scan_dt"].strftime("%Y%m%d-%H%M")
     dest = os.path.join(raw_dir, f"mosaic_{sel['bucket'].split('//')[1].split('.')[0]}"
@@ -546,10 +670,10 @@ def _goes_bt_grid(sel, bounds, raw_dir):
     # Cache bad-file quarantine: any cached file that fails to parse is
     # removed and re-fetched once, so a truncated download can never
     # poison layers cycle after cycle (observed: >100 KB partial S3
-    # bodies were accepted by the old size-only check for weeks).
+    # bodies were accepted by the old size-only cache check for weeks).
     if os.path.exists(dest) and os.path.getsize(dest) > 100_000:
         try:
-            got = goes_acm.read_cmi_bt(dest)
+            got = goes_acm.read_cmi_2d(dest)
         except Exception as e:
             print(f"[cloud] WARN: cache {dest} unreadable "
                   f"({type(e).__name__}: {e}); re-fetching")
@@ -558,17 +682,49 @@ def _goes_bt_grid(sel, bounds, raw_dir):
             except OSError:
                 pass
             goes_acm.download(sel["url"], dest)
-            got = goes_acm.read_cmi_bt(dest)
+            got = goes_acm.read_cmi_2d(dest)
     else:
         goes_acm.download(sel["url"], dest)
-        got = goes_acm.read_cmi_bt(dest)
-    bt = np.asarray(got["bt"], dtype=float).ravel()
-    lats = np.asarray(got["lats"], dtype=float).ravel()
-    lons = np.asarray(got["lons"], dtype=float).ravel()
-    ok = np.isfinite(bt) & np.isfinite(lats) & np.isfinite(lons)
-    g, _c = bin_points_to_canvas(bt[ok], lats[ok], lons[ok], bounds,
-                                 splat_radius=2)
-    return fill_pinholes(g, radius=3)
+        got = goes_acm.read_cmi_2d(dest)
+
+    from scipy.ndimage import map_coordinates
+    bt = got["bt2d"]
+    dqf = got["dqf2d"]
+    ny, nx = bt.shape
+    xs, ys = got["x"], got["y"]
+    dx = float(np.median(np.diff(xs)))
+    dy = float(np.median(np.diff(ys)))
+    lons_c = (bounds["lon_min"]
+              + (np.arange(W) + 0.5) * (bounds["lon_max"] - bounds["lon_min"]) / W)
+    lats_c = (bounds["lat_max"]
+              - (np.arange(H) + 0.5) * (bounds["lat_max"] - bounds["lat_min"]) / H)
+    t_inv = _goes_inverse_transformer(got["lon0"], got["h"])
+    sat_h = got["h"]
+    grid = np.full((H, W), np.nan)
+    CH = 512
+    for r0 in range(0, H, CH):
+        r1 = min(H, r0 + CH)
+        lons_t = np.broadcast_to(lons_c[None, :], (r1 - r0, W))
+        lats_t = np.broadcast_to(lats_c[r0:r1, None], (r1 - r0, W))
+        Xm, Ym = t_inv.transform(lons_t.ravel(), lats_t.ravel())
+        cx = (np.asarray(Xm, dtype=float) / sat_h - xs[0]) / dx
+        cy = (np.asarray(Ym, dtype=float) / sat_h - ys[0]) / dy
+        with np.errstate(invalid="ignore"):
+            inb = ((cx >= 0) & (cx <= nx - 1) & (cy >= 0) & (cy <= ny - 1))
+            coords = np.stack([cy, cx])
+            si = map_coordinates(bt, coords, order=1, mode="constant",
+                                 cval=np.nan, prefilter=False)
+            dq = map_coordinates(dqf, coords, order=0, mode="constant",
+                                 cval=999.0)
+        si = np.where(inb & (dq == 0) & np.isfinite(si), si, np.nan)
+        grid[r0:r1] = si.reshape(r1 - r0, W)
+    return grid
+
+
+def _goes_bt_grid(sel, bounds, raw_dir):
+    """Kept name (cache & call sites): inverse-georeference sampler.
+    See _goes_sample_grid."""
+    return _goes_sample_grid(sel, bounds, raw_dir)
 
 
 def gibs_newest_valid_time(layer, bounds, primary_iso, cmap, raw_dir, tag,
@@ -879,20 +1035,51 @@ def render_canvas(bounds, scans, raw_dir):
         take = np.asarray(v, dtype=bool) & (prov == 0) & np.isfinite(g)
         prov[take] = code
 
-    # Land mask for cloud-vs-surface discrimination (world grid sampled
-    # over this canvas's own geographic bounds), restricted to the
-    # cold-surface plateaus it exists for (Antarctica, high-latitude ice
-    # sheets). Mid-latitude land uses the same threshold as water so ALL
-    # cloud renders over land too: the transfer is "whatever is overhead
-    # from the ground" -- low stratus at 240-282 K is real cloud and must
-    # not be erased (observed 2026-11-01: the full-land gate blanked
-    # genuine cloud over the Great Lakes basin on land-classified cells).
-    land_mask = load_land_mask(merged.shape, bounds)
-    land_mask = cold_plateau_land_mask(land_mask, bounds)
+    # Water-threshold IR transfer everywhere (land included). The old
+    # high-latitude ALPHA_HI_LAND gate is gone from this path: it drew
+    # razor-sharp latitude lines and blocky coast silhouettes in exactly
+    # the zone where the floor transfer is ambiguous -- the polar band is
+    # handled instead by the GDPS model blend below, which needs no
+    # geographic hard edge and never needs the land mask asset.
+    bright_full, alpha_full = bt_to_white(merged, land_mask=None)
 
-    bright_full, alpha_full = bt_to_white(merged, land_mask=land_mask)
+    # Polar blend (|lat| 55..65 ramp): over cold surfaces single-channel
+    # IR cannot tell clear ground from deck -- the old 240K land gate
+    # "fixed" that by erasing everything north of ~60 (giant navy land
+    # holes; user report: odd lines + weird-shaped coverage), and the
+    # raw transfer renders sea ice as phantom cloud. GDPS
+    # TotalCloudCover (a real overhead-cloud field, worldwide, hourly)
+    # replaces the alpha there: genuine polar clouds still show (white)
+    # and no hard geographic edge is introduced anywhere.
+    pw_row = polar_weights(merged.shape, bounds)
+    if pw_row.max() > 0.0:
+        try:
+            model_alpha, model_ok = _gdps_tcc_alpha(bounds, raw_dir)
+        except Exception as e:
+            print(f"[cloud] WARN: GDPS polar blend unavailable "
+                  f"({type(e).__name__}: {e}); IR render stands alone")
+            model_alpha = model_ok = None
+        if model_alpha is not None:
+            wgt = pw_row[:, None]
+            ir_clean = np.nan_to_num(alpha_full, nan=0.0)
+            blended = ((1.0 - wgt) * ir_clean + wgt * model_alpha)
+            alpha_full = np.where(
+                model_ok & (wgt > 0.0), blended,
+                alpha_full)
+            polar_owner = np.asarray(model_ok) & (wgt >= 0.5)
+            prov[polar_owner] = PROV["GDPS-TCC"]
+            observations.append(_obs(
+                "GDPS-TCC",
+                {"kind": "polar model blend", "file":
+                 "GDPS_15km_TotalCloudCover"},
+                extra=("replaces IR alpha across |lat| 55-65 (single-"
+                       "channel IR vs cold-surface ambiguity)")))
+            print(f"[cloud] polar blend: model ok px="
+                  f"{int(np.asarray(model_ok).sum())}; "
+                  f"prov owner px={int(polar_owner.sum())}")
+
     return {"bright": bright_full, "alpha": alpha_full, "prov": prov,
             "observations": observations, "max_geo_skew_min": round(max_skew, 1),
             "feather_px": feather,
             "n_geo": sum(1 for o in observations if "FAILED" not in o["detail"]
-                         and o["source"] != "VIIRS")}
+                         and o["source"] not in ("VIIRS", "GDPS-TCC"))}

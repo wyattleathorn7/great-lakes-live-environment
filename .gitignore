@@ -3,3 +3,5 @@ output/stage/
 artifacts/
 __pycache__/
 *.pyc
+
+raw/

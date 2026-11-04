@@ -5,6 +5,7 @@ rectangle) via scripts/na_bounds.py. Common canvas 3300x1600, EPSG:4326.
 """
 
 import os
+import time
 import urllib.request
 
 import numpy as np
@@ -500,12 +501,16 @@ def resample_wcs_to_canvas(vals2d, src_lats1d, src_lons1d, bounds):
     return np.where(inside & (conf > 0.5), grid, np.nan)
 
 
-def gdps_wcs_grid(coverage_id, bounds, raw_dir, timeout=300):
+def gdps_wcs_grid(coverage_id, bounds, raw_dir, timeout=300, cache_min=0):
     """Fetch ECCC GDPS WCS GetCoverage GeoTIFF for the NA bbox.
 
     Returns (vals, lats, lons) in source units, or raises. GDPS is the
     documented last-resort fallback: callers fill ONLY cells with no
     HRRR/RRFS/GOES value and record the fill count honestly.
+
+    With cache_min > 0 the downloaded GeoTIFF is reused while younger
+    than cache_min minutes (GDPS_ layers refresh on hourly runs, so the
+    fast refresh lane should not re-hit GeoMet every cycle).
     """
     import urllib.parse
     lon0, lat0, lon1, lat1 = (bounds["lon_min"], bounds["lat_min"],
@@ -515,15 +520,22 @@ def gdps_wcs_grid(coverage_id, bounds, raw_dir, timeout=300):
     url = f"https://geo.weather.gc.ca/geomet?{q}"
     dest = os.path.join(raw_dir, f"na_gdps_{coverage_id}.tif")
     os.makedirs(os.path.dirname(os.path.abspath(dest)), exist_ok=True)
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        data = r.read()
-    if data[:4] not in (b"II*\x00", b"MM\x00*"):
-        raise ValueError(f"WCS non-TIFF ({len(data)}B head={data[:160]!r})")
-    tmp = dest + ".part"
-    with open(tmp, "wb") as f:
-        f.write(data)
-    os.replace(tmp, dest)
+    fresh = False
+    if cache_min > 0 and os.path.exists(dest):
+        try:
+            fresh = ((time.time() - os.path.getmtime(dest)) / 60) < cache_min
+        except OSError:
+            fresh = False
+    if not fresh:
+        req = urllib.request.Request(url, headers=UA)
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            data = r.read()
+        if data[:4] not in (b"II*\x00", b"MM\x00*"):
+            raise ValueError(f"WCS non-TIFF ({len(data)}B head={data[:160]!r})")
+        tmp = dest + ".part"
+        with open(tmp, "wb") as f:
+            f.write(data)
+        os.replace(tmp, dest)
     import rasterio
     with rasterio.open(dest) as ds:
         vals = ds.read()

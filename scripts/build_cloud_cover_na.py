@@ -139,7 +139,7 @@ def main():
         return 1
 
 
-MOSAIC_VERSION = 7  # bump when sat_ir transfer/merge changes (forces rebuild)
+MOSAIC_VERSION = 8  # bump when sat_ir transfer/merge changes (forces rebuild)
 
 
 def run():
@@ -585,8 +585,11 @@ def _build_mosaic():
         f"{o['source']} {o['scan_utc']}" for o in primary_obs)[:600]
 
     scale_html = ("White = cloud tops (multi-satellite infrared, day + "
-                  "night); transparent = clear sky or no satellite coverage. "
-                  "Infrared brightness, not a cloud-cover percentage.")
+                  "night; polar bands |lat| 55-65 blend the GDPS model "
+                  "cloud cover because single-channel IR there cannot "
+                  "separate cold ground/ice from cloud); transparent = "
+                  "clear sky or no satellite coverage. Infrared "
+                  "brightness, not a cloud-cover percentage.")
     variant_dirs = {m: f"{PRODUCT}_{COVERAGE_DIR_SUFFIX[m]}"
                     for m in COVERAGE_DISPLAY}
     variant_titles = {m: f"{CONFIG_NA['title']} — {COVERAGE_LABELS[m]}"
@@ -610,6 +613,19 @@ def _build_mosaic():
     for mode in COVERAGE_DISPLAY:
         res = rendered[mode]
         rgba_m, n_px = _render_white(res)
+        if mode == "landonly":
+            # Continental Coverage contract (same as the sibling wind /
+            # air-temperature landonly variants): cloud over LAND only,
+            # seas transparent (worldwide cloud is the Global variant's
+            # job -- a duplicated worldwide raster confused the three
+            # coverages). Interpolated clip: smooth coasts, no 0.1-deg
+            # blocks.
+            lm = sat_ir.land_clip_mask(rgba_m.shape[:2],
+                                       CANVASES["landonly"])
+            rgba_m[:, :, 3] = np.round(
+                rgba_m[:, :, 3].astype(np.float32) * lm).astype(np.uint8)
+            from geospatial_utils import bleed_rgb_into_transparent
+            rgba_m = bleed_rgb_into_transparent(rgba_m)
         # Validity-driven transparency only: every valid pixel paints
         # (oceans included); no land/ocean masks on a cloud layer.
         vprod, vtitle = variant_dirs[mode], variant_titles[mode]
@@ -628,11 +644,20 @@ def _build_mosaic():
             units="IR brightness (white=cold cloud tops; not a percentage)",
             source_resolution=("multi-satellite IR: GOES-19/18 10.3um FD, "
                                "Himawari-9 10.3um, Meteosat SEVIRI 10.8um, "
-                               "VIIRS I5 daily supplement"),
+                               "VIIRS I5 daily supplement; GOES full disks "
+                               "are inverse-georeferenced and resampled "
+                               "(no fixed-grid moire); polar |lat| 55-65 "
+                               "blend GDPS_15km_TotalCloudCover"),
             color_min=0.0, color_max=100.0, color_units="display only",
             missing_data_treatment=("transparent = clear sky or no valid "
-                                    "observation; never stretched, duplicated, "
-                                    "or model-filled."))
+                                    "observation; never stretched or "
+                                    "duplicated. Polar bands (|lat| ~55+ "
+                                    "for the worldwide variants) blend the "
+                                    "GDPS cloud-cover MODEL in place of "
+                                    "single-channel IR, which cannot "
+                                    "separate cold surfaces from cloud "
+                                    "there; model values are labeled in "
+                                    "provenance."))
         vmeta["legend_scale_html"] = scale_html
         vmeta["source_id"] = src_id
         vmeta["source_version"] = token
