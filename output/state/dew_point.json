@@ -1,6 +1,6 @@
 {
-  "model_cycle": "hrrr.20261107 t16z",
-  "source_id": "hrrr-hrrr.20261107-t16z-dpt-anl-r13-g2",
+  "model_cycle": "hrrr.20261107 t17z",
+  "source_id": "hrrr-hrrr.20261107-t17z-dpt-anl-r13-g2",
   "render_version": 13,
-  "processing_time_utc": "2026-11-07 12:30 PM EST"
+  "processing_time_utc": "2026-11-07 01:00 PM EST"
 }
