@@ -71,6 +71,11 @@ self-refresh NetworkLink and zero vector geometry.
   required. Interpolated L4 analysis (documented as analyzed, not
   direct observation); sub-sampling-scale lakes, frozen lakes outside
   the open-lake mask state, and rivers stay transparent (never filled).
+  The builder probes CoastWatch Central ERDDAP first and PFEG second
+  for both MUR and blended SST time axes and grids. These world-coverage
+  inputs are optional to the Great Lakes basin gradient: if unavailable,
+  the last valid continental/global variants are retained while a new
+  valid GLSEA basin raster can still publish.
 - **Extended Oceanic source (integrated):** NOAA CoastWatch Geo-Polar
   Blended SST Analysis” (Day+Night), GHRSST NRT Global 5 km Daily,
   `analysed_sst` (°C, admitted −2…40, fill excluded), CoastWatch Central
@@ -312,8 +317,10 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   Experimental — stated in metadata), m⁻¹, valid 0.016–32. Larger values
   mean MORE turbid water (clear water naturally sits blue). The legacy
   `nesdisVHNkdparDaily` id is kept as fallback but returned 404 on its
-  time axis on 2026-09-23 (intermittent/gone). No NRT KdPAR dataset
-  exists on ERDDAP (re-searched 2026-09-25: SQ newest 2026-09-15,
+  time axis on 2026-09-23 (intermittent/gone). The builder tries
+  CoastWatch Central ERDDAP first, then the regional PFEG ERDDAP host, for
+  both the daily time-axis probe and grid fetch. No NRT KdPAR dataset exists
+  on ERDDAP (re-searched 2026-09-25: SQ newest 2026-09-15,
   ~10 d production latency; no NRT/gapfilled KdPAR id exists). The GLERL
   clarity-turbidity ERDDAP was assessed but is bot-walled, so KdPAR stays
   the operational source; the description names the exact variable.
