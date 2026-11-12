@@ -69,7 +69,7 @@ separate KML/KMZ products:
 
 ```text
 .
-├── .github/workflows/update_environment.yml  # schedule + manual dispatch
+├── .github/workflows/update_environment.yml  # daily fallback schedule + manual/external dispatch
 ├── scripts/   # per-product pipelines (environment + gamefish) + shared raster/KML/validation utils
 ├── config/    # ONE common bounds/CRS + per-product configs
 ├── output/    # raw downloads (git-ignored) + per-product state
