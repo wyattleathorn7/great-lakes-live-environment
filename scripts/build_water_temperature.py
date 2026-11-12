@@ -748,20 +748,14 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
     # synthesis latency, unverified lake inventory.
     gbounds = load_global_bounds()
     try:
+        # run() already probed both optional ERDDAP sources. None here
+        # means that probe failed; do not repeat the same slow request inside
+        # the staged build. The valid GLSEA basin product can still publish,
+        # while the previous world variants are preserved below.
         if not blended_time:
-            try:
-                blended_time = _discover_blended_time()
-            except Exception as e:
-                print(f"[{PRODUCT}] VALIDATION FAILED: blended SST time "
-                      f"unavailable ({e}). Keeping previous.")
-                raise RuntimeError("optional global temperature coverage failed")
+            raise RuntimeError("blended SST time probe unavailable")
         if not mur_time:
-            try:
-                mur_time = _discover_mur_time()
-            except Exception as e:
-                print(f"[{PRODUCT}] VALIDATION FAILED: MUR time unavailable "
-                      f"({e}). Keeping previous.")
-                raise RuntimeError("optional global temperature coverage failed")
+            raise RuntimeError("MUR SST time probe unavailable")
         try:
             _bla, _blo, _bsst = _fetch_blended_sst(blended_time)
         except Exception as e:
