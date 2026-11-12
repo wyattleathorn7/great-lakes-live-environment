@@ -707,22 +707,25 @@ the other products and the Pages publish proceed normally.
   Enterococci ×3.6 (= 126/35 GM ratio) → E.coli-equivalent; MPN ≈ CFU
   for display. Full per-color value/unit/threshold/source/rationale table
   in `site/bacteria/metadata.json` (`thresholds`).
-- **Live data:** WQX 3.0 `/wqx3/Result/search` (fullPhysChem profile) is
-  queried first for the 7-day Great Lakes bounding box, E. coli, enterococci,
-  and fecal coliform, from NWIS and STORET providers. This profile carries
-  current USGS discrete-water-quality records and WQX3 field names; WQX 2.2
-  `/data/Result/search` remains a fallback if WQX3 is unavailable. Results
-  use their WQX3 station coordinates when present; only rows without valid
-  coordinates use the cached Station lookup
-  (`output/state/bacteria_stations.json`). Newest sample per station wins;
-  non-detects are retained as censored upper bounds (quantitation limit or
-  floor 10, flagged); halo radius 14 px on lake water only (no interpolation,
-  no modeled fill). Conversions: enterococci ×3.6 (EPA GM ratio), fecal
-  coliform ×0.63 (criterion-anchored: Red Book 200 → E. coli GM 126),
-  MPN/CCE ≈ CFU (as EPA WQI does). The query is geographically bounded,
-  not a guarantee of Canadian sample coverage; Canadian anchor beaches may
-  remain NO DATA pending an ECCC/Ontario live feed.
-- **Coverage:** 100% of all five Great Lakes water surfaces (US +
+- **Live data:** WQX 3.0 `/wqx3/Result/search` (fullPhysChem profile)
+  is queried first for the 7-day Great Lakes bounding box, E. coli,
+  enterococci, and fecal coliform, from NWIS and STORET providers. This
+  profile provides result measurements and monitoring-location identifiers.
+  Coordinates and station names are resolved separately through the WQX 3.0
+  `/wqx3/Station/search` Site Data Only service, using only identifiers
+  present in the current result window and a persistent local station cache
+  (`output/state/bacteria_stations.json`). If WQX3 station lookup is
+  unavailable, the legacy WQX 2.2 Station service is attempted; the legacy
+  `/data/Result/search` service is also retained as a results fallback.
+  Newest sample per station wins; non-detects are retained as censored upper
+  bounds (quantitation limit or floor 10, flagged); halo radius 14 px on lake
+  water only (no interpolation, no modeled fill). Conversions: enterococci
+  ×3.6 (EPA GM ratio), fecal coliform ×0.63 (criterion-anchored: Red Book
+  200 → E. coli GM 126), MPN/CCE ≈ CFU (as EPA WQI does). The query is
+  geographically bounded, not a guarantee of Canadian sample coverage;
+  Canadian anchor beaches may remain NO DATA pending an ECCC/Ontario live
+  feed.
+**Coverage:** 100% of all five Great Lakes water surfaces (US +
    Canadian) via the shared shoreline mask; land transparent; unobserved
    water = transparent NO DATA (slate swatch in key; never zero). Canadian anchor beaches listed,
   NO DATA pending an ECCC/Ontario live feed (documented gap).
