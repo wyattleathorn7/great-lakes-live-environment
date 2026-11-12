@@ -176,15 +176,13 @@ jobs:
           echo "AIS dispatch HTTP $code"
           [ "$code" = "204" ] || echo "::warning::AIS chain dispatch returned $code (expected 204)"
 
-  fast_publish:
-    needs: [precipitation_na, cloud_cover_na]
-    # Shared with the main workflow publisher: only one Pages deployment at a time.
+  precipitation_publish:
+    # Publish precipitation as soon as its own builder finishes. Do not wait
+    # for the slower, 20-minute cloud mosaic job.
+    needs: [precipitation_na]
     concurrency:
       group: pages-publish
       cancel-in-progress: false
-    # Ship whatever succeeded; a single-source outage must not block the
-    # other layer, and must never block on a red job.
-    if: always()
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -199,47 +197,93 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-      # Slim deps: validation needs only numpy/PIL + local modules
-      # (build_surface_currents' third-party imports are numpy/PIL at
-      # module level; pydap is function-lazy).
-      - name: Install dependencies
+      - name: Install validation dependencies
         run: pip install "numpy>=1.26" "pillow>=10.1"
-      - uses: actions/download-artifact@v8
+      - name: Download precipitation artifact only
+        uses: actions/download-artifact@v8
         with:
+          name: site-precipitation_na
           path: artifacts
-      - name: Merge product artifacts into site/
+      - name: Merge precipitation artifact
+        shell: bash
         run: |
-          shopt -s nullglob
+          set -euo pipefail
           merged=0
-          # Multi-artifact layout: one subdir per artifact name.
-          for a in artifacts/site-*/; do
-            [ -d "$a" ] || continue
-            echo "merging: $a"
-            cp -r "$a/." ./
-            merged=$((merged+1))
-          done
-          # Single-artifact layout: a lone artifact extracts FLAT into
-          # path/ (no per-name subdir). Missing this once caused silent
-          # stale deploys; handle it explicitly.
           for t in site kml output; do
             if [ -d "artifacts/$t" ]; then
-              echo "merging flat tree: artifacts/$t"
               mkdir -p "$t"
               cp -r "artifacts/$t/." "./$t/"
               merged=$((merged+1))
             fi
           done
-          echo "merged $merged artifact trees"
-          if [ "$merged" -eq 0 ] && [ -n "$(ls -A artifacts 2>/dev/null)" ]; then
-            echo "ERROR: artifacts present but none merged; refusing to deploy stale files"
+          if [ "$merged" -eq 0 ]; then
+            echo "ERROR: precipitation artifact contained no expected trees"
+            find artifacts -maxdepth 3 -type f -print
             exit 1
           fi
-          git status --porcelain=v1 --untracked-files=no -- site kml output/state | head -30
+          echo "Merged $merged precipitation artifact trees."
+      - name: Preserve newer live fast products and verify freshness
+        run: |
+          python scripts/publish_guard.py \
+            --base "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}" \
+            --site site \
+            --sync-live-fast
+      - name: Validate outputs
+        run: python scripts/validate_outputs.py
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5
+
+  cloud_publish:
+    # Cloud publication is independent of precipitation and runs only when
+    # the cloud cadence job actually launched a cloud build.
+    needs: [cloud_cover_na]
+    concurrency:
+      group: pages-publish
+      cancel-in-progress: false
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install validation dependencies
+        run: pip install "numpy>=1.26" "pillow>=10.1"
+      - name: Download cloud artifact only
+        uses: actions/download-artifact@v8
+        with:
+          name: site-cloud_cover_na
+          path: artifacts
+      - name: Merge cloud artifact
         shell: bash
-      # Never publish a merge-lane product OLDER than what Pages already
-      # serves (observed regression: the fast lane deployed cloud rasters
-      # ~7 GOES cycles behind the live site, 2026-11-01).
-      - name: Guard against stale publish
+        run: |
+          set -euo pipefail
+          merged=0
+          for t in site kml output; do
+            if [ -d "artifacts/$t" ]; then
+              mkdir -p "$t"
+              cp -r "artifacts/$t/." "./$t/"
+              merged=$((merged+1))
+            fi
+          done
+          if [ "$merged" -eq 0 ]; then
+            echo "ERROR: cloud artifact contained no expected trees"
+            find artifacts -maxdepth 3 -type f -print
+            exit 1
+          fi
+          echo "Merged $merged cloud artifact trees."
+      - name: Preserve newer live fast products and verify freshness
         run: |
           python scripts/publish_guard.py \
             --base "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}" \
