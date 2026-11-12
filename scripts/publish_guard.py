@@ -89,11 +89,49 @@ def main():
     p.add_argument("--product", action="append", default=None,
                    help="product directory under site/ (repeatable; "
                         "defaults to the fast-refresh families)")
+    p.add_argument("--sync-live-fast", action="store_true",
+                   help="preserve newer live cloud/precipitation assets before publishing")
     a = p.parse_args()
     products = a.product or FAST_FAMILIES
 
     base = a.base.rstrip("/") + "/"
-    stale = []
+    if a.sync_live_fast:
+        import os
+        import shutil
+        # Restore the currently served fast products into this full-site
+        # candidate. This prevents daily/hourly publishes from rolling back
+        # the independent 5-minute cloud and precipitation lane.
+        for product in FAST_FAMILIES:
+            local = os.path.join(a.site, product)
+            try:
+                with open(os.path.join(local, "metadata.json")) as f:
+                    candidate = json.load(f)
+            except (OSError, ValueError):
+                candidate = {}
+            live = _fetch_json(f"{base}{product}/metadata.json")
+            if not live:
+                continue
+            live_ts, candidate_ts = _ts(live), _ts(candidate)
+            same = live.get("source_version") and live.get("source_version") == candidate.get("source_version")
+            if same or (live_ts is not None and candidate_ts is not None and live_ts <= candidate_ts):
+                continue
+            if live_ts is None:
+                raise RuntimeError(f"[{product}] cannot determine live timestamp; refusing unsafe publish")
+            os.makedirs(local, exist_ok=True)
+            for filename in ("metadata.json", "current.png", "legend.png", "provenance.png"):
+                data = _fetch_bytes(f"{base}{product}/{filename}")
+                target = os.path.join(local, filename)
+                if data is None:
+                    if filename in ("metadata.json", "current.png"):
+                        raise RuntimeError(f"[{product}] missing required live file {filename}")
+                    if os.path.exists(target):
+                        os.remove(target)
+                else:
+                    tmp = target + ".sync-part"
+                    with open(tmp, "wb") as f:
+                        f.write(data)
+                    os.replace(tmp, target)
+            print(f"[{product}] restored newer live fast-lane files ({live_ts:%Y-%m-%d %H:%M} UTC)")
     unverifiable = []
     for product in products:
         cand = f"{a.site}/{product}/metadata.json"
