@@ -49,6 +49,15 @@ def main():
           and _bacteria._record_value(
               {"Result_Measure": "125", "Result_MeasureUnit": "CFU/100mL"},
               "Result_MeasureUnit", "ResultMeasure/MeasureUnitCode") == "CFU/100mL")
+    check("bacteria-wqx3-date-aliases",
+          _bacteria._record_value(
+              {"Activity_StartDate": "2026-11-12"},
+              "Activity_StartDate", "Activity_StartDateTime",
+              "ActivityStartDate") == "2026-11-12"
+          and _bacteria._record_value(
+              {"Activity_StartDateTime": "2026-11-12T14:30:00"},
+              "Activity_StartDate", "Activity_StartDateTime",
+              "ActivityStartDate") == "2026-11-12T14:30:00")
     check("bacteria-wqx3-characteristic-classification",
           _bacteria.classify_indicator("Escherichia coli") == "ecoli"
           and _bacteria.classify_indicator("Enterococcus") == "enterococci"
