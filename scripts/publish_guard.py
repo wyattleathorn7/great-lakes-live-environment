@@ -78,6 +78,17 @@ def _fetch_json(url, timeout=30):
         raise
 
 
+def _fetch_bytes(url, timeout=60):
+    req = urllib.request.Request(url, headers=UA)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.read()
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        raise
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--base", required=True,
@@ -97,41 +108,69 @@ def main():
     base = a.base.rstrip("/") + "/"
     if a.sync_live_fast:
         import os
-        import shutil
-        # Restore the currently served fast products into this full-site
-        # candidate. This prevents daily/hourly publishes from rolling back
-        # the independent 5-minute cloud and precipitation lane.
-        for product in FAST_FAMILIES:
-            local = os.path.join(a.site, product)
+        # Restore complete newer fast-lane families before the full-site
+        # publisher commits and deploys its candidate.
+        families = {
+            "cloud_cover_na": ("cloud_cover_na_basin", "cloud_cover_na_continental",
+                               "cloud_cover_na_global", "North_America_Live_Cloud_Cover.kml"),
+            "precipitation_na": ("precipitation_na_basin", "precipitation_na_continental",
+                                 "precipitation_na_global", "North_America_Live_Precipitation.kml"),
+        }
+        for root, members in families.items():
+            candidate_path = os.path.join(a.site, root, "metadata.json")
             try:
-                with open(os.path.join(local, "metadata.json")) as f:
+                with open(candidate_path) as f:
                     candidate = json.load(f)
             except (OSError, ValueError):
                 candidate = {}
-            live = _fetch_json(f"{base}{product}/metadata.json")
+            live = _fetch_json(f"{base}{root}/metadata.json")
             if not live:
                 continue
             live_ts, candidate_ts = _ts(live), _ts(candidate)
-            same = live.get("source_version") and live.get("source_version") == candidate.get("source_version")
-            if same or (live_ts is not None and candidate_ts is not None and live_ts <= candidate_ts):
+            same = (live.get("source_version") and
+                    live.get("source_version") == candidate.get("source_version"))
+            if same or (live_ts is not None and candidate_ts is not None
+                        and live_ts <= candidate_ts):
                 continue
             if live_ts is None:
-                raise RuntimeError(f"[{product}] cannot determine live timestamp; refusing unsafe publish")
-            os.makedirs(local, exist_ok=True)
-            for filename in ("metadata.json", "current.png", "legend.png", "provenance.png"):
-                data = _fetch_bytes(f"{base}{product}/{filename}")
-                target = os.path.join(local, filename)
+                raise RuntimeError(f"[{root}] cannot determine live timestamp; refusing unsafe publish")
+            directories = (root,) + members[:3]
+            for directory in directories:
+                local = os.path.join(a.site, directory)
+                os.makedirs(local, exist_ok=True)
+                for filename in ("metadata.json", "current.png", "legend.png", "provenance.png"):
+                    data = _fetch_bytes(f"{base}{directory}/{filename}")
+                    target = os.path.join(local, filename)
+                    if data is None:
+                        if filename in ("metadata.json", "current.png"):
+                            raise RuntimeError(f"[{directory}] missing required live file {filename}")
+                        if os.path.exists(target):
+                            os.remove(target)
+                    else:
+                        tmp = target + ".sync-part"
+                        with open(tmp, "wb") as f:
+                            f.write(data)
+                        os.replace(tmp, target)
+                print(f"[{directory}] restored newest live fast-lane files.")
+            kml_name = members[3]
+            for subdir in ("kml", "kml/live"):
+                data = _fetch_bytes(f"{base}{subdir}/{kml_name}")
                 if data is None:
-                    if filename in ("metadata.json", "current.png"):
-                        raise RuntimeError(f"[{product}] missing required live file {filename}")
-                    if os.path.exists(target):
-                        os.remove(target)
-                else:
-                    tmp = target + ".sync-part"
-                    with open(tmp, "wb") as f:
-                        f.write(data)
-                    os.replace(tmp, target)
-            print(f"[{product}] restored newer live fast-lane files ({live_ts:%Y-%m-%d %H:%M} UTC)")
+                    raise RuntimeError(f"[{root}] missing live KML {subdir}/{kml_name}")
+                target = os.path.join(a.site, subdir, kml_name)
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                tmp = target + ".sync-part"
+                with open(tmp, "wb") as f:
+                    f.write(data)
+                os.replace(tmp, target)
+            entry = _fetch_bytes(f"{base}kml/{kml_name}")
+            if entry is None:
+                raise RuntimeError(f"[{root}] missing canonical live KML {kml_name}")
+            os.makedirs("kml", exist_ok=True)
+            with open(os.path.join("kml", kml_name), "wb") as f:
+                f.write(entry)
+            print(f"[{root}] newer Pages version ({live_ts:%Y-%m-%d %H:%M} UTC) preserved.")
+
     unverifiable = []
     for product in products:
         cand = f"{a.site}/{product}/metadata.json"
