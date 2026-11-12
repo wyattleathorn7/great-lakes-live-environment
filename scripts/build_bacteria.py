@@ -368,10 +368,23 @@ def wqp_search(days=7, timeout=150):
             continue
         sid = _record_value(rec, "Location_Identifier",
                             "MonitoringLocationIdentifier")
-        if sid:
+        if not sid:
+            continue
+        # WQX3 fullPhysChem carries standardized station coordinates in the
+        # result row. Only call the separate station endpoint for legacy rows
+        # or WQX3 rows that have no usable coordinates.
+        try:
+            lat = float(_record_value(rec, "Location_Latitude",
+                                      "LatitudeMeasure"))
+            lon = float(_record_value(rec, "Location_Longitude",
+                                      "LongitudeMeasure"))
+            coord_ok = (-93.5 <= lon <= -73.0 and 40.0 <= lat <= 50.0)
+        except (ValueError, TypeError):
+            coord_ok = False
+        if not coord_ok:
             raw_sids.append(sid)
-            prelim.append(rec)
-    stations = wqp_station_coords(raw_sids, timeout=timeout)
+        prelim.append(rec)
+    stations = wqp_station_coords(raw_sids, timeout=timeout) if raw_sids else {}
     rows = []
     for rec in prelim:
         try:
@@ -379,9 +392,20 @@ def wqp_search(days=7, timeout=150):
                                  "CharacteristicName")
             sid = _record_value(rec, "Location_Identifier",
                                 "MonitoringLocationIdentifier")
-            if sid not in stations:
-                continue
-            lat, lon, sname = stations[sid]
+            try:
+                lat = float(_record_value(rec, "Location_Latitude",
+                                          "LatitudeMeasure"))
+                lon = float(_record_value(rec, "Location_Longitude",
+                                          "LongitudeMeasure"))
+                sname = _record_value(rec, "Location_Name",
+                                      "MonitoringLocationName")
+                coord_ok = (-93.5 <= lon <= -73.0 and 40.0 <= lat <= 50.0)
+            except (ValueError, TypeError):
+                coord_ok = False
+            if not coord_ok:
+                if sid not in stations:
+                    continue
+                lat, lon, sname = stations[sid]
             v = _record_value(rec, "Result_Measure", "ResultMeasureValue")
             censored = False
             if not v or v.lower() in ("*", "**", "na", "n/a"):
