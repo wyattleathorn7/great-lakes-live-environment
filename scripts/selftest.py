@@ -30,38 +30,43 @@ def main():
     # ---- WQP / WQX3 water-quality query contract (offline) ----
     import urllib.parse as _urlparse
     import build_bacteria as _bacteria
-    check("bacteria-wqx3-characteristic-alias",
+    _wqx3_result = {
+        "MonitoringLocationIdentifier": "USGS-04024000",
+        "ActivityStartDate": "2026-11-12",
+        "CharacteristicName": "Escherichia coli",
+        "ResultMeasureValue": "125",
+        "ResultMeasure/MeasureUnitCode": "CFU/100mL",
+        "ResultDetectionConditionText": "",
+        "DetectionQuantitationLimitMeasure/MeasureValue": "",
+    }
+    check("bacteria-wqx3-station-id",
           _bacteria._record_value(
-              {"Result_Characteristic": "Escherichia coli"},
-              "Result_Characteristic", "CharacteristicName") == "Escherichia coli")
-    check("bacteria-wqx2-characteristic-alias",
+              _wqx3_result, "MonitoringLocationIdentifier") == "USGS-04024000")
+    check("bacteria-wqx3-activity-date",
+          _bacteria._record_value(_wqx3_result, "ActivityStartDate") == "2026-11-12")
+    check("bacteria-wqx3-characteristic",
+          _bacteria._record_value(_wqx3_result, "CharacteristicName") == "Escherichia coli")
+    check("bacteria-wqx3-result-value",
+          _bacteria._record_value(_wqx3_result, "ResultMeasureValue") == "125")
+    check("bacteria-wqx3-result-unit",
           _bacteria._record_value(
-              {"CharacteristicName": "Enterococcus"},
-              "Result_Characteristic", "CharacteristicName") == "Enterococcus")
-    check("bacteria-wqx3-location-alias",
-          _bacteria._record_value(
-              {"Location_Identifier": "USGS-04024000"},
-              "Location_Identifier", "MonitoringLocationIdentifier") == "USGS-04024000")
-    check("bacteria-wqx3-value-unit-alias",
-          _bacteria._record_value(
-              {"Result_Measure": "125", "Result_MeasureUnit": "CFU/100mL"},
-              "Result_Measure", "ResultMeasureValue") == "125"
+              _wqx3_result, "ResultMeasure/MeasureUnitCode") == "CFU/100mL")
+    _wqx3_station = {
+        "MonitoringLocationIdentifier": "USGS-04024000",
+        "MonitoringLocationName": "Lake Huron at Port Huron",
+        "LatitudeMeasure": "42.97",
+        "LongitudeMeasure": "-82.42",
+    }
+    check("bacteria-wqx3-station-coordinate-fields",
+          float(_bacteria._record_value(_wqx3_station, "LatitudeMeasure")) == 42.97
+          and float(_bacteria._record_value(_wqx3_station, "LongitudeMeasure")) == -82.42
           and _bacteria._record_value(
-              {"Result_Measure": "125", "Result_MeasureUnit": "CFU/100mL"},
-              "Result_MeasureUnit", "ResultMeasure/MeasureUnitCode") == "CFU/100mL")
-    check("bacteria-wqx3-date-aliases",
-          _bacteria._record_value(
-              {"Activity_StartDate": "2026-11-12"},
-              "Activity_StartDate", "Activity_StartDateTime",
-              "ActivityStartDate") == "2026-11-12"
-          and _bacteria._record_value(
-              {"Activity_StartDateTime": "2026-11-12T14:30:00"},
-              "Activity_StartDate", "Activity_StartDateTime",
-              "ActivityStartDate") == "2026-11-12T14:30:00")
+              _wqx3_station, "MonitoringLocationName") == "Lake Huron at Port Huron")
     check("bacteria-wqx3-characteristic-classification",
           _bacteria.classify_indicator("Escherichia coli") == "ecoli"
           and _bacteria.classify_indicator("Enterococcus") == "enterococci"
           and _bacteria.classify_indicator("Fecal Coliform") == "fecal_coliform")
+
     _old_fetch_csv = _bacteria._fetch_csv
     _captured_urls = []
     def _capture_wqp_url(url, timeout=150, **kwargs):
@@ -70,9 +75,13 @@ def main():
     try:
         _bacteria._fetch_csv = _capture_wqp_url
         _wqx3_body, _wqx3_url = _bacteria._query_wqp_results(7, 1, wqx3=True)
+        _station_body, _station_url = _bacteria._query_wqp_station_chunk(
+            ["USGS-04024000", "WIDNR_WQX-133003"], timeout=1, wqx3=True)
     finally:
         _bacteria._fetch_csv = _old_fetch_csv
+
     _wqx3_params = _urlparse.parse_qs(_urlparse.urlparse(_wqx3_url).query)
+    _station_params = _urlparse.parse_qs(_urlparse.urlparse(_station_url).query)
     check("bacteria-wqx3-result-endpoint",
           _wqx3_url.startswith("https://waterqualitydata.us/wqx3/Result/search?"))
     check("bacteria-wqx3-profile",
@@ -81,8 +90,13 @@ def main():
           set(_wqx3_params.get("characteristicName", [])) ==
           {"Escherichia coli", "Enterococcus", "Fecal Coliform"})
     check("bacteria-wqx3-current-usgs-provider",
-          "NWIS" in _wqx3_params.get("providers", []))
-
+          "NWIS" in _wqx3_params.get("providers", [])
+          and "STORET" in _wqx3_params.get("providers", []))
+    check("bacteria-wqx3-station-endpoint",
+          _station_url.startswith("https://waterqualitydata.us/wqx3/Station/search?"))
+    check("bacteria-wqx3-station-ids",
+          set(_station_params.get("siteid", [])) ==
+          {"USGS-04024000", "WIDNR_WQX-133003"})
     # ---- Beaufort thresholds (exact table from the task) ----
     cases = [(0, 0), (0.99, 0), (1, 1), (3, 1), (4, 2), (6, 2), (7, 3),
              (10, 3), (11, 4), (16, 4), (17, 5), (21, 5), (22, 6), (27, 6),
