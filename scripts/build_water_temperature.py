@@ -538,10 +538,8 @@ def run(preview_dir=None, font_size=7, extra_thresh=1.5, max_labels=180):
         print(f"[{PRODUCT}] MUR time probe failed: {e}")
         mur_time_cached = None
     if lm and lm == prev.get("source_last_modified") \
-            and blended_time_cached \
-            and blended_time_cached == prev.get("blended_time") \
-            and mur_time_cached \
-            and mur_time_cached == prev.get("mur_time") \
+            and (blended_time_cached is None or blended_time_cached == prev.get("blended_time")) \
+            and (mur_time_cached is None or mur_time_cached == prev.get("mur_time")) \
             and prev.get("render_version") == RENDER_VERSION \
             and _published_files_present():
         print(f"[{PRODUCT}] HEAD unchanged ({lm}) + blended unchanged "
@@ -585,10 +583,8 @@ def run(preview_dir=None, font_size=7, extra_thresh=1.5, max_labels=180):
             print(f"[{PRODUCT}] MUR time probe failed: {e}")
             mur_time_cached = None
     if prev.get("source_id") == source_id \
-            and blended_time_cached \
-            and prev.get("blended_time") == blended_time_cached \
-            and mur_time_cached \
-            and prev.get("mur_time") == mur_time_cached \
+            and (blended_time_cached is None or prev.get("blended_time") == blended_time_cached) \
+            and (mur_time_cached is None or prev.get("mur_time") == mur_time_cached) \
             and prev.get("render_version") == RENDER_VERSION \
             and _published_files_present():
         print(f"[{PRODUCT}] source unchanged ({source_id}) + blended "
