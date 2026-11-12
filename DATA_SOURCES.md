@@ -646,8 +646,12 @@ the other products and the Pages publish proceed normally.
   longer full-mosaic runtime. The fast workflow publishes with a lean
   validate + deploy (no commit), and both KML refreshIntervals (entry
   NetworkLink + live Icon) are 300 s so clients can pick up newly published
-  scans without excessive polling. The primary external trigger is separate
-  from the native daily fallback in `update_environment.yml`.
+  scans without excessive polling. The dedicated fast workflow is the
+  scheduled owner of these two products; routine half-hourly main-workflow
+  runs no longer duplicate their cloud/precipitation builders. Full
+  `all`/`environmental` and explicit single-product dispatches still include
+  both. The primary external trigger is separate from the native daily
+  fallback in `update_environment.yml`.
   Overlay only (GroundOverlay) — Google Earth has no live-video
   primitive. Freshness wording: **"LIVE / CURRENT OBSERVATION
   (NEXRAD 5-min mosaic)"**.
