@@ -12,17 +12,18 @@ name: Fast live refresh (NA precipitation + NA cloud cover)
 #   but never commits back to main: it deploys the merged site directly.
 #   No commit => no push races, no history spam from 5-minute cycles.
 #   The hourly main workflow remains the committing path of record.
-# - Product queues are independent: precipitation updates are not blocked by
-#   the slow global cloud mosaic. The cloud job keeps one active build and
-#   the newest pending build (GitHub replaces older pending runs).
+# - Precipitation builds on every 5-minute dispatch. The full multi-satellite
+#   cloud mosaic runs at UTC minutes :00, :20, and :40 because its full build
+#   takes roughly 16-20 minutes. Other dispatches publish precipitation while
+#   carrying forward the currently live cloud mosaic.
 # - Pages writes share one concurrency lock with the main publisher, so
 #   independently completed product builds cannot race full-site deployments.
 # - The loud artifact merge (fail rather than deploy stale) is duplicated
 #   here: a quiet stale deploy is worse than a red job.
 #
-# Expected end-to-end: ~3-6 minutes source-to-Pages when GitHub starts the
-# run promptly. Schedule delivery itself is GitHub's throttle to own;
-# manual/nightly dispatches start in seconds.
+# Expected: precipitation can publish on each 5-minute dispatch; cloud
+# mosaics publish on the 20-minute cadence. GitHub dispatch and Pages queue
+# latency remain variable.
 
 on:
   # No GitHub schedule: the external cron-job.org `great-lakes-fast-live`
@@ -90,8 +91,22 @@ jobs:
     permissions:
       contents: read
     steps:
+      - id: cadence
+        name: Check 20-minute cloud cadence
+        shell: bash
+        run: |
+          minute="$(date -u +%M)"
+          if (( 10#$minute % 20 == 0 )); then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Cloud mosaic is due at UTC minute $minute."
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Cloud mosaic is not due at UTC minute $minute; live cloud files will be carried forward."
+          fi
       - uses: actions/checkout@v7
+        if: steps.cadence.outputs.run == 'true'
       - uses: actions/setup-python@v7
+        if: steps.cadence.outputs.run == 'true'
         with:
           python-version: "3.12"
           cache: pip
@@ -99,8 +114,10 @@ jobs:
       # and pyproj on top of numpy/PIL, plus scipy for the IR render
       # (see note on precipitation above).
       - name: Install dependencies
+        if: steps.cadence.outputs.run == 'true'
         run: pip install "numpy>=1.26" "pillow>=10.1" "h5netcdf>=1.0" "h5py>=3.0" "pyproj>=3.6" "scipy>=1.10"
       - name: Update NA cloud cover
+        if: steps.cadence.outputs.run == 'true'
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
@@ -108,7 +125,7 @@ jobs:
           if [ $rc -eq 2 ]; then echo "NA cloud source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: steps.cadence.outputs.run == 'true' && always()
         with:
           name: site-cloud_cover_na
           path: |
@@ -212,7 +229,8 @@ jobs:
         run: |
           python scripts/publish_guard.py \
             --base "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}" \
-            --site site
+            --site site \
+            --sync-live-fast
       - name: Validate outputs
         run: python scripts/validate_outputs.py
       - uses: actions/configure-pages@v6
