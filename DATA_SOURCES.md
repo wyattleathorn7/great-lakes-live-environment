@@ -542,17 +542,18 @@ the other products and the Pages publish proceed normally.
   cron-job.org → `update_fast_live.yml` cadence is a check-for-new-data,
   not a new-observation guarantee. Failures keep the last valid raster
   with its original observation time (exit 2, stays green).
-- **Overlap safety:** the workflow carries `concurrency: fast-live-refresh`
-  with `cancel-in-progress: true`, so a trigger arriving mid-build cancels
-  the older run instead of publishing alongside it. A full mosaic rebuild
-  takes several minutes (two ~23 MB GOES downloads + ~15 WMS fetches +
-  three-canvas binning), so back-to-back 5-minute triggers routinely cancel
-  predecessors: expect an effective refresh of roughly every 10–15 minutes,
-  reported honestly via `observation_time_utc`/`image_age_seconds`, never
-  as 5-minute-fresh imagery. Builders stage under `output/stage/` and
-  promote only on full success, and `fast_publish` re-validates the whole
-  site (KML `?v=` must match metadata `source_version`) before deploying,
-  so interrupted or mixed outputs cannot reach Pages.
+- **Cadence and overlap safety:** precipitation is rebuilt on each 5-minute
+  fast dispatch; the larger multi-satellite cloud mosaic is scheduled at
+  UTC minutes :00, :20 and :40 because a complete mosaic takes roughly
+  16–20 minutes. A small independent cadence job skips cloud builds before
+  they acquire their concurrency slot, so off-cycle precipitation updates
+  can publish without waiting behind a cloud build. Product jobs have
+  separate non-cancelling queues; Pages deployments share one lock with the
+  main publisher. The fast publisher synchronizes any skipped fast layer
+  from the current Pages version before deploying, so a precipitation-only
+  publish cannot roll cloud cover backwards. Builders stage under
+  `output/stage/` and promote only on full success; `fast_publish`
+  re-validates the whole site before deploying.
 - **Retired:** v1 HRRR `TCDC` analysis (rectangular assimilation
   footprints in raw GRIB2); v2 GOES-East CONUS clear-sky-mask %
   gradient + RRFS/GDPS model fill (dormant code retained in
@@ -638,16 +639,15 @@ the other products and the Pages publish proceed normally.
   Full basin rectangle (no shoreline cut: precipitation falls on land
   and water alike). A dry-over-the-basin run is a VALID transparent
   raster, not a failure (same semantics as a clear-sky cloud run).
-- **Refresh (fastest possible, GitHub-only — no Mac execution):** source
-  rebuilds every 5 minutes; the dedicated fast workflow
-  (`update_fast_live.yml`) runs on its own 5-minute cron (`*/5 * * * *`,
-  GitHub's minimum schedule interval) with a lean publish (validate +
-  deploy, no commit), so scans ship in minutes; both KML
-  refreshIntervals (entry NetworkLink + live Icon) are 300 s, matching
-  the source cadence and the workflow schedule — each client poll can
-  pick up a newly published scan with no sub-minute polling and no
-  battery drain on any local machine. No launchd/cron heartbeat is
-  needed or wanted: GitHub's cron is the sole driver.
+- **Refresh (fastest possible, GitHub Actions — no Mac execution):**
+  the external cron-job.org trigger dispatches `update_fast_live.yml`
+  every 5 minutes. Precipitation rebuilds each dispatch; cloud cover is
+  intentionally rebuilt only at UTC minutes :00, :20 and :40 to match its
+  longer full-mosaic runtime. The fast workflow publishes with a lean
+  validate + deploy (no commit), and both KML refreshIntervals (entry
+  NetworkLink + live Icon) are 300 s so clients can pick up newly published
+  scans without excessive polling. The primary external trigger is separate
+  from the native daily fallback in `update_environment.yml`.
   Overlay only (GroundOverlay) — Google Earth has no live-video
   primitive. Freshness wording: **"LIVE / CURRENT OBSERVATION
   (NEXRAD 5-min mosaic)"**.
