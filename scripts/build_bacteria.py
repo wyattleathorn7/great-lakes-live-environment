@@ -438,7 +438,10 @@ def wqp_search(days=7, timeout=150):
                 continue
             if not (math.isfinite(val) and 0 <= val <= 1_000_000):
                 continue
-            date = _record_value(rec, "Activity_StartDate", "ActivityStartDate")
+            date = _record_value(rec, "Activity_StartDate",
+                                  "Activity_StartDateTime", "ActivityStartDate")
+            if not date:
+                continue
             rows.append({
                 "lat": lat, "lon": lon, "value": val,
                 "indicator": classify_indicator(char),
