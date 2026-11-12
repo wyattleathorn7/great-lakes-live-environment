@@ -22,6 +22,37 @@ def check(name, cond, detail=""):
 
 
 def main():
+    # ---- publish freshness guard: transient Pages errors retry ----
+    import email.message as _email_message
+    import io as _io
+    import urllib.error as _url_error
+    import publish_guard as _publish_guard
+
+    _original_urlopen = _publish_guard.urllib.request.urlopen
+    _original_sleep = _publish_guard.time.sleep
+    _attempts = []
+
+    def _flaky_pages(url, timeout=30):
+        _attempts.append(url)
+        if len(_attempts) == 1:
+            raise _url_error.HTTPError(
+                url, 503, "temporary unavailable",
+                _email_message.Message(), None)
+        return _io.BytesIO(b"fresh-pages-response")
+
+    try:
+        _publish_guard.urllib.request.urlopen = _flaky_pages
+        _publish_guard.time.sleep = lambda _seconds: None
+        _retry_result = _publish_guard._request_bytes(
+            "https://example.invalid/metadata.json", timeout=1)
+    finally:
+        _publish_guard.urllib.request.urlopen = _original_urlopen
+        _publish_guard.time.sleep = _original_sleep
+
+    check("publish-guard-retries-transient-503",
+          _retry_result == b"fresh-pages-response" and len(_attempts) == 2,
+          len(_attempts))
+
     from beaufort import (BEAUFORT, FORCE_COLORS, force_from_kt, force_name,
                           force_range_text, movement_to_canvas_dxdy,
                           uv_to_speed_dir)
