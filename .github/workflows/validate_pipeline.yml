@@ -6,7 +6,7 @@ on:
     paths:
       - "scripts/**/*.py"
       - "config/**/*.json"
-      - ".github/workflows/validate_pipeline.yml"
+      - ".github/workflows/*.yml"
   pull_request:
     paths:
       - "scripts/**/*.py"
@@ -31,6 +31,9 @@ jobs:
         run: pip install -r requirements.txt
       - name: Compile every pipeline module
         run: python -m compileall -q scripts
+      - name: Parse GitHub Actions workflow YAML
+        run: |
+          ruby -e 'require "yaml"; ARGV.each { |path| YAML.load_file(path); puts "valid YAML: #{path}" }' .github/workflows/*.yml
       - name: Run offline regression suite
         run: python scripts/selftest.py
       - name: Validate configuration JSON
