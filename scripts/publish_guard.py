@@ -28,6 +28,7 @@ import datetime as dt
 import json
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -67,26 +68,56 @@ def _ts(meta):
     return None
 
 
-def _fetch_json(url, timeout=30):
+RETRYABLE_HTTP_STATUS = {408, 425, 429, 500, 502, 503, 504}
+
+
+def _request_bytes(url, timeout):
+    """Fetch a URL with bounded retries for transient Pages/CDN failures.
+
+    A brief Pages 503 must not strand otherwise successful product updates.
+    Permanent HTTP errors (except 404, which means "not deployed yet") still
+    fail immediately; after the retry budget, callers fail closed as before.
+    """
     req = urllib.request.Request(url, headers=UA)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return json.loads(r.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return None
-        raise
+    last_error = None
+    for attempt in range(5):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            if exc.code == 404:
+                return None
+            if exc.code not in RETRYABLE_HTTP_STATUS:
+                raise
+            last_error = exc
+            retry_after = (exc.headers.get("Retry-After")
+                           if exc.headers is not None else None)
+        except (urllib.error.URLError, TimeoutError) as exc:
+            last_error = exc
+            retry_after = None
+
+        if attempt == 4:
+            break
+        try:
+            delay = float(retry_after) if retry_after is not None else 2 ** attempt
+        except (TypeError, ValueError):
+            delay = 2 ** attempt
+        delay = max(1.0, min(delay, 20.0))
+        print(f"[publish-guard] transient fetch error for {url}: "
+              f"{last_error}; retry {attempt + 1}/4 in {delay:.0f}s",
+              flush=True)
+        time.sleep(delay)
+
+    raise last_error
+
+
+def _fetch_json(url, timeout=30):
+    body = _request_bytes(url, timeout)
+    return None if body is None else json.loads(body.decode("utf-8"))
 
 
 def _fetch_bytes(url, timeout=60):
-    req = urllib.request.Request(url, headers=UA)
-    try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return r.read()
-    except urllib.error.HTTPError as e:
-        if e.code == 404:
-            return None
-        raise
+    return _request_bytes(url, timeout)
 
 
 def main():
