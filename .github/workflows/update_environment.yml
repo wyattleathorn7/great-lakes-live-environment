@@ -849,13 +849,10 @@ jobs:
           if-no-files-found: warn
 
   cloud_cover_na:
-    # ALSO runs on halfhourly (2026-11-01): the main workflow's publish
-    # replaces the entire site on every deploy, so any cadence that does
-    # not rebuild cloud publishes (and commits) the stale committed copy.
-    # The 5-min fast workflow deploys directly without committing, so the
-    # committed snapshot has to be kept fresh by some main cadence;
-    # without this, halfhourly/hourly deploys grafted 5-min-layers back to
-    # 16 days old (observed 2026-10-16 -> 2026-11-01 freeze).
+    # Scheduled refreshes are owned by update_fast_live.yml (20-minute
+    # cloud cadence). Keep this builder for explicit full/environmental and
+    # single-product dispatches. The main publisher synchronizes newer live
+    # fast-layer files before deploying whenever this job is skipped.
     if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'cloud_cover_na' }}
     runs-on: ubuntu-24.04
     permissions:
@@ -891,8 +888,10 @@ jobs:
           if-no-files-found: warn
 
   precipitation_na:
-    # Same reason as cloud_cover_na above: keep the committed copy fresh so
-    # main-workflow deploys cannot graft the 5-min layers back in time.
+    # Scheduled refreshes are owned by update_fast_live.yml (5-minute
+    # cadence). Keep this builder for explicit full/environmental and
+    # single-product dispatches; publish_guard carries forward newer live
+    # files during routine main-workflow deploys.
     if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'precipitation_na' }}
     runs-on: ubuntu-24.04
     permissions:
