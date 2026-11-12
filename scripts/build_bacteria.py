@@ -290,34 +290,84 @@ def wqp_station_coords(sids, timeout=120):
     return cached
 
 
-def wqp_search(days=7, timeout=150):
-    """Query the Water Quality Portal for recent E. coli / enterococci / fecal coliform in
-    the basin bbox, joined to station coordinates. Returns (rows, url).
+def _record_value(rec, *names):
+    """Return the first non-empty value across WQX 2.2/3.0 field aliases."""
+    for name in names:
+        value = rec.get(name)
+        if value is not None and str(value).strip():
+            return str(value).strip()
+    return ""
 
-    Non-detects (empty value + 'Not Detected'/'Below Quantification'
-    condition) are kept as upper-bound estimates at the quantitation
-    limit (or the display floor 10 when no limit is given) and flagged
-    censored — a documented conservative treatment, never zero.
-    Never raises fatally — callers treat empty as NO DATA (honest path).
-    """
+
+def _query_wqp_results(days, timeout, wqx3=True):
     end = dt.date.today()
     start = end - dt.timedelta(days=days)
-    params = {
-        "bBox": "-93,40.5,-73.5,49.5",
-        "startDateLo": start.strftime("%m-%d-%Y"),
-        "startDateHi": end.strftime("%m-%d-%Y"),
-        "characteristicName": WQP_CHARACTERISTICS,
-        "mimeType": "csv",
-        "zip": "no",
-    }
-    url = "https://www.waterqualitydata.us/data/Result/search?" + urllib.parse.urlencode(params)
-    body = _fetch_csv(url, timeout=timeout)
+    if wqx3:
+        # WQX 3.0 contains recent USGS discrete water-quality samples that
+        # are absent from the legacy WQX 2.2 profile. WQX3 requires repeated
+        # query parameters for multiple characteristics/providers.
+        params = [
+            ("bBox", "-93,40.5,-73.5,49.5"),
+            ("startDateLo", start.strftime("%m-%d-%Y")),
+            ("startDateHi", end.strftime("%m-%d-%Y")),
+            ("characteristicName", "Escherichia coli"),
+            ("characteristicName", "Enterococcus"),
+            ("characteristicName", "Fecal Coliform"),
+            ("mimeType", "csv"),
+            ("dataProfile", "fullPhysChem"),
+            ("providers", "NWIS"),
+            ("providers", "STORET"),
+        ]
+        url = ("https://waterqualitydata.us/wqx3/Result/search?"
+               + urllib.parse.urlencode(params))
+    else:
+        # Legacy service fallback for providers/records not yet represented
+        # in WQX3. No country restriction: geography is bounded by bBox.
+        params = {
+            "bBox": "-93,40.5,-73.5,49.5",
+            "startDateLo": start.strftime("%m-%d-%Y"),
+            "startDateHi": end.strftime("%m-%d-%Y"),
+            "characteristicName": WQP_CHARACTERISTICS,
+            "mimeType": "csv",
+            "zip": "no",
+        }
+        url = ("https://www.waterqualitydata.us/data/Result/search?"
+               + urllib.parse.urlencode(params))
+    return _fetch_csv(url, timeout=timeout), url
+
+
+def wqp_search(days=7, timeout=150):
+    """Query WQX 3.0 first, falling back to legacy WQX 2.2 if unavailable.
+
+    WQX 3.0 is the current WQP service for recent USGS discrete samples.
+    The parser accepts both WQX3 and WQX2 column names, and the station
+    coordinate resolver remains a separate, cached query so sample rows
+    without a resolvable location are never plotted.
+    """
+    errors = []
+    body = None
+    url = None
+    for use_wqx3 in (True, False):
+        try:
+            body, url = _query_wqp_results(days, timeout, wqx3=use_wqx3)
+            if not use_wqx3:
+                print(f"[{PRODUCT}] WQX3 unavailable; using legacy WQP results.")
+            break
+        except Exception as e:
+            errors.append(e)
+            print(f"[{PRODUCT}] {'WQX3' if use_wqx3 else 'legacy WQP'} result query failed: "
+                  f"{type(e).__name__}: {e}")
+    if body is None:
+        raise errors[-1] if errors else RuntimeError("WQP result query returned no response")
+
     raw_sids = []
     prelim = []
     for rec in csv.DictReader(io.StringIO(body)):
-        if classify_indicator(rec.get("CharacteristicName")) is None:
+        char = _record_value(rec, "Result_Characteristic", "CharacteristicName")
+        if classify_indicator(char) is None:
             continue
-        sid = (rec.get("MonitoringLocationIdentifier") or "").strip()
+        sid = _record_value(rec, "Location_Identifier",
+                            "MonitoringLocationIdentifier")
         if sid:
             raw_sids.append(sid)
             prelim.append(rec)
@@ -325,18 +375,27 @@ def wqp_search(days=7, timeout=150):
     rows = []
     for rec in prelim:
         try:
-            char = (rec.get("CharacteristicName") or "").strip().lower()
-            sid = (rec.get("MonitoringLocationIdentifier") or "").strip()
+            char = _record_value(rec, "Result_Characteristic",
+                                 "CharacteristicName")
+            sid = _record_value(rec, "Location_Identifier",
+                                "MonitoringLocationIdentifier")
             if sid not in stations:
                 continue
             lat, lon, sname = stations[sid]
-            v = (rec.get("ResultMeasureValue") or "").strip()
+            v = _record_value(rec, "Result_Measure", "ResultMeasureValue")
             censored = False
-            if not v or v.lower() in ("*", "**"):
-                cond = (rec.get("ResultDetectionConditionText") or "").lower()
-                if "not detect" in cond or "below" in cond or "non-detect" in cond or "non detect" in cond:
+            if not v or v.lower() in ("*", "**", "na", "n/a"):
+                cond = _record_value(
+                    rec, "Result_ResultDetectionCondition",
+                    "ResultDetectionConditionText").lower()
+                if ("not detect" in cond or "below" in cond or
+                        "non-detect" in cond or "non detect" in cond or
+                        "detected not quantified" in cond):
                     try:
-                        lim = float((rec.get("DetectionQuantitationLimitMeasure/MeasureValue") or "").strip())
+                        lim_raw = _record_value(
+                            rec, "DetectionLimit_MeasureA",
+                            "DetectionQuantitationLimitMeasure/MeasureValue")
+                        lim = float(lim_raw) if lim_raw else 10.0
                         val = lim if math.isfinite(lim) and lim > 0 else 10.0
                     except (ValueError, TypeError):
                         val = 10.0
@@ -348,15 +407,17 @@ def wqp_search(days=7, timeout=150):
                     val = float(v.replace(",", ""))
                 except ValueError:
                     continue
-            unit = (rec.get("ResultMeasure/MeasureUnitCode") or "").strip().lower().replace(" ", "")
+            unit = _record_value(
+                rec, "Result_MeasureUnit", "ResultMeasure/MeasureUnitCode"
+            ).lower().replace(" ", "")
             if "100ml" not in unit and "ml" not in unit:
                 continue
             if not (math.isfinite(val) and 0 <= val <= 1_000_000):
                 continue
-            date = (rec.get("ActivityStartDate") or "").strip()
+            date = _record_value(rec, "Activity_StartDate", "ActivityStartDate")
             rows.append({
                 "lat": lat, "lon": lon, "value": val,
-                "indicator": classify_indicator(rec.get("CharacteristicName")),
+                "indicator": classify_indicator(char),
                 "date": date, "station": sid[:80], "station_name": sname,
                 "censored": censored,
             })
@@ -364,10 +425,10 @@ def wqp_search(days=7, timeout=150):
             continue
     # Newest sample per station wins (temporal rule: latest valid observation).
     best = {}
-    for o in rows:
-        k = o["station"]
-        if k not in best or o["date"] >= best[k]["date"]:
-            best[k] = o
+    for observation in rows:
+        key = observation["station"]
+        if key not in best or observation["date"] >= best[key]["date"]:
+            best[key] = observation
     return list(best.values()), url
 
 
