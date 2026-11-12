@@ -85,11 +85,35 @@ jobs:
             output/state/precipitation_na.json
           if-no-files-found: warn
 
+  cloud_cadence:
+    # Evaluate the 20-minute cadence in a tiny independent job. The result is
+    # consumed by cloud_cover_na's job-level if, before cloud concurrency is
+    # acquired. Precipitation has no dependency on this check.
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      run: ${{ steps.cadence.outputs.run }}
+    steps:
+      - id: cadence
+        name: Check 20-minute cloud cadence
+        shell: bash
+        run: |
+          minute="$(date -u +%M)"
+          if (( 10#$minute % 20 == 0 )); then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Cloud mosaic due at UTC minute $minute."
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Cloud mosaic not due at UTC minute $minute; precipitation can publish without waiting for cloud."
+          fi
+
   cloud_cover_na:
     # Evaluate cadence before acquiring the concurrency slot. Non-due
     # 5-minute dispatches must skip immediately so they never queue behind
     # a slow mosaic or delay the independent precipitation publisher.
-    if: ${{ inputs.force_cloud || contains(github.run_started_at, ':00:') || contains(github.run_started_at, ':20:') || contains(github.run_started_at, ':40:') }}
+    needs: [cloud_cadence]
+    if: ${{ inputs.force_cloud || needs.cloud_cadence.outputs.run == 'true' }}
     concurrency:
       group: fast-cloud-cover-na
       cancel-in-progress: false
