@@ -26,11 +26,15 @@ name: Fast live refresh (NA precipitation + NA cloud cover)
 # latency remain variable.
 
 on:
-  # No GitHub schedule: the external cron-job.org `great-lakes-fast-live`
-  # pinger (every 5 min) fires this workflow via workflow_dispatch
-  # (see timers/README.md). The in-repo */5 cron was removed on
-  # 2026-10-08 so only cron-job.org drives runs.
+  # No GitHub schedule: cron-job.org dispatches this every five minutes.
+  # force_cloud is for an operator-requested immediate cloud mosaic.
   workflow_dispatch:
+    inputs:
+      force_cloud:
+        description: "Run the slower cloud mosaic immediately"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -82,8 +86,10 @@ jobs:
           if-no-files-found: warn
 
   cloud_cover_na:
-    # Full-disk multi-satellite mosaics take longer than the 5-minute
-    # dispatch interval. Keep one build running and only the newest one pending.
+    # Evaluate cadence before acquiring the concurrency slot. Non-due
+    # 5-minute dispatches must skip immediately so they never queue behind
+    # a slow mosaic or delay the independent precipitation publisher.
+    if: ${{ inputs.force_cloud || contains(github.run_started_at, ':00:') || contains(github.run_started_at, ':20:') || contains(github.run_started_at, ':40:') }}
     concurrency:
       group: fast-cloud-cover-na
       cancel-in-progress: false
@@ -91,22 +97,8 @@ jobs:
     permissions:
       contents: read
     steps:
-      - id: cadence
-        name: Check 20-minute cloud cadence
-        shell: bash
-        run: |
-          minute="$(date -u +%M)"
-          if (( 10#$minute % 20 == 0 )); then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "Cloud mosaic is due at UTC minute $minute."
-          else
-            echo "run=false" >> "$GITHUB_OUTPUT"
-            echo "Cloud mosaic is not due at UTC minute $minute; live cloud files will be carried forward."
-          fi
       - uses: actions/checkout@v7
-        if: steps.cadence.outputs.run == 'true'
       - uses: actions/setup-python@v7
-        if: steps.cadence.outputs.run == 'true'
         with:
           python-version: "3.12"
           cache: pip
@@ -114,10 +106,8 @@ jobs:
       # and pyproj on top of numpy/PIL, plus scipy for the IR render
       # (see note on precipitation above).
       - name: Install dependencies
-        if: steps.cadence.outputs.run == 'true'
         run: pip install "numpy>=1.26" "pillow>=10.1" "h5netcdf>=1.0" "h5py>=3.0" "pyproj>=3.6" "scipy>=1.10"
       - name: Update NA cloud cover
-        if: steps.cadence.outputs.run == 'true'
         env:
           PAGES_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
         run: |
@@ -125,7 +115,7 @@ jobs:
           if [ $rc -eq 2 ]; then echo "NA cloud source unavailable; previous raster kept."; exit 0; fi
           exit $rc
       - uses: actions/upload-artifact@v7
-        if: steps.cadence.outputs.run == 'true' && always()
+        if: always()
         with:
           name: site-cloud_cover_na
           path: |
