@@ -6,9 +6,9 @@
   "product_name": "GOES-19/18 ABI infrared + Himawari-9 infrared (via NASA GIBS) + Meteosat SEVIRI infrared imagery (via EUMETSAT EUMETView) + VIIRS daily polar supplement (via NASA GIBS)",
   "variable": "Infrared window brightness (GOES/Himawari BT in K, VIIRS BT in K, Meteosat grayscale imagery) -> white-cloud brightness + transparency. Not a cloud-cover percentage.",
   "source_url": "https://www.goes.noaa.gov/",
-  "data_time_utc": "2026-11-12 09:40 UTC",
-  "source_last_modified_utc": "GOES-19 2026-11-12 09:40 UTC; GOES-18 2026-11-12 09:40 UTC; HIMAWARI-9 2026-11-12 09:10 UTC; METEOSAT-FES 2026-11-12 09:30 UTC; METEOSAT-IODC 2026-11-12 09:30 UTC; VIIRS 2026-11-02 00:00 UTC; GDPS-TCC unknown",
-  "processing_time_utc": "2026-11-12 05:09 AM EST",
+  "data_time_utc": "2026-11-12 10:10 UTC",
+  "source_last_modified_utc": "GOES-19 2026-11-12 10:10 UTC; GOES-18 2026-11-12 10:10 UTC; HIMAWARI-9 2026-11-12 09:40 UTC; METEOSAT-FES 2026-11-12 10:00 UTC; METEOSAT-IODC 2026-11-12 10:00 UTC; VIIRS 2026-11-02 00:00 UTC; GDPS-TCC unknown",
+  "processing_time_utc": "2026-11-12 05:40 AM EST",
   "units": "IR brightness (white=cold cloud tops; not a percentage)",
   "spatial_resolution_source": "multi-satellite IR: GOES-19/18 10.3um FD, Himawari-9 10.3um, Meteosat SEVIRI 10.8um, VIIRS I5 daily supplement; GOES full disks are inverse-georeferenced and resampled (no fixed-grid moire); polar |lat| 55-65 blend GDPS_15km_TotalCloudCover",
   "spatial_resolution_rendered": "6600x3200 canvas over lon [-180.0,-15.0], lat [5.0,85.0]",
@@ -26,8 +26,8 @@
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "legend_scale_html": "White = cloud tops (multi-satellite infrared, day + night; polar bands |lat| 55-65 blend the GDPS model cloud cover because single-channel IR there cannot separate cold ground/ice from cloud); transparent = clear sky or no satellite coverage. Infrared brightness, not a cloud-cover percentage.",
-  "source_id": "cloudIR-GOES-18@20261112T0940-GOES-19@20261112T0940-HIMAWARI-9@20261112T0910-METEOSAT-FES@20261112T0930-METEOSAT-IODC@20261112T0930-VIIRS@2026-11-02+2026-11-02-v8",
-  "source_version": "cloudIR-GOES-18-20261112T0940-GOES-19-20261112T0940-HIMAWARI-9-20261112T0910-METEOSAT-FES-20261112T0930-METEOSAT-IODC-20261112T0930-VIIRS-2026-11-02-2026-11-02-v8",
+  "source_id": "cloudIR-GOES-18@20261112T1010-GOES-19@20261112T1010-HIMAWARI-9@20261112T0940-METEOSAT-FES@20261112T1000-METEOSAT-IODC@20261112T1000-VIIRS@2026-11-02+2026-11-02-v8",
+  "source_version": "cloudIR-GOES-18-20261112T1010-GOES-19-20261112T1010-HIMAWARI-9-20261112T0940-METEOSAT-FES-20261112T1000-METEOSAT-IODC-20261112T1000-VIIRS-2026-11-02-2026-11-02-v8",
   "na_bounds": {
     "canvas_height": 3200,
     "canvas_width": 6600,
@@ -42,50 +42,50 @@
     "resolution_deg_per_pixel": 0.05
   },
   "coverage_mode": "landonly",
-  "observation_time_utc": "2026-11-12 09:40 UTC",
-  "image_age_seconds": 1731,
-  "update_status": "current",
+  "observation_time_utc": "2026-11-12 10:10 UTC",
+  "image_age_seconds": 1806,
+  "update_status": "degraded",
   "source_observations": [
     {
       "source": "GOES-19",
       "kind": "goes-bt",
-      "scan_utc": "2026-11-12 09:40 UTC",
-      "age_min": 23.8,
-      "detail": "OR_ABI-L2-CMIPF-M6C13_G19_s20263160940207_e20263160949527_c20263160949598.nc"
+      "scan_utc": "2026-11-12 10:10 UTC",
+      "age_min": 26.2,
+      "detail": "OR_ABI-L2-CMIPF-M6C13_G19_s20263161010207_e20263161019528_c20263161019594.nc"
     },
     {
       "source": "GOES-18",
       "kind": "goes-bt",
-      "scan_utc": "2026-11-12 09:40 UTC",
-      "age_min": 23.8,
-      "detail": "OR_ABI-L2-CMIPF-M6C13_G18_s20263160940209_e20263160949528_c20263160950006.nc"
+      "scan_utc": "2026-11-12 10:10 UTC",
+      "age_min": 26.2,
+      "detail": "OR_ABI-L2-CMIPF-M6C13_G18_s20263161010209_e20263161019529_c20263161019587.nc"
     },
     {
       "source": "HIMAWARI-9",
       "kind": "gibs-bt",
-      "scan_utc": "2026-11-12 09:10 UTC",
-      "age_min": 53.8,
+      "scan_utc": "2026-11-12 09:40 UTC",
+      "age_min": 56.2,
       "detail": "GIBS Himawari_AHI_Band13_Clean_Infrared LUT +/-1C"
     },
     {
       "source": "METEOSAT-FES",
       "kind": "eumet-gray",
-      "scan_utc": "2026-11-12 09:30 UTC",
-      "age_min": 33.8,
+      "scan_utc": "2026-11-12 10:00 UTC",
+      "age_min": 36.2,
       "detail": "EUMETView imagery"
     },
     {
       "source": "METEOSAT-IODC",
       "kind": "eumet-gray",
-      "scan_utc": "2026-11-12 09:30 UTC",
-      "age_min": 33.8,
-      "detail": "EUMETView imagery"
+      "scan_utc": "2026-11-12 10:00 UTC",
+      "age_min": 36.2,
+      "detail": "FAILED: HTTPError: HTTP Error 500: Internal Server Error"
     },
     {
       "source": "VIIRS",
       "kind": "gibs-viirs",
       "scan_utc": "2026-11-02 00:00 UTC",
-      "age_min": 15003.8,
+      "age_min": 15036.2,
       "detail": "daily supplement"
     },
     {
@@ -97,11 +97,11 @@
     }
   ],
   "provenance": {
-    "GOES-19": "2026-11-12 09:40 UTC",
-    "GOES-18": "2026-11-12 09:40 UTC",
-    "HIMAWARI-9": "2026-11-12 09:10 UTC",
-    "METEOSAT-FES": "2026-11-12 09:30 UTC",
-    "METEOSAT-IODC": "2026-11-12 09:30 UTC",
+    "GOES-19": "2026-11-12 10:10 UTC",
+    "GOES-18": "2026-11-12 10:10 UTC",
+    "HIMAWARI-9": "2026-11-12 09:40 UTC",
+    "METEOSAT-FES": "2026-11-12 10:00 UTC",
+    "METEOSAT-IODC": "2026-11-12 10:00 UTC",
     "VIIRS": "2026-11-02 00:00 UTC",
     "GDPS-TCC": "unknown"
   },
@@ -110,9 +110,9 @@
     152
   ],
   "stats": {
-    "ir_pixels": 14215382,
+    "ir_pixels": 14219142,
     "max_geo_skew_min": 30.0,
-    "feather_px": 10
+    "feather_px": 9
   },
-  "folder_html": "<h2>LIVE CLOUD COVER \u2014 Continental Coverage</h2><p><b>Coverage:</b> Continental Coverage<br><b>Observed:</b> 2026-11-12 09:40 UTC<br><b>Provenance:</b> GOES-19 2026-11-12 09:40 UTC; GOES-18 2026-11-12 09:40 UTC; HIMAWARI-9 2026-11-12 09:10 UTC; METEOSAT-FES 2026-11-12 09:30 UTC; METEOSAT-IODC 2026-11-12 09:30 UTC; VIIRS 2026-11-02 00:00 UTC; GDPS-TCC unknown</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25c9 <b>Continental Coverage</b> (shown)<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
+  "folder_html": "<h2>LIVE CLOUD COVER \u2014 Continental Coverage</h2><p><b>Coverage:</b> Continental Coverage<br><b>Observed:</b> 2026-11-12 10:10 UTC<br><b>Provenance:</b> GOES-19 2026-11-12 10:10 UTC; GOES-18 2026-11-12 10:10 UTC; HIMAWARI-9 2026-11-12 09:40 UTC; METEOSAT-FES 2026-11-12 10:00 UTC; METEOSAT-IODC 2026-11-12 10:00 UTC; VIIRS 2026-11-02 00:00 UTC; GDPS-TCC unknown</p><p><b>Coverage</b> \u2014 one at a time, switched right here in this folder:<br>\u25cb Global Coverage<br>\u25c9 <b>Continental Coverage</b> (shown)<br>\u25cb Great Lakes Basin Coverage<br>Pro switches exclusively. Web/app: check exactly one box.</p>"
 }
