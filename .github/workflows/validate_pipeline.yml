@@ -1,0 +1,43 @@
+name: Validate environment pipeline source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**/*.py"
+      - "config/**/*.json"
+      - ".github/workflows/validate_pipeline.yml"
+  pull_request:
+    paths:
+      - "scripts/**/*.py"
+      - "config/**/*.json"
+      - ".github/workflows/validate_pipeline.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-source:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Compile every pipeline module
+        run: python -m compileall -q scripts
+      - name: Validate configuration JSON
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          files = sorted(Path("config").rglob("*.json"))
+          if not files:
+              raise SystemExit("No configuration JSON files found")
+          for path in files:
+              with path.open(encoding="utf-8") as stream:
+                  json.load(stream)
+          print(f"Validated {len(files)} configuration JSON files.")
+          PY
