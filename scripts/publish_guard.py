@@ -171,6 +171,7 @@ def main():
                 f.write(entry)
             print(f"[{root}] newer Pages version ({live_ts:%Y-%m-%d %H:%M} UTC) preserved.")
 
+    stale = []
     unverifiable = []
     for product in products:
         cand = f"{a.site}/{product}/metadata.json"
