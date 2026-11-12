@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        description_html, entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
-from erddap_coastwatch import fetch_csv, latest_time
+from erddap_coastwatch import BASE, BASE_CENTRAL, fetch_csv, latest_time
 from geospatial_utils import (REPO_ROOT, SITE_DIR, apply_shoreline_mask,
                               base_metadata, load_bounds, load_watermask,
                               promote_stage,
@@ -51,6 +51,31 @@ NO_DATA_GREY = (138, 143, 148)  # #8A8F94
 # so the mosaic always tracks the freshest operational stream.
 DATASETS = ["nesdisVHNkdparDaily", "nesdisVHNSQkdparDaily"]
 VAR = "kd_par"
+
+
+def _latest_kdpar_time(dataset):
+    """Try CoastWatch Central first, then the regional PFEG ERDDAP node."""
+    errors = []
+    for host in (BASE_CENTRAL, BASE):
+        try:
+            return latest_time(dataset, base=host)
+        except Exception as e:
+            errors.append(e)
+    raise errors[-1]
+
+
+def _fetch_kdpar(dataset, time_iso, bounds):
+    """Fetch one daily KdPAR grid with the same host fallback as time probing."""
+    errors = []
+    for host in (BASE_CENTRAL, BASE):
+        try:
+            return fetch_csv(dataset, VAR, time_iso,
+                             bounds["lat_min"], bounds["lat_max"],
+                             bounds["lon_min"], bounds["lon_max"],
+                             base=host)
+        except Exception as e:
+            errors.append(e)
+    raise errors[-1]
 # NOTE (2026-10-03): a MODIS Aqua Kd490 NRT daily fallback lived here briefly.
 # Removed: Kd490 (attenuation at 490 nm) reads numerically LOWER than KdPAR
 # (broadband PAR) for the same water, so mixed mosaics pinned whole lakes
@@ -157,7 +182,7 @@ def recent_times(n):
     errors = []
     for cand in DATASETS:
         try:
-            end = latest_time(cand)
+            end = _latest_kdpar_time(cand)
             end_dt = dt.datetime.fromisoformat(end.replace("Z", "+00:00"))
             if best is None or end_dt > best[0]:
                 best = (end_dt, cand)
@@ -247,9 +272,7 @@ def _build(bounds, times, dataset):
         g = None
         for ds in kdpar_order:
             try:
-                la, lo_n, g = fetch_csv(ds, VAR, t, bounds["lat_min"],
-                                        bounds["lat_max"], bounds["lon_min"],
-                                        bounds["lon_max"])
+                la, lo_n, g = _fetch_kdpar(ds, t, bounds)
                 day_sources[t] = ds
                 day_vars[t] = VAR
                 if ds != kdpar_order[0]:
