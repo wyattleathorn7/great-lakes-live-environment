@@ -193,6 +193,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The publisher may wait behind another Pages deploy; start from
+          # the latest committed full site once its deploy lock is acquired.
+          ref: main
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
@@ -254,6 +258,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The publisher may wait behind another Pages deploy; start from
+          # the latest committed full site once its deploy lock is acquired.
+          ref: main
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
