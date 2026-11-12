@@ -1,4 +1,5 @@
 name: Update Great Lakes live environment
+run-name: Update Great Lakes live environment (${{ inputs.product || 'all' }})
 
 on:
   # No GitHub schedules: every cadence is fired by the external
@@ -1063,7 +1064,8 @@ jobs:
         run: |
           python scripts/publish_guard.py \
             --base "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}" \
-            --site site
+            --site site \
+            --sync-live-fast
       - name: Validate outputs
         run: python scripts/validate_outputs.py
       - name: Offline self-tests
@@ -1096,9 +1098,7 @@ jobs:
         shell: bash
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
-        if: always()
         with:
           path: site
       - id: deployment
         uses: actions/deploy-pages@v5
-        if: always()
