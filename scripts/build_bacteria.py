@@ -50,6 +50,7 @@ Exit codes: 0 updated (or skipped); 2 source/validation failure
 import bisect
 import csv
 import datetime as dt
+import hashlib
 import io
 import json
 import math
@@ -302,7 +303,6 @@ def wqp_search(days=7, timeout=150):
     end = dt.date.today()
     start = end - dt.timedelta(days=days)
     params = {
-        "countrycode": "US",
         "bBox": "-93,40.5,-73.5,49.5",
         "startDateLo": start.strftime("%m-%d-%Y"),
         "startDateHi": end.strftime("%m-%d-%Y"),
@@ -494,7 +494,8 @@ def run():
         key = f"{o['station']}|{o['date']}|{o['value']}"
         if key > newest:
             newest = key
-    source_id = f"wqp-{dt.date.today().isoformat()}-n{len(obs_rows)}-{abs(hash(newest)) % 10_000_000:07d}-r{RENDER_VERSION}"
+    source_digest = hashlib.sha256(newest.encode("utf-8")).hexdigest()[:12]
+    source_id = f"wqp-{dt.date.today().isoformat()}-n{len(obs_rows)}-{source_digest}-r{RENDER_VERSION}"
     prev = read_state(PRODUCT)
     if (prev.get("source_id") == source_id
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png"))
