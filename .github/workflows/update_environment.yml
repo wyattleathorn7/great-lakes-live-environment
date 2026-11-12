@@ -2,11 +2,8 @@ name: Update Great Lakes live environment
 run-name: Update Great Lakes live environment (${{ inputs.product || 'all' }})
 
 on:
-  # External cron-job.org remains the primary trigger for sub-hourly and
-  # specialized cadences. Native daily fallback ensures daily-only source
-  # products still refresh if the external pinger is unavailable.
-  schedule:
-    - cron: "17 8 * * *"  # Daily at 08:17 UTC; deliberately off the hour.
+  # All cadence dispatches are owned by the existing external cron-job.org
+  # configuration. Do not add a second daily schedule here.
   workflow_dispatch:
     inputs:
       product:
@@ -67,7 +64,7 @@ jobs:
           if-no-files-found: warn
 
   water_temperature:
-    if: ${{ github.event_name == 'schedule' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'water_temperature' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'water_temperature' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -101,7 +98,7 @@ jobs:
           if-no-files-found: warn
 
   ice_coverage:
-    if: ${{ github.event_name == 'schedule' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'ice_coverage' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'ice_coverage' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -133,7 +130,7 @@ jobs:
           if-no-files-found: warn
 
   ice_thickness:
-    if: ${{ github.event_name == 'schedule' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'ice_thickness' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'ice_thickness' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -165,7 +162,7 @@ jobs:
           if-no-files-found: warn
 
   ice_type:
-    if: ${{ github.event_name == 'schedule' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'ice_type' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'ice_type' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -230,7 +227,7 @@ jobs:
           if-no-files-found: warn
 
   water_clarity:
-    if: ${{ github.event_name == 'schedule' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'water_clarity' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'water_clarity' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -296,7 +293,7 @@ jobs:
           if-no-files-found: warn
 
   snow_coverage:
-    if: ${{ github.event_name == 'schedule' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'snow_coverage' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'snow_coverage' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -522,7 +519,7 @@ jobs:
           if-no-files-found: warn
 
   bacteria:
-    if: ${{ github.event_name == 'schedule' || (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'bacteria' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'daily' || inputs.product == 'bacteria' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
