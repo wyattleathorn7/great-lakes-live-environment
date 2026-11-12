@@ -25,8 +25,13 @@ permissions:
 
 # Pinned to 24.04 for deterministic builds: GitHub migrates `ubuntu-latest`
 # to 26.04 beginning 2026-10-19, which must be validated before adopting.
+# Keep each cadence dispatch in its own queue. The daily, hourly, and
+# half-hourly cron jobs can fire at the same minute; one shared workflow
+# concurrency group would allow newer pending dispatches to replace the daily
+# run before its builders ever start. Pages deployments remain serialized by
+# the separate pages-publish job lock below.
 concurrency:
-  group: live-environment
+  group: live-environment-${{ inputs.product || 'all' }}
   cancel-in-progress: false
 
 jobs:
@@ -1012,6 +1017,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # This job may wait behind another cadence's Pages deployment.
+          # Start from the latest tree after acquiring the publish lock so
+          # this full-site deployment cannot revert products published ahead
+          # of it while its builders were running.
+          ref: main
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
