@@ -770,132 +770,127 @@ def _build(info, raw_path, source_id, preview_dir=None, font_size=7,
 
     if world_error is None:
         try:
-        from geospatial_utils import (bin_to_canvas, canvas_indices,
-                                      resample_gridded)
-        from na_common import blend_antimeridian
-        gbounds = load_global_bounds()
-        GH, GW = gbounds["canvas_height"], gbounds["canvas_width"]
-    
-        def _to_canvas(la1, lo1, grid):
-            _lo2, _la2 = np.meshgrid(np.asarray(lo1, dtype=float),
-                                     np.asarray(la1, dtype=float))
-            out = resample_gridded(np.asarray(grid, dtype=float),
-                                   _la2, _lo2, gbounds, (GH, GW))
-            # Kill the ±180° canvas-edge discontinuity (non-wrapping
-            # resampling lets the two Pacific edges diverge into a visible
-            # seam line); NaN-aware mirror-average of a 4 px band.
-            return blend_antimeridian(out)
-    
-        try:
+                from geospatial_utils import (bin_to_canvas, canvas_indices,
+                                              resample_gridded)
+            from na_common import blend_antimeridian
+            gbounds = load_global_bounds()
+            GH, GW = gbounds["canvas_height"], gbounds["canvas_width"]
+        
+            def _to_canvas(la1, lo1, grid):
+                _lo2, _la2 = np.meshgrid(np.asarray(lo1, dtype=float),
+                                         np.asarray(la1, dtype=float))
+                out = resample_gridded(np.asarray(grid, dtype=float),
+                                       _la2, _lo2, gbounds, (GH, GW))
+                # Kill the ±180° canvas-edge discontinuity (non-wrapping
+                # resampling lets the two Pacific edges diverge into a visible
+                # seam line); NaN-aware mirror-average of a 4 px band.
+                return blend_antimeridian(out)
+        
             _bfield = _to_canvas(_bla, _blo, _bsst)
             _mfield = _to_canvas(_mla, _mlo, _msst)
             _kfield = _to_canvas(_mla, _mlo, _mmsk)
-        except Exception as e:
-            print(f"[{PRODUCT}] VALIDATION FAILED: world resample failed "
-                  f"({type(e).__name__}: {e}). Keeping previous.")
-            return 2
-        _bvalid = (np.isfinite(_bfield) & (np.abs(_bfield + 327.68) > 1.0)
-                   & (_bfield >= -2.0) & (_bfield <= 40.0))
-        _mvalid = (np.isfinite(_mfield) & (np.abs(_mfield + 7.768) > 0.01)
-                   & (_mfield >= -3.0) & (_mfield <= 40.0))
-        _lakebit = (np.isfinite(_kfield)
-                    & (np.round(_kfield).astype(np.int32) == MUR_LAKE_MASK))
-        print(f"[{PRODUCT}] blended valid water cells={int(_bvalid.sum())}, "
-              f"MUR lake cells={int((_mvalid & _lakebit).sum())} of {GH*GW}")
-        _bf = np.full((GH, GW), np.nan)
-        _bf[_bvalid] = _bfield[_bvalid] * 9.0 / 5.0 + 32.0
-        _mf = np.full((GH, GW), np.nan)
-        _mf[_mvalid & _lakebit] = _mfield[_mvalid & _lakebit] * 9.0 / 5.0 + 32.0
-        del _bsst, _msst, _mmsk, _bfield, _mfield, _kfield
-        # GLSEA wins everywhere valid (mean-binned onto the global canvas).
-        _grows, _gcols, _gpos = canvas_indices(lats, lons, gbounds)
-        _glmean, _glcnt = bin_to_canvas(_grows, _gcols,
-                                        np.asarray(values_f, dtype=float),
-                                        _gpos & np.isfinite(
-                                            np.asarray(values_f).ravel()),
-                                        (GH, GW), splat_radius=0)
-        _glok = (_glcnt > 0) & np.isfinite(_glmean)
-        _comp = _bf
-        _lakeonly = _mf
-        _comp[np.isfinite(_mf)] = _mf[np.isfinite(_mf)]
-        _comp[_glok] = _glmean[_glok]
-        _lakeonly[_glok] = _glmean[_glok]
-        print(f"[{PRODUCT}] GLSEA override cells on world canvas="
-              f"{int(_glok.sum())}")
-        _n_ocn = int(np.isfinite(_comp).sum())
-        _n_lak = int(np.isfinite(_lakeonly).sum())
-        print(f"[{PRODUCT}] world populations: ocean={_n_ocn} lakes={_n_lak}")
-        np.savez_compressed(os.path.join(RAW_DIR, "water_temperature_world.npz"),
-                            blended_time=np.array(blended_time),
-                            mur_time=np.array(mur_time),
-                            global_f=_comp, continental_f=_lakeonly)
-        if _n_ocn < 50_000 or _n_lak < 500:
-            raise ValueError(f"implausible world coverage (ocean={_n_ocn}, lakes={_n_lak})")
-        from geospatial_utils import iso_to_det
-        _blend_det = iso_to_det(blended_time) or blended_time
-        _mur_det = iso_to_det(mur_time) or mur_time
-        blended_id = f"blended-{blended_time}"
-        mur_id = f"mur-{mur_time}"
-        _wstatus = ("LATEST AVAILABLE (daily analyses; blended typically "
-                    "~3-day latency, MUR typically ~2-day latency)")
-        _wsource = (f"{CONFIG.get('mur_source_name', 'MUR SST')} (lakes) + "
-                    f"{CONFIG.get('ocean_source_name', 'blended SST')} "
-                    f"(oceans/seas) + {CONFIG['source_name']} (Great Lakes)")
-        _wurl = CONFIG.get("mur_source_url", CONFIG.get(
-            "ocean_source_url", GLSEA_URL))
-        _ocean_token = source_token(
-            f"{blended_id}-{mur_id}-r{RENDER_VERSION}-tempvals-global-nofloor")
-        _lake_token = source_token(
-            f"{mur_id}-r{RENDER_VERSION}-tempvals-continental")
-        _con_scope = ("Endpoints are recomputed every run from this coverage's "
-                      "own tracked inland-lake water only (MUR open-lake cells "
-                      "plus Great Lakes GLSEA cells; 1st/99th percentiles, "
-                      "clamped 32–86°F, linear mapping between them). Ocean "
-                      "water is excluded from this distribution, so the same "
-                      "color stands for a different °F than in the other "
-                      "coverages — only the printed numbers are absolute. "
-                      "Lakes below the fetch sampling, frozen lakes outside "
-                      "the open-lake mask state, and rivers stay transparent "
-                      "and are never fabricated.")
-        _glo_scope = ("Endpoints are recomputed every run from all valid water "
-                      "across this coverage's supported global dataset (oceans "
-                      "and seas from blended SST, inland lakes from MUR, Great "
-                      "Lakes from GLSEA; each observation counted once; "
-                      "1st/99th percentiles with floor/ceil rounding; low end "
-                      "unclamped so polar water (~28°F) reads correctly, high "
-                      "end clamped 86°F; linear mapping between them). The same "
-                      "color stands for a different °F than in the other "
-                      "coverages — only the printed numbers are absolute. "
-                      "Unsupported or unobserved water stays transparent and is "
-                      "never fabricated.")
-        _con_vals = _lakeonly[np.isfinite(_lakeonly)]
-        _glo_vals = _comp[np.isfinite(_comp)]
-        _con_scale = _scale_html(*_endpoints_f(_con_vals, 32.0, 86.0),
-                                 float(np.mean(_con_vals)),
-                                 "Continental Lake Coverage", _con_scope)
-        _glo_scale = _scale_html(*_endpoints_f(_glo_vals, None, 86.0),
-                                 float(np.mean(_glo_vals)),
-                                 "Extended Oceanic Coverage", _glo_scope)
-        _con_meta, _con_vmin, _con_vmax, _con_px = _render_world_variant(
-            "landonly", _lakeonly, gbounds,
-            os.path.join(stage, "site", WT_DIRS["landonly"]), _lake_token,
-            _con_scale, _wstatus, _wsource, _wurl,
-            f"MUR {_mur_det}; blended {_blend_det}", CONFIG["title"],
-            font_size=font_size, extra_thresh=extra_thresh, max_labels=300,
-            sparse_water=True,
-            legend_title="CONTINENTAL LAKE WATER TEMPERATURE")
-        _glo_meta, _glo_vmin, _glo_vmax, _glo_px = _render_world_variant(
-            "global", _comp, gbounds,
-            os.path.join(stage, "site", WT_DIRS["global"]), _ocean_token,
-            _glo_scale, _wstatus, _wsource, _wurl,
-            f"MUR {_mur_det}; blended {_blend_det}", CONFIG["title"],
-            font_size=font_size, extra_thresh=extra_thresh, max_labels=1000,
-            lo_clamp=None, hi_clamp=86.0, priority_cap=300,
-            legend_title="EXTENDED OCEAN WATER TEMPERATURE")
-        if min(_con_px, _glo_px) < 5_000:
-            raise ValueError(f"world raster has too few water pixels (continental={_con_px}, global={_glo_px})")
-    
-    
+            _bvalid = (np.isfinite(_bfield) & (np.abs(_bfield + 327.68) > 1.0)
+                       & (_bfield >= -2.0) & (_bfield <= 40.0))
+            _mvalid = (np.isfinite(_mfield) & (np.abs(_mfield + 7.768) > 0.01)
+                       & (_mfield >= -3.0) & (_mfield <= 40.0))
+            _lakebit = (np.isfinite(_kfield)
+                        & (np.round(_kfield).astype(np.int32) == MUR_LAKE_MASK))
+            print(f"[{PRODUCT}] blended valid water cells={int(_bvalid.sum())}, "
+                  f"MUR lake cells={int((_mvalid & _lakebit).sum())} of {GH*GW}")
+            _bf = np.full((GH, GW), np.nan)
+            _bf[_bvalid] = _bfield[_bvalid] * 9.0 / 5.0 + 32.0
+            _mf = np.full((GH, GW), np.nan)
+            _mf[_mvalid & _lakebit] = _mfield[_mvalid & _lakebit] * 9.0 / 5.0 + 32.0
+            del _bsst, _msst, _mmsk, _bfield, _mfield, _kfield
+            # GLSEA wins everywhere valid (mean-binned onto the global canvas).
+            _grows, _gcols, _gpos = canvas_indices(lats, lons, gbounds)
+            _glmean, _glcnt = bin_to_canvas(_grows, _gcols,
+                                            np.asarray(values_f, dtype=float),
+                                            _gpos & np.isfinite(
+                                                np.asarray(values_f).ravel()),
+                                            (GH, GW), splat_radius=0)
+            _glok = (_glcnt > 0) & np.isfinite(_glmean)
+            _comp = _bf
+            _lakeonly = _mf
+            _comp[np.isfinite(_mf)] = _mf[np.isfinite(_mf)]
+            _comp[_glok] = _glmean[_glok]
+            _lakeonly[_glok] = _glmean[_glok]
+            print(f"[{PRODUCT}] GLSEA override cells on world canvas="
+                  f"{int(_glok.sum())}")
+            _n_ocn = int(np.isfinite(_comp).sum())
+            _n_lak = int(np.isfinite(_lakeonly).sum())
+            print(f"[{PRODUCT}] world populations: ocean={_n_ocn} lakes={_n_lak}")
+            np.savez_compressed(os.path.join(RAW_DIR, "water_temperature_world.npz"),
+                                blended_time=np.array(blended_time),
+                                mur_time=np.array(mur_time),
+                                global_f=_comp, continental_f=_lakeonly)
+            if _n_ocn < 50_000 or _n_lak < 500:
+                raise ValueError(f"implausible world coverage (ocean={_n_ocn}, lakes={_n_lak})")
+            from geospatial_utils import iso_to_det
+            _blend_det = iso_to_det(blended_time) or blended_time
+            _mur_det = iso_to_det(mur_time) or mur_time
+            blended_id = f"blended-{blended_time}"
+            mur_id = f"mur-{mur_time}"
+            _wstatus = ("LATEST AVAILABLE (daily analyses; blended typically "
+                        "~3-day latency, MUR typically ~2-day latency)")
+            _wsource = (f"{CONFIG.get('mur_source_name', 'MUR SST')} (lakes) + "
+                        f"{CONFIG.get('ocean_source_name', 'blended SST')} "
+                        f"(oceans/seas) + {CONFIG['source_name']} (Great Lakes)")
+            _wurl = CONFIG.get("mur_source_url", CONFIG.get(
+                "ocean_source_url", GLSEA_URL))
+            _ocean_token = source_token(
+                f"{blended_id}-{mur_id}-r{RENDER_VERSION}-tempvals-global-nofloor")
+            _lake_token = source_token(
+                f"{mur_id}-r{RENDER_VERSION}-tempvals-continental")
+            _con_scope = ("Endpoints are recomputed every run from this coverage's "
+                          "own tracked inland-lake water only (MUR open-lake cells "
+                          "plus Great Lakes GLSEA cells; 1st/99th percentiles, "
+                          "clamped 32–86°F, linear mapping between them). Ocean "
+                          "water is excluded from this distribution, so the same "
+                          "color stands for a different °F than in the other "
+                          "coverages — only the printed numbers are absolute. "
+                          "Lakes below the fetch sampling, frozen lakes outside "
+                          "the open-lake mask state, and rivers stay transparent "
+                          "and are never fabricated.")
+            _glo_scope = ("Endpoints are recomputed every run from all valid water "
+                          "across this coverage's supported global dataset (oceans "
+                          "and seas from blended SST, inland lakes from MUR, Great "
+                          "Lakes from GLSEA; each observation counted once; "
+                          "1st/99th percentiles with floor/ceil rounding; low end "
+                          "unclamped so polar water (~28°F) reads correctly, high "
+                          "end clamped 86°F; linear mapping between them). The same "
+                          "color stands for a different °F than in the other "
+                          "coverages — only the printed numbers are absolute. "
+                          "Unsupported or unobserved water stays transparent and is "
+                          "never fabricated.")
+            _con_vals = _lakeonly[np.isfinite(_lakeonly)]
+            _glo_vals = _comp[np.isfinite(_comp)]
+            _con_scale = _scale_html(*_endpoints_f(_con_vals, 32.0, 86.0),
+                                     float(np.mean(_con_vals)),
+                                     "Continental Lake Coverage", _con_scope)
+            _glo_scale = _scale_html(*_endpoints_f(_glo_vals, None, 86.0),
+                                     float(np.mean(_glo_vals)),
+                                     "Extended Oceanic Coverage", _glo_scope)
+            _con_meta, _con_vmin, _con_vmax, _con_px = _render_world_variant(
+                "landonly", _lakeonly, gbounds,
+                os.path.join(stage, "site", WT_DIRS["landonly"]), _lake_token,
+                _con_scale, _wstatus, _wsource, _wurl,
+                f"MUR {_mur_det}; blended {_blend_det}", CONFIG["title"],
+                font_size=font_size, extra_thresh=extra_thresh, max_labels=300,
+                sparse_water=True,
+                legend_title="CONTINENTAL LAKE WATER TEMPERATURE")
+            _glo_meta, _glo_vmin, _glo_vmax, _glo_px = _render_world_variant(
+                "global", _comp, gbounds,
+                os.path.join(stage, "site", WT_DIRS["global"]), _ocean_token,
+                _glo_scale, _wstatus, _wsource, _wurl,
+                f"MUR {_mur_det}; blended {_blend_det}", CONFIG["title"],
+                font_size=font_size, extra_thresh=extra_thresh, max_labels=1000,
+                lo_clamp=None, hi_clamp=86.0, priority_cap=300,
+                legend_title="EXTENDED OCEAN WATER TEMPERATURE")
+            if min(_con_px, _glo_px) < 5_000:
+                raise ValueError(f"world raster has too few water pixels (continental={_con_px}, global={_glo_px})")
+        
+        
         except Exception as e:
             world_error = e
 
