@@ -196,7 +196,7 @@ jobs:
           if-no-files-found: warn
 
   leaf_color:
-    if: ${{ (inputs.product == 'all' || inputs.product == 'weekly') || inputs.product == 'leaf_color' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental' || inputs.product == 'weekly') || inputs.product == 'leaf_color' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -618,7 +618,7 @@ jobs:
           if-no-files-found: warn
 
   light_pollution:
-    if: ${{ (inputs.product == 'all' || inputs.product == 'yearly') || inputs.product == 'light_pollution' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental' || inputs.product == 'yearly') || inputs.product == 'light_pollution' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -996,6 +996,11 @@ jobs:
           [ "$code" = "204" ] || echo "::warning::NOAA chain dispatch returned $code (expected 204)"
 
   publish:
+    # Shared with fast_publish so full-site and fast-lane Pages deployments
+    # cannot overwrite one another while either is in flight.
+    concurrency:
+      group: pages-publish
+      cancel-in-progress: false
     needs: [wave_height, water_temperature, ice_coverage, ice_thickness, ice_type, leaf_color, water_clarity, solar_radiation, snow_coverage, uv_index, surface_pressure, wave_direction, wave_combined, surface_currents, aurora_global, bacteria, visibility, humidity, light_pollution, air_quality, condensation, fog, dew_point, wind_na, air_temperature_na, cloud_cover_na, precipitation_na, gamefish]
     # Publish whatever succeeded; a single-product failure must not block
     # the other products from reaching GitHub Pages.
