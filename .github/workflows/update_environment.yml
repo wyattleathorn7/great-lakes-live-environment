@@ -856,7 +856,7 @@ jobs:
     # committed snapshot has to be kept fresh by some main cadence;
     # without this, halfhourly/hourly deploys grafted 5-min-layers back to
     # 16 days old (observed 2026-10-16 -> 2026-11-01 freeze).
-    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'cloud_cover_na' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'cloud_cover_na' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -893,7 +893,7 @@ jobs:
   precipitation_na:
     # Same reason as cloud_cover_na above: keep the committed copy fresh so
     # main-workflow deploys cannot graft the 5-min layers back in time.
-    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'halfhourly' || inputs.product == 'precipitation_na' }}
+    if: ${{ (inputs.product == 'all' || inputs.product == 'environmental') || inputs.product == 'precipitation_na' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
