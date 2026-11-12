@@ -255,34 +255,59 @@ def _save_station_cache(lookup):
         pass
 
 
-def wqp_station_coords(sids, timeout=120):
-    """Resolve station ids -> (lat, lon, name) via chunked siteid queries.
-
-    A basin-wide Station search is too heavy for an hourly job, so only
-    the stations actually seen in the current result window are resolved
-    (typically dozens), merged with the persistent cache in
-    output/state/bacteria_stations.json.
-    """
-    cached = _load_station_cache()
-    missing = [s for s in set(sids) if s not in cached]
-    for i in range(0, len(missing), 25):
-        chunk = missing[i:i + 25]
-        params = {"siteid": ";".join(chunk), "mimeType": "csv", "zip": "no"}
+def _query_wqp_station_chunk(site_ids, timeout=120, wqx3=True):
+    """Fetch site metadata from WQX3 first, legacy WQP second at caller."""
+    if wqx3:
+        # Multiple site ids are repeated query parameters in the WQP API.
+        params = [("siteid", sid) for sid in site_ids]
+        params.extend([
+            ("mimeType", "csv"),
+            ("providers", "NWIS"),
+            ("providers", "STORET"),
+        ])
+        url = ("https://waterqualitydata.us/wqx3/Station/search?"
+               + urllib.parse.urlencode(params))
+    else:
+        params = {"siteid": ";".join(site_ids), "mimeType": "csv", "zip": "no"}
         url = ("https://www.waterqualitydata.us/data/Station/search?"
                + urllib.parse.urlencode(params))
+    return _fetch_csv(url, timeout=timeout), url
+
+
+def wqp_station_coords(sids, timeout=120):
+    """Resolve result MonitoringLocationIdentifier values to site coordinates.
+
+    WQX3 fullPhysChem result rows intentionally expose station IDs, not the
+    station coordinate fields. Coordinates are obtained from the separate
+    WQX3 Site Data Only / Station search. Legacy WQX2 Station search remains
+    a fallback, and resolved sites are cached between hourly refreshes.
+    """
+    cached = _load_station_cache()
+    missing = [sid for sid in set(sids) if sid not in cached]
+    for i in range(0, len(missing), 25):
+        chunk = missing[i:i + 25]
         try:
-            body = _fetch_csv(url, timeout=timeout)
-        except Exception as e:
-            print(f"[{PRODUCT}] station chunk failed ({e}); using cache.")
-            break
+            body, _url = _query_wqp_station_chunk(chunk, timeout, wqx3=True)
+        except Exception as wqx3_error:
+            print(f"[{PRODUCT}] WQX3 station lookup failed "
+                  f"({type(wqx3_error).__name__}: {wqx3_error}); trying legacy.")
+            try:
+                body, _url = _query_wqp_station_chunk(chunk, timeout, wqx3=False)
+            except Exception as legacy_error:
+                print(f"[{PRODUCT}] legacy station chunk failed "
+                      f"({type(legacy_error).__name__}: {legacy_error}); using cache.")
+                continue
         for rec in csv.DictReader(io.StringIO(body)):
             try:
-                sid = (rec.get("MonitoringLocationIdentifier") or "").strip()
-                lat = float(rec.get("LatitudeMeasure", ""))
-                lon = float(rec.get("LongitudeMeasure", ""))
+                sid = _record_value(rec, "MonitoringLocationIdentifier")
+                lat = float(_record_value(rec, "LatitudeMeasure"))
+                lon = float(_record_value(rec, "LongitudeMeasure"))
                 if not sid or not (-93.5 <= lon <= -73.0 and 40.0 <= lat <= 50.0):
                     continue
-                cached[sid] = (lat, lon, (rec.get("MonitoringLocationName") or "")[:100])
+                cached[sid] = (
+                    lat, lon,
+                    _record_value(rec, "MonitoringLocationName")[:100]
+                )
             except (ValueError, TypeError):
                 continue
     if missing:
@@ -363,62 +388,34 @@ def wqp_search(days=7, timeout=150):
     raw_sids = []
     prelim = []
     for rec in csv.DictReader(io.StringIO(body)):
-        char = _record_value(rec, "Result_Characteristic", "CharacteristicName")
+        char = _record_value(rec, "CharacteristicName")
         if classify_indicator(char) is None:
             continue
-        sid = _record_value(rec, "Location_Identifier",
-                            "MonitoringLocationIdentifier")
-        if not sid:
-            continue
-        # WQX3 fullPhysChem carries standardized station coordinates in the
-        # result row. Only call the separate station endpoint for legacy rows
-        # or WQX3 rows that have no usable coordinates.
-        try:
-            lat = float(_record_value(rec, "Location_Latitude",
-                                      "LatitudeMeasure"))
-            lon = float(_record_value(rec, "Location_Longitude",
-                                      "LongitudeMeasure"))
-            coord_ok = (-93.5 <= lon <= -73.0 and 40.0 <= lat <= 50.0)
-        except (ValueError, TypeError):
-            coord_ok = False
-        if not coord_ok:
+        sid = _record_value(rec, "MonitoringLocationIdentifier")
+        if sid:
             raw_sids.append(sid)
-        prelim.append(rec)
-    stations = wqp_station_coords(raw_sids, timeout=timeout) if raw_sids else {}
+            prelim.append(rec)
+    # WQX3 fullPhysChem has station IDs but not station coordinates.
+    # Resolve only the stations present in this 7-day result window.
+    stations = wqp_station_coords(raw_sids, timeout=timeout)
     rows = []
     for rec in prelim:
         try:
-            char = _record_value(rec, "Result_Characteristic",
-                                 "CharacteristicName")
-            sid = _record_value(rec, "Location_Identifier",
-                                "MonitoringLocationIdentifier")
-            try:
-                lat = float(_record_value(rec, "Location_Latitude",
-                                          "LatitudeMeasure"))
-                lon = float(_record_value(rec, "Location_Longitude",
-                                          "LongitudeMeasure"))
-                sname = _record_value(rec, "Location_Name",
-                                      "MonitoringLocationName")
-                coord_ok = (-93.5 <= lon <= -73.0 and 40.0 <= lat <= 50.0)
-            except (ValueError, TypeError):
-                coord_ok = False
-            if not coord_ok:
-                if sid not in stations:
-                    continue
-                lat, lon, sname = stations[sid]
-            v = _record_value(rec, "Result_Measure", "ResultMeasureValue")
+            char = _record_value(rec, "CharacteristicName")
+            sid = _record_value(rec, "MonitoringLocationIdentifier")
+            if sid not in stations:
+                continue
+            lat, lon, sname = stations[sid]
+            v = _record_value(rec, "ResultMeasureValue")
             censored = False
             if not v or v.lower() in ("*", "**", "na", "n/a"):
-                cond = _record_value(
-                    rec, "Result_ResultDetectionCondition",
-                    "ResultDetectionConditionText").lower()
+                cond = _record_value(rec, "ResultDetectionConditionText").lower()
                 if ("not detect" in cond or "below" in cond or
                         "non-detect" in cond or "non detect" in cond or
                         "detected not quantified" in cond):
                     try:
                         lim_raw = _record_value(
-                            rec, "DetectionLimit_MeasureA",
-                            "DetectionQuantitationLimitMeasure/MeasureValue")
+                            rec, "DetectionQuantitationLimitMeasure/MeasureValue")
                         lim = float(lim_raw) if lim_raw else 10.0
                         val = lim if math.isfinite(lim) and lim > 0 else 10.0
                     except (ValueError, TypeError):
@@ -432,14 +429,13 @@ def wqp_search(days=7, timeout=150):
                 except ValueError:
                     continue
             unit = _record_value(
-                rec, "Result_MeasureUnit", "ResultMeasure/MeasureUnitCode"
+                rec, "ResultMeasure/MeasureUnitCode"
             ).lower().replace(" ", "")
             if "100ml" not in unit and "ml" not in unit:
                 continue
             if not (math.isfinite(val) and 0 <= val <= 1_000_000):
                 continue
-            date = _record_value(rec, "Activity_StartDate",
-                                  "Activity_StartDateTime", "ActivityStartDate")
+            date = _record_value(rec, "ActivityStartDate")
             if not date:
                 continue
             rows.append({
