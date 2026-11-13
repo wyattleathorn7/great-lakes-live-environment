@@ -4,11 +4,11 @@
   "freshness": "LIVE / CURRENT MODEL (analysis)",
   "noaa_source": "NOAA/NCEP HRRR 3 km snow analysis (SNOD snow depth + SNOWC snow cover), hourly cycles",
   "product_name": "NOAA/NCEP HRRR 3 km snow analysis (SNOD snow depth + SNOWC snow cover), hourly cycles",
-  "variable": "SNOD snow depth (m) gated by SNOWC snow cover (%), analysis step: COLOR = confirmed snow on the ground; hrrr.20261107 t07z",
+  "variable": "SNOD snow depth (m) gated by SNOWC snow cover (%), analysis step: COLOR = confirmed snow on the ground; hrrr.20261113 t07z",
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
-  "data_time_utc": "2026-11-07 02:00 AM EST",
+  "data_time_utc": "2026-11-13 02:00 AM EST",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-11-07 03:25 AM EST",
+  "processing_time_utc": "2026-11-13 03:00 AM EST",
   "units": "in (display); source m",
   "spatial_resolution_source": "~3 km HRRR Lambert grid (1799x1059)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -30,28 +30,28 @@
     230
   ],
   "legend_scale_html": "Snow depth on the ground (in), continuous: <b>LOWEST 0</b> (silver-gray) \u2192 <b>HIGHEST+ 24</b> (white extreme). Shows snow currently on the ground. Falling snow, clouds, precipitation without confirmed ground snow, and uncertain observations are transparent.",
-  "model_cycle": "hrrr.20261107 t07z",
-  "source_id": "hrrr-hrrr.20261107-t07z-r13",
-  "source_version": "hrrr-hrrr.20261107-t07z-r13",
+  "model_cycle": "hrrr.20261113 t07z",
+  "source_id": "hrrr-hrrr.20261113-t07z-r13",
+  "source_version": "hrrr-hrrr.20261113-t07z-r13",
   "historical": {
     "low": 0.0,
     "high": 24.0,
     "percentiles": {
       "p5": 0.1181102991104126,
-      "p25": 0.2952757477760315,
-      "p50": 0.8661422,
-      "p75": 1.4960638,
-      "p95": 2.5000014305114746,
-      "p99": 3.9763801097869873
+      "p25": 0.2559056580066681,
+      "p50": 0.6889767646789551,
+      "p75": 1.4370086193084717,
+      "p95": 3.3858286000000004,
+      "p99": 6.6931138504999685
     },
-    "n_obs": 56063,
+    "n_obs": 76063,
     "provisional": true,
     "extends": []
   },
   "stats": {
-    "snow_pixels": 24703,
+    "snow_pixels": 189522,
     "current_min": 0.08858272500000001,
-    "current_max": 4.0157502
+    "current_max": 12.5196918
   },
-  "folder_html": "<h2>\u2744\ufe0f LIVE SNOW COVERAGE</h2><p>Shows snow currently on the ground. Falling snow, clouds, precipitation without confirmed ground snow, and uncertain observations are transparent.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/snow_coverage/legend.png?v=hrrr-hrrr.20261107-t07z-r13\" width=\"600\" alt=\"key\"></p><p>Snow depth on the ground (in), continuous: <b>LOWEST 0</b> (silver-gray) \u2192 <b>HIGHEST+ 24</b> (white extreme). Shows snow currently on the ground. Falling snow, clouds, precipitation without confirmed ground snow, and uncertain observations are transparent.</p><p><b>Units:</b> in (source metres)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km snow analysis (SNOD snow depth + SNOWC snow cover), hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-11-07 02:00 AM EST<br/><b>Processed:</b> 2026-11-07 03:25 AM EST<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
+  "folder_html": "<h2>\u2744\ufe0f LIVE SNOW COVERAGE</h2><p>Shows snow currently on the ground. Falling snow, clouds, precipitation without confirmed ground snow, and uncertain observations are transparent.</p><p><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/snow_coverage/legend.png?v=hrrr-hrrr.20261113-t07z-r13\" width=\"600\" alt=\"key\"></p><p>Snow depth on the ground (in), continuous: <b>LOWEST 0</b> (silver-gray) \u2192 <b>HIGHEST+ 24</b> (white extreme). Shows snow currently on the ground. Falling snow, clouds, precipitation without confirmed ground snow, and uncertain observations are transparent.</p><p><b>Units:</b> in (source metres)<br/><b>Source:</b> NOAA/NCEP HRRR 3 km snow analysis (SNOD snow depth + SNOWC snow cover), hourly cycles<br/><b>Update:</b> hourly analysis cycles<br/><b>Data time:</b> 2026-11-13 02:00 AM EST<br/><b>Processed:</b> 2026-11-13 03:00 AM EST<br/><b>Provenance:</b> <a href=\"https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl\">NOMADS HRRR</a></p>"
 }
