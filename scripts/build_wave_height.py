@@ -308,7 +308,7 @@ def run():
     raw_path = os.path.join(RAW_DIR, "glwu_current.grib2")
     # Detect the newest AVAILABLE cycle first (KB .idx probes, no bulk
     # download). Unchanged stamp -> keep the published raster without
-    # downloading the 66 MB file again.
+    # downloading the full short-range GRIB2 file again.
     pick = newest_available_cycle(now, "HTSGW")
     if pick is None:
         print(f"[{PRODUCT}] NO CYCLE AVAILABLE (keeping previous).")
