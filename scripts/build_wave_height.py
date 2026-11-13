@@ -208,47 +208,71 @@ def ff(x):
 
 
 def candidate_urls(now):
+    """Hourly short-range candidates first, then the established long-range fallback.
+
+    NOAA publishes the 2.5-km short-range GLWU file every hour (FH00-48).
+    Probe the most recent 12 hourly cycles newest-first; if they are not
+    available, retain the existing four-times-daily long-range source path.
+    """
+    now = now.astimezone(timezone.utc)
     urls = []
+    short_pattern = CONFIG["file_pattern"].replace(
+        ".t{cycle}z.grib2", "_sr.t{cycle}z.grib2")
+    hour = now.replace(minute=0, second=0, microsecond=0)
+    for offset in range(12):
+        d = hour - timedelta(hours=offset)
+        datestr = d.strftime("%Y%m%d")
+        cycle = d.strftime("%H")
+        urls.append((
+            short_pattern.format(
+                date_dir=f"glwu.{datestr}", cycle=cycle),
+            datestr, cycle, "short"))
     for d in (now, now - timedelta(days=1)):
         datestr = d.strftime("%Y%m%d")
         for cycle in CONFIG["cycles_try_order"]:
             urls.append((
                 CONFIG["file_pattern"].format(
                     date_dir=f"glwu.{datestr}", cycle=cycle),
-                datestr, cycle))
+                datestr, cycle, "long"))
     return urls
 
 
 GLWU_UA = {"User-Agent": "great-lakes-live-environment/1.0"}
 
 
-def newest_available_cycle(now, var="HTSGW", label=None):
-    """Newest available GLWU analysis from cheap .idx probes.
+def _idx_has_current_htsgw(line, var="HTSGW", product_kind="long"):
+    """Recognize current HTSGW: long-range analysis or short-range FH00."""
+    p = line.split(":")
+    if len(p) <= 5 or p[3] != var or p[4] != "surface":
+        return False
+    if product_kind == "short":
+        return bool(re.search(r":0(?:-0)? hour fcst:", line))
+    return ":anl:" in line
 
-    Each candidate's .idx (KBs, not the 66 MB GRIB2) carries the analysis
-    stamp (``d=YYYYMMDDHH``) on its ``:anl:`` lines. Returns
-    (url, datestr, cycle, stamp) for the newest stamp, or None. The stamp
-    -- not the workflow schedule -- is what identifies the source cycle.
+
+def newest_available_cycle(now, var="HTSGW", label=None):
+    """Newest available current GLWU wave field from cheap .idx probes.
+
+    Short-range hourly files expose their initialization field as forecast
+    hour 0; the four daily long-range files expose it as an analysis. Only
+    those current-time fields qualify -- later forecast hours are never
+    substituted. Returns (url, datestr, cycle, stamp), or None.
     """
-    best = None
     tag = label or PRODUCT
-    for url, dd, cc in candidate_urls(now):
+    for url, dd, cc, kind in candidate_urls(now):
         try:
             req = urllib.request.Request(url + ".idx", headers=GLWU_UA)
-            with urllib.request.urlopen(req, timeout=30) as r:
+            with urllib.request.urlopen(req, timeout=12) as r:
                 idx = r.read().decode("utf-8", errors="replace").splitlines()
             for line in idx:
-                p = line.split(":")
-                if len(p) > 5 and p[3] == var and "surface" in line \
-                        and ":anl:" in line:
+                if _idx_has_current_htsgw(line, var, kind):
                     m = re.search(r"d=(\d{10})", line)
-                    if m and (best is None or m.group(1) > best[3]):
-                        best = (url, dd, cc, m.group(1))
+                    if m:
+                        return (url, dd, cc, m.group(1))
                     break
         except Exception as e:
-            print(f"[{tag}] idx probe {dd} t{cc}z: {str(e)[:100]}")
-    return best
-
+            print(f"[{tag}] {kind} idx probe {dd} t{cc}z: {str(e)[:100]}")
+    return None
 
 def cycle_source_id(stamp):
     return f"glwu-{stamp[:8]}-{stamp[8:]}00Z"
