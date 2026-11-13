@@ -208,32 +208,31 @@ def ff(x):
 
 
 def candidate_urls(now):
-    """Hourly short-range candidates first, then the established long-range fallback.
+    """Recent GLWU hourly cycle candidates, newest run first.
 
-    NOAA publishes the 2.5-km short-range GLWU file every hour (FH00-48).
-    Probe the most recent 12 hourly cycles newest-first; if they are not
-    available, retain the existing four-times-daily long-range source path.
+    NOAA publishes 20 short-range cycles per day (00-48 h forecasts).
+    The four 01/07/13/19 UTC cycles remain the long-range product
+    (through 149 h). Select the correct file type for each scheduled
+    hourly cycle rather than searching all short cycles before all long
+    cycles, which could accidentally choose an older long-range run.
     """
     now = now.astimezone(timezone.utc)
     urls = []
     short_pattern = CONFIG["file_pattern"].replace(
         ".t{cycle}z.grib2", "_sr.t{cycle}z.grib2")
+    long_cycles = {str(c).zfill(2) for c in CONFIG["cycles_try_order"]}
     hour = now.replace(minute=0, second=0, microsecond=0)
     for offset in range(12):
         d = hour - timedelta(hours=offset)
         datestr = d.strftime("%Y%m%d")
         cycle = d.strftime("%H")
+        if cycle in long_cycles:
+            pattern, kind = CONFIG["file_pattern"], "long"
+        else:
+            pattern, kind = short_pattern, "short"
         urls.append((
-            short_pattern.format(
-                date_dir=f"glwu.{datestr}", cycle=cycle),
-            datestr, cycle, "short"))
-    for d in (now, now - timedelta(days=1)):
-        datestr = d.strftime("%Y%m%d")
-        for cycle in CONFIG["cycles_try_order"]:
-            urls.append((
-                CONFIG["file_pattern"].format(
-                    date_dir=f"glwu.{datestr}", cycle=cycle),
-                datestr, cycle, "long"))
+            pattern.format(date_dir=f"glwu.{datestr}", cycle=cycle),
+            datestr, cycle, kind))
     return urls
 
 
@@ -253,10 +252,11 @@ def _idx_has_current_htsgw(line, var="HTSGW", product_kind="long"):
 def newest_available_cycle(now, var="HTSGW", label=None):
     """Newest available current GLWU wave field from cheap .idx probes.
 
-    Short-range hourly files expose their initialization field as forecast
-    hour 0; the four daily long-range files expose it as an analysis. Only
-    those current-time fields qualify -- later forecast hours are never
-    substituted. Returns (url, datestr, cycle, stamp), or None.
+    Probe consecutive scheduled hourly cycles newest-first. Each candidate
+    uses the matching short- or long-range file for that UTC cycle. Short
+    range qualifies only at forecast hour 0; long range qualifies only on
+    its analysis field. Older forecast hours are never substituted.
+    Returns (url, datestr, cycle, stamp), or None.
     """
     tag = label or PRODUCT
     for url, dd, cc, kind in candidate_urls(now):
