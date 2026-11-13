@@ -208,70 +208,61 @@ def ff(x):
 
 
 def candidate_urls(now):
-    """Recent GLWU hourly cycle candidates, newest run first.
+    """Recent NOAA GLWU short-range hourly cycles, newest first.
 
-    NOAA publishes 20 short-range cycles per day (00-48 h forecasts).
-    The four 01/07/13/19 UTC cycles remain the long-range product
-    (through 149 h). Select the correct file type for each scheduled
-    hourly cycle rather than searching all short cycles before all long
-    cycles, which could accidentally choose an older long-range run.
+    This layer uses the short-range product only. NOAA does not issue this
+    product at 01/07/13/19 UTC (those are long-range-only cycles), so skip
+    those hours and look back for the latest available short-range run.
     """
     now = now.astimezone(timezone.utc)
+    short_pattern = CONFIG["file_pattern"]
+    if "_sr.t{cycle}z.grib2" not in short_pattern:
+        short_pattern = short_pattern.replace(
+            ".t{cycle}z.grib2", "_sr.t{cycle}z.grib2")
+    long_only_cycles = {"01", "07", "13", "19"}
     urls = []
-    short_pattern = CONFIG["file_pattern"].replace(
-        ".t{cycle}z.grib2", "_sr.t{cycle}z.grib2")
-    long_cycles = {str(c).zfill(2) for c in CONFIG["cycles_try_order"]}
     hour = now.replace(minute=0, second=0, microsecond=0)
     for offset in range(12):
         d = hour - timedelta(hours=offset)
-        datestr = d.strftime("%Y%m%d")
         cycle = d.strftime("%H")
-        if cycle in long_cycles:
-            pattern, kind = CONFIG["file_pattern"], "long"
-        else:
-            pattern, kind = short_pattern, "short"
+        if cycle in long_only_cycles:
+            continue
+        datestr = d.strftime("%Y%m%d")
         urls.append((
-            pattern.format(date_dir=f"glwu.{datestr}", cycle=cycle),
-            datestr, cycle, kind))
+            short_pattern.format(
+                date_dir=f"glwu.{datestr}", cycle=cycle),
+            datestr, cycle))
     return urls
 
 
 GLWU_UA = {"User-Agent": "great-lakes-live-environment/1.0"}
 
 
-def _idx_has_current_htsgw(line, var="HTSGW", product_kind="long"):
-    """Recognize current HTSGW: long-range analysis or short-range FH00."""
-    p = line.split(":")
-    if len(p) <= 5 or p[3] != var or p[4] != "surface":
-        return False
-    if product_kind == "short":
-        return bool(re.search(r":0(?:-0)? hour fcst:", line))
-    return ":anl:" in line
-
-
 def newest_available_cycle(now, var="HTSGW", label=None):
-    """Newest available current GLWU wave field from cheap .idx probes.
+    """Newest available short-range GLWU analysis from lightweight .idx probes.
 
-    Probe consecutive scheduled hourly cycles newest-first. Each candidate
-    uses the matching short- or long-range file for that UTC cycle. Short
-    range qualifies only at forecast hour 0; long range qualifies only on
-    its analysis field. Older forecast hours are never substituted.
-    Returns (url, datestr, cycle, stamp), or None.
+    Only short-range files are considered. Their initial HTSGW surface
+    record is explicitly labeled 'analysis' in NOAA's inventory (step 0);
+    later forecast-hour fields are not substituted. There is deliberately
+    no long-range fallback.
     """
     tag = label or PRODUCT
-    for url, dd, cc, kind in candidate_urls(now):
+    for url, dd, cc in candidate_urls(now):
         try:
             req = urllib.request.Request(url + ".idx", headers=GLWU_UA)
             with urllib.request.urlopen(req, timeout=12) as r:
                 idx = r.read().decode("utf-8", errors="replace").splitlines()
             for line in idx:
-                if _idx_has_current_htsgw(line, var, kind):
+                p = line.split(":")
+                if len(p) > 5 and p[3] == var and p[4] == "surface" \
+                        and ":anl:" in line:
                     m = re.search(r"d=(\d{10})", line)
                     if m:
                         return (url, dd, cc, m.group(1))
                     break
         except Exception as e:
-            print(f"[{tag}] {kind} idx probe {dd} t{cc}z: {str(e)[:100]}")
+            print(f"[{tag}] short-range idx probe {dd} t{cc}z: "
+                  f"{str(e)[:100]}")
     return None
 
 def cycle_source_id(stamp):
