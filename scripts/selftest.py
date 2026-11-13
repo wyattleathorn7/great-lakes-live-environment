@@ -58,6 +58,45 @@ def main():
                           uv_to_speed_dir)
     from geospatial_utils import REPO_ROOT, SITE_DIR, load_bounds, load_watermask
 
+    # ---- wave height must use only the 20 hourly short-range GLWU cycles ----
+    from datetime import datetime as _datetime, timezone as _timezone
+    import io as _wave_io
+    import build_wave_height as _wave_height
+
+    _wave_now = _datetime(2026, 11, 12, 7, 30, tzinfo=_timezone.utc)
+    _wave_candidates = _wave_height.candidate_urls(_wave_now)
+    _wave_first = _wave_candidates[0] if _wave_candidates else None
+    check("wave-height-short-range-only",
+          bool(_wave_candidates)
+          and all("_sr.t" in item[0] for item in _wave_candidates)
+          and all(item[2] not in {"01", "07", "13", "19"}
+                  for item in _wave_candidates))
+    check("wave-height-skips-long-only-cycle",
+          _wave_first is not None
+          and _wave_first[1:] == ("20261112", "06"),
+          _wave_first[1:] if _wave_first else None)
+
+    _wave_idx = (
+        "1:0:d=2026111206:WIND:surface:anl:\\n"
+        "2:100:d=2026111206:HTSGW:surface:anl:\\n"
+        "3:200:d=2026111206:HTSGW:surface:1 hour fcst:\\n"
+    ).encode()
+    _wave_original_urlopen = _wave_height.urllib.request.urlopen
+
+    def _wave_fake_idx(_request, timeout=12):
+        return _wave_io.BytesIO(_wave_idx)
+
+    try:
+        _wave_height.urllib.request.urlopen = _wave_fake_idx
+        _wave_pick = _wave_height.newest_available_cycle(_wave_now)
+    finally:
+        _wave_height.urllib.request.urlopen = _wave_original_urlopen
+
+    check("wave-height-selects-short-range-analysis-only",
+          _wave_pick == (
+              _wave_first[0], "20261112", "06", "2026111206"),
+          _wave_pick)
+
     # ---- WQP / WQX3 water-quality query contract (offline) ----
     import urllib.parse as _urlparse
     import build_bacteria as _bacteria
