@@ -77,9 +77,9 @@ def main():
           _wave_first[1:] if _wave_first else None)
 
     _wave_idx = (
-        "1:0:d=2026111206:WIND:surface:anl:\\n"
-        "2:100:d=2026111206:HTSGW:surface:anl:\\n"
-        "3:200:d=2026111206:HTSGW:surface:1 hour fcst:\\n"
+        "1:0:d=2026111206:WIND:surface:anl:\n"
+        "2:100:d=2026111206:HTSGW:surface:anl:\n"
+        "3:200:d=2026111206:HTSGW:surface:1 hour fcst:\n"
     ).encode()
     _wave_original_urlopen = _wave_height.urllib.request.urlopen
 
