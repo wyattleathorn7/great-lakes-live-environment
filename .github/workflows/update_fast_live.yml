@@ -237,9 +237,12 @@ jobs:
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
+          name: github-pages-precipitation
           path: site
       - id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-precipitation
 
   cloud_publish:
     # Cloud publication is independent of precipitation and runs only when
@@ -302,6 +305,9 @@ jobs:
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
+          name: github-pages-cloud
           path: site
       - id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: github-pages-cloud
