@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261116/glwu.grlc_2p5km_sr.t17z.grib2",
   "data_time_utc": "2026-11-16 12:00 PM EST",
   "source_last_modified_utc": "Mon, 16 Nov 2026 17:03:15 GMT",
-  "processing_time_utc": "2026-11-16 12:10 PM EST",
+  "processing_time_utc": "2026-11-16 12:13 PM EST",
   "units": "ft (display); source m",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -68,7 +68,7 @@
       "grid_ft": 0.5358705333333333,
       "absdiff_ft": 0.45,
       "verdict": "OK",
-      "obs_time": "2026-11-16 16:00 UTC"
+      "obs_time": "2026-11-16 17:00 UTC"
     },
     "45012": {
       "obs_ft": 3.28,
