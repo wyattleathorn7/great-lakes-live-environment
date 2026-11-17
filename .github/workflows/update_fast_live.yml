@@ -40,6 +40,45 @@ permissions:
   contents: read
 
 jobs:
+  # The full environment publisher and the fast publishers share one Pages
+  # deployment lock. GitHub keeps only one pending job per concurrency group,
+  # so a stream of five-minute fast publishers can otherwise replace a
+  # waiting full-site publish. Keep fast builds running, but defer only their
+  # Pages uploads whenever a full environment workflow is queued or running.
+  full_refresh_gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: read
+    outputs:
+      active: ${{ steps.check.outputs.active }}
+    steps:
+      - name: Check for an active full environment refresh
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs?branch=main&per_page=100")"
+          active="$(jq --arg current "$CURRENT_RUN_ID" '
+            [.workflow_runs[]
+             | select((.id | tostring) != $current)
+             | select((.name // "") | startswith("Update Great Lakes live environment"))
+             | select(.status == "queued" or .status == "pending" or
+                      .status == "requested" or .status == "waiting" or
+                      .status == "in_progress")]
+            | length
+          ' <<< "$runs")"
+          if [ "$active" -gt 0 ]; then
+            echo "A full environment refresh is active; fast Pages publication will defer."
+            echo "active=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No full environment refresh is active; fast Pages publication may proceed."
+            echo "active=false" >> "$GITHUB_OUTPUT"
+          fi
+
   precipitation_na:
     # Independent product queue: the sub-5-minute precipitation builder
     # must not wait behind the slower global cloud mosaic.
@@ -177,9 +216,10 @@ jobs:
           [ "$code" = "204" ] || echo "::warning::AIS chain dispatch returned $code (expected 204)"
 
   precipitation_publish:
-    # Publish precipitation as soon as its own builder finishes. Do not wait
-    # for the slower, 20-minute cloud mosaic job.
-    needs: [precipitation_na]
+    # Publish precipitation as soon as its own builder finishes, unless a
+    # full-site refresh needs the shared Pages lock.
+    needs: [precipitation_na, full_refresh_gate]
+    if: needs.full_refresh_gate.outputs.active != 'true'
     concurrency:
       group: pages-publish
       cancel-in-progress: false
@@ -246,8 +286,10 @@ jobs:
 
   cloud_publish:
     # Cloud publication is independent of precipitation and runs only when
-    # the cloud cadence job actually launched a cloud build.
-    needs: [cloud_cover_na]
+    # the cloud cadence job actually launched a cloud build, unless a full-site
+    # refresh needs the shared Pages lock.
+    needs: [cloud_cover_na, full_refresh_gate]
+    if: needs.full_refresh_gate.outputs.active != 'true'
     concurrency:
       group: pages-publish
       cancel-in-progress: false
