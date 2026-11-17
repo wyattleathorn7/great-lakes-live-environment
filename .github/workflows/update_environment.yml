@@ -1090,24 +1090,16 @@ jobs:
           git add site kml output/state
           git commit -m "Auto-update live Great Lakes layers" || echo "nothing to commit"
         shell: bash
-      - name: Rebase onto latest main (retry; abort is clean — the tree is
-          committed, so no autostash pop can leave unmerged paths behind)
+      # This publisher acquires the shared Pages lock before checkout and
+      # starts from the latest main tree. Other Pages publishers cannot push
+      # while this job holds that lock, so a rebase here only adds a long
+      # download/merge delay to large image commits. Push the validated tree
+      # directly; if an external/manual commit races this job, keep deployment
+      # best-effort and let the next full cycle reconcile the branch.
+      - name: Push updated layers to repo (best-effort)
         run: |
-          for i in 1 2 3; do
-            if git pull --rebase; then
-              echo "rebase ok (attempt $i)"
-              break
-            fi
-            git rebase --abort || true
-            echo "rebase raced (attempt $i); retrying"
-            sleep 10
-          done
           git status --porcelain=v1 --untracked-files=no -- site kml output/state | head -10 || true
-        shell: bash
-      - name: Push back to repo (best-effort; a lost race must not fail
-          the deploy — the next run retries the push)
-        run: |
-          git push origin HEAD:main || echo "PUSH RACED - deploy continues, next run retries"
+          git push origin HEAD:main || echo "PUSH RACED - deploy continues; next full cycle will reconcile"
         shell: bash
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
