@@ -72,6 +72,29 @@ def main():
           all("provenance.png" not in _items for _items in
               (_cloud_basin_files, _precip_root_files)))
 
+    # A clean Actions runner has no tracked output/raw directory. MRMS must
+    # create the parent folder before saving the first North American scan.
+    import gzip as _gzip
+    import tempfile as _tempfile
+    import build_precipitation_na as _precipitation
+    _mrms_original_urlopen = _precipitation.urllib.request.urlopen
+    _mrms_payload = b"GRIB" + b"synthetic-MRMS-test"
+    def _fake_mrms_urlopen(_request, timeout=180):
+        return _io.BytesIO(_gzip.compress(_mrms_payload))
+    try:
+        with _tempfile.TemporaryDirectory() as _tmp:
+            _mrms_dest = os.path.join(_tmp, "output", "raw",
+                                      "precip_na_mrms.grib2")
+            _precipitation.urllib.request.urlopen = _fake_mrms_urlopen
+            _precipitation.mrms_download(
+                "https://example.invalid/MRMS_test.grib2.gz", _mrms_dest)
+            _mrms_saved = (os.path.isfile(_mrms_dest)
+                           and open(_mrms_dest, "rb").read() == _mrms_payload)
+    finally:
+        _precipitation.urllib.request.urlopen = _mrms_original_urlopen
+    check("precipitation-mrms-download-creates-raw-directory",
+          _mrms_saved)
+
     from beaufort import (BEAUFORT, FORCE_COLORS, force_from_kt, force_name,
                           force_range_text, movement_to_canvas_dxdy,
                           uv_to_speed_dir)
