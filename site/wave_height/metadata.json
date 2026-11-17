@@ -5,10 +5,10 @@
   "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 \u2014 2.5 km hourly short-range (WAVEWATCH III)",
   "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 \u2014 2.5 km hourly short-range (WAVEWATCH III)",
   "variable": "HTSGW (significant height of combined wind waves and swell, analysis step)",
-  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261116/glwu.grlc_2p5km_sr.t23z.grib2",
-  "data_time_utc": "2026-11-16 06:00 PM EST",
-  "source_last_modified_utc": "Mon, 16 Nov 2026 23:02:20 GMT",
-  "processing_time_utc": "2026-11-16 06:10 PM EST",
+  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261117/glwu.grlc_2p5km_sr.t17z.grib2",
+  "data_time_utc": "2026-11-17 12:00 PM EST",
+  "source_last_modified_utc": "Tue, 17 Nov 2026 17:03:54 GMT",
+  "processing_time_utc": "2026-11-17 12:41 PM EST",
   "units": "ft (display); source m",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,14 +25,14 @@
   "missing_data_treatment": "GRIB2 missing value 9999 and off-water grid points rendered fully transparent; never zero-filled.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "model_cycle": "20261116 t23z",
-  "source_id": "glwu-20261116-2300Z",
-  "source_version": "glwu-20261116-2300Z-r13",
+  "model_cycle": "20261117 t17z",
+  "source_id": "glwu-20261117-1700Z",
+  "source_version": "glwu-20261117-1700Z-r13",
   "stats": {
     "valid_cells": 44863,
-    "max_ft": 7.74,
-    "mean_ft": 2.757,
-    "p99_5_ft": 7.38
+    "max_ft": 6.17,
+    "mean_ft": 3.074,
+    "p99_5_ft": 6.07
   },
   "legend_size": [
     640,
@@ -42,15 +42,11 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "time_utc": "2026-11-16 22:40 UTC",
-      "WDIR_deg": 200.0,
-      "WSPD_ms": 6.0,
-      "WVHT_m": null,
-      "DPD_s": null,
-      "APD_s": null,
-      "WTMP_C": 6.6,
-      "ATMP_C": 8.2,
-      "note": "no WVHT obs"
+      "obs_ft": 4.27,
+      "grid_ft": 6.1023624000000005,
+      "absdiff_ft": 1.84,
+      "verdict": "CHECK",
+      "obs_time": "2026-11-17 16:20 UTC"
     },
     "45002": {
       "time_utc": "2026-11-11 22:30 UTC",
@@ -64,22 +60,18 @@
       "note": "no WVHT obs"
     },
     "45132": {
-      "obs_ft": 2.3,
-      "grid_ft": 1.4763780000000002,
-      "absdiff_ft": 0.82,
+      "obs_ft": 1.97,
+      "grid_ft": 2.1653544,
+      "absdiff_ft": 0.2,
       "verdict": "OK",
-      "obs_time": "2026-11-16 22:00 UTC"
+      "obs_time": "2026-11-17 17:00 UTC"
     },
     "45012": {
-      "time_utc": "2026-11-16 22:40 UTC",
-      "WDIR_deg": 250.0,
-      "WSPD_ms": 9.0,
-      "WVHT_m": null,
-      "DPD_s": null,
-      "APD_s": null,
-      "WTMP_C": 9.8,
-      "ATMP_C": 9.8,
-      "note": "no WVHT obs"
+      "obs_ft": 4.27,
+      "grid_ft": 5.5118111999999995,
+      "absdiff_ft": 1.25,
+      "verdict": "OK",
+      "obs_time": "2026-11-17 16:20 UTC"
     },
     "45005": {
       "time_utc": "2026-11-09 21:10 UTC",
@@ -93,5 +85,5 @@
       "note": "no WVHT obs"
     }
   },
-  "legend_scale_html": "Every pixel shows its bin's exact color; the legend is the full table. Unwritten rules: <b>0 and 0.1 ft</b> show as <b>0 ft</b>; <b>0.2 to 0.6 ft</b> show as <b>0.5 ft</b>; <b>0.7 to 1 ft</b> show as <b>1-2 ft</b>. Each 2-ft label covers its full step up to the next row (e.g. the 4-5 ft color covers 4 up to 6 ft), so every value lands in exactly one color. Model maximum this run: <b>7.7 ft</b>. Values above 30 ft stay white. Significant height = average of highest third of waves. For more precise wave height data, turn on the NOAA Great Lakes Observation Network layer: its buoys report observed wave height at their exact locations, while this layer shows the wave model everywhere. How the buoys measure it: significant wave height (WVHT) is the average of the highest one-third of the waves recorded during a 20-minute sampling period each hour. Accelerometers on the hull record its heave motion, an onboard FFT converts that motion into a wave-energy spectrum, and the height is derived from that spectrum; buoy reports cover combined wind waves and swell. Great Lakes buoys are seasonal and are hauled out before ice season, so winter gaps are normal."
+  "legend_scale_html": "Every pixel shows its bin's exact color; the legend is the full table. Unwritten rules: <b>0 and 0.1 ft</b> show as <b>0 ft</b>; <b>0.2 to 0.6 ft</b> show as <b>0.5 ft</b>; <b>0.7 to 1 ft</b> show as <b>1-2 ft</b>. Each 2-ft label covers its full step up to the next row (e.g. the 4-5 ft color covers 4 up to 6 ft), so every value lands in exactly one color. Model maximum this run: <b>6.2 ft</b>. Values above 30 ft stay white. Significant height = average of highest third of waves. For more precise wave height data, turn on the NOAA Great Lakes Observation Network layer: its buoys report observed wave height at their exact locations, while this layer shows the wave model everywhere. How the buoys measure it: significant wave height (WVHT) is the average of the highest one-third of the waves recorded during a 20-minute sampling period each hour. Accelerometers on the hull record its heave motion, an onboard FFT converts that motion into a wave-energy spectrum, and the height is derived from that spectrum; buoy reports cover combined wind waves and swell. Great Lakes buoys are seasonal and are hauled out before ice season, so winter gaps are normal."
 }

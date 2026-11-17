@@ -1,25 +1,25 @@
 {
   "data_times": [
-    "2026-11-09T12:00:00Z",
-    "2026-11-08T12:00:00Z",
-    "2026-11-07T12:00:00Z",
     "2026-11-06T12:00:00Z",
     "2026-11-05T12:00:00Z",
     "2026-11-04T12:00:00Z",
-    "2026-11-03T12:00:00Z"
+    "2026-11-03T12:00:00Z",
+    "2026-11-02T12:00:00Z",
+    "2026-11-01T12:00:00Z",
+    "2026-10-31T12:00:00Z"
   ],
-  "anchor": "nesdisVHNkdparDaily",
-  "dataset": "nesdisVHNkdparDaily",
+  "anchor": "nesdisVHNSQkdparDaily",
+  "dataset": "nesdisVHNSQkdparDaily",
   "mosaic_sources": {
-    "2026-11-09T12:00:00Z": "nesdisVHNkdparDaily",
-    "2026-11-08T12:00:00Z": "nesdisVHNkdparDaily",
-    "2026-11-07T12:00:00Z": "nesdisVHNkdparDaily",
-    "2026-11-06T12:00:00Z": "nesdisVHNkdparDaily",
-    "2026-11-05T12:00:00Z": "nesdisVHNkdparDaily",
-    "2026-11-04T12:00:00Z": "nesdisVHNkdparDaily",
-    "2026-11-03T12:00:00Z": "nesdisVHNkdparDaily"
+    "2026-11-06T12:00:00Z": "nesdisVHNSQkdparDaily",
+    "2026-11-05T12:00:00Z": "nesdisVHNSQkdparDaily",
+    "2026-11-04T12:00:00Z": "nesdisVHNSQkdparDaily",
+    "2026-11-03T12:00:00Z": "nesdisVHNSQkdparDaily",
+    "2026-11-02T12:00:00Z": "nesdisVHNSQkdparDaily",
+    "2026-11-01T12:00:00Z": "nesdisVHNSQkdparDaily",
+    "2026-10-31T12:00:00Z": "nesdisVHNSQkdparDaily"
   },
-  "source_id": "nesdisVHNkdparDaily-v7-2026-11-09-r13",
+  "source_id": "nesdisVHNSQkdparDaily-v7-2026-11-06-r13",
   "render_version": 13,
-  "processing_time_utc": "2026-11-13 03:01 AM EST"
+  "processing_time_utc": "2026-11-17 12:53 PM EST"
 }
