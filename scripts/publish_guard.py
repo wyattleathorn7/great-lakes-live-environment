@@ -80,7 +80,11 @@ def _request_bytes(url, timeout):
     """
     req = urllib.request.Request(url, headers=UA)
     last_error = None
-    for attempt in range(5):
+    # Pages/CDN 503s can outlast a short retry window. Keep the guard
+    # fail-closed, but allow a longer bounded recovery window before blocking
+    # deployment. No files are skipped or downgraded on failure.
+    max_attempts = 8
+    for attempt in range(max_attempts):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as response:
                 return response.read()
@@ -96,15 +100,15 @@ def _request_bytes(url, timeout):
             last_error = exc
             retry_after = None
 
-        if attempt == 4:
+        if attempt == max_attempts - 1:
             break
         try:
             delay = float(retry_after) if retry_after is not None else 2 ** attempt
         except (TypeError, ValueError):
             delay = 2 ** attempt
-        delay = max(1.0, min(delay, 20.0))
+        delay = max(1.0, min(delay, 30.0))
         print(f"[publish-guard] transient fetch error for {url}: "
-              f"{last_error}; retry {attempt + 1}/4 in {delay:.0f}s",
+              f"{last_error}; retry {attempt + 1}/{max_attempts - 1} in {delay:.0f}s",
               flush=True)
         time.sleep(delay)
 
