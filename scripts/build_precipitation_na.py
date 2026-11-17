@@ -190,6 +190,11 @@ def mrms_download(url, dest, timeout=180):
     """Fetch one MRMS GRIB2.gz -> dest (decompressed). Raises on
     non-gzip / non-GRIB responses."""
     from na_common import UA
+    # The first North American pass runs before any WMS fallback has
+    # written into output/raw. Create the target directory here so the
+    # official MRMS file can be saved on a clean GitHub Actions runner.
+    parent = os.path.dirname(os.path.abspath(dest))
+    os.makedirs(parent, exist_ok=True)
     req = urllib.request.Request(url, headers=UA)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         blob = r.read()
