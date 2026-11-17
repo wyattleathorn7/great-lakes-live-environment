@@ -31,18 +31,20 @@ def main():
     _original_urlopen = _publish_guard.urllib.request.urlopen
     _original_sleep = _publish_guard.time.sleep
     _attempts = []
+    _retry_delays = []
 
     def _flaky_pages(url, timeout=30):
         _attempts.append(url)
-        if len(_attempts) == 1:
+        if len(_attempts) <= 3:
+            _headers = _email_message.Message()
+            _headers["Retry-After"] = "0"
             raise _url_error.HTTPError(
-                url, 503, "temporary unavailable",
-                _email_message.Message(), None)
+                url, 503, "temporary unavailable", _headers, None)
         return _io.BytesIO(b"fresh-pages-response")
 
     try:
         _publish_guard.urllib.request.urlopen = _flaky_pages
-        _publish_guard.time.sleep = lambda _seconds: None
+        _publish_guard.time.sleep = lambda seconds: _retry_delays.append(seconds)
         _retry_result = _publish_guard._request_bytes(
             "https://example.invalid/metadata.json", timeout=1)
     finally:
@@ -50,8 +52,25 @@ def main():
         _publish_guard.time.sleep = _original_sleep
 
     check("publish-guard-retries-transient-503",
-          _retry_result == b"fresh-pages-response" and len(_attempts) == 2,
+          _retry_result == b"fresh-pages-response" and len(_attempts) == 4,
           len(_attempts))
+    check("publish-guard-exponential-backoff-despite-zero-retry-after",
+          _retry_delays == [1, 2, 4], _retry_delays)
+
+    # Provenance PNGs are diagnostic-only: cloud builds create one at the
+    # cloud root, but not in the coverage variants; precipitation creates
+    # none. Required metadata/raster/legend sync remains unchanged.
+    _cloud_root_files = _publish_guard._sync_files_for_directory(
+        "cloud_cover_na", "cloud_cover_na")
+    _cloud_basin_files = _publish_guard._sync_files_for_directory(
+        "cloud_cover_na", "cloud_cover_na_basin")
+    _precip_root_files = _publish_guard._sync_files_for_directory(
+        "precipitation_na", "precipitation_na")
+    check("publish-guard-syncs-cloud-root-provenance-diagnostic",
+          "provenance.png" in _cloud_root_files)
+    check("publish-guard-skips-nonexistent-provenance-files",
+          all("provenance.png" not in _items for _items in
+              (_cloud_basin_files, _precip_root_files)))
 
     from beaufort import (BEAUFORT, FORCE_COLORS, force_from_kt, force_name,
                           force_range_text, movement_to_canvas_dxdy,
