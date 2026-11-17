@@ -1,0 +1,43 @@
+name: One-time full environmental refresh
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/refresh_all_once.yml"
+
+permissions:
+  actions: write
+  contents: write
+
+jobs:
+  dispatch:
+    if: github.event.head_commit.message == 'Run one-time full environmental refresh now'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Dispatch all environmental products
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/update_environment.yml/dispatches" \
+            -f ref=main -f "inputs[product]=environmental"
+          echo "Full environmental refresh request accepted."
+
+      - name: Remove one-time dispatcher
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set +e
+          file_sha="$(gh api \
+            "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/refresh_all_once.yml?ref=main" \
+            --jq .sha 2>/dev/null)"
+          if [ -n "$file_sha" ]; then
+            gh api --method DELETE \
+              "repos/${GITHUB_REPOSITORY}/contents/.github/workflows/refresh_all_once.yml" \
+              -f message="Remove one-time environmental refresh dispatcher" \
+              -f sha="$file_sha" -f branch=main
+          fi
