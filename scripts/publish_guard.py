@@ -42,6 +42,20 @@ FAST_FAMILIES = [f"cloud_cover_na{s}" for s in ("", "_basin", "_continental",
                 [f"precipitation_na{s}" for s in ("", "_basin", "_continental",
                                                   "_global")]
 
+def _sync_files_for_directory(root, directory):
+    """Return the Pages files actually emitted for this product directory.
+
+    The cloud-cover builder emits one optional provenance diagnostic at the
+    root directory only. Coverage variants do not contain it, and the
+    precipitation builder does not emit a provenance PNG at all. Asking
+    Pages for these absent diagnostic paths can return a CDN 503 and
+    unnecessarily block otherwise valid live-layer publication.
+    """
+    files = ("metadata.json", "current.png", "legend.png")
+    if root == "cloud_cover_na" and directory == root:
+        return files + ("provenance.png",)
+    return files
+
 
 def _ts(meta):
     """Best-effort freshness extraction from a metadata dict.
@@ -102,10 +116,14 @@ def _request_bytes(url, timeout):
 
         if attempt == max_attempts - 1:
             break
+        # A numeric Retry-After of 0 must not collapse all retries to
+        # one-second polling. Exponential backoff is the minimum wait; a
+        # larger server hint is honored up to the bounded 30-second cap.
         try:
-            delay = float(retry_after) if retry_after is not None else 2 ** attempt
+            server_delay = float(retry_after) if retry_after is not None else 0.0
         except (TypeError, ValueError):
-            delay = 2 ** attempt
+            server_delay = 0.0
+        delay = max(2 ** attempt, server_delay)
         delay = max(1.0, min(delay, 30.0))
         print(f"[publish-guard] transient fetch error for {url}: "
               f"{last_error}; retry {attempt + 1}/{max_attempts - 1} in {delay:.0f}s",
@@ -173,13 +191,28 @@ def main():
             for directory in directories:
                 local = os.path.join(a.site, directory)
                 os.makedirs(local, exist_ok=True)
-                for filename in ("metadata.json", "current.png", "legend.png", "provenance.png"):
-                    data = _fetch_bytes(f"{base}{directory}/{filename}")
+                for filename in _sync_files_for_directory(root, directory):
+                    try:
+                        data = _fetch_bytes(f"{base}{directory}/{filename}")
+                    except Exception as e:
+                        if filename != "provenance.png":
+                            raise
+                        # This diagnostic is not used by the raster, legend,
+                        # KML, or freshness checks. Its source attribution is
+                        # retained in metadata.json; never let an unavailable
+                        # optional PNG strand the environmental publication.
+                        print(f"[{directory}] optional provenance diagnostic "
+                              f"unavailable ({type(e).__name__}: {e}); "
+                              "structured provenance remains in metadata.",
+                              flush=True)
+                        data = None
                     target = os.path.join(local, filename)
                     if data is None:
                         if filename in ("metadata.json", "current.png"):
                             raise RuntimeError(f"[{directory}] missing required live file {filename}")
                         if os.path.exists(target):
+                            # Do not publish an old diagnostic beside a newer
+                            # raster when the matching live image is unavailable.
                             os.remove(target)
                     else:
                         tmp = target + ".sync-part"
