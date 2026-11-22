@@ -8,7 +8,7 @@
   "source_url": "https://nomads.ncep.noaa.gov/cgi-bin/filter_hrrr_2d.pl",
   "data_time_utc": "2026-11-22 12:00 PM EST",
   "source_last_modified_utc": "n/a (NOMADS)",
-  "processing_time_utc": "2026-11-22 01:00 PM EST",
+  "processing_time_utc": "2026-11-22 01:30 PM EST",
   "units": "mi, statute (display; source m / 1609.344)",
   "spatial_resolution_source": "~3 km HRRR CONUS grid, mean-binned to the common canvas, despike-gated, continuity-filled, NaN-aware display smoothing",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -43,16 +43,13 @@
   },
   "metar_qc": {
     "KORD": {
-      "obs_SM": 9.0,
+      "obs_SM": 7.0,
       "grid_SM": 8.447748482190072,
-      "absdiff_SM": 0.55,
+      "absdiff_SM": 1.45,
       "verdict": "OK"
     },
     "KDTW": {
-      "obs_SM": 10.0,
-      "grid_SM": 30.586996937915682,
-      "absdiff_SM": 20.59,
-      "verdict": "OK"
+      "note": "METAR fetch skipped: HTTP Error 429: Too Many Requests"
     },
     "KDLH": {
       "note": "METAR fetch skipped: HTTP Error 429: Too Many Requests"
@@ -67,7 +64,10 @@
       "note": "METAR fetch skipped: HTTP Error 429: Too Many Requests"
     },
     "KGRB": {
-      "note": "METAR fetch skipped: HTTP Error 429: Too Many Requests"
+      "obs_SM": 10.0,
+      "grid_SM": 8.553588708601891,
+      "absdiff_SM": 1.45,
+      "verdict": "OK"
     },
     "KERI": {
       "note": "METAR fetch skipped: HTTP Error 429: Too Many Requests"
