@@ -5,10 +5,10 @@
   "noaa_source": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 \u2014 2.5 km hourly short-range (WAVEWATCH III)",
   "product_name": "NOAA/NCEP Great Lakes Wave Unstructured v2.1 \u2014 2.5 km hourly short-range (WAVEWATCH III)",
   "variable": "HTSGW (significant height of combined wind waves and swell, analysis step)",
-  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261122/glwu.grlc_2p5km_sr.t09z.grib2",
-  "data_time_utc": "2026-11-22 04:00 AM EST",
-  "source_last_modified_utc": "Sun, 22 Nov 2026 09:02:41 GMT",
-  "processing_time_utc": "2026-11-22 04:10 AM EST",
+  "source_url": "https://nomads.ncep.noaa.gov/pub/data/nccf/com/glwu/prod/glwu.20261122/glwu.grlc_2p5km_sr.t10z.grib2",
+  "data_time_utc": "2026-11-22 05:00 AM EST",
+  "source_last_modified_utc": "Sun, 22 Nov 2026 10:02:56 GMT",
+  "processing_time_utc": "2026-11-22 05:10 AM EST",
   "units": "ft (display); source m",
   "spatial_resolution_source": "~2.5 km NCEP GLWU Lambert grid (581x361)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -25,14 +25,14 @@
   "missing_data_treatment": "GRIB2 missing value 9999 and off-water grid points rendered fully transparent; never zero-filled.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
-  "model_cycle": "20261122 t09z",
-  "source_id": "glwu-20261122-0900Z",
-  "source_version": "glwu-20261122-0900Z-r13",
+  "model_cycle": "20261122 t10z",
+  "source_id": "glwu-20261122-1000Z",
+  "source_version": "glwu-20261122-1000Z-r13",
   "stats": {
     "valid_cells": 44863,
-    "max_ft": 5.91,
-    "mean_ft": 2.29,
-    "p99_5_ft": 5.81
+    "max_ft": 5.94,
+    "mean_ft": 2.314,
+    "p99_5_ft": 5.74
   },
   "legend_size": [
     640,
@@ -42,11 +42,11 @@
   "rendered_canvas_pixels": 2115000,
   "buoy_qc": {
     "45001": {
-      "obs_ft": 2.3,
-      "grid_ft": 2.8105862666666668,
-      "absdiff_ft": 0.51,
+      "obs_ft": 2.62,
+      "grid_ft": 2.9636921333333333,
+      "absdiff_ft": 0.34,
       "verdict": "OK",
-      "obs_time": "2026-11-22 08:20 UTC"
+      "obs_time": "2026-11-22 09:10 UTC"
     },
     "45002": {
       "time_utc": "2026-11-11 22:30 UTC",
@@ -61,17 +61,17 @@
     },
     "45132": {
       "obs_ft": 0.98,
-      "grid_ft": 2.6356081333333337,
-      "absdiff_ft": 1.65,
+      "grid_ft": 2.734033333333333,
+      "absdiff_ft": 1.75,
       "verdict": "CHECK",
-      "obs_time": "2026-11-22 08:00 UTC"
+      "obs_time": "2026-11-22 09:00 UTC"
     },
     "45012": {
-      "obs_ft": 0.98,
-      "grid_ft": 1.3779528,
-      "absdiff_ft": 0.39,
+      "obs_ft": 1.31,
+      "grid_ft": 1.3232721333333333,
+      "absdiff_ft": 0.01,
       "verdict": "OK",
-      "obs_time": "2026-11-22 08:20 UTC"
+      "obs_time": "2026-11-22 09:10 UTC"
     },
     "45005": {
       "time_utc": "2026-11-09 21:10 UTC",
