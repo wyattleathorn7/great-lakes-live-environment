@@ -450,19 +450,21 @@ def main():
     _qa_state = _qa_np.array([0, 1, 2, 3, 1 << 10], dtype=float)
     _qa_words = decode_reflectance_qa(
         _qa_state, _qa_np.zeros(5, dtype=_qa_np.uint32))
-    check("leaf-qa-cloud-state-01-and-10-cloudy",
-          _qa_words["cloudy"][:3].tolist() == [False, True, True])
+    check("leaf-qa-cloud-state-01-cloudy-mixed-marginal",
+          _qa_words["cloudy"][:3].tolist() == [False, True, False]
+          and not bool(_qa_words["good"][2]))
     check("leaf-qa-cloud-state-11-assumed-clear",
           not bool(_qa_words["cloudy"][3]))
     check("leaf-qa-internal-cloud-bit",
           bool(_qa_words["cloudy"][4]))
     _qa_modland_cloud = decode_reflectance_qa(
         _qa_np.array([0.0]), _qa_np.array([2.0]))
-    check("leaf-qa-modland-10-cloud-effect",
-          bool(_qa_modland_cloud["cloudy"][0]))
+    check("leaf-qa-modland-10-is-not-cloud-mask",
+          not bool(_qa_modland_cloud["cloudy"][0])
+          and not bool(_qa_modland_cloud["good"][0]))
     _qa_modland_other = decode_reflectance_qa(
         _qa_np.array([0.0]), _qa_np.array([3.0]))
-    check("leaf-qa-modland-11-other-reason-not-cloud",
+    check("leaf-qa-modland-11-not-cloud-mask",
           not bool(_qa_modland_other["cloudy"][0])
           and not bool(_qa_modland_other["good"][0]))
     _qa_adjacent = decode_reflectance_qa(
