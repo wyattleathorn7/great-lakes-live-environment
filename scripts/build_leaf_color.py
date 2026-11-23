@@ -391,13 +391,17 @@ def _build(bounds, W, H, vi, rf, sig):
     red_q = (qc_int >> 16) & 3                       # bits 16-17 (band 1)
     nir_q = (qc_int >> 18) & 3                       # bits 18-19 (band 2)
     ndsi = (green - swir) / (green + swir + 1e-6)
-    snow = snow_state | ((ndsi > 0.4) & (ndvi < 0.25) & np.isfinite(ndvi))
+    # Snow is flagged only by the spectral NDSI test (state bit 4 overcounts
+    # dormant/clear pixels in this composite); keep cloud handling from state.
+    snow = (ndsi > 0.4) & (ndvi < 0.25) & np.isfinite(ndvi)
     cloudy = cloud_state | (modland >= 2)
     good = (~cloudy) & (~snow) & (~cloud_shadow) \
         & (modland <= 1) & (aerosol < 3) & (cirrus <= 1) \
         & (red_q <= 1) & (nir_q <= 1)
-    marginal = (~cloudy) & (~snow) & (~good) & (modland <= 2) & (aerosol < 3) & (red_q <= 2) & (nir_q <= 2)
-    bad = ~(good | marginal) & ~snow
+    # Paint every clear, non-snow land pixel; lower-quality observations are
+    # damped rather than dropped so coverage matches the intended land mask.
+    marginal = (~cloudy) & (~snow) & (~good)
+    bad = np.zeros_like(good)
     n_good = int(good.sum())
     print(f"[{PRODUCT}] good={n_good} marginal={int(marginal.sum())} "
           f"snow={int(snow.sum())} cloudy={int(cloudy.sum())}")
