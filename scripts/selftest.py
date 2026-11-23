@@ -456,11 +456,25 @@ def main():
           not bool(_qa_words["cloudy"][3]))
     check("leaf-qa-internal-cloud-bit",
           bool(_qa_words["cloudy"][4]))
-    _qa_modland_cloudlike = decode_reflectance_qa(
+    _qa_modland_cloud = decode_reflectance_qa(
         _qa_np.array([0.0]), _qa_np.array([2.0]))
-    check("leaf-qa-modland-not-used-as-cloud",
-          not bool(_qa_modland_cloudlike["cloudy"][0])
-          and not bool(_qa_modland_cloudlike["good"][0]))
+    check("leaf-qa-modland-10-cloud-effect",
+          bool(_qa_modland_cloud["cloudy"][0]))
+    _qa_modland_other = decode_reflectance_qa(
+        _qa_np.array([0.0]), _qa_np.array([3.0]))
+    check("leaf-qa-modland-11-other-reason-not-cloud",
+          not bool(_qa_modland_other["cloudy"][0])
+          and not bool(_qa_modland_other["good"][0]))
+    _qa_adjacent = decode_reflectance_qa(
+        _qa_np.array([1 << 13], dtype=float),
+        _qa_np.array([0], dtype=_qa_np.uint32))
+    check("leaf-qa-adjacent-pixel-remains-eligible",
+          not bool(_qa_adjacent["cloudy"][0])
+          and not bool(_qa_adjacent["good"][0]))
+    _qa_fill = decode_reflectance_qa(
+        _qa_np.array([65535.0]), _qa_np.array([0.0]))
+    check("leaf-qa-state-fill-not-good",
+          not bool(_qa_fill["good"][0]))
     _qa_band_q = decode_reflectance_qa(
         _qa_np.array([0.0, 0.0, 0.0]),
         _qa_np.array([1 << 2, 2 << 6, 0], dtype=_qa_np.uint32))
