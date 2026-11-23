@@ -562,9 +562,10 @@ def _build(bounds, W, H, vi, rf, sig):
         "native_resolution_m": 500, "native_crs": "MODIS sinusoidal",
         "resampling": "nearest (no invented values)",
         "qa_rules": ("MYD09A1 State QA: cloud state bits 0-1, internal cloud "
-                     "bit 10, shadow bit 2, aerosol bits 6-7, cirrus bits 8-9; "
-                     "QC_500m: MODLAND bits 0-1, band 1 bits 2-5, "
-                     "band 2 bits 6-9; spectral NDSI snow test"),
+                     "bit 10, shadow bit 2, aerosol bits 6-7, cirrus bits 8-9, "
+                     "adjacent-cloud bit 13; QC_500m: MODLAND bits 0-1 "
+                     "(10=cloud effect), band 1 bits 2-5, band 2 bits 6-9; "
+                     "spectral NDSI snow test"),
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
