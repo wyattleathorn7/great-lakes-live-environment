@@ -124,21 +124,24 @@ def decode_reflectance_qa(state, qc):
     """
     state = np.asarray(state, dtype=float)
     qc = np.asarray(qc, dtype=float)
-    state_valid = np.isfinite(state) & (state >= 0) & (state <= 57343)
+    state_valid = (np.isfinite(state) & (state >= 0)
+                   & (state < np.iinfo(np.uint16).max))
     qc_valid = (np.isfinite(qc) & (qc >= 0)
                 & (qc < np.iinfo(np.uint32).max))
     st = np.where(state_valid, state, 0).astype(np.uint64)
     q = np.where(qc_valid, qc, 0).astype(np.uint64)
 
     cloud_state = st & 3
+    modland = q & 3
+    # MODLAND 10 explicitly means no corrected reflectance due to clouds;
+    # MODLAND 11 means other production reasons and is not called cloudy.
     cloudy = ((cloud_state == 1) | (cloud_state == 2)
-              | ((st & (1 << 10)) != 0))
+              | ((st & (1 << 10)) != 0) | (modland == 2))
     cloud_shadow = (st & (1 << 2)) != 0
     adjacent = (st & (1 << 13)) != 0
 
     aerosol = (st >> 6) & 3
     cirrus = (st >> 8) & 3
-    modland = q & 3
     red_q = (q >> 2) & 15
     nir_q = (q >> 6) & 15
 
