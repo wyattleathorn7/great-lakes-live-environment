@@ -6,9 +6,9 @@
   "product_name": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
   "variable": "NDVI trajectory + surface reflectance + NDSI snow + land class -> circular phenology phase 0..1",
   "source_url": "https://planetarycomputer.microsoft.com/",
-  "data_time_utc": "VI composite start 2026-11-01 (+16d window); reflectance 2026-11-09 (+8d); retrieved 2026-11-23 12:47 PM EST",
-  "source_last_modified_utc": "composite sig abfb02ff5fa0",
-  "processing_time_utc": "2026-11-23 12:47 PM EST",
+  "data_time_utc": "reflectance composite start 2026-11-09 (+8d window; NDVI derived from red/NIR); retrieved 2026-11-23 01:44 PM EST",
+  "source_last_modified_utc": "composite sig 458720dac03a",
+  "processing_time_utc": "2026-11-23 01:44 PM EST",
   "units": "phenology phase 0..1 (display color); source NDVI/reflectance",
   "spatial_resolution_source": "500 m MODIS sinusoidal, reprojected to canvas (nearest)",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -34,7 +34,7 @@
   "gradient": {
     "interpolation": "OKLab (perceptually uniform)",
     "anchors": 19,
-    "distinct_raster_colors": 183,
+    "distinct_raster_colors": 189,
     "wraparound": "first == last deep blue #123B73"
   },
   "provenance": {
@@ -44,20 +44,20 @@
       "modis-09A1-061"
     ],
     "vi_items": {
-      "h11v04": "MOD13A1.A2026305.h11v04.061.2026323165458",
-      "h12v04": "MOD13A1.A2026305.h12v04.061.2026323165828",
-      "h13v04": "MOD13A1.A2026305.h13v04.061.2026323165116"
+      "h11v04": "MYD13A1.A2026297.h11v04.061.2026314094416",
+      "h12v04": "MYD13A1.A2026297.h12v04.061.2026314095651",
+      "h13v04": "MYD13A1.A2026297.h13v04.061.2026314095219"
     },
     "reflectance_items": {
       "h11v04": "MYD09A1.A2026313.h11v04.061.2026323000317",
       "h12v04": "MYD09A1.A2026313.h12v04.061.2026323000339",
       "h13v04": "MYD09A1.A2026313.h13v04.061.2026323000725"
     },
-    "composite_sig": "abfb02ff5fa0c008f990dbc54a275c6aa8ad73ac1d8db48f576f205753a5d55b",
-    "composite_date": "2026-11-01",
-    "source_age_days": 22,
+    "composite_sig": "458720dac03a4eacb953120d8cc30432f3add76596f982d946750d50f2aa711d",
+    "composite_date": "2026-11-09",
+    "source_age_days": 14,
     "stale": false,
-    "retrieved": "2026-11-23 12:47 PM EST",
+    "retrieved": "2026-11-23 01:44 PM EST",
     "native_resolution_m": 500,
     "native_crs": "MODIS sinusoidal",
     "resampling": "nearest (no invented values)",
@@ -66,12 +66,12 @@
     "water_mask": "assets/great_lakes_watermask.png (shared)",
     "algorithm": "leaf_phenology v8 (trajectory + baseline + class + spectral gating; 19-anchor OKLab circular gradient; observed-only rendering, transparent no-data)"
   },
-  "source_id": "leaf-v8-abfb02ff5fa0-r13",
-  "source_version": "leaf-v8-abfb02ff5fa0-r13",
+  "source_id": "leaf-v8-458720dac03a-r13",
+  "source_version": "leaf-v8-458720dac03a-r13",
   "stats": {
-    "good_pixels": 1003420,
-    "opaque_pixels": 1076029,
-    "phase_mean": 0.5526
+    "good_pixels": 521197,
+    "opaque_pixels": 1181820,
+    "phase_mean": 0.5558
   },
-  "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/leaf_color/legend.png?v=leaf-v8-abfb02ff5fa0-r13\" width=\"600\" alt=\"legend\"><br>What each color means (one trip around the year, left to right on the key): <b>deep blue</b> = dormant winter; <b>light blue/cyan</b> = spring awakening and bud break; <b>teal-green</b> = leaf emergence; <b>green</b> = growing season; <b>yellow-green/yellow</b> = first color; <b>orange</b> = autumn coloring; <b>red/magenta</b> = peak color into leaf drop; <b>purple</b> = late drop returning to <b>deep-blue</b> dormant (the scale wraps: both ends are winter). Color is the satellite-derived growth stage, not the color of individual trees. Only land the satellite actually saw this composite is painted \u2014 <b>transparent = clouds, snow, cities, bare ground, water, or otherwise no current observation</b>.</p><p>observed satellite composites + derived phenology state</p><p><b>Units:</b> phenology color scale (circular)<br/><b>Source:</b> NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)<br/><b>Update:</b> LATEST AVAILABLE COMPOSITE<br/><b>Provenance:</b> <a href=\"https://planetarycomputer.microsoft.com/\">https://planetarycomputer.microsoft.com/</a></p>"
+  "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/leaf_color/legend.png?v=leaf-v8-458720dac03a-r13\" width=\"600\" alt=\"legend\"><br>What each color means (one trip around the year, left to right on the key): <b>deep blue</b> = dormant winter; <b>light blue/cyan</b> = spring awakening and bud break; <b>teal-green</b> = leaf emergence; <b>green</b> = growing season; <b>yellow-green/yellow</b> = first color; <b>orange</b> = autumn coloring; <b>red/magenta</b> = peak color into leaf drop; <b>purple</b> = late drop returning to <b>deep-blue</b> dormant (the scale wraps: both ends are winter). Color is the satellite-derived growth stage, not the color of individual trees. Only land the satellite actually saw this composite is painted \u2014 <b>transparent = clouds, snow, cities, bare ground, water, or otherwise no current observation</b>.</p><p>observed satellite composites + derived phenology state</p><p><b>Units:</b> phenology color scale (circular)<br/><b>Source:</b> NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)<br/><b>Update:</b> LATEST AVAILABLE COMPOSITE<br/><b>Provenance:</b> <a href=\"https://planetarycomputer.microsoft.com/\">https://planetarycomputer.microsoft.com/</a></p>"
 }
