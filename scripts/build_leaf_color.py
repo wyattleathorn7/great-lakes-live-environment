@@ -59,7 +59,7 @@ HIST_SHAPE = (294, 450)  # quarter-res history grids
 LEAF_LUT = None
 
 
-def latest_items(collection, days_back=120):
+def latest_items(collection, days_back=120, platform=None):
     """Newest STAC item per MODIS tile (pystac objects).
 
     Server-side SORT is not honored, so all items are collected and the
@@ -75,6 +75,8 @@ def latest_items(collection, days_back=120):
         datetime=f"{start}/{end}", limit=100)
     best = {}
     for f in search.items():
+        if platform and not f.id.startswith(platform):
+            continue
         tid = None
         for part in f.id.split("."):
             if part.startswith("h") and "v" in part:
@@ -169,8 +171,8 @@ def run():
     bounds = load_bounds()
     W, H = bounds["canvas_width"], bounds["canvas_height"]
     try:
-        vi = latest_items("modis-13A1-061")
-        rf = latest_items("modis-09A1-061")
+        vi = latest_items("modis-13A1-061", platform="MYD")
+        rf = latest_items("modis-09A1-061", platform="MYD")
     except Exception as e:
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
@@ -315,7 +317,7 @@ def _build(bounds, W, H, vi, rf, sig):
 
     # per-tile reads (canvas window only); keep each SDS nodata for fill masking
     ndvi_r, rel_r, evi_r, comp_r = [], [], [], []
-    b1_r, b3_r, b4_r, b6_r, st_r = [], [], [], [], []
+    b1_r, b2_r, b3_r, b4_r, b6_r, st_r = [], [], [], [], [], []
     vi_ids, rf_ids = {}, {}
     for tid in TILES:
         if tid not in vi or tid not in rf:
@@ -326,17 +328,19 @@ def _build(bounds, W, H, vi, rf, sig):
         _ek, evi_a = pick_asset(vitem, "evi")
         _rk, rel_a = pick_asset(vitem, "reliability")
         b1k, b1_a = pick_asset(ritem, "b01", "band01", "red")
+        b2k, b2_a = pick_asset(ritem, "b02", "band02", "nir")
         b3k, b3_a = pick_asset(ritem, "b03", "band03", "blue")
         b4k, b4_a = pick_asset(ritem, "b04", "band04", "green")
         b6k, b6_a = pick_asset(ritem, "b06", "band06", "swir")
         stk, st_a = pick_asset(ritem, "state")
-        if not ndvi_a or not rel_a or not b1_a:
+        if not ndvi_a or not rel_a or not b1_a or not b2_a:
             raise ValueError(f"missing SDS assets for tile {tid}")
         ndvi_r.append(read_window(ndvi_a.href, (H, W), "nearest"))
         rel_r.append(read_window(rel_a.href, (H, W), "nearest"))
         evi_r.append(read_window(evi_a.href, (H, W), "nearest")
                      if evi_a else (np.full((H, W), np.nan), None))
         b1_r.append(read_window(b1_a.href, (H, W), "nearest"))
+        b2_r.append(read_window(b2_a.href, (H, W), "nearest"))
         b3_r.append(read_window(b3_a.href, (H, W), "nearest"))
         b4_r.append(read_window(b4_a.href, (H, W), "nearest"))
         b6_r.append(read_window(b6_a.href, (H, W), "nearest")
@@ -353,13 +357,18 @@ def _build(bounds, W, H, vi, rf, sig):
     def _n(r):
         return r[2]
 
-    ndvi = _mosaic([(_a(r), _n(r)) for r in ndvi_r]) * 0.0001
+    ndvi_vi = _mosaic([(_a(r), _n(r)) for r in ndvi_r]) * 0.0001
     rel = _mosaic([(_a(r), _n(r)) for r in rel_r])
     red = _mosaic([(_a(r), _n(r)) for r in b1_r]) * 0.0001
+    nir = _mosaic([(_a(r), _n(r)) for r in b2_r]) * 0.0001
     blue = _mosaic([(_a(r), _n(r)) for r in b3_r]) * 0.0001
     green = _mosaic([(_a(r), _n(r)) for r in b4_r]) * 0.0001
     swir = _mosaic([(_a(r), _n(r)) for r in b6_r]) * 0.0001
     state = _mosaic([(_a(r), _n(r)) for r in st_r])
+    # Current NDVI is derived from the coherent Aqua reflectance composite
+    # (red/NIR) rather than the MODIS VI best-pixel composite, which
+    # favours greener observations and lags late-season decline.
+    ndvi = np.clip((nir - red) / (nir + red + 1e-6), -1.0, 1.0)
     print(f"[{PRODUCT}] tiles={sorted(vi_ids)} ndvi range "
           f"[{np.nanmin(ndvi):.3f},{np.nanmax(ndvi):.3f}]")
 
@@ -437,7 +446,7 @@ def _build(bounds, W, H, vi, rf, sig):
                                 axis=0))
     print(f"[{PRODUCT}] distinct raster colors={n_colors}")
 
-    vstarts = [composite_start_day(i) for i in vi_ids.values()]
+    vstarts = [composite_start_day(i) for i in rf_ids.values()]
     vstarts = [d for d in vstarts if d]
     comp_date = max(vstarts) if vstarts else None
     today = dt.datetime.now(dt.timezone.utc).date()
@@ -455,8 +464,8 @@ def _build(bounds, W, H, vi, rf, sig):
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
-        data_time_utc=(f"VI composite start {comp_date} (+16d window); "
-                       f"reflectance {max([composite_start_day(i) for i in rf_ids.values() if composite_start_day(i)] or ['unknown'])} (+8d); "
+        data_time_utc=(f"reflectance composite start {comp_date} (+8d window; "
+                       f"NDVI derived from red/NIR); "
                        f"retrieved {now_det_str()}"),
         source_last_modified_utc=f"composite sig {sig[:12]}",
         units="phenology phase 0..1 (display color); source NDVI/reflectance",

@@ -506,6 +506,15 @@ def main():
     check("leaf-urban-masked", _pu is None)
     check("leaf-redness-summer", redness_index(0.2, 0.4, 0.2) < 0.3)
     check("leaf-redness-autumn", redness_index(0.55, 0.3, 0.15) > 0.5)
+    # Regression: deciduous leaf-off observation paints autumn/dormancy, not green.
+    _p_lo, _ = phenology_phase(0.25, [0.55, 0.60], 1, 0.75, False, False)
+    check("leaf-regression-deciduous-leaf-off",
+          _p_lo is not None and _p_lo >= 0.75, _p_lo)
+    # Regression: evergreen stays in the clamped green band even with autumn
+    # spectral signal (evergreen behavior preserved).
+    _p_ev, _ = phenology_phase(0.35, [0.45, 0.50], 3, 0.85, False, False)
+    check("leaf-regression-evergreen-stays-green",
+          _p_ev is not None and 0.38 <= _p_ev <= 0.58, _p_ev)
 
     # ---- leaf assets: Michigan mask + land cover ----
     import numpy as _np2
