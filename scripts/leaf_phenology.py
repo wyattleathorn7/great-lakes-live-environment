@@ -113,8 +113,11 @@ def phenology_phase(ndvi_now, history, cls, redness, snow, bad_obs,
         phase = 0.02 + 0.06 * (ngr / 0.12)  # dormant winter blues
     elif d > 0.02:
         phase = 0.15 + 0.30 * ngr  # spring rise
-    elif d < -0.02:
-        t = 1.0 - ngr
+    elif d < -0.02 or redness > 0.5:
+        # Autumn decline: NDVI fall drives the phase, but a strong autumn
+        # spectral signal (redness) also counts so late-season color is not
+        # masked by a green-biased vegetation index composite.
+        t = max(1.0 - ngr, redness)
         phase = 0.55 + 0.30 * t + 0.08 * redness * t  # autumn decline
         if ngr < 0.22:  # leaf drop -> dormancy edge
             phase = max(phase, 0.85 + 0.15 * (0.22 - ngr) / 0.22)

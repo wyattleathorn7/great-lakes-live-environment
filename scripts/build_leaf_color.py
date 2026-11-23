@@ -679,13 +679,13 @@ def compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist):
     phase[m_dorm] = 0.02 + 0.06 * (ngr[m_dorm] / 0.12)
     m_rise = work & ~m_dorm & (d > 0.02)
     phase[m_rise] = 0.15 + 0.30 * ngr[m_rise]
-    m_fall = work & ~m_dorm & (d <= -0.02)
-    t = 1.0 - ngr[m_fall]
+    m_fall = work & ~m_dorm & ((d <= -0.02) | (red > 0.5))
+    t = np.maximum(1.0 - ngr[m_fall], red[m_fall])
     ph = 0.55 + 0.30 * t + 0.08 * red[m_fall] * t
     low = ngr[m_fall] < 0.22
     ph[low] = np.maximum(ph[low], 0.85 + 0.15 * (0.22 - ngr[m_fall][low]) / 0.22)
     phase[m_fall] = ph
-    m_st = work & ~m_dorm & (np.abs(d) <= 0.02)
+    m_st = work & ~m_dorm & ~m_fall & (np.abs(d) <= 0.02)
     hi = m_st & (ngr > 0.6)
     phase[hi] = 0.45 + 0.10 * np.clip((ngr[hi] - 0.7) / 0.3, 0, 1)
     lo = m_st & (ngr <= 0.6)
