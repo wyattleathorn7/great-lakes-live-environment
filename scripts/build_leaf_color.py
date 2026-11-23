@@ -43,7 +43,8 @@ from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, base_metadata
                               promote_stage,
                               read_state, save_png, source_token, stage_dir,
                               utcnow_iso, write_metadata, write_state)
-from leaf_phenology import (build_leaf_lut, draw_leaf_legend)
+from leaf_phenology import (build_leaf_lut, decode_history_ndvi,
+                            draw_leaf_legend)
 
 PRODUCT = "leaf_color"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
@@ -390,8 +391,8 @@ def _build(bounds, W, H, vi, rf, sig):
     if lc.shape != (H, W):
         raise ValueError(f"landcover shape {lc.shape} != canvas")
 
-    # history (quarter-res NDVI stack for the baseline reference only;
-    # history never renders — only current observations paint)
+    # history (quarter-res NDVI stack for the seasonal baseline only;
+    # historical phase is never carried into the current rendered image)
     hist = load_history()
     with np.errstate(invalid="ignore", divide="ignore"):
         redness = np.clip(((red / (red + green + blue + 1e-6)) - 0.38) / 0.12, 0, 1)
@@ -404,7 +405,7 @@ def _build(bounds, W, H, vi, rf, sig):
     # zipper steps + WarpedVRT edge lines); all other pixels untouched.
     phase = _blend_overlap_bands(
         phase, _overlap_bands([(r[0], r[2]) for r in ndvi_r]))
-    # ACCURACY RULE (v7): paint ONLY what this composite observes. Every
+    # ACCURACY RULE: paint ONLY what this composite observes. Every
     # currently-observed land pixel renders at full strength; clouds, snow,
     # bad QA, masked classes (urban/barren/nodata/inland-water) and open
     # water stay TRANSPARENT — never carried views, never modeled fills.
@@ -595,8 +596,7 @@ def load_history():
         p = np.load(os.path.join(STATE_DIR, "hist_phase.npy"))
         m = json.load(open(os.path.join(STATE_DIR, "hist_meta.json")))
         if h.shape == base["ndvi"].shape and p.shape == base["phase"].shape:
-            base = {"ndvi": h.astype(np.float32) / 100.0
-                    if h.dtype == np.int8 else h.astype(np.float32),
+            base = {"ndvi": decode_history_ndvi(h),
                     "phase": p.astype(np.float32),
                     "dates": m.get("dates", [])}
     except Exception:
@@ -651,12 +651,11 @@ def compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist):
     # upsample to full res (nearest)
     n_ref = n_ref_q[ys[:, None], xs]
     n_max = n_max_q[ys[:, None], xs]
-    prev_phase = hist["phase"][ys[:, None], xs]
 
     phase = np.full((H, W), np.nan)
+    # Historical phase is deliberately not consulted: without a valid
+    # current observation this pixel remains transparent.
     hb = bad | ~np.isfinite(ndvi)
-    has_prev = np.isfinite(prev_phase)
-    phase[hb & has_prev] = prev_phase[hb & has_prev]
     work = ~(hb | snow) & np.isfinite(ndvi)
     # class priors for cold-start baseline (always applied)
     forest = np.isin(lc, [1, 2, 3])
