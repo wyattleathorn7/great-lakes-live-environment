@@ -118,9 +118,10 @@ def pick_asset(item, *cands):
 def decode_reflectance_qa(state, qc):
     """Decode MYD09A1 Collection 6.1 state and 500 m QC bit fields.
 
-    Cloud is taken only from the State QA cloud masks (bits 0-1 and 10).
-    MODLAND QA is a quality indicator, not a cloud mask; its rejected
-    values remain eligible for damped rendering when reflectance exists.
+    Explicit cloud flags come from State QA (cloud state bits 0-1 and
+    internal cloud bit 10) and MODLAND QA code 10 (cloud effects). MODLAND
+    code 11 (other production reasons) remains a damped-quality observation
+    when the reflectance bands themselves are valid.
     """
     state = np.asarray(state, dtype=float)
     qc = np.asarray(qc, dtype=float)
@@ -567,9 +568,10 @@ def _build(bounds, W, H, vi, rf, sig):
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
-        "algorithm": "leaf_phenology v8 (trajectory + baseline + class + "
+        "algorithm": "leaf_phenology v9 (trajectory + baseline + class + "
                      "spectral gating; 19-anchor OKLab circular gradient; "
-                     "observed-only rendering, transparent no-data)",
+                     "corrected MYD09A1 C6.1 QA decoding; observed-only "
+                     "rendering, transparent no-data)",
     }
     # v8 = large legible key image + observed-only rendering (transparent no-data) + overlap-band
     # seam blend + observation-only history + full-coverage mosaic rule
