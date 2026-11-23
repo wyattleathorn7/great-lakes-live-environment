@@ -193,7 +193,7 @@ def run():
     sig = hashlib.sha256(
         ("|".join(sorted(i.id for i in list(vi.values()) + list(rf.values())))
          ).encode()).hexdigest()
-    source_id_hint = f"leaf-v8-{sig[:12]}"
+    source_id_hint = f"leaf-v9-{sig[:12]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id_hint \
             and prev.get("render_version") == RENDER_VERSION \
@@ -537,7 +537,7 @@ def _build(bounds, W, H, vi, rf, sig):
     # (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.
-    source_id = f"leaf-v8-{sig[:12]}-r{RENDER_VERSION}"
+    source_id = f"leaf-v9-{sig[:12]}-r{RENDER_VERSION}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {
