@@ -56,6 +56,21 @@ def build_leaf_lut(n=LEAF_LUT_N):
     return [tuple(int(v) for v in c) for c in lut]
 
 
+def decode_history_ndvi(encoded):
+    """Decode the compact int8 history format; -128 is the NaN sentinel.
+
+    Valid NDVI is in [-1, 1], so -128 is reserved exclusively for missing
+    observations and must never enter the seasonal baseline as -1.28.
+    """
+    import numpy as np
+    values = np.asarray(encoded)
+    if values.dtype == np.int8:
+        decoded = values.astype(np.float32) / 100.0
+        decoded[values == -128] = np.nan
+        return decoded
+    return values.astype(np.float32)
+
+
 def _median(vals):
     s = sorted(vals)
     n = len(s)
@@ -69,7 +84,7 @@ def phenology_phase(ndvi_now, history, cls, redness, snow, bad_obs,
     ndvi_now: current composite NDVI (-1..1). history: list of older valid
     NDVI (any order; median is the reference). cls: land class code.
     redness: 0..1 autumn spectral proxy. snow/bad_obs: bools. prev_phase:
-    last published phase (hold-forward for rejected observations).
+    last published phase (retained as an ignored compatibility argument).
 
     Composites are already best-pixel products, so the current observation
     is trusted as the signal; history supplies only the baseline maximum
@@ -77,13 +92,13 @@ def phenology_phase(ndvi_now, history, cls, redness, snow, bad_obs,
     direction reference (median, robust to one bad composite).
     """
     if bad_obs:
-        return (prev_phase, True) if prev_phase is not None else (None, True)
+        return None, True  # rejected observation: never paint a prior phase
     if snow:
         return None, False  # transparent; snow is not foliage
     if cls in (0, 7, 8, 9):
         return None, False  # masked classes
     if ndvi_now is None or not math.isfinite(ndvi_now):
-        return (prev_phase, True) if prev_phase is not None else (None, True)
+        return None, True  # missing current observation stays transparent
     hist = [v for v in history if v is not None and math.isfinite(v)]
     n_ref = _median(hist) if hist else ndvi_now
     d = ndvi_now - n_ref
