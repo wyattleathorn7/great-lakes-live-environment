@@ -396,8 +396,7 @@ def _build(bounds, W, H, vi, rf, sig):
     good = (~cloudy) & (~snow) & (~cloud_shadow) \
         & (modland <= 1) & (aerosol < 3) & (cirrus <= 1) \
         & (red_q <= 1) & (nir_q <= 1)
-    marginal = (~cloudy) & (~snow) & (~good) \
-        & (~cloud_shadow) & (modland <= 1)
+    marginal = (~cloudy) & (~snow) & (~good) & (modland <= 2) & (aerosol < 3) & (red_q <= 2) & (nir_q <= 2)
     bad = ~(good | marginal) & ~snow
     n_good = int(good.sum())
     print(f"[{PRODUCT}] good={n_good} marginal={int(marginal.sum())} "
