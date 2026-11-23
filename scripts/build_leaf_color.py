@@ -115,6 +115,49 @@ def pick_asset(item, *cands):
     return None, None
 
 
+def decode_reflectance_qa(state, qc):
+    """Decode MYD09A1 Collection 6.1 state and 500 m QC bit fields.
+
+    Cloud is taken only from the State QA cloud masks (bits 0-1 and 10).
+    MODLAND QA is a quality indicator, not a cloud mask; its rejected
+    values remain eligible for damped rendering when reflectance exists.
+    """
+    state = np.asarray(state, dtype=float)
+    qc = np.asarray(qc, dtype=float)
+    state_valid = np.isfinite(state) & (state >= 0) & (state <= 57343)
+    qc_valid = (np.isfinite(qc) & (qc >= 0)
+                & (qc < np.iinfo(np.uint32).max))
+    st = np.where(state_valid, state, 0).astype(np.uint64)
+    q = np.where(qc_valid, qc, 0).astype(np.uint64)
+
+    cloud_state = st & 3
+    cloudy = ((cloud_state == 1) | (cloud_state == 2)
+              | ((st & (1 << 10)) != 0))
+    cloud_shadow = (st & (1 << 2)) != 0
+    adjacent = (st & (1 << 13)) != 0
+
+    aerosol = (st >> 6) & 3
+    cirrus = (st >> 8) & 3
+    modland = q & 3
+    red_q = (q >> 2) & 15
+    nir_q = (q >> 6) & 15
+
+    good = (state_valid & qc_valid & ~cloudy & ~cloud_shadow & ~adjacent
+            & (aerosol < 3) & (cirrus <= 1) & (modland <= 1)
+            & (red_q <= 1) & (nir_q <= 1))
+    return {
+        "cloudy": cloudy,
+        "cloud_shadow": cloud_shadow,
+        "adjacent": adjacent,
+        "aerosol": aerosol,
+        "cirrus": cirrus,
+        "modland": modland,
+        "red_q": red_q,
+        "nir_q": nir_q,
+        "good": good,
+    }
+
+
 def read_window(signed_href, out_shape, resampling):
     """Read a COG's canvas window via rasterio WarpedVRT (no full download).
 
@@ -193,7 +236,7 @@ def run():
     sig = hashlib.sha256(
         ("|".join(sorted(i.id for i in list(vi.values()) + list(rf.values())))
          ).encode()).hexdigest()
-    source_id_hint = f"leaf-v9-{sig[:12]}"
+    source_id_hint = f"leaf-v10-{sig[:12]}"
     prev = read_state(PRODUCT)
     if prev.get("source_id") == source_id_hint \
             and prev.get("render_version") == RENDER_VERSION \
@@ -377,29 +420,19 @@ def _build(bounds, W, H, vi, rf, sig):
     print(f"[{PRODUCT}] tiles={sorted(vi_ids)} ndvi range "
           f"[{np.nanmin(ndvi):.3f},{np.nanmax(ndvi):.3f}]")
 
-    # QA: pixel reliability 0 good; 1 marginal(hold); 2 snow; 3 cloud; else bad.
-    # Plus MODLAND usefulness via state bit0 cloud as backup.
-    st_int = np.where(np.isfinite(state), state, 0).astype(np.int64)
-    qc_int = np.where(np.isfinite(qc), qc, 0).astype(np.uint64)
-    # Reflectance (MYD09A1) own QA: state bits + QC bits (no VI reliability).
-    cloud_state = (st_int & 1) == 1
-    cloud_shadow = (st_int & (1 << 2)) != 0
-    snow_state = (st_int & (1 << 4)) != 0
-    modland = (qc_int & 3).astype(np.int64)          # bits 0-1
-    aerosol = (qc_int >> 6) & 3                      # bits 6-7
-    cirrus = (qc_int >> 8) & 3                       # bits 8-9
-    red_q = (qc_int >> 16) & 3                       # bits 16-17 (band 1)
-    nir_q = (qc_int >> 18) & 3                       # bits 18-19 (band 2)
+    # MYD09A1 Collection 6.1 QA: cloud decisions come from State QA,
+    # not MODLAND quality. State cloud codes 01/10 and internal bit 10
+    # are cloudy; 11 means "not set, assumed clear" and stays paintable.
+    qa = decode_reflectance_qa(state, qc)
+    cloudy = qa["cloudy"]
+    cloud_shadow = qa["cloud_shadow"]
     ndsi = (green - swir) / (green + swir + 1e-6)
-    # Snow is flagged only by the spectral NDSI test (state bit 4 overcounts
-    # dormant/clear pixels in this composite); keep cloud handling from state.
+    # Preserve the spectral-only snow gate: the state snow flag overcounts
+    # dormant/clear late-season pixels for this leaf-color layer.
     snow = (ndsi > 0.4) & (ndvi < 0.25) & np.isfinite(ndvi)
-    cloudy = cloud_state | (modland >= 2)
-    good = (~cloudy) & (~snow) & (~cloud_shadow) \
-        & (modland <= 1) & (aerosol < 3) & (cirrus <= 1) \
-        & (red_q <= 1) & (nir_q <= 1)
-    # Paint every clear, non-snow land pixel; lower-quality observations are
-    # damped rather than dropped so coverage matches the intended land mask.
+    good = qa["good"] & ~snow
+    # Clear/uncertain and lower-quality observations remain paintable;
+    # only cloud and spectral snow are withheld from the current composite.
     marginal = (~cloudy) & (~snow) & (~good)
     bad = np.zeros_like(good)
     n_good = int(good.sum())
@@ -524,9 +557,10 @@ def _build(bounds, W, H, vi, rf, sig):
         "stale": stale, "retrieved": now_det_str(),
         "native_resolution_m": 500, "native_crs": "MODIS sinusoidal",
         "resampling": "nearest (no invented values)",
-        "qa_rules": ("MYD09A1 state (cloud/shadow/adjacent/snow) + QC "
-                     "(MODLAND/aerosol/cirrus/red-NIR band quality); "
-                     "NDSI>0.4+snow test"),
+        "qa_rules": ("MYD09A1 State QA: cloud state bits 0-1, internal cloud "
+                     "bit 10, shadow bit 2, aerosol bits 6-7, cirrus bits 8-9; "
+                     "QC_500m: MODLAND bits 0-1, band 1 bits 2-5, "
+                     "band 2 bits 6-9; spectral NDSI snow test"),
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
@@ -539,7 +573,7 @@ def _build(bounds, W, H, vi, rf, sig):
     # (all 3 tiles required) + NaN-aware history means.
     # One-time version rotation to deploy the fixed rendering; afterwards
     # the id tracks source composites only.
-    source_id = f"leaf-v9-{sig[:12]}-r{RENDER_VERSION}"
+    source_id = f"leaf-v10-{sig[:12]}-r{RENDER_VERSION}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {
@@ -576,7 +610,7 @@ def _build(bounds, W, H, vi, rf, sig):
         entry_description_html(CONFIG["title"], meta, SKIP_NOTE),
         CONFIG["refresh_interval_seconds"], out_dirs=outs["entry"])
 
-    save_history(ndvi, phase_obs, vi_ids, sig)
+    save_history(ndvi, phase_obs, rf_ids, sig)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"composite_sig": sig,
                           "source_id": source_id,
