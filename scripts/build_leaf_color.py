@@ -318,6 +318,7 @@ def _build(bounds, W, H, vi, rf, sig):
     # per-tile reads (canvas window only); keep each SDS nodata for fill masking
     ndvi_r, rel_r, evi_r, comp_r = [], [], [], []
     b1_r, b2_r, b3_r, b4_r, b6_r, st_r = [], [], [], [], [], []
+    qc_r, doy_r = [], []
     vi_ids, rf_ids = {}, {}
     for tid in TILES:
         if tid not in vi or tid not in rf:
@@ -326,21 +327,25 @@ def _build(bounds, W, H, vi, rf, sig):
         vi_ids[tid], rf_ids[tid] = vi[tid].id, rf[tid].id
         _nk, ndvi_a = pick_asset(vitem, "ndvi")
         _ek, evi_a = pick_asset(vitem, "evi")
-        _rk, rel_a = pick_asset(vitem, "reliability")
         b1k, b1_a = pick_asset(ritem, "b01", "band01", "red")
         b2k, b2_a = pick_asset(ritem, "b02", "band02", "nir")
         b3k, b3_a = pick_asset(ritem, "b03", "band03", "blue")
         b4k, b4_a = pick_asset(ritem, "b04", "band04", "green")
         b6k, b6_a = pick_asset(ritem, "b06", "band06", "swir")
         stk, st_a = pick_asset(ritem, "state")
-        if not ndvi_a or not rel_a or not b1_a or not b2_a:
+        qck, qc_a = pick_asset(ritem, "qc", "quality")
+        doyk, doy_a = pick_asset(ritem, "day_of_year", "doy")
+        if not ndvi_a or not b1_a or not b2_a or not st_a:
             raise ValueError(f"missing SDS assets for tile {tid}")
         ndvi_r.append(read_window(ndvi_a.href, (H, W), "nearest"))
-        rel_r.append(read_window(rel_a.href, (H, W), "nearest"))
         evi_r.append(read_window(evi_a.href, (H, W), "nearest")
                      if evi_a else (np.full((H, W), np.nan), None))
         b1_r.append(read_window(b1_a.href, (H, W), "nearest"))
         b2_r.append(read_window(b2_a.href, (H, W), "nearest"))
+        qc_r.append(read_window(qc_a.href, (H, W), "nearest")
+                    if qc_a else (np.full((H, W), np.nan), None, None))
+        doy_r.append(read_window(doy_a.href, (H, W), "nearest")
+                     if doy_a else (np.full((H, W), np.nan), None, None))
         b3_r.append(read_window(b3_a.href, (H, W), "nearest"))
         b4_r.append(read_window(b4_a.href, (H, W), "nearest"))
         b6_r.append(read_window(b6_a.href, (H, W), "nearest")
@@ -358,13 +363,13 @@ def _build(bounds, W, H, vi, rf, sig):
         return r[2]
 
     ndvi_vi = _mosaic([(_a(r), _n(r)) for r in ndvi_r]) * 0.0001
-    rel = _mosaic([(_a(r), _n(r)) for r in rel_r])
     red = _mosaic([(_a(r), _n(r)) for r in b1_r]) * 0.0001
     nir = _mosaic([(_a(r), _n(r)) for r in b2_r]) * 0.0001
     blue = _mosaic([(_a(r), _n(r)) for r in b3_r]) * 0.0001
     green = _mosaic([(_a(r), _n(r)) for r in b4_r]) * 0.0001
     swir = _mosaic([(_a(r), _n(r)) for r in b6_r]) * 0.0001
     state = _mosaic([(_a(r), _n(r)) for r in st_r])
+    qc = _mosaic([(_a(r), _n(r)) for r in qc_r])
     # Current NDVI is derived from the coherent Aqua reflectance composite
     # (red/NIR) rather than the MODIS VI best-pixel composite, which
     # favours greener observations and lags late-season decline.
@@ -374,16 +379,27 @@ def _build(bounds, W, H, vi, rf, sig):
 
     # QA: pixel reliability 0 good; 1 marginal(hold); 2 snow; 3 cloud; else bad.
     # Plus MODLAND usefulness via state bit0 cloud as backup.
-    rel_ok = np.isfinite(rel)
-    good = rel_ok & (rel == 0)
-    marginal = rel_ok & (rel == 1)
-    snow_qa = rel_ok & (rel == 2)
-    cloudy_qa = rel_ok & (rel == 3)
-    ndsi = (green - swir) / (green + swir + 1e-6)
-    snow = snow_qa | ((ndsi > 0.4) & (ndvi < 0.25) & np.isfinite(ndvi))
     st_int = np.where(np.isfinite(state), state, 0).astype(np.int64)
-    cloudy = cloudy_qa | ((st_int & 1) == 1)
-    bad = ~(good | marginal) & ~snow_qa
+    qc_int = np.where(np.isfinite(qc), qc, 0).astype(np.uint64)
+    # Reflectance (MYD09A1) own QA: state bits + QC bits (no VI reliability).
+    cloud_state = (st_int & 1) == 1
+    cloud_shadow = (st_int & (1 << 2)) != 0
+    adjacent_cloud = (st_int & (1 << 3)) != 0
+    snow_state = (st_int & (1 << 4)) != 0
+    modland = (qc_int & 3).astype(np.int64)          # bits 0-1
+    aerosol = (qc_int >> 6) & 3                      # bits 6-7
+    cirrus = (qc_int >> 8) & 3                       # bits 8-9
+    red_q = (qc_int >> 16) & 3                       # bits 16-17 (band 1)
+    nir_q = (qc_int >> 18) & 3                       # bits 18-19 (band 2)
+    ndsi = (green - swir) / (green + swir + 1e-6)
+    snow = snow_state | ((ndsi > 0.4) & (ndvi < 0.25) & np.isfinite(ndvi))
+    cloudy = cloud_state | (modland >= 2)
+    good = (~cloudy) & (~snow) & (~cloud_shadow) & (~adjacent_cloud) \
+        & (modland == 0) & (aerosol < 3) & (cirrus == 0) \
+        & (red_q == 0) & (nir_q == 0)
+    marginal = (~cloudy) & (~snow) & (~good) \
+        & (~cloud_shadow) & (modland <= 1)
+    bad = ~(good | marginal) & ~snow
     n_good = int(good.sum())
     print(f"[{PRODUCT}] good={n_good} marginal={int(marginal.sum())} "
           f"snow={int(snow.sum())} cloudy={int(cloudy.sum())}")
@@ -506,9 +522,9 @@ def _build(bounds, W, H, vi, rf, sig):
         "stale": stale, "retrieved": now_det_str(),
         "native_resolution_m": 500, "native_crs": "MODIS sinusoidal",
         "resampling": "nearest (no invented values)",
-        "qa_rules": ("MYD13A1 pixel reliability 0=good/1=hold/2=snow/3=cloud; "
-                     "MYD09A1 state bit0 cloud; NDSI>0.4+snow test; "
-                     "brightness backup"),
+        "qa_rules": ("MYD09A1 state (cloud/shadow/adjacent/snow) + QC "
+                     "(MODLAND/aerosol/cirrus/red-NIR band quality); "
+                     "NDSI>0.4+snow test"),
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
