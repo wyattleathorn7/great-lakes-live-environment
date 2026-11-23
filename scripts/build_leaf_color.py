@@ -384,7 +384,6 @@ def _build(bounds, W, H, vi, rf, sig):
     # Reflectance (MYD09A1) own QA: state bits + QC bits (no VI reliability).
     cloud_state = (st_int & 1) == 1
     cloud_shadow = (st_int & (1 << 2)) != 0
-    adjacent_cloud = (st_int & (1 << 3)) != 0
     snow_state = (st_int & (1 << 4)) != 0
     modland = (qc_int & 3).astype(np.int64)          # bits 0-1
     aerosol = (qc_int >> 6) & 3                      # bits 6-7
@@ -394,9 +393,9 @@ def _build(bounds, W, H, vi, rf, sig):
     ndsi = (green - swir) / (green + swir + 1e-6)
     snow = snow_state | ((ndsi > 0.4) & (ndvi < 0.25) & np.isfinite(ndvi))
     cloudy = cloud_state | (modland >= 2)
-    good = (~cloudy) & (~snow) & (~cloud_shadow) & (~adjacent_cloud) \
-        & (modland == 0) & (aerosol < 3) & (cirrus == 0) \
-        & (red_q == 0) & (nir_q == 0)
+    good = (~cloudy) & (~snow) & (~cloud_shadow) \
+        & (modland <= 1) & (aerosol < 3) & (cirrus <= 1) \
+        & (red_q <= 1) & (nir_q <= 1)
     marginal = (~cloudy) & (~snow) & (~good) \
         & (~cloud_shadow) & (modland <= 1)
     bad = ~(good | marginal) & ~snow
