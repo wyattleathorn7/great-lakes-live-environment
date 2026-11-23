@@ -443,8 +443,8 @@ def main():
                       "legend.png?v=" in _fb)
 
     # ---- leaf phenology engine (synthetic trajectory §43) ----
-    from leaf_phenology import (build_leaf_lut, phenology_phase,
-                                redness_index)
+    from leaf_phenology import (build_leaf_lut, decode_history_ndvi,
+                                phenology_phase, redness_index)
     _lut = build_leaf_lut()
     check("leaf-lut-256", len(_lut) == 256)
     check("leaf-lut-wrap", _lut[0] == _lut[-1] == (18, 59, 115))
@@ -487,9 +487,19 @@ def main():
     check("leaf-evergreen-clamped", 0.38 <= _pe <= 0.58, _pe)
     _ps, _ = phenology_phase(0.30, [0.30, 0.30], 1, 0.0, False, True)
     check("leaf-snow-transparent", _ps is None)
-    _ph2, _held = phenology_phase(0.30, [0.30, 0.30], 1, 0.0, False, True,
-                                  prev_phase=0.5)
-    check("leaf-badobs-hold", _held and _ph2 == 0.5)
+    _ph2, _rejected = phenology_phase(
+        0.30, [0.30, 0.30], 1, 0.0, False, True, prev_phase=0.5)
+    check("leaf-badobs-transparent", _rejected and _ph2 is None, _ph2)
+    _pm, _missing = phenology_phase(
+        float("nan"), [0.30, 0.30], 1, 0.0, False, False, prev_phase=0.5)
+    check("leaf-missing-transparent", _missing and _pm is None, _pm)
+    _encoded = __import__("numpy").array(
+        [-128, -100, -1, 0, 55, 100], dtype="int8")
+    _decoded = decode_history_ndvi(_encoded)
+    check("leaf-history-sentinel-nan", __import__("numpy").isnan(_decoded[0]))
+    check("leaf-history-valid-negative", abs(float(_decoded[1]) + 1.0) < 1e-6)
+    check("leaf-history-partial-values",
+          __import__("numpy").allclose(_decoded[2:], [-0.01, 0.0, 0.55, 1.0]))
     _pc, _ = phenology_phase(0.75, [0.75, 0.75], 6, 0.0, False, False)
     check("leaf-crop-subdued", 0.40 <= _pc <= 0.60, _pc)
     _pu, _ = phenology_phase(0.75, [0.75, 0.75], 7, 0.0, False, False)
