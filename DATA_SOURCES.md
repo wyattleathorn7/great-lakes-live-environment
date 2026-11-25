@@ -239,64 +239,59 @@ not support Region, so multi-image tile pyramids are deliberately avoided:
 they produce fetch failures, not sharper shores. Shoreline crispness comes
 from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
 
-## 5. Leaf color — NASA MODIS Aqua via Planetary Computer (basin-wide land)
+## 5. Leaf color — NASA HLS v2.0 Landsat 8/9 + Sentinel-2 via Planetary Computer (basin-wide land)
 
-- **Products:** MYD13A1.061 (NDVI + pixel reliability, 16-day) and
-  MYD09A1.061 (surface reflectance red/green/blue/SWIR + state QA, 8-day),
-  queried per MODIS tile (h11/h12/h13v04) through the Planetary Computer
-  STAC API with anonymous SAS (`planetary-computer` SDK `sign()` flow —
-  verified working; hand-rolled token URLs 403, so the SDK flow is mandatory).
-  COGs are range-read (WarpedVRT to EPSG:4326, canvas window, nearest —
-  no bulk downloads).
-
-- **Products:** MYD13A1.061 (NDVI + pixel reliability, 16-day) and
-  MYD09A1.061 (surface reflectance red/green/blue/SWIR + state QA, 8-day),
-  queried per MODIS tile (h11/h12/h13v04) through the Planetary Computer
-  STAC API with anonymous SAS (`planetary-computer` SDK `sign()` flow —
-  verified working; hand-rolled token URLs 403, so the SDK flow is mandatory).
-  COGs are range-read (WarpedVRT to EPSG:4326, canvas window, nearest —
-  no bulk downloads).
-- **Why not VNP13A4N:** the specified VIIRS NRT product requires NASA
-  Earthdata credentials, which cannot exist for unattended automation
-  without operator-supplied secrets. The substitute is the same
-  vegetation-index family (MODIS Aqua = same afternoon orbit class, same
-  500 m, same NDVI/EVI/QA science, global incl. Canada, QA'd composites)
-  with honest costs: 16-day cadence and PC processing lag (~4–6 weeks;
-  exposed as composite date + age in every legend/metadata/KML, with a
-  75-day STALE flag). The *current* spectral/autumn signal comes from the
-  8-day reflectance. Upgrade path: add Earthdata-auth VNP13A4N/VNP09
-  readers behind repo secrets without touching the phenology engine.
-  Rejected: GIBS (renders colormapped pictures, not data values —
-  verified), PC MODIS lag is documented not hidden, STAR VHP (4 km,
-  coarser than the 500 m target), USGS eVIIRS (CONUS-only).
+- **Products:** `hls2-l30` (HLSL30 v2.0) and `hls2-s30` (HLSS30 v2.0),
+  NASA's harmonized 30 m surface-reflectance collections on the common
+  MGRS/UTM grid. Both are queried over the full basin through the
+  Planetary Computer STAC API with anonymous SAS (`planetary-computer`
+  SDK `sign()` flow — verified working; hand-rolled token URLs 403, so
+  the SDK flow is mandatory). COGs are range-read with rasterio
+  `WarpedVRT` into the shared 1800x1175 EPSG:4326 canvas (average
+  surface reflectance, nearest Fmask); no bulk downloads.
+- **Why HLS:** the previous MODIS engine stitched three independently
+  generated tiles. HLS puts Landsat 8/9 OLI and Sentinel-2A/B/C MSI on
+  one radiometrically harmonized 30 m grid, so every scene is composited
+  into ONE basin field before phenology is computed. There are no
+  per-tile, per-lake or per-state gradients; the Google Earth output is a
+  single GroundOverlay covering the full basin rectangle.
+- **Cadence + freshness:** the leaf job rides the existing weekly
+  dispatch (`product=weekly`, which already includes `leaf_color`; no
+  second schedule is added). The newest clear observation wins at each
+  vegetated land pixel inside a 45-day rolling window. Up to six usable
+  scenes per MGRS tile are kept — the two newest from each platform plus
+  date-spread picks — so cloud holes fill from slightly older
+  observations instead of leaving seams. NASA HLS latency is about
+  1.7 days, so every weekly run uses the newest available scenes.
+- **QA:** HLS v2 Fmask bits: 1 cloud, 2 adjacent to cloud/shadow,
+  3 cloud shadow, 4 snow/ice, 5 water, 6-7 aerosol level. Surface
+  reflectance is int16 scaled by 0.0001 with fill -9999. Snow-covered
+  vegetation renders as dormant winter deep blue; clouds, water, urban
+  and barren pixels are never painted as foliage. Narrow MGRS tile
+  boundary bands get a 3-px nan-aware blend so zipper steps vanish while
+  every other pixel keeps its exact source value.
+- **Full coverage:** current HLS observation -> previous published phase
+  for the same pixel -> nearest-valid interpolation for small gaps ->
+  dormant winter blue backstop. Every vegetated land pixel is painted, so
+  the Google Earth layer has no tile/cloud holes. Open Great Lakes water,
+  cities, bare ground and other non-vegetated classes stay transparent
+  because leaves do not grow there.
 - **Land cover (static ancillary):** US side USGS NLCD 2021 + Canada side
   NRCan 2020 Land Cover of Canada (the two national inputs NALCMS
   harmonizes), mosaicked once to `assets/leaf_landcover.png`
   (deciduous/mixed/evergreen/shrub/grass/crop/urban/barren/water;
   wetlands→shrub behavior). `scripts/build_leaf_landcover.py` reproduces it.
-- **Footprint (basin-wide land):** every basin land pixel paints (whole
-  lon −93…−73.5 / lat 40.5…49.5 rectangle minus open lake water);
-  Great Lakes water cut by the shared shoreline mask (leaves do not
-  grow on open water, so water stays transparent). Full-coverage
-  gap-fill (hold-forward history, nearest-valid propagation, circular-
-  median fallback) leaves no land holes.
-- **Phenology (leaf_phenology v2):** per-pixel NDVI trajectory (current +
-  rolling quarter-res history for baseline max with class priors +
-  median direction reference) → circular phase 0..1 → class modulation
-  (deciduous full, mixed 0.55, evergreen clamped green, shrub/grass 0.45
-  capped, crop 0.35 capped, urban/barren/nodata/water transparent) →
-  spectral gating (redness proxy only counts while declining; NDSI snow →
-  transparent; cloud/bad-QA → filled, see below).
-  Continuous 19-anchor circular LUT (wraparound-identical deep blue).
-- **Mosaic + rendering (v7, observed-only):** tiles combined
-  first-valid-wins (single-tile pixels keep exact source values); the
-  narrow inter-tile overlap bands get a 3-px horizontal blend so zipper
-  steps and resampling edge lines vanish. ONLY currently-observed
-  vegetated land paints — clouds, snow, bad QA, masked classes and water
-  stay transparent (100% the source's current information; never carried
-  views, never modeled fills). History (observations only,
-  duplicate-suppressed) feeds the trajectory baseline alone and never
-  renders.
+- **Phenology + key (unchanged):** the same per-pixel NDVI trajectory ->
+  circular phase 0..1 -> class modulation (deciduous full, mixed 0.55,
+  evergreen clamped green, shrub/grass 0.45 capped, crop 0.35 capped,
+  urban/barren/nodata/water transparent) -> the same continuous
+  19-anchor circular OKLab LUT (deep-blue dormant -> cyan spring ->
+  green summer -> yellow/orange/red autumn -> purple leaf drop ->
+  deep-blue). Scale remains 0..1 phase.
+- **Trajectory source:** each run slices its own selected HLS scenes into
+  four equal time bins over the lookback window and uses those NDVI
+  slices as the baseline/max reference. No MODIS-era NDVI history is
+  mixed into a 30 m HLS phase, so a sensor change cannot bias the map.
 - Freshness wording: **"LATEST AVAILABLE COMPOSITE"** (+ age, + STALE flag).
 
 ## 6. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (SQ, daily)
@@ -426,11 +421,12 @@ de-collided (endpoints always kept).
   depth-in-inches satellite source is operable without credentials, the
   product states this explicitly and uses HRRR analysis state (never
   precipitation/forecast variables) with an upgrade path recorded.
-- **Leaf rebuild source decision:** same VIIRS finding → MODIS Aqua
-  8-day/16-day via Planetary Computer retained as the operational
-  daily-checked stream (architecture polls STAC daily; observation
-  cadence follows the 8-day composite cycle; VNP13A4N upgrade path
-  documented for a credentialed future).
+- **Leaf rebuild source decision:** the leaf product now uses NASA HLS
+  v2.0 (Landsat 8/9 + Sentinel-2) via Planetary Computer, not MODIS.
+  HLS provides one harmonized 30 m MGRS grid, so the three independently
+  generated MODIS tile gradients are replaced by one basin-wide mosaic.
+  The weekly cadence uses the newest available HLS scenes; no Earthdata
+  credential is required for this Planetary Computer flow.
 - Freshness wording: snow **"LIVE / CURRENT MODEL (analysis)"**.
 
 `scripts/gradient_scale.py`: snow uses the same balanced LINEAR mapping
