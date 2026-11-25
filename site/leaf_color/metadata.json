@@ -2,15 +2,15 @@
   "product": "leaf_color",
   "title": "LIVE LEAF COLOR",
   "freshness": "LATEST AVAILABLE COMPOSITE",
-  "noaa_source": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
-  "product_name": "NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)",
-  "variable": "NDVI trajectory + surface reflectance + NDSI snow + land class -> circular phenology phase 0..1",
-  "source_url": "https://planetarycomputer.microsoft.com/",
-  "data_time_utc": "reflectance composite start 2026-11-09 (+8d window; NDVI derived from red/NIR); retrieved 2026-11-23 04:42 PM EST",
-  "source_last_modified_utc": "composite sig 458720dac03a",
-  "processing_time_utc": "2026-11-23 04:42 PM EST",
-  "units": "phenology phase 0..1 (display color); source NDVI/reflectance",
-  "spatial_resolution_source": "500 m MODIS sinusoidal, reprojected to canvas (nearest)",
+  "noaa_source": "NASA HLS v2.0 Landsat 8/9 + Sentinel-2 via Planetary Computer (30 m)",
+  "product_name": "NASA HLS v2.0 Landsat 8/9 + Sentinel-2 via Planetary Computer (30 m)",
+  "variable": "HLS surface reflectance (blue/green/red/NIR) + Fmask -> NDVI + redness -> circular phenology phase 0..1",
+  "source_url": "https://planetarycomputer.microsoft.com/dataset/hls2-l30",
+  "data_time_utc": "HLS newest-clear observation 2026-11-23 (45-day rolling window); retrieved 2026-11-25 01:23 PM EST",
+  "source_last_modified_utc": "mosaic sig 32e90f6163af",
+  "processing_time_utc": "2026-11-25 01:23 PM EST",
+  "units": "phenology phase 0..1 (display color); source HLS NDVI/reflectance",
+  "spatial_resolution_source": "30 m NASA HLS (MGRS/UTM), reprojected to canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
   "crs": "EPSG:4326",
   "render_bounds": {
@@ -22,56 +22,885 @@
   "color_scale_min": 0.0,
   "color_scale_max": 1.0,
   "color_scale_units": "phenology phase (circular)",
-  "missing_data_treatment": "ONLY currently-observed vegetated land paints \u2014 100% the source's current information. Clouds, snow, bad QA, masked classes (urban/barren/nodata/inland-water) and Great-Lakes water stay transparent; never carried views, never modeled fills. History (observations only) feeds the trajectory baseline, never the picture.",
+  "missing_data_treatment": "ONE continuous basin-wide HLS mosaic.  At every vegetated land pixel the newest clear Landsat/Sentinel-2 observation in the rolling window wins; persistent cloud/ocean-adjacent gaps fall back to the most recent valid observation, and snow-covered vegetation renders as dormant winter deep blue.  Cities, bare ground, non-vegetated land and open Great Lakes water stay transparent because leaves do not grow there.",
   "shoreline_mask": "assets/great_lakes_watermask.png \u2014 shared NOAA medium-resolution shoreline water mask (nautical-chart compilation, mean-high-water datum; snapped + polygonized once, full vertex precision, antialiased). Overlay alpha is multiplied by this mask and edge RGB is bled into transparent pixels (anti-fringe for bilinear clients), so every product shares one shoreline.",
   "attribution": "Data: US NOAA. This project is not endorsed by NOAA. See DATA_SOURCES.md for exact products and endpoints.",
   "legend_size": [
     760,
     300
   ],
-  "legend_scale_html": "What each color means (one trip around the year, left to right on the key): <b>deep blue</b> = dormant winter; <b>light blue/cyan</b> = spring awakening and bud break; <b>teal-green</b> = leaf emergence; <b>green</b> = growing season; <b>yellow-green/yellow</b> = first color; <b>orange</b> = autumn coloring; <b>red/magenta</b> = peak color into leaf drop; <b>purple</b> = late drop returning to <b>deep-blue</b> dormant (the scale wraps: both ends are winter). Color is the satellite-derived growth stage, not the color of individual trees. Only land the satellite actually saw this composite is painted \u2014 <b>transparent = clouds, snow, cities, bare ground, water, or otherwise no current observation</b>.",
-  "data_nature": "observed satellite composites + derived phenology state",
+  "legend_scale_html": "What each color means (one trip around the year, left to right on the key): <b>deep blue</b> = dormant winter; <b>light blue/cyan</b> = spring awakening and bud break; <b>teal-green</b> = leaf emergence; <b>green</b> = growing season; <b>yellow-green/yellow</b> = first color; <b>orange</b> = autumn coloring; <b>red/magenta</b> = peak color into leaf drop; <b>purple</b> = late drop returning to <b>deep-blue</b> dormant (the scale wraps: both ends are winter). Color is the satellite-derived growth stage, not the color of individual trees. Every vegetated land pixel is painted from the newest clear HLS observation in the rolling window; persistent gaps fall back to the most recent valid observation. <b>Transparent = cities, bare ground, open water, or non-vegetated land</b>.",
+  "data_nature": "NASA HLS harmonized Landsat/Sentinel-2 observations + derived phenology state",
   "gradient": {
     "interpolation": "OKLab (perceptually uniform)",
     "anchors": 19,
-    "distinct_raster_colors": 204,
+    "distinct_raster_colors": 222,
     "wraparound": "first == last deep blue #123B73"
   },
   "provenance": {
-    "provider": "NASA MODIS (Aqua) via Microsoft Planetary Computer STAC",
+    "provider": "NASA HLS v2.0 (Landsat 8/9 + Sentinel-2) via Microsoft Planetary Computer STAC",
     "collections": [
-      "modis-13A1-061",
-      "modis-09A1-061"
+      "hls2-l30",
+      "hls2-s30"
     ],
-    "vi_items": {
-      "h11v04": "MYD13A1.A2026297.h11v04.061.2026314094416",
-      "h12v04": "MYD13A1.A2026297.h12v04.061.2026314095651",
-      "h13v04": "MYD13A1.A2026297.h13v04.061.2026314095219"
+    "items": {
+      "T15TWH": {
+        "l30": "HLS.L30.T15TWH.2026321T164711.v2.0",
+        "s30": "HLS.S30.T15TWH.2026302T165419.v2.0"
+      },
+      "T15TVH": {
+        "l30": "HLS.L30.T15TVH.2026320T165325.v2.0",
+        "s30": "HLS.S30.T15TVH.2026295T170339.v2.0"
+      },
+      "T15TVK": {
+        "l30": "HLS.L30.T15TVK.2026303T165906.v2.0",
+        "s30": "HLS.S30.T15TVK.2026305T171711.v2.0"
+      },
+      "T15TVJ": {
+        "l30": "HLS.L30.T15TVJ.2026320T165301.v2.0",
+        "s30": "HLS.S30.T15TVJ.2026305T171711.v2.0"
+      },
+      "T15TWL": {
+        "l30": "HLS.L30.T15TWL.2026296T165232.v2.0",
+        "s30": "HLS.S30.T15TWL.2026295T170339.v2.0"
+      },
+      "T15TWK": {
+        "l30": "HLS.L30.T15TWK.2026321T164648.v2.0",
+        "s30": "HLS.S30.T15TWK.2026303T171431.v2.0"
+      },
+      "T15TVL": {
+        "l30": "HLS.L30.T15TVL.2026327T165846.v2.0",
+        "s30": "HLS.S30.T15TVL.2026298T171409.v2.0"
+      },
+      "T15TXN": {
+        "l30": "HLS.L30.T15TXN.2026320T165213.v2.0",
+        "s30": "HLS.S30.T15TXN.2026303T171431.v2.0"
+      },
+      "T15TXM": {
+        "l30": "HLS.L30.T15TXM.2026321T164600.v2.0",
+        "s30": "HLS.S30.T15TXM.2026302T165419.v2.0"
+      },
+      "T15TVN": {
+        "l30": "HLS.L30.T15TVN.2026303T165818.v2.0",
+        "s30": "HLS.S30.T15TVN.2026298T171409.v2.0"
+      },
+      "T15TVM": {
+        "l30": "HLS.L30.T15TVM.2026327T165823.v2.0",
+        "s30": "HLS.S30.T15TVM.2026298T171409.v2.0"
+      },
+      "T15UXP": {
+        "l30": "HLS.L30.T15UXP.2026303T165754.v2.0",
+        "s30": "HLS.S30.T15UXP.2026303T171431.v2.0"
+      },
+      "T15UXQ": {
+        "l30": "HLS.L30.T15UXQ.2026304T165122.v2.0",
+        "s30": "HLS.S30.T15UXQ.2026318T171559.v2.0"
+      },
+      "T15UWQ": {
+        "l30": "HLS.L30.T15UWQ.2026318T170347.v2.0",
+        "s30": "HLS.S30.T15UWQ.2026303T171431.v2.0"
+      },
+      "T17TLF": {
+        "s30": "HLS.S30.T17TLF.2026305T161421.v2.0",
+        "l30": "HLS.L30.T17TLF.2026302T161637.v2.0"
+      },
+      "T17TQF": {
+        "s30": "HLS.S30.T17TQF.2026302T160401.v2.0",
+        "l30": "HLS.L30.T17TQF.2026321T155811.v2.0"
+      },
+      "T18TUP": {
+        "s30": "HLS.S30.T18TUP.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TUP.2026322T155110.v2.0"
+      },
+      "T18TUQ": {
+        "s30": "HLS.S30.T18TUQ.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TUQ.2026321T155700.v2.0"
+      },
+      "T18TUR": {
+        "s30": "HLS.S30.T18TUR.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TUR.2026306T155044.v2.0"
+      },
+      "T18TUS": {
+        "s30": "HLS.S30.T18TUS.2026300T161359.v2.0",
+        "l30": "HLS.L30.T18TUS.2026321T155636.v2.0"
+      },
+      "T18TVP": {
+        "s30": "HLS.S30.T18TVP.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TVP.2026308T153911.v2.0"
+      },
+      "T17TME": {
+        "l30": "HLS.L30.T17TME.2026303T161053.v2.0",
+        "s30": "HLS.S30.T17TME.2026303T162419.v2.0"
+      },
+      "T17TLE": {
+        "l30": "HLS.L30.T17TLE.2026302T161701.v2.0",
+        "s30": "HLS.S30.T17TLE.2026305T161421.v2.0"
+      },
+      "T17TKE": {
+        "l30": "HLS.L30.T17TKE.2026325T162315.v2.0",
+        "s30": "HLS.S30.T17TKE.2026303T162419.v2.0"
+      },
+      "T16TGK": {
+        "l30": "HLS.L30.T16TGK.2026325T162315.v2.0",
+        "s30": "HLS.S30.T16TGK.2026303T162419.v2.0"
+      },
+      "T18TVQ": {
+        "s30": "HLS.S30.T18TVQ.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TVQ.2026322T155046.v2.0"
+      },
+      "T18TVR": {
+        "s30": "HLS.S30.T18TVR.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TVR.2026322T155046.v2.0"
+      },
+      "T17TMF": {
+        "l30": "HLS.L30.T17TMF.2026303T161029.v2.0",
+        "s30": "HLS.S30.T17TMF.2026300T162651.v2.0"
+      },
+      "T17TLG": {
+        "l30": "HLS.L30.T17TLG.2026303T161029.v2.0",
+        "s30": "HLS.S30.T17TLG.2026303T162419.v2.0"
+      },
+      "T17TKG": {
+        "l30": "HLS.L30.T17TKG.2026325T162227.v2.0",
+        "s30": "HLS.S30.T17TKG.2026303T162419.v2.0"
+      },
+      "T17TKF": {
+        "l30": "HLS.L30.T17TKF.2026303T161029.v2.0",
+        "s30": "HLS.S30.T17TKF.2026303T162419.v2.0"
+      },
+      "T16TGM": {
+        "l30": "HLS.L30.T16TGM.2026325T162227.v2.0",
+        "s30": "HLS.S30.T16TGM.2026303T162419.v2.0"
+      },
+      "T16TGL": {
+        "l30": "HLS.L30.T16TGL.2026303T161029.v2.0",
+        "s30": "HLS.S30.T16TGL.2026303T162419.v2.0"
+      },
+      "T18TVS": {
+        "s30": "HLS.S30.T18TVS.2026321T155701.v2.0",
+        "l30": "HLS.L30.T18TVS.2026305T155633.v2.0"
+      },
+      "T17TNH": {
+        "l30": "HLS.L30.T17TNH.2026304T160353.v2.0",
+        "s30": "HLS.S30.T17TNH.2026305T161421.v2.0"
+      },
+      "T17TMH": {
+        "l30": "HLS.L30.T17TMH.2026304T160353.v2.0",
+        "s30": "HLS.S30.T17TMH.2026303T162419.v2.0"
+      },
+      "T17TMG": {
+        "l30": "HLS.L30.T17TMG.2026303T161005.v2.0",
+        "s30": "HLS.S30.T17TMG.2026303T162419.v2.0"
+      },
+      "T17TLH": {
+        "l30": "HLS.L30.T17TLH.2026303T161005.v2.0",
+        "s30": "HLS.S30.T17TLH.2026303T162419.v2.0"
+      },
+      "T17TNJ": {
+        "l30": "HLS.L30.T17TNJ.2026304T160329.v2.0",
+        "s30": "HLS.S30.T17TNJ.2026305T161421.v2.0"
+      },
+      "T17TMK": {
+        "l30": "HLS.L30.T17TMK.2026304T160329.v2.0",
+        "s30": "HLS.S30.T17TMK.2026320T162651.v2.0"
+      },
+      "T17TLJ": {
+        "l30": "HLS.L30.T17TLJ.2026325T162203.v2.0",
+        "s30": "HLS.S30.T17TLJ.2026303T162419.v2.0"
+      },
+      "T17TPL": {
+        "l30": "HLS.L30.T17TPL.2026320T160308.v2.0",
+        "s30": "HLS.S30.T17TPL.2026303T162419.v2.0"
+      },
+      "T17TNL": {
+        "l30": "HLS.L30.T17TNL.2026304T160305.v2.0",
+        "s30": "HLS.S30.T17TNL.2026303T162419.v2.0"
+      },
+      "T17TNK": {
+        "l30": "HLS.L30.T17TNK.2026304T160329.v2.0",
+        "s30": "HLS.S30.T17TNK.2026300T162651.v2.0"
+      },
+      "T17TML": {
+        "l30": "HLS.L30.T17TML.2026326T161531.v2.0",
+        "s30": "HLS.S30.T17TML.2026303T162419.v2.0"
+      },
+      "T17TNM": {
+        "l30": "HLS.L30.T17TNM.2026304T160241.v2.0",
+        "s30": "HLS.S30.T17TNM.2026320T162651.v2.0"
+      },
+      "T17TMM": {
+        "l30": "HLS.L30.T17TMM.2026303T160853.v2.0",
+        "s30": "HLS.S30.T17TMM.2026303T162419.v2.0"
+      },
+      "T17TMJ": {
+        "l30": "HLS.L30.T17TMJ.2026304T160329.v2.0",
+        "s30": "HLS.S30.T17TMJ.2026297T161701.v2.0"
+      },
+      "T17TLK": {
+        "l30": "HLS.L30.T17TLK.2026326T161555.v2.0",
+        "s30": "HLS.S30.T17TLK.2026303T162419.v2.0"
+      },
+      "T16TGQ": {
+        "l30": "HLS.L30.T16TGQ.2026325T162203.v2.0",
+        "s30": "HLS.S30.T16TGQ.2026303T162419.v2.0"
+      },
+      "T17TNN": {
+        "l30": "HLS.L30.T17TNN.2026302T161502.v2.0",
+        "s30": "HLS.S30.T17TNN.2026305T161421.v2.0"
+      },
+      "T17TMN": {
+        "l30": "HLS.L30.T17TMN.2026302T161502.v2.0",
+        "s30": "HLS.S30.T17TMN.2026303T162419.v2.0"
+      },
+      "T17TLN": {
+        "l30": "HLS.L30.T17TLN.2026302T161502.v2.0",
+        "s30": "HLS.S30.T17TLN.2026320T162651.v2.0"
+      },
+      "T17TLM": {
+        "l30": "HLS.L30.T17TLM.2026302T161502.v2.0",
+        "s30": "HLS.S30.T17TLM.2026320T162651.v2.0"
+      },
+      "T16TGT": {
+        "l30": "HLS.L30.T16TGT.2026301T162114.v2.0",
+        "s30": "HLS.S30.T16TGT.2026301T163401.v2.0"
+      },
+      "T16TGS": {
+        "l30": "HLS.L30.T16TGS.2026302T161502.v2.0",
+        "s30": "HLS.S30.T16TGS.2026320T162651.v2.0"
+      },
+      "T17UNP": {
+        "l30": "HLS.L30.T17UNP.2026302T161438.v2.0",
+        "s30": "HLS.S30.T17UNP.2026305T161421.v2.0"
+      },
+      "T17UMP": {
+        "l30": "HLS.L30.T17UMP.2026301T162050.v2.0",
+        "s30": "HLS.S30.T17UMP.2026301T163401.v2.0"
+      },
+      "T17ULP": {
+        "l30": "HLS.L30.T17ULP.2026325T162051.v2.0",
+        "s30": "HLS.S30.T17ULP.2026301T163401.v2.0"
+      },
+      "T15TXE": {
+        "s30": "HLS.S30.T15TXE.2026302T165419.v2.0",
+        "l30": "HLS.L30.T15TXE.2026321T164759.v2.0"
+      },
+      "T15TVF": {
+        "s30": "HLS.S30.T15TVF.2026295T170339.v2.0",
+        "l30": "HLS.L30.T15TVF.2026296T165344.v2.0"
+      },
+      "T15TYH": {
+        "s30": "HLS.S30.T15TYH.2026302T165419.v2.0",
+        "l30": "HLS.L30.T15TYH.2026322T164103.v2.0"
+      },
+      "T15TYJ": {
+        "s30": "HLS.S30.T15TYJ.2026302T165419.v2.0",
+        "l30": "HLS.L30.T15TYJ.2026298T164033.v2.0"
+      },
+      "T16TFK": {
+        "l30": "HLS.L30.T16TFK.2026302T161701.v2.0",
+        "s30": "HLS.S30.T16TFK.2026303T162419.v2.0"
+      },
+      "T16TEK": {
+        "l30": "HLS.L30.T16TEK.2026301T162313.v2.0",
+        "s30": "HLS.S30.T16TEK.2026301T163401.v2.0"
+      },
+      "T16TFL": {
+        "l30": "HLS.L30.T16TFL.2026302T161637.v2.0",
+        "s30": "HLS.S30.T16TFL.2026303T162419.v2.0"
+      },
+      "T16TEM": {
+        "l30": "HLS.L30.T16TEM.2026324T162841.v2.0",
+        "s30": "HLS.S30.T16TEM.2026301T163401.v2.0"
+      },
+      "T16TEL": {
+        "l30": "HLS.L30.T16TEL.2026301T162249.v2.0",
+        "s30": "HLS.S30.T16TEL.2026301T163401.v2.0"
+      },
+      "T16TGN": {
+        "l30": "HLS.L30.T16TGN.2026302T161613.v2.0",
+        "s30": "HLS.S30.T16TGN.2026301T163401.v2.0"
+      },
+      "T16TFN": {
+        "l30": "HLS.L30.T16TFN.2026302T161613.v2.0",
+        "s30": "HLS.S30.T16TFN.2026304T164431.v2.0"
+      },
+      "T16TFM": {
+        "l30": "HLS.L30.T16TFM.2026302T161637.v2.0",
+        "s30": "HLS.S30.T16TFM.2026320T162651.v2.0"
+      },
+      "T16TEN": {
+        "l30": "HLS.L30.T16TEN.2026301T162225.v2.0",
+        "s30": "HLS.S30.T16TEN.2026301T163401.v2.0"
+      },
+      "T16TGP": {
+        "l30": "HLS.L30.T16TGP.2026301T162201.v2.0",
+        "s30": "HLS.S30.T16TGP.2026301T163401.v2.0"
+      },
+      "T16TFQ": {
+        "l30": "HLS.L30.T16TFQ.2026317T162207.v2.0",
+        "s30": "HLS.S30.T16TFQ.2026301T163401.v2.0"
+      },
+      "T16TFP": {
+        "l30": "HLS.L30.T16TFP.2026301T162201.v2.0",
+        "s30": "HLS.S30.T16TFP.2026301T163401.v2.0"
+      },
+      "T16TEP": {
+        "l30": "HLS.L30.T16TEP.2026324T162817.v2.0",
+        "s30": "HLS.S30.T16TEP.2026301T163401.v2.0"
+      },
+      "T18TTL": {
+        "s30": "HLS.S30.T18TTL.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TTL.2026322T155158.v2.0"
+      },
+      "T17TLL": {
+        "l30": "HLS.L30.T17TLL.2026302T161525.v2.0",
+        "s30": "HLS.S30.T17TLL.2026318T162531.v2.0"
+      },
+      "T16TGR": {
+        "l30": "HLS.L30.T16TGR.2026302T161525.v2.0",
+        "s30": "HLS.S30.T16TGR.2026323T162559.v2.0"
+      },
+      "T16TFR": {
+        "l30": "HLS.L30.T16TFR.2026317T162143.v2.0",
+        "s30": "HLS.S30.T16TFR.2026301T163401.v2.0"
+      },
+      "T16TFT": {
+        "l30": "HLS.L30.T16TFT.2026325T162115.v2.0",
+        "s30": "HLS.S30.T16TFT.2026301T163401.v2.0"
+      },
+      "T16TFS": {
+        "l30": "HLS.L30.T16TFS.2026317T162119.v2.0",
+        "s30": "HLS.S30.T16TFS.2026301T163401.v2.0"
+      },
+      "T18TXK": {
+        "l30": "HLS.L30.T18TXK.2026325T153351.v2.0",
+        "s30": "HLS.S30.T18TXK.2026308T154701.v2.0"
+      },
+      "T18TWK": {
+        "l30": "HLS.L30.T18TWK.2026324T153959.v2.0",
+        "s30": "HLS.S30.T18TWK.2026301T155701.v2.0"
+      },
+      "T18TXL": {
+        "l30": "HLS.L30.T18TXL.2026308T153935.v2.0",
+        "s30": "HLS.S30.T18TXL.2026324T155549.v2.0"
+      },
+      "T18TWM": {
+        "l30": "HLS.L30.T18TWM.2026324T153912.v2.0",
+        "s30": "HLS.S30.T18TWM.2026301T155701.v2.0"
+      },
+      "T18TWL": {
+        "l30": "HLS.L30.T18TWL.2026324T153935.v2.0",
+        "s30": "HLS.S30.T18TWL.2026301T155701.v2.0"
+      },
+      "T18TXN": {
+        "l30": "HLS.L30.T18TXN.2026324T153912.v2.0",
+        "s30": "HLS.S30.T18TXN.2026304T155409.v2.0"
+      },
+      "T18TXM": {
+        "l30": "HLS.L30.T18TXM.2026324T153912.v2.0",
+        "s30": "HLS.S30.T18TXM.2026308T154701.v2.0"
+      },
+      "T18TWN": {
+        "l30": "HLS.L30.T18TWN.2026324T153912.v2.0",
+        "s30": "HLS.S30.T18TWN.2026301T155701.v2.0"
+      },
+      "T18TXP": {
+        "l30": "HLS.L30.T18TXP.2026308T153847.v2.0",
+        "s30": "HLS.S30.T18TXP.2026304T155409.v2.0"
+      },
+      "T15TYE": {
+        "s30": "HLS.S30.T15TYE.2026299T165701.v2.0",
+        "l30": "HLS.L30.T15TYE.2026322T164151.v2.0"
+      },
+      "T16TBK": {
+        "s30": "HLS.S30.T16TBK.2026302T165419.v2.0",
+        "l30": "HLS.L30.T16TBK.2026322T164151.v2.0"
+      },
+      "T16TCK": {
+        "s30": "HLS.S30.T16TCK.2026319T165701.v2.0",
+        "l30": "HLS.L30.T16TCK.2026300T162923.v2.0"
+      },
+      "T16TDK": {
+        "s30": "HLS.S30.T16TDK.2026301T163401.v2.0",
+        "l30": "HLS.L30.T16TDK.2026300T162923.v2.0"
+      },
+      "T15TYF": {
+        "s30": "HLS.S30.T15TYF.2026302T165419.v2.0",
+        "l30": "HLS.L30.T15TYF.2026322T164127.v2.0"
+      },
+      "T16TBL": {
+        "s30": "HLS.S30.T16TBL.2026302T165419.v2.0",
+        "l30": "HLS.L30.T16TBL.2026322T164127.v2.0"
+      },
+      "T16TCL": {
+        "s30": "HLS.S30.T16TCL.2026317T165541.v2.0",
+        "l30": "HLS.L30.T16TCL.2026300T162859.v2.0"
+      },
+      "T16TDL": {
+        "s30": "HLS.S30.T16TDL.2026301T163401.v2.0",
+        "l30": "HLS.L30.T16TDL.2026300T162859.v2.0"
+      },
+      "T16TBM": {
+        "s30": "HLS.S30.T16TBM.2026302T165419.v2.0",
+        "l30": "HLS.L30.T16TBM.2026322T164103.v2.0"
+      },
+      "T15TYG": {
+        "s30": "HLS.S30.T15TYG.2026302T165419.v2.0",
+        "l30": "HLS.L30.T15TYG.2026322T164103.v2.0"
+      },
+      "T16TCM": {
+        "s30": "HLS.S30.T16TCM.2026302T165419.v2.0",
+        "l30": "HLS.L30.T16TCM.2026322T164103.v2.0"
+      },
+      "T16TDM": {
+        "s30": "HLS.S30.T16TDM.2026301T163401.v2.0",
+        "l30": "HLS.L30.T16TDM.2026300T162859.v2.0"
+      },
+      "T16TDN": {
+        "s30": "HLS.S30.T16TDN.2026317T165541.v2.0",
+        "l30": "HLS.L30.T16TDN.2026323T163449.v2.0"
+      },
+      "T16TCP": {
+        "s30": "HLS.S30.T16TCP.2026302T165419.v2.0",
+        "l30": "HLS.L30.T16TCP.2026322T164039.v2.0"
+      },
+      "T16TDP": {
+        "s30": "HLS.S30.T16TDP.2026302T165419.v2.0",
+        "l30": "HLS.L30.T16TDP.2026323T163425.v2.0"
+      },
+      "T16TCQ": {
+        "s30": "HLS.S30.T16TCQ.2026317T165541.v2.0",
+        "l30": "HLS.L30.T16TCQ.2026298T164033.v2.0"
+      },
+      "T16TDQ": {
+        "s30": "HLS.S30.T16TDQ.2026302T165419.v2.0",
+        "l30": "HLS.L30.T16TDQ.2026322T164015.v2.0"
+      },
+      "T16TEQ": {
+        "s30": "HLS.S30.T16TEQ.2026296T163339.v2.0",
+        "l30": "HLS.L30.T16TEQ.2026323T163402.v2.0"
+      },
+      "T16TDR": {
+        "s30": "HLS.S30.T16TDR.2026302T165419.v2.0",
+        "l30": "HLS.L30.T16TDR.2026323T163402.v2.0"
+      },
+      "T16TER": {
+        "s30": "HLS.S30.T16TER.2026301T163401.v2.0",
+        "l30": "HLS.L30.T16TER.2026323T163402.v2.0"
+      },
+      "T16TDS": {
+        "s30": "HLS.S30.T16TDS.2026302T165419.v2.0",
+        "l30": "HLS.L30.T16TDS.2026322T163951.v2.0"
+      },
+      "T16TES": {
+        "s30": "HLS.S30.T16TES.2026299T165701.v2.0",
+        "l30": "HLS.L30.T16TES.2026323T163338.v2.0"
+      },
+      "T18TTK": {
+        "s30": "HLS.S30.T18TTK.2026324T155549.v2.0",
+        "l30": "HLS.L30.T18TTK.2026306T155220.v2.0"
+      },
+      "T18TUK": {
+        "s30": "HLS.S30.T18TUK.2026321T155701.v2.0",
+        "l30": "HLS.L30.T18TUK.2026306T155220.v2.0"
+      },
+      "T18TVK": {
+        "s30": "HLS.S30.T18TVK.2026301T155701.v2.0",
+        "l30": "HLS.L30.T18TVK.2026323T154613.v2.0"
+      },
+      "T18TUL": {
+        "s30": "HLS.S30.T18TUL.2026301T155701.v2.0",
+        "l30": "HLS.L30.T18TUL.2026306T155156.v2.0"
+      },
+      "T18TVL": {
+        "s30": "HLS.S30.T18TVL.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TVL.2026308T153935.v2.0"
+      },
+      "T18TUM": {
+        "s30": "HLS.S30.T18TUM.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TUM.2026306T155132.v2.0"
+      },
+      "T18TVM": {
+        "s30": "HLS.S30.T18TVM.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TVM.2026308T153935.v2.0"
+      },
+      "T18TUN": {
+        "s30": "HLS.S30.T18TUN.2026301T155701.v2.0",
+        "l30": "HLS.L30.T18TUN.2026306T155132.v2.0"
+      },
+      "T18TVN": {
+        "s30": "HLS.S30.T18TVN.2026301T155701.v2.0",
+        "l30": "HLS.L30.T18TVN.2026308T153911.v2.0"
+      },
+      "T18TWP": {
+        "s30": "HLS.S30.T18TWP.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TWP.2026323T154502.v2.0"
+      },
+      "T18TWQ": {
+        "s30": "HLS.S30.T18TWQ.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TWQ.2026308T153847.v2.0"
+      },
+      "T18TXQ": {
+        "s30": "HLS.S30.T18TXQ.2026304T155409.v2.0",
+        "l30": "HLS.L30.T18TXQ.2026308T153847.v2.0"
+      },
+      "T18TWR": {
+        "s30": "HLS.S30.T18TWR.2026302T160401.v2.0",
+        "l30": "HLS.L30.T18TWR.2026308T153823.v2.0"
+      },
+      "T18TXR": {
+        "s30": "HLS.S30.T18TXR.2026304T155409.v2.0",
+        "l30": "HLS.L30.T18TXR.2026300T153821.v2.0"
+      },
+      "T18TWS": {
+        "s30": "HLS.S30.T18TWS.2026299T155331.v2.0",
+        "l30": "HLS.L30.T18TWS.2026300T153757.v2.0"
+      },
+      "T18TXS": {
+        "s30": "HLS.S30.T18TXS.2026301T155701.v2.0",
+        "l30": "HLS.L30.T18TXS.2026300T153757.v2.0"
+      },
+      "T18TWT": {
+        "l30": "HLS.L30.T18TWT.2026298T155017.v2.0",
+        "s30": "HLS.S30.T18TWT.2026297T160319.v2.0"
+      },
+      "T18TXT": {
+        "l30": "HLS.L30.T18TXT.2026299T154408.v2.0",
+        "s30": "HLS.S30.T18TXT.2026297T160319.v2.0"
+      },
+      "T15TWJ": {
+        "s30": "HLS.S30.T15TWJ.2026305T171711.v2.0",
+        "l30": "HLS.L30.T15TWJ.2026320T165301.v2.0"
+      },
+      "T16TCN": {
+        "l30": "HLS.L30.T16TCN.2026322T164103.v2.0",
+        "s30": "HLS.S30.T16TCN.2026299T164359.v2.0"
+      },
+      "T16TCR": {
+        "l30": "HLS.L30.T16TCR.2026321T164624.v2.0",
+        "s30": "HLS.S30.T16TCR.2026297T165351.v2.0"
+      },
+      "T16TET": {
+        "l30": "HLS.L30.T16TET.2026323T163338.v2.0"
+      },
+      "T16UFV": {
+        "l30": "HLS.L30.T16UFV.2026300T162635.v2.0",
+        "s30": "HLS.S30.T16UFV.2026296T163339.v2.0"
+      },
+      "T17TNG": {
+        "s30": "HLS.S30.T17TNG.2026305T161421.v2.0",
+        "l30": "HLS.L30.T17TNG.2026304T160353.v2.0"
+      },
+      "T17TPM": {
+        "s30": "HLS.S30.T17TPM.2026300T162651.v2.0",
+        "l30": "HLS.L30.T17TPM.2026305T155633.v2.0"
+      },
+      "T17UMQ": {
+        "s30": "HLS.S30.T17UMQ.2026298T162341.v2.0",
+        "l30": "HLS.L30.T17UMQ.2026293T162027.v2.0"
+      },
+      "T17UNQ": {
+        "s30": "HLS.S30.T17UNQ.2026297T161701.v2.0",
+        "l30": "HLS.L30.T17UNQ.2026295T160805.v2.0"
+      },
+      "T17UPQ": {
+        "s30": "HLS.S30.T17UPQ.2026303T162419.v2.0",
+        "l30": "HLS.L30.T17UPQ.2026303T160829.v2.0"
+      },
+      "T17UQQ": {
+        "s30": "HLS.S30.T17UQQ.2026300T162651.v2.0",
+        "l30": "HLS.L30.T17UQQ.2026320T160156.v2.0"
+      },
+      "T18UVU": {
+        "l30": "HLS.L30.T18UVU.2026305T155609.v2.0",
+        "s30": "HLS.S30.T18UVU.2026300T161359.v2.0"
+      },
+      "T18UWU": {
+        "l30": "HLS.L30.T18UWU.2026298T154953.v2.0",
+        "s30": "HLS.S30.T18UWU.2026297T160319.v2.0"
+      },
+      "T18UXU": {
+        "l30": "HLS.L30.T18UXU.2026299T154344.v2.0",
+        "s30": "HLS.S30.T18UXU.2026297T160319.v2.0"
+      },
+      "T18UXV": {
+        "l30": "HLS.L30.T18UXV.2026298T154953.v2.0",
+        "s30": "HLS.S30.T18UXV.2026297T160319.v2.0"
+      },
+      "T18UWV": {
+        "l30": "HLS.L30.T18UWV.2026297T155543.v2.0",
+        "s30": "HLS.S30.T18UWV.2026292T160301.v2.0"
+      },
+      "T15TWF": {
+        "s30": "HLS.S30.T15TWF.2026299T165701.v2.0",
+        "l30": "HLS.L30.T15TWF.2026320T165349.v2.0"
+      },
+      "T15TXF": {
+        "s30": "HLS.S30.T15TXF.2026299T165701.v2.0",
+        "l30": "HLS.L30.T15TXF.2026321T164735.v2.0"
+      },
+      "T15TWG": {
+        "s30": "HLS.S30.T15TWG.2026302T165419.v2.0",
+        "l30": "HLS.L30.T15TWG.2026320T165325.v2.0"
+      },
+      "T15TXG": {
+        "s30": "HLS.S30.T15TXG.2026302T165419.v2.0",
+        "l30": "HLS.L30.T15TXG.2026321T164711.v2.0"
+      },
+      "T15TXH": {
+        "s30": "HLS.S30.T15TXH.2026299T165701.v2.0",
+        "l30": "HLS.L30.T15TXH.2026321T164711.v2.0"
+      },
+      "T15TYK": {
+        "s30": "HLS.S30.T15TYK.2026302T165419.v2.0",
+        "l30": "HLS.L30.T15TYK.2026298T164033.v2.0"
+      },
+      "T16TCS": {
+        "s30": "HLS.S30.T16TCS.2026297T165351.v2.0",
+        "l30": "HLS.L30.T16TCS.2026297T164554.v2.0"
+      },
+      "T17TQE": {
+        "l30": "HLS.L30.T17TQE.2026306T155220.v2.0"
+      },
+      "T17TPE": {
+        "l30": "HLS.L30.T17TPE.2026298T155217.v2.0",
+        "s30": "HLS.S30.T17TPE.2026302T160401.v2.0"
+      },
+      "T17TQG": {
+        "l30": "HLS.L30.T17TQG.2026306T155156.v2.0",
+        "s30": "HLS.S30.T17TQG.2026302T160401.v2.0"
+      },
+      "T18TTM": {
+        "l30": "HLS.L30.T18TTM.2026306T155156.v2.0",
+        "s30": "HLS.S30.T18TTM.2026300T161359.v2.0"
+      },
+      "T17TPH": {
+        "l30": "HLS.L30.T17TPH.2026305T155744.v2.0",
+        "s30": "HLS.S30.T17TPH.2026300T161359.v2.0"
+      },
+      "T17TPG": {
+        "l30": "HLS.L30.T17TPG.2026305T155744.v2.0",
+        "s30": "HLS.S30.T17TPG.2026300T161359.v2.0"
+      },
+      "T17TPF": {
+        "l30": "HLS.L30.T17TPF.2026298T155153.v2.0",
+        "s30": "HLS.S30.T17TPF.2026300T161359.v2.0"
+      },
+      "T17TQH": {
+        "l30": "HLS.L30.T17TQH.2026306T155132.v2.0",
+        "s30": "HLS.S30.T17TQH.2026300T161359.v2.0"
+      },
+      "T17TQK": {
+        "l30": "HLS.L30.T17TQK.2026306T155108.v2.0",
+        "s30": "HLS.S30.T17TQK.2026300T161359.v2.0"
+      },
+      "T17TQJ": {
+        "l30": "HLS.L30.T17TQJ.2026306T155108.v2.0",
+        "s30": "HLS.S30.T17TQJ.2026300T161359.v2.0"
+      },
+      "T17TQM": {
+        "l30": "HLS.L30.T17TQM.2026306T155044.v2.0",
+        "s30": "HLS.S30.T17TQM.2026300T161359.v2.0"
+      },
+      "T17TQL": {
+        "l30": "HLS.L30.T17TQL.2026306T155044.v2.0",
+        "s30": "HLS.S30.T17TQL.2026300T161359.v2.0"
+      },
+      "T18TUT": {
+        "l30": "HLS.L30.T18TUT.2026305T155633.v2.0",
+        "s30": "HLS.S30.T18TUT.2026300T161359.v2.0"
+      },
+      "T18TVT": {
+        "l30": "HLS.L30.T18TVT.2026305T155633.v2.0",
+        "s30": "HLS.S30.T18TVT.2026300T161359.v2.0"
+      },
+      "T18UUU": {
+        "l30": "HLS.L30.T18UUU.2026305T155609.v2.0",
+        "s30": "HLS.S30.T18UUU.2026300T161359.v2.0"
+      },
+      "T15TWE": {
+        "l30": "HLS.L30.T15TWE.2026320T165413.v2.0",
+        "s30": "HLS.S30.T15TWE.2026299T165701.v2.0"
+      },
+      "T15TVE": {
+        "l30": "HLS.L30.T15TVE.2026296T165408.v2.0",
+        "s30": "HLS.S30.T15TVE.2026320T170601.v2.0"
+      },
+      "T15TXJ": {
+        "l30": "HLS.L30.T15TXJ.2026320T165301.v2.0",
+        "s30": "HLS.S30.T15TXJ.2026302T165419.v2.0"
+      },
+      "T15TXK": {
+        "l30": "HLS.L30.T15TXK.2026320T165301.v2.0",
+        "s30": "HLS.S30.T15TXK.2026297T165351.v2.0"
+      },
+      "T15TYL": {
+        "l30": "HLS.L30.T15TYL.2026296T165232.v2.0",
+        "s30": "HLS.S30.T15TYL.2026297T165351.v2.0"
+      },
+      "T15TXL": {
+        "l30": "HLS.L30.T15TXL.2026320T165237.v2.0",
+        "s30": "HLS.S30.T15TXL.2026297T165351.v2.0"
+      },
+      "T16TCT": {
+        "l30": "HLS.L30.T16TCT.2026321T164600.v2.0",
+        "s30": "HLS.S30.T16TCT.2026299T165701.v2.0"
+      },
+      "T15TYN": {
+        "l30": "HLS.L30.T15TYN.2026304T165209.v2.0",
+        "s30": "HLS.S30.T15TYN.2026299T165701.v2.0"
+      },
+      "T15TYM": {
+        "l30": "HLS.L30.T15TYM.2026320T165213.v2.0",
+        "s30": "HLS.S30.T15TYM.2026297T165351.v2.0"
+      },
+      "T16UDU": {
+        "l30": "HLS.L30.T16UDU.2026299T163310.v2.0",
+        "s30": "HLS.S30.T16UDU.2026299T165701.v2.0"
+      },
+      "T16UCU": {
+        "l30": "HLS.L30.T16UCU.2026304T165146.v2.0",
+        "s30": "HLS.S30.T16UCU.2026299T165701.v2.0"
+      },
+      "T15UYP": {
+        "l30": "HLS.L30.T15UYP.2026304T165146.v2.0",
+        "s30": "HLS.S30.T15UYP.2026299T165701.v2.0"
+      },
+      "T15UYQ": {
+        "l30": "HLS.L30.T15UYQ.2026304T165122.v2.0",
+        "s30": "HLS.S30.T15UYQ.2026299T165701.v2.0"
+      },
+      "T16UDV": {
+        "l30": "HLS.L30.T16UDV.2026299T163310.v2.0",
+        "s30": "HLS.S30.T16UDV.2026299T165701.v2.0"
+      },
+      "T16UCV": {
+        "l30": "HLS.L30.T16UCV.2026298T163922.v2.0",
+        "s30": "HLS.S30.T16UCV.2026317T165541.v2.0"
+      },
+      "T17TNE": {
+        "l30": "HLS.L30.T17TNE.2026297T155830.v2.0",
+        "s30": "HLS.S30.T17TNE.2026297T161701.v2.0"
+      },
+      "T17TNF": {
+        "l30": "HLS.L30.T17TNF.2026304T160416.v2.0",
+        "s30": "HLS.S30.T17TNF.2026297T161701.v2.0"
+      },
+      "T17TPK": {
+        "l30": "HLS.L30.T17TPK.2026305T155720.v2.0",
+        "s30": "HLS.S30.T17TPK.2026300T162651.v2.0"
+      },
+      "T17TPJ": {
+        "l30": "HLS.L30.T17TPJ.2026305T155720.v2.0",
+        "s30": "HLS.S30.T17TPJ.2026300T161359.v2.0"
+      },
+      "T17TPN": {
+        "l30": "HLS.L30.T17TPN.2026305T155633.v2.0",
+        "s30": "HLS.S30.T17TPN.2026300T162651.v2.0"
+      },
+      "T17TQN": {
+        "l30": "HLS.L30.T17TQN.2026305T155633.v2.0",
+        "s30": "HLS.S30.T17TQN.2026300T161359.v2.0"
+      },
+      "T17UQP": {
+        "l30": "HLS.L30.T17UQP.2026305T155609.v2.0",
+        "s30": "HLS.S30.T17UQP.2026305T161421.v2.0"
+      },
+      "T18UUV": {
+        "l30": "HLS.L30.T18UUV.2026305T155545.v2.0",
+        "s30": "HLS.S30.T18UUV.2026297T161701.v2.0"
+      },
+      "T18UVV": {
+        "l30": "HLS.L30.T18UVV.2026297T155543.v2.0",
+        "s30": "HLS.S30.T18UVV.2026297T161701.v2.0"
+      },
+      "T15TVG": {
+        "s30": "HLS.S30.T15TVG.2026290T170311.v2.0",
+        "l30": "HLS.L30.T15TVG.2026296T165344.v2.0"
+      },
+      "T15TWM": {
+        "s30": "HLS.S30.T15TWM.2026298T171409.v2.0",
+        "l30": "HLS.L30.T15TWM.2026296T165208.v2.0"
+      },
+      "T15UWP": {
+        "s30": "HLS.S30.T15UWP.2026298T171409.v2.0",
+        "l30": "HLS.L30.T15UWP.2026304T165146.v2.0"
+      },
+      "T15TWN": {
+        "l30": "HLS.L30.T15TWN.2026303T165818.v2.0",
+        "s30": "HLS.S30.T15TWN.2026298T171409.v2.0"
+      },
+      "T17UPP": {
+        "s30": "HLS.S30.T17UPP.2026297T161701.v2.0",
+        "l30": "HLS.L30.T17UPP.2026296T160214.v2.0"
+      },
+      "T16UEU": {
+        "s30": "HLS.S30.T16UEU.2026299T165701.v2.0",
+        "l30": "HLS.L30.T16UEU.2026298T163922.v2.0"
+      },
+      "T16UFU": {
+        "s30": "HLS.S30.T16UFU.2026299T165701.v2.0",
+        "l30": "HLS.L30.T16UFU.2026293T162115.v2.0"
+      },
+      "T15UYR": {
+        "s30": "HLS.S30.T15UYR.2026300T170411.v2.0"
+      },
+      "T16TDT": {
+        "s30": "HLS.S30.T16TDT.2026299T165701.v2.0"
+      },
+      "T16UGU": {
+        "s30": "HLS.S30.T16UGU.2026296T163339.v2.0",
+        "l30": "HLS.L30.T16UGU.2026300T162659.v2.0"
+      },
+      "T16UEV": {
+        "s30": "HLS.S30.T16UEV.2026299T165701.v2.0",
+        "l30": "HLS.L30.T16UEV.2026298T163858.v2.0"
+      },
+      "T16UGV": {
+        "s30": "HLS.S30.T16UGV.2026293T163701.v2.0",
+        "l30": "HLS.L30.T16UGV.2026293T162051.v2.0"
+      },
+      "T17ULQ": {
+        "s30": "HLS.S30.T17ULQ.2026293T163701.v2.0",
+        "l30": "HLS.L30.T17ULQ.2026293T162027.v2.0"
+      },
+      "T15UVP": {
+        "s30": "HLS.S30.T15UVP.2026298T171409.v2.0",
+        "l30": "HLS.L30.T15UVP.2026295T165750.v2.0"
+      },
+      "T15UVQ": {
+        "l30": "HLS.L30.T15UVQ.2026295T165750.v2.0",
+        "s30": "HLS.S30.T15UVQ.2026296T172401.v2.0"
+      },
+      "T16UGA": {
+        "s30": "HLS.S30.T16UGA.2026296T163339.v2.0",
+        "l30": "HLS.L30.T16UGA.2026292T162632.v2.0"
+      }
     },
-    "reflectance_items": {
-      "h11v04": "MYD09A1.A2026313.h11v04.061.2026323000317",
-      "h12v04": "MYD09A1.A2026313.h12v04.061.2026323000339",
-      "h13v04": "MYD09A1.A2026313.h13v04.061.2026323000725"
-    },
-    "composite_sig": "458720dac03a4eacb953120d8cc30432f3add76596f982d946750d50f2aa711d",
-    "composite_date": "2026-11-09",
-    "source_age_days": 14,
+    "selected_scene_count": 1260,
+    "used_scene_count": 1149,
+    "composite_sig": "32e90f6163af6b6556921c720a7f5d7da8ab030753a46e3a7ab1c3de506b2dfd",
+    "composite_date": "2026-11-23",
+    "source_age_days": 2,
     "stale": false,
-    "retrieved": "2026-11-23 04:42 PM EST",
-    "native_resolution_m": 500,
-    "native_crs": "MODIS sinusoidal",
-    "resampling": "nearest (no invented values)",
-    "qa_rules": "MYD09A1 State QA: cloud state bits 0-1, internal cloud bit 10, shadow bit 2, aerosol bits 6-7, cirrus bits 8-9, adjacent-cloud bit 13; QC_500m: MODLAND bits 0-1 (10=cloud effect), band 1 bits 2-5, band 2 bits 6-9; spectral NDSI snow test",
+    "retrieved": "2026-11-25 01:23 PM EST",
+    "native_resolution_m": 30,
+    "native_crs": "NASA HLS MGRS / UTM",
+    "resampling": "average surface reflectance, nearest Fmask, into the shared 1800x1175 EPSG:4326 canvas",
+    "qa_rules": "HLS v2 Fmask: cloud (bit 1), adjacent to cloud (bit 2), cloud shadow (bit 3), snow/ice (bit 4), water (bit 5), aerosol level (bits 6-7); reflectance fill -9999 rejected",
+    "trajectory": "same-pass HLS epoch slices over the rolling lookback window; no MODIS-era NDVI history",
     "landcover": "USGS NLCD 2021 + NRCan 2020 Land Cover of Canada (NALCMS inputs) mosaic -> assets/leaf_landcover.png",
     "water_mask": "assets/great_lakes_watermask.png (shared)",
-    "algorithm": "leaf_phenology v10 (trajectory + baseline + class + spectral gating; 19-anchor OKLab circular gradient; corrected MYD09A1 C6.1 QA decoding; observed-only rendering, transparent no-data)"
+    "algorithm": "one HLS newest-clear temporal mosaic over the full basin -> single leaf_phenology phase field -> unchanged 19-anchor OKLab circular LUT; no per-tile gradients"
   },
-  "source_id": "leaf-v11-458720dac03a-r13",
-  "source_version": "leaf-v11-458720dac03a-r13",
+  "source_id": "leaf-hls-v1-32e90f6163af-r13",
+  "source_version": "leaf-hls-v1-32e90f6163af-r13",
   "stats": {
-    "good_pixels": 928124,
-    "opaque_pixels": 1151005,
-    "phase_mean": 0.5674
+    "observed_pixels": 1396372,
+    "opaque_pixels": 1542992,
+    "vegetated_pixels": 1542992,
+    "coverage_fraction": 1.0,
+    "phase_mean": 0.5517
   },
-  "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/leaf_color/legend.png?v=leaf-v11-458720dac03a-r13\" width=\"600\" alt=\"legend\"><br>What each color means (one trip around the year, left to right on the key): <b>deep blue</b> = dormant winter; <b>light blue/cyan</b> = spring awakening and bud break; <b>teal-green</b> = leaf emergence; <b>green</b> = growing season; <b>yellow-green/yellow</b> = first color; <b>orange</b> = autumn coloring; <b>red/magenta</b> = peak color into leaf drop; <b>purple</b> = late drop returning to <b>deep-blue</b> dormant (the scale wraps: both ends are winter). Color is the satellite-derived growth stage, not the color of individual trees. Only land the satellite actually saw this composite is painted \u2014 <b>transparent = clouds, snow, cities, bare ground, water, or otherwise no current observation</b>.</p><p>observed satellite composites + derived phenology state</p><p><b>Units:</b> phenology color scale (circular)<br/><b>Source:</b> NASA MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer (global, 500 m)<br/><b>Update:</b> LATEST AVAILABLE COMPOSITE<br/><b>Provenance:</b> <a href=\"https://planetarycomputer.microsoft.com/\">https://planetarycomputer.microsoft.com/</a></p>"
+  "overlay_description": "<p><b>Legend</b><br><img src=\"https://wyattleathorn7.github.io/great-lakes-live-environment/leaf_color/legend.png?v=leaf-hls-v1-32e90f6163af-r13\" width=\"600\" alt=\"legend\"><br>What each color means (one trip around the year, left to right on the key): <b>deep blue</b> = dormant winter; <b>light blue/cyan</b> = spring awakening and bud break; <b>teal-green</b> = leaf emergence; <b>green</b> = growing season; <b>yellow-green/yellow</b> = first color; <b>orange</b> = autumn coloring; <b>red/magenta</b> = peak color into leaf drop; <b>purple</b> = late drop returning to <b>deep-blue</b> dormant (the scale wraps: both ends are winter). Color is the satellite-derived growth stage, not the color of individual trees. Every vegetated land pixel is painted from the newest clear HLS observation in the rolling window; persistent gaps fall back to the most recent valid observation. <b>Transparent = cities, bare ground, open water, or non-vegetated land</b>.</p><p>NASA HLS harmonized Landsat/Sentinel-2 observations + derived phenology state</p><p><b>Units:</b> phenology color scale (circular)<br/><b>Source:</b> NASA HLS v2.0 Landsat 8/9 + Sentinel-2 via Planetary Computer (30 m)<br/><b>Update:</b> LATEST AVAILABLE COMPOSITE<br/><b>Provenance:</b> <a href=\"https://planetarycomputer.microsoft.com/dataset/hls2-l30\">https://planetarycomputer.microsoft.com/dataset/hls2-l30</a></p>"
 }
