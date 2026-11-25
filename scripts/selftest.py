@@ -445,55 +445,27 @@ def main():
     # ---- leaf phenology engine (synthetic trajectory §43) ----
     from leaf_phenology import (build_leaf_lut, decode_history_ndvi,
                                 phenology_phase, redness_index)
-    from build_leaf_color import decode_reflectance_qa
+    from leaf_hls import decode_hls_fmask
     _qa_np = __import__("numpy")
-    _qa_state = _qa_np.array([0, 1, 2, 3, 1 << 10], dtype=float)
-    _qa_words = decode_reflectance_qa(
-        _qa_state, _qa_np.zeros(5, dtype=_qa_np.uint32))
-    check("leaf-qa-cloud-state-01-cloudy-mixed-marginal",
-          _qa_words["cloudy"][:3].tolist() == [False, True, False]
-          and not bool(_qa_words["good"][2]))
-    check("leaf-qa-cloud-state-11-assumed-clear",
-          not bool(_qa_words["cloudy"][3]))
-    check("leaf-qa-internal-cloud-bit",
-          bool(_qa_words["cloudy"][4]))
-    _qa_modland_cloud = decode_reflectance_qa(
-        _qa_np.array([0.0]), _qa_np.array([2.0]))
-    check("leaf-qa-modland-10-is-not-cloud-mask",
-          not bool(_qa_modland_cloud["cloudy"][0])
-          and not bool(_qa_modland_cloud["good"][0]))
-    _qa_modland_other = decode_reflectance_qa(
-        _qa_np.array([0.0]), _qa_np.array([3.0]))
-    check("leaf-qa-modland-11-not-cloud-mask",
-          not bool(_qa_modland_other["cloudy"][0])
-          and not bool(_qa_modland_other["good"][0]))
-    _qa_adjacent = decode_reflectance_qa(
-        _qa_np.array([1 << 13], dtype=float),
-        _qa_np.array([0], dtype=_qa_np.uint32))
-    check("leaf-qa-adjacent-pixel-remains-eligible",
-          not bool(_qa_adjacent["cloudy"][0])
-          and not bool(_qa_adjacent["good"][0]))
-    _qa_fill = decode_reflectance_qa(
-        _qa_np.array([65535.0]), _qa_np.array([0.0]))
-    check("leaf-qa-state-fill-not-good",
-          not bool(_qa_fill["good"][0]))
-    _qa_band_q = decode_reflectance_qa(
-        _qa_np.array([0.0, 0.0, 0.0]),
-        _qa_np.array([1 << 2, 2 << 6, 0], dtype=_qa_np.uint32))
-    check("leaf-qa-band1-red-quality-bits-2-to-5",
-          int(_qa_band_q["red_q"][0]) == 1
-          and bool(_qa_band_q["good"][0]))
-    check("leaf-qa-band2-nir-quality-bits-6-to-9",
-          int(_qa_band_q["nir_q"][1]) == 2
-          and not bool(_qa_band_q["good"][1]))
-    _qa_state_quality = decode_reflectance_qa(
-        _qa_np.array([2 << 6, 2 << 8], dtype=float),
-        _qa_np.zeros(2, dtype=_qa_np.uint32))
-    check("leaf-qa-aerosol-state-bits-6-to-7",
-          int(_qa_state_quality["aerosol"][0]) == 2)
-    check("leaf-qa-cirrus-state-bits-8-to-9",
-          int(_qa_state_quality["cirrus"][1]) == 2
-          and not bool(_qa_state_quality["good"][1]))
+    _qa_fm = _qa_np.array(
+        [0, 1 << 1, 1 << 2, 1 << 3, 1 << 4, 1 << 5, 3 << 6, 255],
+        dtype=_qa_np.uint8)
+    _qa = decode_hls_fmask(_qa_fm)
+    check("leaf-hls-clear", bool(_qa["clear"][0]))
+    check("leaf-hls-cloud-bit",
+          bool(_qa["cloud"][1]) and not bool(_qa["clear"][1]))
+    check("leaf-hls-adjacent-cloud-bit",
+          bool(_qa["cloud"][2]) and not bool(_qa["clear"][2]))
+    check("leaf-hls-shadow-bit",
+          bool(_qa["cloud"][3]) and not bool(_qa["clear"][3]))
+    check("leaf-hls-snow-bit",
+          bool(_qa["snow"][4]) and not bool(_qa["clear"][4]))
+    check("leaf-hls-water-bit",
+          bool(_qa["water"][5]) and not bool(_qa["clear"][5]))
+    check("leaf-hls-high-aerosol",
+          int(_qa["aerosol"][6]) == 3 and not bool(_qa["clear"][6]))
+    check("leaf-hls-fill-invalid",
+          not bool(_qa["valid"][7]) and not bool(_qa["clear"][7]))
     _lut = build_leaf_lut()
     check("leaf-lut-256", len(_lut) == 256)
     check("leaf-lut-wrap", _lut[0] == _lut[-1] == (18, 59, 115))

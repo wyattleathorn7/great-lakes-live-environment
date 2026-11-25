@@ -1,32 +1,32 @@
-"""Pipeline G — LIVE LEAF COLOR (independent).
+"""Pipeline G — LIVE LEAF COLOR (NASA HLS v2 replacement engine).
 
-NASA MODIS Aqua global 500 m composites via Planetary Computer STAC
-(no credentials; anonymous SAS) — the no-auth global VIIRS-class stream:
-  MYD13A1.061: NDVI + pixel reliability (16-day; same VI family/scale as
-    the VIIRS VNP13 series, global incl. Canada, QA'd). VNP13A4N itself
-    requires Earthdata credentials unavailable to automation (see
-    DATA_SOURCES.md for the deviation rationale + upgrade path).
-  MYD09A1.061: surface reflectance red/green/blue/SWIR + state QA (8-day):
-    autumn redness proxy + NDSI snow (no separate snow source needed).
-Land classes: committed US-NLCD + Canada-NALCMS mosaic
-  (assets/leaf_landcover.png; static ancillary, documented).
-Footprint: all basin land (Great-Lakes water stays transparent — leaves
-  do not grow on open water).
+ONE continuous Great Lakes leaf-color gradient built from real NASA HLS
+Landsat 8/9 (HLSL30 v2.0) + Sentinel-2 (HLSS30 v2.0) 30 m surface
+reflectance via Microsoft Planetary Computer STAC.
 
-Per-pixel phenology phase (leaf_phenology.py) from NDVI trajectory +
-baseline + class + spectral gating; circular continuous LUT; rolling
-quarter-res NDVI history in output/state/leaf_color/ for the baseline
-reference. RENDER RULE: only currently-observed pixels paint — history
-never renders, fills never render.
+Why HLS: the previous engine stitched three independent MODIS tiles.  HLS
+places Landsat and Sentinel-2 on one harmonized 30 m MGRS grid, and this
+builder composites every scene into ONE basin canvas before deriving a
+single phenology field.  There are no per-tile or per-lake gradients.
 
-Exit codes: 0 = updated (or skipped, composites unchanged); 2 = source/
-validation failure (previous valid raster left untouched); 1 = unexpected.
+Preserved product contract (deliberately unchanged):
+  * the same 1800x1175 canvas / geographic bounds,
+  * the same 19-anchor OKLab circular LUT (deep blue -> spring -> green ->
+    yellow/orange/red -> purple -> deep blue),
+  * the same legend labels, phase positions, scale 0..1 and overlay alpha.
+
+Freshness: the newest clear HLS observation wins at each pixel inside a
+rolling lookback window.  The layer rides the existing weekly cadence;
+NASA HLS latency is about two days, so every weekly run uses the newest
+available scenes.
+
+Exit codes: 0 = updated (or skipped, source unchanged); 2 = source or
+validation failure (previous valid raster kept); 1 = unexpected.
 """
 
 import datetime as dt
 import hashlib
 import json
-import math
 import os
 import sys
 import traceback
@@ -39,181 +39,27 @@ from build_kml import (assert_no_vector_geometry, build_entry_kml, build_kml,
                        entry_description_html, legend_block,
                        live_out_dirs, refresh_kml_base_url)
 from geospatial_utils import (RENDER_VERSION, REPO_ROOT, SITE_DIR, base_metadata,
-                              download, load_bounds, now_det_str,
-                              promote_stage,
+                              load_bounds, now_det_str, promote_stage,
                               read_state, save_png, source_token, stage_dir,
-                              utcnow_iso, write_metadata, write_state)
-from leaf_phenology import (build_leaf_lut, decode_history_ndvi,
-                            draw_leaf_legend)
+                              write_metadata, write_state)
+from leaf_hls import (blend_tile_seams, mosaic_scenes, search_items,
+                      select_scenes)
+from leaf_phenology import build_leaf_lut, draw_leaf_legend
 
 PRODUCT = "leaf_color"
 CONFIG = json.load(open(os.path.join(REPO_ROOT, "config", f"{PRODUCT}.json")))
-RAW_DIR = os.path.join(REPO_ROOT, "output", "raw")
 STATE_DIR = os.path.join(REPO_ROOT, "output", "state", PRODUCT)
 KML_FILE = "Great_Lakes_Live_Leaf_Color.kml"
 OVERLAY_NAME = "\U0001F342 LIVE LEAF COLOR"
 SKIP_NOTE = "Turn on/off independently of all other layers."
-TILES = ["h11v04", "h12v04", "h13v04"]
 HIST_SHAPE = (294, 450)  # quarter-res history grids
-
-LEAF_LUT = None
-
-
-def latest_items(collection, days_back=120, platform=None):
-    """Newest STAC item per MODIS tile (pystac objects).
-
-    Server-side SORT is not honored, so all items are collected and the
-    newest composite per tile is selected client-side by start date.
-    """
-    import pystac_client
-    end = dt.datetime.now(dt.timezone.utc).date()
-    start = end - dt.timedelta(days=days_back)
-    cat = pystac_client.Client.open(
-        "https://planetarycomputer.microsoft.com/api/stac/v1")
-    search = cat.search(
-        collections=[collection], bbox=[-93, 40.5, -73.5, 49.5],
-        datetime=f"{start}/{end}", limit=100)
-    best = {}
-    for f in search.items():
-        if platform and not f.id.startswith(platform):
-            continue
-        tid = None
-        for part in f.id.split("."):
-            if part.startswith("h") and "v" in part:
-                tid = part
-        if tid not in TILES:
-            continue
-        day = composite_start_day(f.id)
-        key = (day or dt.date(2000, 1, 1), f.id)
-        if tid not in best or key > best[tid][0]:
-            best[tid] = (key, f)
-    return {t: f for t, (k, f) in best.items()}
-
-
-def sign_item(item):
-    """Attach anonymous SAS hrefs (proven PC flow)."""
-    import planetary_computer as pc
-    return pc.sign(item)
-
-
-def composite_start_day(item_id):
-    """A2026217 -> date(2026, 8, 5)."""
-    import re
-    m = re.search(r"\.A(\d{4})(\d{3})\.", item_id)
-    if not m:
-        return None
-    return dt.date(int(m.group(1)), 1, 1) + dt.timedelta(int(m.group(2)) - 1)
-
-
-def pick_asset(item, *cands):
-    """(key, pystac Asset) by case-insensitive substring; (None, None)."""
-    lower = {k.lower(): (k, v) for k, v in item.assets.items()}
-    for c in cands:
-        for k, (ok, v) in lower.items():
-            if c in k:
-                return ok, v
-    return None, None
-
-
-def decode_reflectance_qa(state, qc):
-    """Decode MYD09A1 Collection 6.1 state and 500 m QC bit fields.
-
-    Explicit cloud flags come from State QA (cloud state bits 0-1 and
-    internal cloud bit 10) and MODLAND QA code 10 (cloud effects). MODLAND
-    code 11 (other production reasons) remains a damped-quality observation
-    when the reflectance bands themselves are valid.
-    """
-    state = np.asarray(state, dtype=float)
-    qc = np.asarray(qc, dtype=float)
-    state_valid = (np.isfinite(state) & (state >= 0)
-                   & (state < np.iinfo(np.uint16).max))
-    qc_valid = (np.isfinite(qc) & (qc >= 0)
-                & (qc < np.iinfo(np.uint32).max))
-    st = np.where(state_valid, state, 0).astype(np.uint64)
-    q = np.where(qc_valid, qc, 0).astype(np.uint64)
-
-    cloud_state = st & 3
-    modland = q & 3
-    # MOD09A1 is an 8-day best-observation composite. Only an explicit
-    # cloudy State QA code (01) or the internal cloud flag (bit 10) removes
-    # an observation. Mixed state (10) remains usable as marginal data.
-    # MODLAND QA summarizes processing quality; NASA says it is not a
-    # reliable cloud mask for MOD09 products, so it must not blank pixels.
-    internal_cloud = (st & (1 << 10)) != 0
-    cloudy = (cloud_state == 1) | internal_cloud
-    cloud_shadow = (st & (1 << 2)) != 0
-    adjacent = (st & (1 << 13)) != 0
-
-    aerosol = (st >> 6) & 3
-    cirrus = (st >> 8) & 3
-    red_q = (q >> 2) & 15
-    nir_q = (q >> 6) & 15
-
-    good = (state_valid & qc_valid & ~cloudy & (cloud_state != 2)
-            & ~cloud_shadow & ~adjacent
-            & (aerosol < 3) & (cirrus <= 1) & (modland <= 1)
-            & (red_q <= 1) & (nir_q <= 1))
-    return {
-        "cloudy": cloudy,
-        "cloud_state": cloud_state,
-        "internal_cloud": internal_cloud,
-        "cloud_shadow": cloud_shadow,
-        "adjacent": adjacent,
-        "aerosol": aerosol,
-        "cirrus": cirrus,
-        "modland": modland,
-        "red_q": red_q,
-        "nir_q": nir_q,
-        "good": good,
-    }
-
-
-def read_window(signed_href, out_shape, resampling):
-    """Read a COG's canvas window via rasterio WarpedVRT (no full download).
-
-    WarpedVRT forbids boundless reads, so the window is clipped to the
-    raster and pasted into a NaN canvas at the matching offset.
-    """
-    import rasterio
-    from rasterio.enums import Resampling as RS
-    from rasterio.vrt import WarpedVRT
-    from rasterio.windows import from_bounds
-    import numpy as _np
-    b = load_bounds()
-    rs = {"nearest": RS.nearest, "bilinear": RS.bilinear}[resampling]
-    H, W = out_shape
-    canvas = _np.full((H, W), _np.nan)
-    with rasterio.open(signed_href) as src:
-        with WarpedVRT(src, crs="EPSG:4326") as vrt:
-            win = from_bounds(b["lon_min"], b["lat_min"], b["lon_max"],
-                              b["lat_max"], vrt.transform)
-            r0, r1 = max(int(win.row_off), 0), min(
-                int(win.row_off + win.height), vrt.height)
-            c0, c1 = max(int(win.col_off), 0), min(
-                int(win.col_off + win.width), vrt.width)
-            if r1 <= r0 or c1 <= c0:
-                return canvas, dict(vrt.tags()), src.nodata
-            from rasterio.windows import Window
-            sub = vrt.read(1, window=Window(c0, r0, c1 - c0, r1 - r0),
-                           out_shape=(
-                               max(1, int((r1 - r0) / win.height * H)),
-                               max(1, int((c1 - c0) / win.width * W))),
-                           resampling=rs)
-            # place sub into canvas at proportional offset
-            or0 = int(round((r0 - win.row_off) / win.height * H))
-            oc0 = int(round((c0 - win.col_off) / win.width * W))
-            or1, oc1 = or0 + sub.shape[0], oc0 + sub.shape[1]
-            cr0, cr1 = max(or0, 0), min(or1, H)
-            cc0, cc1 = max(oc0, 0), min(oc1, W)
-            canvas[cr0:cr1, cc0:cc1] = sub[cr0 - or0:cr1 - or0,
-                                           cc0 - oc0:cc1 - oc0]
-            return canvas, dict(vrt.tags()), src.nodata
+ENGINE = "hls-v2"
 
 
 def main():
     try:
         return run()
-    except SystemExit as e:
+    except SystemExit:
         raise
     except Exception:
         traceback.print_exc()
@@ -223,38 +69,33 @@ def main():
 def run():
     bounds = load_bounds()
     W, H = bounds["canvas_width"], bounds["canvas_height"]
+    lookback = int(CONFIG.get("lookback_days", 45))
+    max_scenes = int(CONFIG.get("max_scenes_per_tile", 6))
+    max_cloud = float(CONFIG.get("max_cloud_cover", 90.0))
     try:
-        vi = latest_items("modis-13A1-061", platform="MYD")
-        rf = latest_items("modis-09A1-061", platform="MYD")
+        items = search_items(bounds, lookback_days=lookback)
     except Exception as e:
         print(f"[{PRODUCT}] DOWNLOAD FAILED (keeping previous): {e}")
         return 2
-    if not vi or not rf:
-        print(f"[{PRODUCT}] VALIDATION FAILED: no STAC items "
-              f"(vi={len(vi)} refl={len(rf)}). Keeping previous.")
+    if not items:
+        print(f"[{PRODUCT}] VALIDATION FAILED: no HLS items in the "
+              f"{lookback}-day window. Keeping previous.")
         return 2
-    # Full-coverage mosaic rule: Michigan spans three MODIS tiles. A
-    # missing tile is a REGIONAL HOLE, never silently skipped -- fail the
-    # run and keep the previous valid raster instead.
-    missing_vi = [t for t in TILES if t not in vi]
-    missing_rf = [t for t in TILES if t not in rf]
-    if missing_vi or missing_rf:
-        print(f"[{PRODUCT}] VALIDATION FAILED: incomplete tile mosaic "
-              f"(missing VI {missing_vi} reflectance {missing_rf}). "
+    scenes = select_scenes(items, max_per_tile=max_scenes,
+                           max_cloud=max_cloud)
+    if not scenes:
+        print(f"[{PRODUCT}] VALIDATION FAILED: no usable HLS scenes. "
               f"Keeping previous.")
         return 2
     sig = hashlib.sha256(
-        ("|".join(sorted(i.id for i in list(vi.values()) + list(rf.values())))
-         ).encode()).hexdigest()
-    source_id_hint = f"leaf-v11-{sig[:12]}"
+        ("|".join(sorted(i.id for i in scenes))).encode()).hexdigest()
     prev = read_state(PRODUCT)
-    if prev.get("source_id") == source_id_hint \
+    if prev.get("composite_sig") == sig \
             and prev.get("render_version") == RENDER_VERSION \
-            and prev.get("composite_sig") == sig \
+            and prev.get("engine") == ENGINE \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
-            and os.path.exists(os.path.join(
-                SITE_DIR, "kml", "live", KML_FILE)):
-        print(f"[{PRODUCT}] composites unchanged; keeping current raster.")
+            and os.path.exists(os.path.join(SITE_DIR, "kml", "live", KML_FILE)):
+        print(f"[{PRODUCT}] HLS scenes unchanged; keeping current raster.")
         try:
             refresh_kml_base_url(PRODUCT, KML_FILE, OVERLAY_NAME,
                                  CONFIG["title"], SKIP_NOTE,
@@ -264,7 +105,7 @@ def run():
             print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
         return 0
     try:
-        return _build(bounds, W, H, vi, rf, sig)
+        return _build(bounds, W, H, scenes, sig, lookback)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -272,274 +113,110 @@ def run():
         return 2
 
 
-def _mosaic(pairs):
-    """First-valid-wins mosaic over (array, fill_value) reads.
-
-    Fill codes (which are finite numbers like 65535/-28672) are forced to
-    NaN first — otherwise the first tile's fill would shadow later tiles'
-    valid data and poison QA bit tests. Single-tile pixels keep their
-    exact source values; tile overlap bands are blended separately
-    (see _blend_overlap_bands) so valid data is never averaged away.
-    """
-    acc = None
-    for a, f in pairs:
-        a = np.asarray(a, dtype=float)
-        if f is not None:
-            try:
-                a = np.where(a == float(f), np.nan, a)
-            except (TypeError, ValueError):
-                pass
-        if acc is None:
-            acc = a
-        else:
-            acc = np.where(np.isfinite(acc), acc,
-                           np.where(np.isfinite(a), a, np.nan))
-    return acc
-
-
-def _overlap_bands(reads, dilate=2):
-    """Boolean mask of dilated inter-tile overlap bands.
-
-    reads = [((array, tags, nodata), ...) per tile] as returned by
-    read_window for one variable (NDVI). Pixels covered by 2+ tiles,
-    dilated by `dilate` px via shifts (no scipy), are where tile seams
-    and resampling-edge lines can live.
-    """
-    H, W = reads[0][0].shape
-    cnt = np.zeros((H, W), dtype=np.int16)
-    for a, f in reads:
-        a = np.asarray(a, dtype=float)
-        if f is not None:
-            try:
-                a = np.where(a == float(f), np.nan, a)
-            except (TypeError, ValueError):
-                pass
-        cnt += np.isfinite(a).astype(np.int16)
-    band = cnt >= 2
-    if dilate > 0:
-        grown = band.copy()
-        for _ in range(dilate):
-            up = np.zeros_like(band)
-            up[1:] = grown[:-1]
-            dn = np.zeros_like(band)
-            dn[:-1] = grown[1:]
-            lf = np.zeros_like(band)
-            lf[:, 1:] = grown[:, :-1]
-            rt = np.zeros_like(band)
-            rt[:, :-1] = grown[:, 1:]
-            grown = grown | up | dn | lf | rt
-        band = grown
-    band[0, :] = band[-1, :] = False
-    band[:, 0] = band[:, -1] = False
-    return band
-
-
-def _blend_overlap_bands(phase, band):
-    """Kill tile-seam lines: 3-px horizontal nanmean inside overlap bands.
-
-    A 1-px ragged seam (zipper from first-wins, edge resampling lines)
-    disappears into its neighbors; everything outside the narrow bands
-    keeps byte-exact source values.
-    """
-    out = np.array(phase, dtype=float)
-    sel = np.asarray(band, dtype=bool) & np.isfinite(out)
-    if not sel.any():
-        return out
-    left = np.roll(out, 1, axis=1)
-    right = np.roll(out, -1, axis=1)
-    stack = np.stack([left, out, right]).astype(float)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        import warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", RuntimeWarning)
-            mean = np.nanmean(stack, axis=0)
-    use = sel & np.isfinite(mean)
-    out[use] = np.clip(mean[use], 0.0, 0.999)
-    return np.clip(out, 0.0, 0.999)
-
-
-def _build(bounds, W, H, vi, rf, sig):
+def _build(bounds, W, H, scenes, sig, lookback):
     from PIL import Image
-    stage = stage_dir(PRODUCT)
-    stage_prod = os.path.join(stage, "site", PRODUCT)
+    from geospatial_utils import apply_shoreline_mask, load_watermask
 
-    tok_vi = sign_item(next(iter(vi.values())))
-    _ = tok_vi  # per-item signing below; this warms/validates credentials
-    signed_vi = {t: sign_item(it) for t, it in vi.items()}
-    signed_rf = {t: sign_item(it) for t, it in rf.items()}
-
-    # per-tile reads (canvas window only); keep each SDS nodata for fill masking
-    ndvi_r, rel_r, evi_r, comp_r = [], [], [], []
-    b1_r, b2_r, b3_r, b4_r, b6_r, st_r = [], [], [], [], [], []
-    qc_r, doy_r = [], []
-    vi_ids, rf_ids = {}, {}
-    for tid in TILES:
-        if tid not in vi or tid not in rf:
-            continue
-        vitem, ritem = signed_vi[tid], signed_rf[tid]
-        vi_ids[tid], rf_ids[tid] = vi[tid].id, rf[tid].id
-        _nk, ndvi_a = pick_asset(vitem, "ndvi")
-        _ek, evi_a = pick_asset(vitem, "evi")
-        b1k, b1_a = pick_asset(ritem, "b01", "band01", "red")
-        b2k, b2_a = pick_asset(ritem, "b02", "band02", "nir")
-        b3k, b3_a = pick_asset(ritem, "b03", "band03", "blue")
-        b4k, b4_a = pick_asset(ritem, "b04", "band04", "green")
-        b6k, b6_a = pick_asset(ritem, "b06", "band06", "swir")
-        stk, st_a = pick_asset(ritem, "state")
-        qck, qc_a = pick_asset(ritem, "qc", "quality")
-        doyk, doy_a = pick_asset(ritem, "day_of_year", "doy")
-        if not ndvi_a or not b1_a or not b2_a or not st_a:
-            raise ValueError(f"missing SDS assets for tile {tid}")
-        ndvi_r.append(read_window(ndvi_a.href, (H, W), "nearest"))
-        evi_r.append(read_window(evi_a.href, (H, W), "nearest")
-                     if evi_a else (np.full((H, W), np.nan), None))
-        b1_r.append(read_window(b1_a.href, (H, W), "nearest"))
-        b2_r.append(read_window(b2_a.href, (H, W), "nearest"))
-        qc_r.append(read_window(qc_a.href, (H, W), "nearest")
-                    if qc_a else (np.full((H, W), np.nan), None, None))
-        doy_r.append(read_window(doy_a.href, (H, W), "nearest")
-                     if doy_a else (np.full((H, W), np.nan), None, None))
-        b3_r.append(read_window(b3_a.href, (H, W), "nearest"))
-        b4_r.append(read_window(b4_a.href, (H, W), "nearest"))
-        b6_r.append(read_window(b6_a.href, (H, W), "nearest")
-                     if b6_a else (np.full((H, W), np.nan), None))
-        st_r.append(read_window(st_a.href, (H, W), "nearest")
-                     if st_a else (np.full((H, W), np.nan), None))
-    if not ndvi_r:
-        print(f"[{PRODUCT}] VALIDATION FAILED: no tile reads. Keeping previous.")
-        return 2
-
-    def _a(r):
-        return r[0]
-
-    def _n(r):
-        return r[2]
-
-    ndvi_vi = _mosaic([(_a(r), _n(r)) for r in ndvi_r]) * 0.0001
-    red = _mosaic([(_a(r), _n(r)) for r in b1_r]) * 0.0001
-    nir = _mosaic([(_a(r), _n(r)) for r in b2_r]) * 0.0001
-    blue = _mosaic([(_a(r), _n(r)) for r in b3_r]) * 0.0001
-    green = _mosaic([(_a(r), _n(r)) for r in b4_r]) * 0.0001
-    swir = _mosaic([(_a(r), _n(r)) for r in b6_r]) * 0.0001
-    state = _mosaic([(_a(r), _n(r)) for r in st_r])
-    qc = _mosaic([(_a(r), _n(r)) for r in qc_r])
-    # Current NDVI is derived from the coherent Aqua reflectance composite
-    # (red/NIR) rather than the MODIS VI best-pixel composite, which
-    # favours greener observations and lags late-season decline.
-    ndvi = np.clip((nir - red) / (nir + red + 1e-6), -1.0, 1.0)
-    print(f"[{PRODUCT}] tiles={sorted(vi_ids)} ndvi range "
-          f"[{np.nanmin(ndvi):.3f},{np.nanmax(ndvi):.3f}]")
-
-    # MYD09A1 Collection 6.1 QA: cloud decisions come from State QA,
-    # not MODLAND quality. State cloud codes 01/10 and internal bit 10
-    # are cloudy; 11 means "not set, assumed clear" and stays paintable.
-    qa = decode_reflectance_qa(state, qc)
-    cloudy = qa["cloudy"]
-    cloud_shadow = qa["cloud_shadow"]
-    ndsi = (green - swir) / (green + swir + 1e-6)
-    # Preserve the spectral-only snow gate: the state snow flag overcounts
-    # dormant/clear late-season pixels for this leaf-color layer.
-    snow = (ndsi > 0.4) & (ndvi < 0.25) & np.isfinite(ndvi)
-    good = qa["good"] & ~snow
-    # Clear/uncertain and lower-quality observations remain paintable;
-    # only cloud and spectral snow are withheld from the current composite.
-    marginal = (~cloudy) & (~snow) & (~good)
-    bad = np.zeros_like(good)
-    n_good = int(good.sum())
-    print(f"[{PRODUCT}] good={n_good} marginal={int(marginal.sum())} "
-          f"snow={int(snow.sum())} cloudy={int(cloudy.sum())}")
-    if n_good < 50_000:
-        print(f"[{PRODUCT}] VALIDATION FAILED: too few good pixels. Keeping previous.")
-        return 2
-
-    # ancillary grids
     lc = np.array(Image.open(os.path.join(REPO_ROOT, "assets",
                                           "leaf_landcover.png")).convert("L"))
-    from geospatial_utils import load_watermask
-    land = load_watermask() < 0.5  # NOT lake water (mask is float 0..1)
-    foot = np.ones((H, W), dtype=bool)  # basin-wide footprint (was Michigan-only)
     if lc.shape != (H, W):
         raise ValueError(f"landcover shape {lc.shape} != canvas")
+    land = load_watermask() < 0.5
+    veg = landing_target(lc, land)
 
-    # history (quarter-res NDVI stack for the seasonal baseline only;
-    # historical phase is never carried into the current rendered image)
-    hist = load_history()
-    with np.errstate(invalid="ignore", divide="ignore"):
-        redness = np.clip(((red / (red + green + blue + 1e-6)) - 0.38) / 0.12, 0, 1)
-        redness = np.where(np.isfinite(redness), redness, 0.0)
-    hv = [hist["ndvi"][i] for i in range(hist["ndvi"].shape[0])]
+    mosaic = mosaic_scenes(scenes, veg, bounds,
+                           epochs=int(CONFIG.get("epochs", 4)))
+    ndvi = mosaic["ndvi"]
+    redness = mosaic["redness"]
+    ndvi, redness = blend_tile_seams(ndvi, redness, mosaic["tile_grid"])
 
-    phase = compute_phase_grid(ndvi, lc, redness, snow,
-                               bad | cloudy, marginal, hist)
-    # Tile-seam repair: blend the narrow inter-tile overlap bands (kills
-    # zipper steps + WarpedVRT edge lines); all other pixels untouched.
-    phase = _blend_overlap_bands(
-        phase, _overlap_bands([(r[0], r[2]) for r in ndvi_r]))
-    # ACCURACY RULE: paint ONLY what this composite observes. Every
-    # currently-observed land pixel renders at full strength; clouds, snow,
-    # bad QA, masked classes (urban/barren/nodata/inland-water) and open
-    # water stay TRANSPARENT — never carried views, never modeled fills.
-    # What you see is 100% the source's current information.
+    n_veg = int(veg.sum())
+    n_obs = int((mosaic["observed"] & veg).sum())
+    if n_obs < 50_000:
+        raise ValueError(f"too few clear HLS observations ({n_obs})")
+    print(f"[{PRODUCT}] scenes selected={mosaic['stats']['scenes_selected']} "
+          f"used={mosaic['stats']['scenes_used']} "
+          f"tiles={mosaic['stats']['tiles_used']}")
+    print(f"[{PRODUCT}] observed vegetated pixels={n_obs}/{n_veg} "
+          f"({100.0 * n_obs / max(n_veg, 1):.2f}%)")
+
+    # The NDVI trajectory comes from the same HLS pass: the selected scenes
+    # are sliced into equal time bins, so the rise/fall rules compare this
+    # week's 30 m field against HLS observations from the same lookback
+    # window.  No MODIS-era history is mixed into a 30 m HLS phase.
+    epochs = np.asarray(mosaic["ndvi_epochs"], dtype=np.float32)
+    hist = {"ndvi": np.stack([
+        downsample_quarter(np.where(np.isfinite(e), e, np.nan))
+        for e in epochs]).astype(np.float32)}
+    print(f"[{PRODUCT}] HLS epoch coverage (vegetated px)="
+          f"{mosaic['stats'].get('epoch_pixels', [])}")
+
+    snow = mosaic["snow_seen"] & veg & ~mosaic["observed"]
+    bad = ~np.isfinite(ndvi)
+    marginal = np.zeros((H, W), dtype=bool)
+    phase = compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist)
+    # Snow-covered vegetation is dormant winter (the circular scale's deep
+    # blue end), not a hole.  This keeps winter coverage continuous.
+    phase = np.where(snow & veg, 0.02, phase)
     phase_obs = np.array(phase, dtype=float)
-    target = foot & land
-    phase = np.where(np.isfinite(phase) & target, phase, np.nan)
+
+    prev_phase = load_prev_phase(W, H)
+    phase = fill_phase(phase, veg, prev_phase, dormant=0.02)
+    coverage = float((np.isfinite(phase) & veg).sum()) / max(n_veg, 1)
+    print(f"[{PRODUCT}] final vegetated coverage={coverage * 100.0:.2f}%")
+    if coverage < 0.999:
+        raise ValueError(f"incomplete vegetation coverage ({coverage:.4f})")
+
     lut = np.array(build_leaf_lut(), dtype=np.uint8)
     rgba = np.zeros((H, W, 4), dtype=np.uint8)
-    target = foot & land
-    ok = np.isfinite(phase) & target
-    # Transparency IS the product: unobserved land (clouds/snow/bad-QA/
-    # masked classes) stays see-through, so coverage naturally varies run
-    # to run. Only a near-empty observation set is a failure.
-    n_transparent = int((target & ~ok).sum())
-    print(f"[{PRODUCT}] observed={int(ok.sum())} "
-          f"transparent-no-data={n_transparent}")
+    ok = veg & np.isfinite(phase)
     rgba[ok, 0:3] = lut[np.clip((phase[ok] * 255).astype(int), 0, 255)]
     rgba[ok, 3] = bounds["overlay_alpha"]
-    from geospatial_utils import apply_shoreline_mask
     rgba = apply_shoreline_mask(rgba, invert=True)  # leaf grows on LAND
+
+    stage = stage_dir(PRODUCT)
+    stage_prod = os.path.join(stage, "site", PRODUCT)
     save_png(rgba, os.path.join(stage_prod, "current.png"))
     n_opaque = int((rgba[:, :, 3] > 0).sum())
     print(f"[{PRODUCT}] opaque pixels={n_opaque}")
     if n_opaque < 50_000:
-        print(f"[{PRODUCT}] VALIDATION FAILED: too little vegetation. Keeping previous.")
-        return 2
-    n_colors = len(np.unique(rgba[(rgba[:, :, 3] > 0)][..., :3].reshape(-1, 3),
-                                axis=0))
+        raise ValueError("too little vegetation after shoreline mask")
+    n_colors = len(np.unique(
+        rgba[(rgba[:, :, 3] > 0)][..., :3].reshape(-1, 3), axis=0))
     print(f"[{PRODUCT}] distinct raster colors={n_colors}")
 
-    vstarts = [composite_start_day(i) for i in rf_ids.values()]
-    vstarts = [d for d in vstarts if d]
-    comp_date = max(vstarts) if vstarts else None
+    comp_date = mosaic["stats"]["composite_date"]
     today = dt.datetime.now(dt.timezone.utc).date()
     age = (today - comp_date).days if comp_date else None
     stale = age is not None and age > CONFIG["stale_threshold_days"]
-    subtitle = (f"{CONFIG['subtitle']}  |  Composite: {comp_date} "
-                f"({age}d old)" if age is not None else CONFIG["subtitle"])
+    subtitle = CONFIG["subtitle"]
+    if age is not None:
+        subtitle += f"  |  Composite: {comp_date} ({age}d old)"
     if stale:
         subtitle += "  |  STALE SOURCE"
     lw, lh = draw_leaf_legend(
         os.path.join(stage_prod, "legend.png"), CONFIG["title"], subtitle,
-        f"Source: MODIS Aqua MYD13A1/MYD09A1 via Planetary Computer  |  "
-        f"Processed {now_det_str()}", build_leaf_lut())
+        f"Source: NASA HLS Landsat 8/9 + Sentinel-2 via Planetary Computer  "
+        f"|  Processed {now_det_str()}", build_leaf_lut())
 
     meta = base_metadata(
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
-        data_time_utc=(f"reflectance composite start {comp_date} (+8d window; "
-                       f"NDVI derived from red/NIR); "
+        data_time_utc=(f"HLS newest-clear observation {comp_date} "
+                       f"({lookback}-day rolling window); "
                        f"retrieved {now_det_str()}"),
-        source_last_modified_utc=f"composite sig {sig[:12]}",
-        units="phenology phase 0..1 (display color); source NDVI/reflectance",
-        source_resolution="500 m MODIS sinusoidal, reprojected to canvas (nearest)",
+        source_last_modified_utc=f"mosaic sig {sig[:12]}",
+        units="phenology phase 0..1 (display color); source HLS NDVI/reflectance",
+        source_resolution="30 m NASA HLS (MGRS/UTM), reprojected to canvas",
         color_min=0.0, color_max=1.0, color_units="phenology phase (circular)",
-         missing_data_treatment=("ONLY currently-observed vegetated land "
-                                 "paints — 100% the source's current "
-                                 "information. Clouds, snow, bad QA, masked "
-                                 "classes (urban/barren/nodata/inland-water) "
-                                 "and Great-Lakes water stay transparent; "
-                                 "never carried views, never modeled fills. "
-                                 "History (observations only) feeds the "
-                                 "trajectory baseline, never the picture."))
+        missing_data_treatment=(
+            "ONE continuous basin-wide HLS mosaic.  At every vegetated land "
+            "pixel the newest clear Landsat/Sentinel-2 observation in the "
+            "rolling window wins; persistent cloud/ocean-adjacent gaps fall "
+            "back to the most recent valid observation, and snow-covered "
+            "vegetation renders as dormant winter deep blue.  Cities, bare "
+            "ground, non-vegetated land and open Great Lakes water stay "
+            "transparent because leaves do not grow there."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = (
         "What each color means (one trip around the year, left to right on "
@@ -551,52 +228,53 @@ def _build(bounds, W, H, vi, rf, sig):
         "<b>purple</b> = late drop returning to <b>deep-blue</b> dormant "
         "(the scale wraps: both ends are winter). Color is the "
         "satellite-derived growth stage, not the color of individual "
-        "trees. Only land the satellite actually saw this composite is "
-        "painted — <b>transparent = clouds, snow, cities, bare ground, "
-        "water, or otherwise no current observation</b>.")
+        "trees. Every vegetated land pixel is painted from the newest clear "
+        "HLS observation in the rolling window; persistent gaps fall back "
+        "to the most recent valid observation. <b>Transparent = cities, "
+        "bare ground, open water, or non-vegetated land</b>.")
     meta["data_nature"] = CONFIG["data_nature"]
     meta["gradient"] = {"interpolation": "OKLab (perceptually uniform)",
                         "anchors": 19, "distinct_raster_colors": n_colors,
                         "wraparound": "first == last deep blue #123B73"}
     meta["provenance"] = {
-        "provider": "NASA MODIS (Aqua) via Microsoft Planetary Computer STAC",
-        "collections": ["modis-13A1-061", "modis-09A1-061"],
-        "vi_items": vi_ids, "reflectance_items": rf_ids,
+        "provider": ("NASA HLS v2.0 (Landsat 8/9 + Sentinel-2) via "
+                     "Microsoft Planetary Computer STAC"),
+        "collections": ["hls2-l30", "hls2-s30"],
+        "items": mosaic["item_map"],
+        "selected_scene_count": mosaic["stats"]["scenes_selected"],
+        "used_scene_count": mosaic["stats"]["scenes_used"],
         "composite_sig": sig,
-        "composite_date": str(comp_date), "source_age_days": age,
-        "stale": stale, "retrieved": now_det_str(),
-        "native_resolution_m": 500, "native_crs": "MODIS sinusoidal",
-        "resampling": "nearest (no invented values)",
-        "qa_rules": ("MYD09A1 State QA: cloud state bits 0-1, internal cloud "
-                     "bit 10, shadow bit 2, aerosol bits 6-7, cirrus bits 8-9, "
-                     "adjacent-cloud bit 13; QC_500m: MODLAND bits 0-1 "
-                     "(10=cloud effect), band 1 bits 2-5, band 2 bits 6-9; "
-                     "spectral NDSI snow test"),
+        "composite_date": str(comp_date),
+        "source_age_days": age, "stale": stale,
+        "retrieved": now_det_str(),
+        "native_resolution_m": 30,
+        "native_crs": "NASA HLS MGRS / UTM",
+        "resampling": ("average surface reflectance, nearest Fmask, into "
+                       "the shared 1800x1175 EPSG:4326 canvas"),
+        "qa_rules": ("HLS v2 Fmask: cloud (bit 1), adjacent to cloud "
+                     "(bit 2), cloud shadow (bit 3), snow/ice (bit 4), "
+                     "water (bit 5), aerosol level (bits 6-7); reflectance "
+                     "fill -9999 rejected"),
+        "trajectory": ("same-pass HLS epoch slices over the rolling "
+                       "lookback window; no MODIS-era NDVI history"),
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
-        "algorithm": "leaf_phenology v10 (trajectory + baseline + class + "
-                     "spectral gating; 19-anchor OKLab circular gradient; "
-                     "corrected MYD09A1 C6.1 QA decoding; observed-only "
-                     "rendering, transparent no-data)",
+        "algorithm": ("one HLS newest-clear temporal mosaic over the full "
+                      "basin -> single leaf_phenology phase field -> "
+                      "unchanged 19-anchor OKLab circular LUT; no per-tile "
+                      "gradients"),
     }
-    # v8 = large legible key image + observed-only rendering (transparent no-data) + overlap-band
-    # seam blend + observation-only history + full-coverage mosaic rule
-    # (all 3 tiles required) + NaN-aware history means.
-    # One-time version rotation to deploy the fixed rendering; afterwards
-    # the id tracks source composites only.
-    source_id = f"leaf-v11-{sig[:12]}-r{RENDER_VERSION}"
+    source_id = f"leaf-hls-v1-{sig[:12]}-r{RENDER_VERSION}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {
-        "good_pixels": n_good, "opaque_pixels": n_opaque,
+        "observed_pixels": n_obs,
+        "opaque_pixels": n_opaque,
+        "vegetated_pixels": n_veg,
+        "coverage_fraction": round(coverage, 6),
         "phase_mean": round(float(np.nanmean(phase)), 4),
     }
-    # v8 = large legible key image + observed-only rendering (transparent no-data) + overlap-band
-    # seam blend + observation-only history + full-coverage mosaic rule
-    # (all 3 tiles required) + NaN-aware history means.
-    # One-time version rotation to deploy the fixed rendering; afterwards
-    # the id tracks source composites only.
     token = meta["source_version"]
     scale_html = meta["legend_scale_html"]
     block = legend_block(f"{PRODUCT}/legend.png", token, scale_html)
@@ -622,25 +300,51 @@ def _build(bounds, W, H, vi, rf, sig):
         entry_description_html(CONFIG["title"], meta, SKIP_NOTE),
         CONFIG["refresh_interval_seconds"], out_dirs=outs["entry"])
 
-    save_history(ndvi, phase_obs, rf_ids, sig)
+    save_history(hist["ndvi"], phase_obs, mosaic["used_ids"], sig)
+    save_prev_phase(phase, W, H)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"composite_sig": sig,
                           "source_id": source_id,
                           "render_version": RENDER_VERSION,
+                          "engine": ENGINE,
                           "processing_time_utc": meta["processing_time_utc"]})
     print(f"[{PRODUCT}] UPDATED OK ({len(promoted)} files promoted).")
     return 0
 
 
-def downsample_quarter(a):
-    """NaN-aware quarter-res block MEAN (not single-pixel sampling).
+def landing_target(landcover, land):
+    """Vegetated land classes that carry a leaf signal (1..6)."""
+    return land & np.isin(landcover, [1, 2, 3, 4, 5, 6])
 
-    Single-pixel sampling aliased cloud/QA holes into the history, so a
-    cloudy 4x4 block poisoned hold-forward for the whole block on later
-    runs. The block mean represents valid observations wherever any
-    exist, which is what lets the rolling history legitimately fill
-    transient observational gaps.
+
+def fill_phase(phase, target, prev_phase=None, dormant=0.02):
+    """Guarantee continuous vegetation coverage without inventing color.
+
+    Priority: current HLS observation -> previous published phase for the
+    same pixel -> nearest-valid interpolation for remaining gaps -> dormant
+    winter blue as the final full-coverage backstop.  rasterio.fill is part
+    of the existing rasterio dependency, so large cloud gaps fill from the
+    closest valid phenology instead of becoming artificial blue blocks.
     """
+    from rasterio.fill import fillnodata
+    out = np.array(phase, dtype=float)
+    if prev_phase is not None and prev_phase.shape == out.shape:
+        use = target & ~np.isfinite(out) & np.isfinite(prev_phase)
+        out[use] = prev_phase[use]
+    known = np.isfinite(out)
+    if (target & ~known).any() and known.any():
+        seed = np.where(known, out, 0.0).astype(np.float64)
+        filled = fillnodata(seed, mask=known.astype(np.uint8),
+                            max_search_distance=10000,
+                            smoothing_iterations=0)
+        use = target & ~known
+        out[use] = filled[use]
+    out[target & ~np.isfinite(out)] = dormant
+    return np.clip(out, 0.0, 0.999)
+
+
+def downsample_quarter(a):
+    """NaN-aware quarter-res block mean (used only by the history baseline)."""
     H, W = a.shape
     h2, w2 = HIST_SHAPE
     ys = (np.arange(h2) * H / h2).astype(int)
@@ -659,78 +363,74 @@ def downsample_quarter(a):
         return np.where(cnts > 0, sums / np.maximum(cnts, 1e-9), np.nan)
 
 
-def load_history():
-    import glob
-    base = {"ndvi": np.full((4,) + HIST_SHAPE, np.nan, dtype=np.float32),
-            "phase": np.full(HIST_SHAPE, np.nan, dtype=np.float32),
-            "dates": []}
-    try:
-        h = np.load(os.path.join(STATE_DIR, "hist_ndvi.npy"))
-        p = np.load(os.path.join(STATE_DIR, "hist_phase.npy"))
-        m = json.load(open(os.path.join(STATE_DIR, "hist_meta.json")))
-        if h.shape == base["ndvi"].shape and p.shape == base["phase"].shape:
-            base = {"ndvi": decode_history_ndvi(h),
-                    "phase": p.astype(np.float32),
-                    "dates": m.get("dates", [])}
-    except Exception:
-        pass
-    return base
+def save_history(epoch_q, phase, item_ids, sig):
+    """Persist the HLS lookback trajectory (quarter res) for diagnostics.
 
-
-def save_history(ndvi, phase, vi_ids, sig):
+    The builder itself does not depend on saved NDVI history: each run
+    derives its trajectory from the HLS scenes in the lookback window, so a
+    source change can never mix sensor biases into the phenology rules.
+    """
     os.makedirs(STATE_DIR, exist_ok=True)
-    try:
-        h = np.load(os.path.join(STATE_DIR, "hist_ndvi.npy"))
-    except Exception:
-        h = np.full((4,) + HIST_SHAPE, -128, dtype=np.int8)
-    new_layer = np.clip(np.nan_to_num(
-        downsample_quarter(np.where(np.isfinite(ndvi), ndvi, np.nan)),
-        nan=-1.28) * 100.0, -128, 127).astype(np.int8)
-    if h.shape == (4,) + HIST_SHAPE and np.array_equal(h[-1], new_layer):
-        # Duplicate-suppression: same composites rebuilt (e.g. version
-        # rotations) must not stack identical layers — that would skew the
-        # rolling baseline toward the present and mute real change.
-        pass
-    else:
-        h = np.roll(h, -1, axis=0)
-        h[-1] = new_layer
-    np.save(os.path.join(STATE_DIR, "hist_ndvi.npy"), h)
+    q = np.asarray(epoch_q, dtype=np.float32)
+    if q.ndim != 3 or q.shape[1:] != HIST_SHAPE:
+        q = np.full((1,) + HIST_SHAPE, np.nan, dtype=np.float32)
+    if q.shape[0] < HIST_SHAPE[0]:
+        pad = np.full((HIST_SHAPE[0] - q.shape[0],) + HIST_SHAPE, np.nan,
+                      dtype=np.float32)
+        q = np.concatenate([pad, q], axis=0)
+    q = q[-HIST_SHAPE[0]:]
+    np.save(os.path.join(STATE_DIR, "hist_ndvi.npy"),
+            np.clip(np.nan_to_num(q, nan=-1.28) * 100.0, -128, 127
+                    ).astype(np.int8))
     np.save(os.path.join(STATE_DIR, "hist_phase.npy"),
             downsample_quarter(np.where(np.isfinite(phase), phase, np.nan)
                                ).astype(np.float32))
-    json.dump({"dates": sorted(set(vi_ids.values())), "sig": sig},
+    json.dump({"dates": sorted(set(item_ids)), "sig": sig, "engine": ENGINE},
               open(os.path.join(STATE_DIR, "hist_meta.json"), "w"))
 
 
+def load_prev_phase(W, H):
+    """Full-resolution previous phase, used only to fill current gaps."""
+    try:
+        from PIL import Image
+        p = os.path.join(STATE_DIR, "prev_phase.png")
+        im = Image.open(p).convert("L")
+        if im.size != (W, H):
+            return None
+        return np.asarray(im, dtype=np.float32) / 255.0 * 0.999
+    except Exception:
+        return None
+
+
+def save_prev_phase(phase, W, H):
+    from PIL import Image
+    os.makedirs(STATE_DIR, exist_ok=True)
+    arr = np.clip(np.nan_to_num(phase, nan=0.0) * 255.0, 0, 255
+                  ).astype(np.uint8)
+    Image.fromarray(arr, mode="L").save(os.path.join(STATE_DIR, "prev_phase.png"))
+
+
 def compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist):
-    """Vectorized phenology phase (mirrors leaf_phenology rules)."""
+    """One vectorized phenology phase field for the whole basin canvas."""
     H, W = ndvi.shape
-    hq = HIST_SHAPE[1] / W  # quarter-res mapping factor
     qh, qw = HIST_SHAPE
     ys = np.clip((np.arange(H) * qh / H).astype(int), 0, qh - 1)
     xs = np.clip((np.arange(W) * qw / W).astype(int), 0, qw - 1)
-    hn = hist["ndvi"]  # (4, qh, qw), NaN-aware, newest LAST after roll? we roll before save; in-memory: build stack
-    # build valid stack: [h0,h1,h2,h3,current]
+    hn = hist["ndvi"]
     cur_q = downsample_quarter(np.where(np.isfinite(ndvi), ndvi, np.nan))
     stack = list(hn) + [cur_q]
-    n_prev = stack[-2]
-    # median of valid history as the robust direction reference
     hcnt = sum(np.isfinite(s).astype(int) for s in stack[:-1])
     htot = sum(np.where(np.isfinite(s), s, 0.0) for s in stack[:-1])
     n_ref_q = np.where(hcnt > 0, htot / np.maximum(hcnt, 1), cur_q)
     n_max_q = np.maximum.reduce(
         [np.where(np.isfinite(s), s, -1) for s in stack])
     n_max_q = np.where(n_max_q < -0.5, np.nan, n_max_q)
-    # upsample to full res (nearest)
     n_ref = n_ref_q[ys[:, None], xs]
     n_max = n_max_q[ys[:, None], xs]
 
     phase = np.full((H, W), np.nan)
-    # Historical phase is deliberately not consulted: without a valid
-    # current observation this pixel remains transparent.
     hb = bad | ~np.isfinite(ndvi)
     work = ~(hb | snow) & np.isfinite(ndvi)
-    # class priors for cold-start baseline (always applied)
     forest = np.isin(lc, [1, 2, 3])
     prior = np.where(forest, 0.72, 0.55)
     n_max = np.maximum(np.where(np.isnan(n_max), -1.0, n_max), prior)
@@ -755,7 +455,6 @@ def compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist):
     lo = m_st & (ngr <= 0.6)
     phase[lo] = 0.10 + 0.25 * (ngr[lo] / 0.6)
 
-    # class modulation
     m_ev = work & (lc == 3)
     phase[m_ev] = 0.40 + 0.16 * ngr[m_ev]
     for code, w, cap in ((2, 0.55, None), (4, 0.45, 0.66), (5, 0.45, 0.66),
@@ -767,7 +466,6 @@ def compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist):
     m_mask = (lc == 0) | (lc == 7) | (lc == 8) | (lc == 9)
     phase[m_mask] = np.nan
     phase[snow] = np.nan
-    # marginal-QA pixels participate with damped response (documented)
     m_marg = work & np.asarray(marginal, dtype=bool) & np.isfinite(phase)
     phase[m_marg] = 0.5 + (phase[m_marg] - 0.5) * 0.6
     return np.clip(phase, 0.0, 0.999)
