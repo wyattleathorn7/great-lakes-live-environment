@@ -6,8 +6,6 @@ name: Leaf HLS build check (temporary)
 # Deleted before merge.
 
 on:
-  push:
-    branches: [leaf-season-fix]
   workflow_dispatch:
 
 permissions:

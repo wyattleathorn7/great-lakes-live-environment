@@ -106,8 +106,11 @@ def run():
         return 2
     sig = hashlib.sha256(
         ("|".join(sorted(i.id for i in scenes))).encode()).hexdigest()
+    iso = dt.datetime.now(dt.timezone.utc).date().isocalendar()
+    season_week = f"{iso[0]}w{iso[1]:02d}"
     prev = read_state(PRODUCT)
     if prev.get("composite_sig") == sig \
+            and prev.get("season_week") == season_week \
             and prev.get("render_version") == RENDER_VERSION \
             and prev.get("engine") == ENGINE \
             and os.path.exists(os.path.join(SITE_DIR, PRODUCT, "current.png")) \
@@ -122,7 +125,7 @@ def run():
             print(f"[{PRODUCT}] WARNING: KML refresh failed: {e}")
         return 0
     try:
-        return _build(bounds, W, H, scenes, sig, lookback)
+        return _build(bounds, W, H, scenes, sig, lookback, season_week)
     except Exception as e:
         traceback.print_exc()
         print(f"[{PRODUCT}] VALIDATION FAILED: {type(e).__name__}: {e}. "
@@ -130,7 +133,7 @@ def run():
         return 2
 
 
-def _build(bounds, W, H, scenes, sig, lookback):
+def _build(bounds, W, H, scenes, sig, lookback, season_week):
     from PIL import Image
     from geospatial_utils import apply_shoreline_mask, load_watermask
 
@@ -157,7 +160,8 @@ def _build(bounds, W, H, scenes, sig, lookback):
             os.environ["LEAF_DEBUG_DUMP"],
             ndvi=mosaic["ndvi"], redness=mosaic["redness"],
             obs_day=mosaic["obs_day"], epochs=mosaic["ndvi_epochs"],
-            redness_epochs=mosaic["redness_epochs"], veg=veg, lc=lc,
+            redness_epochs=mosaic["redness_epochs"],
+            snow_seen=mosaic["snow_seen"], veg=veg, lc=lc,
             comp_date=np.array(str(comp_date)))
 
     # A pixel whose newest clear overpass is older than the freshness cap is
@@ -241,7 +245,8 @@ def _build(bounds, W, H, scenes, sig, lookback):
         PRODUCT, CONFIG["title"], CONFIG["freshness_label"],
         CONFIG["source_name"], CONFIG["source_url"], CONFIG["variable"],
         data_time_utc=(f"HLS newest-clear observation {comp_date} "
-                       f"({lookback}-day rolling window); "
+                       f"(observations <= {max_age} days old; "
+                       f"{lookback}-day search window); "
                        f"retrieved {now_det_str()}"),
         source_last_modified_utc=f"mosaic sig {sig[:12]}",
         units="phenology phase 0..1 (display color); source HLS NDVI/reflectance",
@@ -299,6 +304,7 @@ def _build(bounds, W, H, scenes, sig, lookback):
                        "NDVI history is mixed into the 30 m phase"),
         "seasonal_anchor": (f"DOY {doy} -> phase {seasonal_anchor(doy):.3f} "
                             "(smooth annual Great Lakes curve)"),
+        "season_week": season_week,
         "freshness_cap_days": max_age,
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
@@ -308,7 +314,10 @@ def _build(bounds, W, H, scenes, sig, lookback):
                       "seasonally anchored phase field -> unchanged "
                       "19-anchor OKLab circular LUT; no per-tile gradients"),
     }
-    source_id = f"leaf-hls-v2-{sig[:12]}-r{RENDER_VERSION}"
+    # The season week is part of the public token.  Even when the scene set
+    # is byte-identical, the seasonal anchor advances each week, so the KML
+    # href must change or Google Earth would keep showing last week's PNG.
+    source_id = f"leaf-hls-v2-{sig[:12]}-{season_week}-r{RENDER_VERSION}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {
@@ -348,6 +357,7 @@ def _build(bounds, W, H, scenes, sig, lookback):
     save_prev_phase(phase, W, H)
     promoted = promote_stage(PRODUCT)
     write_state(PRODUCT, {"composite_sig": sig,
+                          "season_week": season_week,
                           "source_id": source_id,
                           "render_version": RENDER_VERSION,
                           "engine": ENGINE,

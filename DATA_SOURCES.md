@@ -307,7 +307,10 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   adjacent pixels cannot jump between green and red. The four HLS epoch
   slices are still stored in `output/state/leaf_color/hist_ndvi_hls.npy`
   for provenance/diagnostics, but they are not used to set the phase.
-  No MODIS-era NDVI history is mixed into the 30 m HLS phase.
+  No MODIS-era NDVI history is mixed into the 30 m HLS phase. The public
+  token includes the ISO season week, so the layer refreshes and the
+  seasonal anchor advances even when the available scene set is
+  unchanged.
 - Freshness wording: **"LATEST AVAILABLE COMPOSITE"** (+ age, + STALE flag).
 
 ## 6. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (SQ, daily)
