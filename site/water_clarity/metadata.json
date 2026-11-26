@@ -8,7 +8,7 @@
   "source_url": "https://coastwatch.pfeg.noaa.gov/erddap/griddap/nesdisVHNkdparDaily.html",
   "data_time_utc": "2026-11-15 07:00 AM EST (newest of 7-day mosaic)",
   "source_last_modified_utc": "n/a (ERDDAP)",
-  "processing_time_utc": "2026-11-24 04:02 AM EST",
+  "processing_time_utc": "2026-11-26 03:01 AM EST",
   "units": "m^-1 (display); source m^-1",
   "spatial_resolution_source": "~4 km VIIRS L3, bilinear-resampled to canvas",
   "spatial_resolution_rendered": "1800x1175 canvas over lon [-93.0,-73.5], lat [40.5,49.5] (mean-value binning, no upsampling of source precision)",
@@ -34,29 +34,39 @@
     "low": 0.022000002,
     "high": 6.3350005,
     "percentiles": {
-      "p5": 0.13023458637608085,
-      "p25": 0.151181627741134,
-      "p50": 0.1727954206848597,
-      "p75": 0.29666444659233093,
-      "p95": 0.9419255211966802,
-      "p99": 2.0081669068364807
+      "p5": 0.1312246437705085,
+      "p25": 0.1511101711127661,
+      "p50": 0.1723015613578024,
+      "p75": 0.3169119205547796,
+      "p95": 0.9673217684030532,
+      "p99": 1.9831545280878216
     },
-    "n_obs": 964176,
+    "n_obs": 984176,
     "extends": []
   },
   "stats": {
-    "valid_cells": 195465,
-    "current_min": 0.05360465505202671,
-    "current_max": 5.597448438912639
+    "valid_cells": 329241,
+    "current_min": 0.04126477788831174,
+    "current_max": 6.095875177304816
   },
   "dataset": "nesdisVHNkdparDaily",
   "mosaic_sources": {
     "2026-11-15T12:00:00Z": "nesdisVHNkdparDaily",
-    "2026-11-14T12:00:00Z": "nesdisVHNkdparDaily"
+    "2026-11-14T12:00:00Z": "nesdisVHNkdparDaily",
+    "2026-11-13T12:00:00Z": "nesdisVHNkdparDaily",
+    "2026-11-12T12:00:00Z": "nesdisVHNkdparDaily",
+    "2026-11-11T12:00:00Z": "nesdisVHNkdparDaily",
+    "2026-11-10T12:00:00Z": "nesdisVHNkdparDaily",
+    "2026-11-09T12:00:00Z": "nesdisVHNkdparDaily"
   },
   "mosaic_variables": {
     "2026-11-15T12:00:00Z": "kd_par",
-    "2026-11-14T12:00:00Z": "kd_par"
+    "2026-11-14T12:00:00Z": "kd_par",
+    "2026-11-13T12:00:00Z": "kd_par",
+    "2026-11-12T12:00:00Z": "kd_par",
+    "2026-11-11T12:00:00Z": "kd_par",
+    "2026-11-10T12:00:00Z": "kd_par",
+    "2026-11-09T12:00:00Z": "kd_par"
   },
   "source_id": "nesdisVHNkdparDaily-v7-2026-11-15-r13",
   "source_version": "nesdisVHNkdparDaily-v7-2026-11-15-r13",
