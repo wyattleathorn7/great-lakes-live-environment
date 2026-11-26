@@ -53,7 +53,23 @@ KML_FILE = "Great_Lakes_Live_Leaf_Color.kml"
 OVERLAY_NAME = "\U0001F342 LIVE LEAF COLOR"
 SKIP_NOTE = "Turn on/off independently of all other layers."
 HIST_SHAPE = (294, 450)  # quarter-res history grids
-ENGINE = "hls-v2"
+ENGINE = "hls-v3"
+
+# Great Lakes day-of-year phenology anchor.  A 45-day NDVI window cannot
+# tell spring from autumn (both are mid/low NDVI), which is why an NDVI-only
+# phase still painted green leaves in late November.  This smooth annual
+# curve supplies the seasonal clock; the observed HLS NDVI and redness then
+# provide the within-season, within-basin variation around it.
+# phase 0.0/1.0 = dormant deep blue, 0.45-0.50 = growing-season green,
+# 0.70+ = autumn color, 0.90+ = leaf drop / dormancy.
+SEASON_ANCHORS = (
+    (1, 0.020), (31, 0.020), (59, 0.030), (74, 0.050),
+    (89, 0.090), (104, 0.150), (119, 0.230), (134, 0.310),
+    (149, 0.390), (164, 0.450), (179, 0.475), (196, 0.485),
+    (213, 0.495), (228, 0.505), (243, 0.535), (258, 0.590),
+    (273, 0.660), (288, 0.740), (303, 0.830), (318, 0.900),
+    (333, 0.950), (348, 0.982), (365, 0.020),
+)
 
 
 def main():
@@ -81,6 +97,7 @@ def run():
         print(f"[{PRODUCT}] VALIDATION FAILED: no HLS items in the "
               f"{lookback}-day window. Keeping previous.")
         return 2
+    print(f"[{PRODUCT}] HLS items found={len(items)} in {lookback}-day window")
     scenes = select_scenes(items, max_per_tile=max_scenes,
                            max_cloud=max_cloud)
     if not scenes:
@@ -130,6 +147,31 @@ def _build(bounds, W, H, scenes, sig, lookback):
     redness = mosaic["redness"]
     ndvi, redness = blend_tile_seams(ndvi, redness, mosaic["tile_grid"])
 
+    comp_date = mosaic["stats"]["composite_date"]
+    today = dt.datetime.now(dt.timezone.utc).date()
+    # The seasonal clock follows the publication date, not the (possibly
+    # cloud-delayed) newest scene: the layer describes leaf state now.
+    doy = today.timetuple().tm_yday
+    if os.environ.get("LEAF_DEBUG_DUMP"):
+        np.savez_compressed(
+            os.environ["LEAF_DEBUG_DUMP"],
+            ndvi=mosaic["ndvi"], redness=mosaic["redness"],
+            obs_day=mosaic["obs_day"], epochs=mosaic["ndvi_epochs"],
+            redness_epochs=mosaic["redness_epochs"], veg=veg, lc=lc,
+            comp_date=np.array(str(comp_date)))
+
+    # A pixel whose newest clear overpass is older than the freshness cap is
+    # not allowed to paint the current map; it becomes a gap and fills from
+    # this week's neighbours.  This is what keeps the layer from showing an
+    # October canopy over a November landscape.
+    max_age = int(CONFIG.get("max_obs_age_days", 21))
+    age_days = today.toordinal() - mosaic["obs_day"]
+    stale_obs = (mosaic["obs_day"] > 0) & (age_days > max_age)
+    if stale_obs.any():
+        ndvi[stale_obs] = np.nan
+        redness[stale_obs] = np.nan
+        mosaic["observed"][stale_obs] = False
+
     n_veg = int(veg.sum())
     n_obs = int((mosaic["observed"] & veg).sum())
     if n_obs < 50_000:
@@ -138,12 +180,12 @@ def _build(bounds, W, H, scenes, sig, lookback):
           f"used={mosaic['stats']['scenes_used']} "
           f"tiles={mosaic['stats']['tiles_used']}")
     print(f"[{PRODUCT}] observed vegetated pixels={n_obs}/{n_veg} "
-          f"({100.0 * n_obs / max(n_veg, 1):.2f}%)")
+          f"({100.0 * n_obs / max(n_veg, 1):.2f}%) "
+          f"(stale>{max_age}d dropped={int((stale_obs & veg).sum())})")
 
-    # The NDVI trajectory comes from the same HLS pass: the selected scenes
-    # are sliced into equal time bins, so the rise/fall rules compare this
-    # week's 30 m field against HLS observations from the same lookback
-    # window.  No MODIS-era history is mixed into a 30 m HLS phase.
+    # The four HLS epoch slices are retained for provenance/diagnostics.
+    # The phase itself is seasonally anchored (see compute_phase_grid): a
+    # 45-day NDVI trend alone cannot tell spring from autumn.
     epochs = np.asarray(mosaic["ndvi_epochs"], dtype=np.float32)
     hist = {"ndvi": np.stack([
         downsample_quarter(np.where(np.isfinite(e), e, np.nan))
@@ -152,9 +194,7 @@ def _build(bounds, W, H, scenes, sig, lookback):
           f"{mosaic['stats'].get('epoch_pixels', [])}")
 
     snow = mosaic["snow_seen"] & veg & ~mosaic["observed"]
-    bad = ~np.isfinite(ndvi)
-    marginal = np.zeros((H, W), dtype=bool)
-    phase = compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist)
+    phase = compute_phase_grid(ndvi, lc, redness, snow, epochs, doy)
     # Snow-covered vegetation is dormant winter (the circular scale's deep
     # blue end), not a hole.  This keeps winter coverage continuous.
     phase = np.where(snow & veg, 0.02, phase)
@@ -185,8 +225,6 @@ def _build(bounds, W, H, scenes, sig, lookback):
         rgba[(rgba[:, :, 3] > 0)][..., :3].reshape(-1, 3), axis=0))
     print(f"[{PRODUCT}] distinct raster colors={n_colors}")
 
-    comp_date = mosaic["stats"]["composite_date"]
-    today = dt.datetime.now(dt.timezone.utc).date()
     age = (today - comp_date).days if comp_date else None
     stale = age is not None and age > CONFIG["stale_threshold_days"]
     subtitle = CONFIG["subtitle"]
@@ -211,12 +249,13 @@ def _build(bounds, W, H, scenes, sig, lookback):
         color_min=0.0, color_max=1.0, color_units="phenology phase (circular)",
         missing_data_treatment=(
             "ONE continuous basin-wide HLS mosaic.  At every vegetated land "
-            "pixel the newest clear Landsat/Sentinel-2 observation in the "
-            "rolling window wins; persistent cloud/ocean-adjacent gaps fall "
-            "back to the most recent valid observation, and snow-covered "
-            "vegetation renders as dormant winter deep blue.  Cities, bare "
-            "ground, non-vegetated land and open Great Lakes water stay "
-            "transparent because leaves do not grow there."))
+            f"pixel the newest clear Landsat/Sentinel-2 observation (no older "
+            f"than {max_age} days) wins; older or cloud-covered gaps fill "
+            "from this week's neighbours, then the previous phase, then "
+            "dormant winter deep blue.  Snow-covered vegetation renders as "
+            "dormant winter blue.  Cities, bare ground, non-vegetated land "
+            "and open Great Lakes water stay transparent because leaves do "
+            "not grow there."))
     meta["legend_size"] = [lw, lh]
     meta["legend_scale_html"] = (
         "What each color means (one trip around the year, left to right on "
@@ -255,17 +294,21 @@ def _build(bounds, W, H, scenes, sig, lookback):
                      "(bit 2), cloud shadow (bit 3), snow/ice (bit 4), "
                      "water (bit 5), aerosol level (bits 6-7); reflectance "
                      "fill -9999 rejected"),
-        "trajectory": ("same-pass HLS epoch slices over the rolling "
-                       "lookback window; no MODIS-era NDVI history"),
+        "trajectory": ("Great Lakes day-of-year phenology anchor plus the "
+                       "newest-clear HLS NDVI/redness field; no MODIS-era "
+                       "NDVI history is mixed into the 30 m phase"),
+        "seasonal_anchor": (f"DOY {doy} -> phase {seasonal_anchor(doy):.3f} "
+                            "(smooth annual Great Lakes curve)"),
+        "freshness_cap_days": max_age,
         "landcover": ("USGS NLCD 2021 + NRCan 2020 Land Cover of Canada "
                       "(NALCMS inputs) mosaic -> assets/leaf_landcover.png"),
         "water_mask": "assets/great_lakes_watermask.png (shared)",
         "algorithm": ("one HLS newest-clear temporal mosaic over the full "
-                      "basin -> single leaf_phenology phase field -> "
-                      "unchanged 19-anchor OKLab circular LUT; no per-tile "
-                      "gradients"),
+                      "basin -> spatially despiked NDVI/redness -> single "
+                      "seasonally anchored phase field -> unchanged "
+                      "19-anchor OKLab circular LUT; no per-tile gradients"),
     }
-    source_id = f"leaf-hls-v1-{sig[:12]}-r{RENDER_VERSION}"
+    source_id = f"leaf-hls-v2-{sig[:12]}-r{RENDER_VERSION}"
     meta["source_id"] = source_id
     meta["source_version"] = source_token(source_id)
     meta["stats"] = {
@@ -274,6 +317,7 @@ def _build(bounds, W, H, scenes, sig, lookback):
         "vegetated_pixels": n_veg,
         "coverage_fraction": round(coverage, 6),
         "phase_mean": round(float(np.nanmean(phase)), 4),
+        "stale_dropped_pixels": int((stale_obs & veg).sum()),
     }
     token = meta["source_version"]
     scale_html = meta["legend_scale_html"]
@@ -320,17 +364,16 @@ def landing_target(landcover, land):
 def fill_phase(phase, target, prev_phase=None, dormant=0.02):
     """Guarantee continuous vegetation coverage without inventing color.
 
-    Priority: current HLS observation -> previous published phase for the
-    same pixel -> nearest-valid interpolation for remaining gaps -> dormant
-    winter blue as the final full-coverage backstop.  rasterio.fill is part
-    of the existing rasterio dependency, so large cloud gaps fill from the
-    closest valid phenology instead of becoming artificial blue blocks.
+    Priority: current HLS observation -> nearest-valid interpolation from
+    this week's field -> previous published phase -> dormant winter blue as
+    the final full-coverage backstop.  Nearest-valid comes first so a stale
+    green phase from an older run cannot leak into this week's gaps.
+    rasterio.fill is part of the existing rasterio dependency, so large
+    cloud gaps fill from the closest valid phenology instead of becoming
+    artificial blue blocks.
     """
     from rasterio.fill import fillnodata
     out = np.array(phase, dtype=float)
-    if prev_phase is not None and prev_phase.shape == out.shape:
-        use = target & ~np.isfinite(out) & np.isfinite(prev_phase)
-        out[use] = prev_phase[use]
     known = np.isfinite(out)
     if (target & ~known).any() and known.any():
         seed = np.where(known, out, 0.0).astype(np.float64)
@@ -339,6 +382,10 @@ def fill_phase(phase, target, prev_phase=None, dormant=0.02):
                             smoothing_iterations=0)
         use = target & ~known
         out[use] = filled[use]
+        known = np.isfinite(out)
+    if prev_phase is not None and prev_phase.shape == out.shape:
+        use = target & ~known & np.isfinite(prev_phase)
+        out[use] = prev_phase[use]
     out[target & ~np.isfinite(out)] = dormant
     return np.clip(out, 0.0, 0.999)
 
@@ -374,19 +421,16 @@ def save_history(epoch_q, phase, item_ids, sig):
     q = np.asarray(epoch_q, dtype=np.float32)
     if q.ndim != 3 or q.shape[1:] != HIST_SHAPE:
         q = np.full((1,) + HIST_SHAPE, np.nan, dtype=np.float32)
-    if q.shape[0] < HIST_SHAPE[0]:
-        pad = np.full((HIST_SHAPE[0] - q.shape[0],) + HIST_SHAPE, np.nan,
-                      dtype=np.float32)
-        q = np.concatenate([pad, q], axis=0)
-    q = q[-HIST_SHAPE[0]:]
-    np.save(os.path.join(STATE_DIR, "hist_ndvi.npy"),
+    # Keep the HLS trajectory in its own file.  The committed hist_ndvi.npy
+    # is the legacy MODIS-era record and must not be overwritten.
+    np.save(os.path.join(STATE_DIR, "hist_ndvi_hls.npy"),
             np.clip(np.nan_to_num(q, nan=-1.28) * 100.0, -128, 127
                     ).astype(np.int8))
     np.save(os.path.join(STATE_DIR, "hist_phase.npy"),
             downsample_quarter(np.where(np.isfinite(phase), phase, np.nan)
                                ).astype(np.float32))
     json.dump({"dates": sorted(set(item_ids)), "sig": sig, "engine": ENGINE},
-              open(os.path.join(STATE_DIR, "hist_meta.json"), "w"))
+              open(os.path.join(STATE_DIR, "hist_meta_hls.json"), "w"))
 
 
 def load_prev_phase(W, H):
@@ -410,64 +454,89 @@ def save_prev_phase(phase, W, H):
     Image.fromarray(arr, mode="L").save(os.path.join(STATE_DIR, "prev_phase.png"))
 
 
-def compute_phase_grid(ndvi, lc, redness, snow, bad, marginal, hist):
-    """One vectorized phenology phase field for the whole basin canvas."""
-    H, W = ndvi.shape
-    qh, qw = HIST_SHAPE
-    ys = np.clip((np.arange(H) * qh / H).astype(int), 0, qh - 1)
-    xs = np.clip((np.arange(W) * qw / W).astype(int), 0, qw - 1)
-    hn = hist["ndvi"]
-    cur_q = downsample_quarter(np.where(np.isfinite(ndvi), ndvi, np.nan))
-    stack = list(hn) + [cur_q]
-    hcnt = sum(np.isfinite(s).astype(int) for s in stack[:-1])
-    htot = sum(np.where(np.isfinite(s), s, 0.0) for s in stack[:-1])
-    n_ref_q = np.where(hcnt > 0, htot / np.maximum(hcnt, 1), cur_q)
-    n_max_q = np.maximum.reduce(
-        [np.where(np.isfinite(s), s, -1) for s in stack])
-    n_max_q = np.where(n_max_q < -0.5, np.nan, n_max_q)
-    n_ref = n_ref_q[ys[:, None], xs]
-    n_max = n_max_q[ys[:, None], xs]
+def seasonal_anchor(doy):
+    """Smooth circular day-of-year phase anchor (0..1).
 
-    phase = np.full((H, W), np.nan)
-    hb = bad | ~np.isfinite(ndvi)
-    work = ~(hb | snow) & np.isfinite(ndvi)
-    forest = np.isin(lc, [1, 2, 3])
-    prior = np.where(forest, 0.72, 0.55)
-    n_max = np.maximum(np.where(np.isnan(n_max), -1.0, n_max), prior)
-    span = np.maximum(n_max - 0.10, 0.20)
-    ngr = np.clip((ndvi - 0.10) / span, 0, 1)
-    d = np.where(np.isfinite(n_ref), ndvi - n_ref, 0.0)
-    red = np.clip(redness, 0, 1)
+    Segments interpolate along the shortest arc on the circular scale, so
+    late December (0.98 -> 0.02) moves through the deep-blue wraparound
+    instead of cutting backwards through the summer palette.
+    """
+    d = int(doy)
+    pts = SEASON_ANCHORS
+    if d <= pts[0][0]:
+        return pts[0][1]
+    for (d0, p0), (d1, p1) in zip(pts, pts[1:]):
+        if d0 <= d <= d1:
+            t = (d - d0) / float(d1 - d0)
+            t = t * t * (3.0 - 2.0 * t)  # smoothstep, no kinks
+            delta = ((p1 - p0 + 0.5) % 1.0) - 0.5
+            return (p0 + delta * t) % 1.0
+    return pts[-1][1]
 
-    m_dorm = work & (ngr <= 0.12) & (np.abs(d) <= 0.03) & (red < 0.3)
-    phase[m_dorm] = 0.02 + 0.06 * (ngr[m_dorm] / 0.12)
-    m_rise = work & ~m_dorm & (d > 0.02)
-    phase[m_rise] = 0.15 + 0.30 * ngr[m_rise]
-    m_fall = work & ~m_dorm & ((d <= -0.02) | (red > 0.5))
-    t = np.maximum(1.0 - ngr[m_fall], red[m_fall])
-    ph = 0.55 + 0.30 * t + 0.08 * red[m_fall] * t
-    low = ngr[m_fall] < 0.22
-    ph[low] = np.maximum(ph[low], 0.85 + 0.15 * (0.22 - ngr[m_fall][low]) / 0.22)
-    phase[m_fall] = ph
-    m_st = work & ~m_dorm & ~m_fall & (np.abs(d) <= 0.02)
-    hi = m_st & (ngr > 0.6)
-    phase[hi] = 0.45 + 0.10 * np.clip((ngr[hi] - 0.7) / 0.3, 0, 1)
-    lo = m_st & (ngr <= 0.6)
-    phase[lo] = 0.10 + 0.25 * (ngr[lo] / 0.6)
 
-    m_ev = work & (lc == 3)
-    phase[m_ev] = 0.40 + 0.16 * ngr[m_ev]
+def _nanmedian3(a, passes=1):
+    """NaN-aware 3x3 median, repeated to suppress compositing speckle.
+
+    Multi-date HLS pixels leave isolated 1-2 px reflectance jumps.  A median
+    removes them without inventing values or blurring real land-cover edges.
+    """
+    out = np.asarray(a, dtype=np.float32)
+    for _ in range(max(1, int(passes))):
+        H, W = out.shape
+        p = np.pad(out, 1, mode="constant", constant_values=np.nan)
+        stack = np.stack([
+            p[1 + dy:1 + dy + H, 1 + dx:1 + dx + W]
+            for dy in (-1, 0, 1) for dx in (-1, 0, 1)])
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            out = np.nanmedian(stack, axis=0).astype(np.float32)
+    return out
+
+
+def compute_phase_grid(ndvi, lc, redness, snow, epochs, doy):
+    """One continuous phenology phase field for the whole basin canvas.
+
+    The date supplies the seasonal clock (SEASON_ANCHORS); the HLS NDVI and
+    red chromaticity supply the spatial detail inside that season.  This
+    avoids the spring/autumn ambiguity of a short NDVI window and, because
+    there are no rise/fall branches, removes the hard color discontinuities
+    that showed up as blocky patches in the previous build.
+    """
+    nd = _nanmedian3(ndvi, passes=2)
+    rd = _nanmedian3(redness, passes=2)
+    observed = np.isfinite(ndvi) & ~snow
+    nd = np.where(observed, nd, np.nan)
+    rd = np.where(observed, rd, np.nan)
+    green = np.clip((nd - 0.12) / 0.60, 0.0, 1.0)
+    red = np.clip(np.nan_to_num(rd, nan=0.0), 0.0, 1.0)
+    green = np.where(np.isfinite(nd), green, np.nan)
+
+    anchor = float(seasonal_anchor(doy))
+    # Season weights are continuous, so weekly runs never jump at a date
+    # boundary.  Greener pixels are later in spring but earlier in autumn;
+    # that single sign flip is what separates the two seasons.
+    spring = float(np.clip((0.46 - anchor) / 0.08, 0.0, 1.0))
+    autumn = float(np.clip((anchor - 0.52) / 0.08, 0.0, 1.0))
+    winter = float(np.clip((0.12 - anchor) / 0.06, 0.0, 1.0))
+    summer = max(0.0, 1.0 - spring - autumn)
+    coef = (0.12 * spring - 0.15 * autumn + 0.03 * summer) * (1.0 - winter)
+    red_pull = 0.08 * autumn * (1.0 - winter)
+
+    phase = anchor + coef * (green - 0.5) - red_pull * red
+    phase = np.where(observed, phase, np.nan)
+
+    ev = observed & (lc == 3)
+    phase[ev] = 0.40 + 0.16 * green[ev]
     for code, w, cap in ((2, 0.55, None), (4, 0.45, 0.66), (5, 0.45, 0.66),
                          (6, 0.35, 0.62)):
-        m_c = work & (lc == code)
+        m_c = observed & (lc == code)
         phase[m_c] = 0.5 + (phase[m_c] - 0.5) * w
         if cap is not None:
             phase[m_c] = np.minimum(phase[m_c], cap)
     m_mask = (lc == 0) | (lc == 7) | (lc == 8) | (lc == 9)
     phase[m_mask] = np.nan
     phase[snow] = np.nan
-    m_marg = work & np.asarray(marginal, dtype=bool) & np.isfinite(phase)
-    phase[m_marg] = 0.5 + (phase[m_marg] - 0.5) * 0.6
     return np.clip(phase, 0.0, 0.999)
 
 

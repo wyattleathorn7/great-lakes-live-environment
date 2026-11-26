@@ -13,6 +13,7 @@
   "refresh_interval_seconds": 604800,
   "history_depth": 4,
   "lookback_days": 45,
+  "max_obs_age_days": 21,
   "max_scenes_per_tile": 6,
   "max_cloud_cover": 90,
   "epochs": 4

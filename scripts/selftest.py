@@ -521,6 +521,30 @@ def main():
     check("leaf-history-valid-negative", abs(float(_decoded[1]) + 1.0) < 1e-6)
     check("leaf-history-partial-values",
           __import__("numpy").allclose(_decoded[2:], [-0.01, 0.0, 0.55, 1.0]))
+    # Seasonal clock: a 45-day NDVI window cannot tell spring from autumn, so
+    # the builder anchors the phase to a smooth Great Lakes DOY curve.
+    from build_leaf_color import compute_phase_grid, seasonal_anchor
+    check("leaf-season-winter", 0.0 <= seasonal_anchor(15) <= 0.06,
+          seasonal_anchor(15))
+    check("leaf-season-summer", 0.42 <= seasonal_anchor(200) <= 0.55,
+          seasonal_anchor(200))
+    check("leaf-season-late-fall", seasonal_anchor(329) >= 0.88,
+          seasonal_anchor(329))
+    check("leaf-season-wraps-blue", seasonal_anchor(360) <= 0.06,
+          seasonal_anchor(360))
+    _snd = _qa_np.full((24, 24), 0.30, dtype=_qa_np.float32)
+    _slc = _qa_np.ones((24, 24), dtype=_qa_np.uint8)
+    _srd = _qa_np.zeros((24, 24), dtype=_qa_np.float32)
+    _ssnow = _qa_np.zeros((24, 24), dtype=bool)
+    _sep = _qa_np.stack([_snd] * 4)
+    _sph = compute_phase_grid(_snd, _slc, _srd, _ssnow, _sep, 329)
+    check("leaf-late-fall-not-green",
+          float(_qa_np.nanmedian(_sph)) >= 0.85,
+          float(_qa_np.nanmedian(_sph)))
+    _sph_summer = compute_phase_grid(_snd, _slc, _srd, _ssnow, _sep, 200)
+    check("leaf-summer-stays-green",
+          0.42 <= float(_qa_np.nanmedian(_sph_summer)) <= 0.56,
+          float(_qa_np.nanmedian(_sph_summer)))
     _pc, _ = phenology_phase(0.75, [0.75, 0.75], 6, 0.0, False, False)
     check("leaf-crop-subdued", 0.40 <= _pc <= 0.60, _pc)
     _pu, _ = phenology_phase(0.75, [0.75, 0.75], 7, 0.0, False, False)
