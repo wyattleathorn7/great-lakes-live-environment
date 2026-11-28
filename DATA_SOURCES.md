@@ -258,10 +258,12 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
 - **Cadence + freshness:** the leaf job rides the existing weekly
   dispatch (`product=weekly`, which already includes `leaf_color`; no
   second schedule is added). The newest clear observation wins at each
-  vegetated land pixel inside a 45-day rolling window. Up to six usable
-  scenes per MGRS tile are kept — the two newest from each platform plus
-  date-spread picks — so cloud holes fill from slightly older
-  observations instead of leaving seams. NASA HLS latency is about
+  vegetated land pixel inside a 45-day rolling window, but an
+  observation older than 21 days is not allowed to paint the current map:
+  it becomes a gap and fills from this week's neighbours. Up to six
+  usable scenes per MGRS tile are kept — the two newest from each
+  platform plus date-spread picks — so cloud holes fill from slightly
+  older observations instead of leaving seams. NASA HLS latency is about
   1.7 days, so every weekly run uses the newest available scenes.
 - **QA:** HLS v2 Fmask bits: 1 cloud, 2 adjacent to cloud/shadow,
   3 cloud shadow, 4 snow/ice, 5 water, 6-7 aerosol level. Surface
@@ -270,28 +272,52 @@ from the full-precision NOAA vector mask plus edge RGB bleed, in one image.
   and barren pixels are never painted as foliage. Narrow MGRS tile
   boundary bands get a 3-px nan-aware blend so zipper steps vanish while
   every other pixel keeps its exact source value.
-- **Full coverage:** current HLS observation -> previous published phase
-  for the same pixel -> nearest-valid interpolation for small gaps ->
-  dormant winter blue backstop. Every vegetated land pixel is painted, so
-  the Google Earth layer has no tile/cloud holes. Open Great Lakes water,
-  cities, bare ground and other non-vegetated classes stay transparent
-  because leaves do not grow there.
+- **Despiking:** the newest-clear composite is lightly median-filtered
+  (two 3x3 NaN-aware passes) before the phase is derived. This removes
+  single-pixel reflectance speckle and the thin striping left where
+  adjacent pixels came from different overpass dates, without inventing
+  values or blurring real land-cover edges.
+- **Full coverage:** current HLS observation -> nearest-valid
+  interpolation from this week's field -> previous published phase ->
+  dormant winter blue backstop. Nearest-valid comes before the previous
+  phase so a stale color from an older run cannot leak into this week's
+  gaps. Every vegetated land pixel is painted, so the Google Earth layer
+  has no tile/cloud holes. Open Great Lakes water, cities, bare ground
+  and other non-vegetated classes stay transparent because leaves do not
+  grow there.
 - **Land cover (static ancillary):** US side USGS NLCD 2021 + Canada side
   NRCan 2020 Land Cover of Canada (the two national inputs NALCMS
   harmonizes), mosaicked once to `assets/leaf_landcover.png`
   (deciduous/mixed/evergreen/shrub/grass/crop/urban/barren/water;
   wetlands→shrub behavior). `scripts/build_leaf_landcover.py` reproduces it.
-- **Phenology + key (unchanged):** the same per-pixel NDVI trajectory ->
+- **Phenology + key (unchanged):** observed HLS NDVI + red chromaticity ->
   circular phase 0..1 -> class modulation (deciduous full, mixed 0.55,
   evergreen clamped green, shrub/grass 0.45 capped, crop 0.35 capped,
   urban/barren/nodata/water transparent) -> the same continuous
   19-anchor circular OKLab LUT (deep-blue dormant -> cyan spring ->
   green summer -> yellow/orange/red autumn -> purple leaf drop ->
   deep-blue). Scale remains 0..1 phase.
-- **Trajectory source:** each run slices its own selected HLS scenes into
-  four equal time bins over the lookback window and uses those NDVI
-  slices as the baseline/max reference. No MODIS-era NDVI history is
-  mixed into a 30 m HLS phase, so a sensor change cannot bias the map.
+- **Observed trajectory (no calendar):** the phase is derived entirely from
+  what HLS measured in the rolling lookback window. The newest-clear NDVI
+  sets how much canopy is present relative to the pixel's own potential,
+  the change across the four lookback epochs sets the direction (rising
+  NDVI = spring green-up, falling NDVI = autumn decline), and red
+  chromaticity adds autumn color only while canopy remains. There is no
+  day-of-year or other seasonal clock, so the map shows the observed state
+  of the vegetation at the composite date. A pixel that finished dropping
+  its leaves weeks ago reads a flat, low NDVI and renders dormant blue
+  instead of being painted as an active autumn. A bare-soil pixel with a
+  reddish surface stays dormant because red only counts where canopy is
+  still present. The formula is continuous everywhere, so adjacent pixels
+  cannot jump between green and red (no rise/fall branches, no block
+  artifacts). The four HLS epoch slices are also stored in
+  `output/state/leaf_color/hist_ndvi_hls.npy` for provenance/diagnostics.
+  No MODIS-era NDVI history is mixed into the 30 m HLS phase.
+- **Freshness cap:** an observation older than
+  `config/leaf_color.json:max_obs_age_days` (21 days) is not allowed to
+  paint the current map; that pixel becomes a gap and fills from this
+  week's neighbours, so an October canopy cannot appear over a November
+  landscape.
 - Freshness wording: **"LATEST AVAILABLE COMPOSITE"** (+ age, + STALE flag).
 
 ## 6. Water clarity — NOAA CoastWatch S-NPP VIIRS Kd(PAR) (SQ, daily)

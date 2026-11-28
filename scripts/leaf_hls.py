@@ -15,11 +15,18 @@ Surface-reflectance bands are int16 scaled by 0.0001 with fill -9999.
 """
 
 import datetime as dt
+import os
 import re
 
 import numpy as np
 
 from geospatial_utils import load_bounds
+
+# A single stalled COG request must not hang a weekly build.  GDAL otherwise
+# waits indefinitely on a dead S3/HTTP connection.
+os.environ.setdefault("GDAL_HTTP_TIMEOUT", "60")
+os.environ.setdefault("GDAL_HTTP_CONNECTTIMEOUT", "20")
+os.environ.setdefault("GDAL_HTTP_MAX_RETRY", "3")
 
 COLLECTIONS = ("hls2-l30", "hls2-s30")
 PLATFORM = {"hls2-l30": "l30", "hls2-s30": "s30"}
@@ -346,6 +353,8 @@ def mosaic_scenes(scenes, target, bounds, epochs=4):
     used_dates = []
     item_map = {}
     used_tiles = set()
+    print(f"[leaf_hls] compositing {len(scenes)} scenes into the basin canvas",
+          flush=True)
 
     for item in scenes:
         tid = tile_id(item)
@@ -438,6 +447,9 @@ def mosaic_scenes(scenes, target, bounds, epochs=4):
         used_tiles.add(tid)
         if day:
             used_dates.append(day)
+        if len(used_ids) % 50 == 0:
+            print(f"[leaf_hls] {len(used_ids)}/{len(scenes)} scenes read, "
+                  f"{int(observed.sum())} pixels observed", flush=True)
         slot = item_map.setdefault(tid, {})
         plat = PLATFORM.get(item.collection_id, item.collection_id)
         slot[plat] = item.id
