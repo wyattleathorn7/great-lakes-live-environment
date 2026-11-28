@@ -1,7 +1,7 @@
 {
-  "composite_sig": "32e90f6163af6b6556921c720a7f5d7da8ab030753a46e3a7ab1c3de506b2dfd",
-  "source_id": "leaf-hls-v1-32e90f6163af-r13",
+  "composite_sig": "80f3e97832437bcd51aa421c189854a33e9039f50abcdc0379cf1e87198b4331",
+  "source_id": "leaf-hls-v3-80f3e9783243-r13",
   "render_version": 13,
-  "engine": "hls-v2",
-  "processing_time_utc": "2026-11-25 01:23 PM EST"
+  "engine": "hls-v5",
+  "processing_time_utc": "2026-11-28 01:28 PM EST"
 }
