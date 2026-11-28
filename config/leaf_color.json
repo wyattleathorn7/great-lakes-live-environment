@@ -1,7 +1,7 @@
 {
   "product": "leaf_color",
   "title": "LIVE LEAF COLOR",
-  "subtitle": "SEASONAL VEGETATION CYCLE",
+  "subtitle": "OBSERVED VEGETATION STATE",
   "freshness_label": "LATEST AVAILABLE COMPOSITE",
   "source_name": "NASA HLS v2.0 Landsat 8/9 + Sentinel-2 via Planetary Computer (30 m)",
   "source_url": "https://planetarycomputer.microsoft.com/dataset/hls2-l30",
@@ -13,6 +13,7 @@
   "refresh_interval_seconds": 604800,
   "history_depth": 4,
   "lookback_days": 45,
+  "max_obs_age_days": 21,
   "max_scenes_per_tile": 6,
   "max_cloud_cover": 90,
   "epochs": 4

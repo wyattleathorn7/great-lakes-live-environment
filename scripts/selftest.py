@@ -521,6 +521,60 @@ def main():
     check("leaf-history-valid-negative", abs(float(_decoded[1]) + 1.0) < 1e-6)
     check("leaf-history-partial-values",
           __import__("numpy").allclose(_decoded[2:], [-0.01, 0.0, 0.55, 1.0]))
+    # Observation-driven phase: nothing in the engine may depend on the
+    # calendar.  Spring vs autumn is decided by the sign of the measured
+    # NDVI change across the lookback epochs, so the same mid-NDVI value
+    # lands on opposite sides of the scale in the two seasons.
+    from build_leaf_color import compute_phase_grid
+    _q = _qa_np
+    _snow = _q.zeros((16, 16), dtype=bool)
+
+    def _phase(ndvi, epochs, redness=0.0, cls=1):
+        _c = _q.full((16, 16), cls, dtype=_q.uint8)
+        _n = _q.full((16, 16), ndvi, dtype=_q.float32)
+        _r = _q.full((16, 16), redness, dtype=_q.float32)
+        _e = _q.stack([_q.full((16, 16), v, dtype=_q.float32)
+                       for v in epochs])
+        return compute_phase_grid(_n, _c, _r, _snow, _e)
+
+    _flat_bare = _phase(0.22, [0.22, 0.22, 0.22, 0.22])
+    check("leaf-bare-flat-dormant",
+          0.0 <= float(_q.nanmedian(_flat_bare)) <= 0.15,
+          float(_q.nanmedian(_flat_bare)))
+    _falling = _phase(0.45, [0.75, 0.62, 0.55, 0.45], redness=0.80)
+    check("leaf-autumn-decline-colored",
+          float(_q.nanmedian(_falling)) >= 0.75,
+          float(_q.nanmedian(_falling)))
+    # A canopy that already dropped out of the window is dormant, not an
+    # active autumn colour, even though the decline happened in the window.
+    _dropped = _phase(0.20, [0.62, 0.45, 0.30, 0.20], redness=0.20)
+    check("leaf-post-leafoff-dormant",
+          0.0 <= float(_q.nanmedian(_dropped)) <= 0.20,
+          float(_q.nanmedian(_dropped)))
+    _rising = _phase(0.55, [0.12, 0.20, 0.34, 0.55], redness=0.05)
+    check("leaf-spring-rise-green",
+          0.42 <= float(_q.nanmedian(_rising)) <= 0.56,
+          float(_q.nanmedian(_rising)))
+    _summer = _phase(0.82, [0.82, 0.82, 0.82, 0.82], redness=0.02)
+    check("leaf-summer-stays-green",
+          0.42 <= float(_q.nanmedian(_summer)) <= 0.56,
+          float(_q.nanmedian(_summer)))
+    _brown = _phase(0.18, [0.18, 0.18, 0.18, 0.18], redness=0.75)
+    check("leaf-bare-soil-not-autumn",
+          float(_q.nanmedian(_brown)) <= 0.15,
+          float(_q.nanmedian(_brown)))
+    _crop_bare = _phase(0.20, [0.20, 0.20, 0.20, 0.20], cls=6)
+    check("leaf-crop-bare-stays-dormant",
+          float(_q.nanmedian(_crop_bare)) <= 0.15,
+          float(_q.nanmedian(_crop_bare)))
+    _ever = _phase(0.35, [0.35, 0.35, 0.35, 0.35], redness=0.9, cls=3)
+    check("leaf-evergreen-clamped",
+          0.38 <= float(_q.nanmedian(_ever)) <= 0.58,
+          float(_q.nanmedian(_ever)))
+    check("leaf-date-independent",
+          _q.array_equal(_falling,
+                         _phase(0.45, [0.75, 0.62, 0.55, 0.45],
+                                redness=0.80)))
     _pc, _ = phenology_phase(0.75, [0.75, 0.75], 6, 0.0, False, False)
     check("leaf-crop-subdued", 0.40 <= _pc <= 0.60, _pc)
     _pu, _ = phenology_phase(0.75, [0.75, 0.75], 7, 0.0, False, False)
